@@ -1,0 +1,180 @@
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
+
+/* Vice Sunset NUI - tokens: CLAUDE.md sección 3 */
+:root {
+  --vice-night: #2e1a47;
+  --vice-plum: #7b2c6f;
+  --vice-rose: #e14b7b;
+  --vice-orange: #f69259;
+  --vice-magenta: #e1307e;
+  --vice-coral: #f67e56;
+  --vice-ink: #1a0a22;
+  --vice-text: #fbf1f5;
+  --vice-sunset: linear-gradient(180deg, #2e1a47 0%, #7b2c6f 38%, #e14b7b 72%, #f69259 100%);
+  --vice-accent: linear-gradient(90deg, #e1307e 0%, #f67e56 100%);
+  --vice-glass-bg: rgba(20, 14, 36, 0.78);
+  --vice-glass-border: rgba(246, 146, 89, 0.25);
+  --vice-diagonal: rgba(225, 75, 123, 0.25);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: #2e1a47;
+  color: var(--vice-text);
+  font-family: Poppins, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: Jost, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Fondo sunset */
+.bg-sunset {
+  background: var(--vice-sunset);
+}
+
+/* Diagonales magenta sobre el cielo */
+.vice-diagonals {
+  background:
+    linear-gradient(115deg, transparent 0 38%, var(--vice-diagonal) 38% 52%, transparent 52% 100%),
+    linear-gradient(115deg, transparent 0 70%, rgba(246, 146, 89, 0.2) 70% 80%, transparent 80% 100%);
+}
+
+/* Glassmorphism HUD */
+.glass {
+  background: var(--vice-glass-bg);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border: 1px solid var(--vice-glass-border);
+  box-shadow: 0 10px 40px rgba(26, 10, 34, 0.45);
+}
+
+/* Botón firma (PalmButton) */
+.pbtn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 44px;
+  padding: 0 28px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: var(--vice-accent);
+  color: var(--vice-ink);
+  font-family: Jost, system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.pbtn:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: #fbf1f5;
+  box-shadow: 0 6px 24px rgba(225, 48, 126, 0.45);
+  transform: translateY(-1px);
+}
+.pbtn:focus-visible {
+  outline: 2px solid #ffc857;
+  outline-offset: 3px;
+}
+.pbtn:disabled,
+.pbtn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Variante glass del PalmButton */
+.pbtn.glass {
+  background: var(--vice-glass-bg);
+  color: var(--vice-text);
+}
+
+/* Scrollbars oscuros con pulgar sunset */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #e14b7b rgba(20, 14, 36, 0.6);
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: rgba(20, 14, 36, 0.6);
+}
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #e1307e, #f69259);
+  border-radius: 8px;
+}
+
+/* Animaciones */
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+.anim-slide-up {
+  animation: slideUp 0.28s ease-out both;
+}
+.anim-slide-in-right {
+  animation: slideInRight 0.28s ease-out both;
+}
+.anim-pulse {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-slide-up,
+  .anim-slide-in-right,
+  .anim-pulse {
+    animation: none;
+  }
+  .pbtn {
+    transition: none;
+  }
+}
+
+/* Safe areas (iOS/Android) */
+.pt-safe {
+  padding-top: var(--safe-top);
+}
+.pb-safe {
+  padding-bottom: var(--safe-bottom);
+}
+.pl-safe {
+  padding-left: var(--safe-left);
+}
+.pr-safe {
+  padding-right: var(--safe-right);
+}
+.p-safe {
+  padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ATLAS VICE</string>
+    <string name="title_activity_main">ATLAS VICE</string>
+    <string name="package_name">com.atlasvice.app</string>
+    <string name="custom_url_scheme">com.atlasvice.app</string>
+</resources>
