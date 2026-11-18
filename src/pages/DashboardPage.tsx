@@ -1,14 +1,17 @@
 // P03 - Dashboard de Progreso (Hub): avance 100%, rutas sugeridas, novedades
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StatBar, type StatAccent } from '../components/ui/StatBar';
 import { TipCard } from '../components/ui/TipCard';
 import {
   SAMPLE_NOTICE,
-  SEED_NEWS,
+  NEWS_SOURCES,
   SEED_ROUTES,
   SEED_TIPS,
+  useOfficialNews,
+  usePublicConfig,
   useProgressSummary,
   useWorldData,
+  type NewsSource,
 } from '../data/seed';
 import { isApiConfigured, useAuthStore } from '../store/useAuthStore';
 import { useProgressStore } from '../store/useProgressStore';
@@ -57,7 +60,23 @@ function Ring({ percent }: { percent: number }) {
   );
 }
 
-export default function DashboardPage({ section }: { section: 'hub' | 'progress' }) {
+const SOURCE_LABEL: Record<NewsSource, string> = {
+  'rockstar-newswire': 'Rockstar Newswire',
+  'rockstar-youtube': 'Rockstar YouTube',
+  'take-two-ir': 'Take-Two IR',
+};
+
+export default function DashboardPage({
+  section,
+  highlight = null,
+}: {
+  section: 'hub' | 'progress' | 'news';
+  highlight?: string | null;
+}) {
+  const [source, setSource] = useState<NewsSource | 'all'>('all');
+  const { news, loading: newsLoading, error: newsError } = useOfficialNews(source, 12);
+  const cfg = usePublicConfig();
+  const newsRef = useRef<HTMLElement>(null);
   const summary = useProgressSummary();
   const { data, loading, error } = useWorldData();
   const items = useProgressStore((s) => s.items);
@@ -71,7 +90,13 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
 
   useEffect(() => {
     if (section === 'progress') progressRef.current?.scrollIntoView({ block: 'start' });
+    if (section === 'news') newsRef.current?.scrollIntoView({ block: 'start' });
   }, [section]);
+
+  useEffect(() => {
+    if (!highlight || news.length === 0) return;
+    document.getElementById(`noticia-${highlight}`)?.scrollIntoView({ block: 'center' });
+  }, [highlight, news.length]);
 
   const markerIds = new Set(data.markers.map((m) => m.id));
   const routes = SEED_ROUTES.map((r) => {
@@ -201,20 +226,78 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
           </ul>
         </section>
 
-        {/* Novedades */}
-        <section aria-labelledby="novedades-title" className="glass rounded-2xl p-5">
-          <h2 id="novedades-title" className="font-display text-xl font-bold">
-            Novedades
+        {/* Anuncio global (config pública) */}
+        {cfg.announcement && (
+          <section aria-label="Anuncio" className="glass rounded-2xl p-5 lg:col-span-3">
+            <h2 className="font-display text-xl font-bold">Aviso</h2>
+            <p className="mt-2 text-sm text-vice-text/90">{cfg.announcement}</p>
+          </section>
+        )}
+
+        {/* Noticias Oficiales: solo desde la API de noticias oficiales */}
+        <section
+          id="noticias"
+          ref={newsRef}
+          aria-labelledby="noticias-title"
+          className="glass rounded-2xl p-5 lg:col-span-3"
+        >
+          <h2 id="noticias-title" className="font-display text-xl font-bold">
+            Noticias Oficiales
           </h2>
-          <ul className="mt-3 flex flex-col gap-3">
-            {SEED_NEWS.map((n) => (
-              <li key={n.id} className="border-l-2 border-vice-magenta pl-3">
-                <p className="text-xs text-vice-orange">{n.fecha}</p>
-                <h3 className="font-semibold">{n.titulo}</h3>
-                <p className="text-sm text-vice-text/80">{n.texto}</p>
-              </li>
+          <div role="group" aria-label="Filtrar por fuente oficial" className="mt-3 flex flex-wrap gap-2">
+            {NEWS_SOURCES.map((f) => (
+              <button
+                key={f.value}
+                type="button"
+                aria-pressed={source === f.value}
+                onClick={() => setSource(f.value)}
+                className={`min-h-11 rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold ${
+                  source === f.value ? 'bg-vice-accent text-vice-ink' : 'bg-white/10 hover:bg-white/20'
+                }`}
+              >
+                {f.label}
+              </button>
             ))}
-          </ul>
+          </div>
+          <div aria-live="polite" className="mt-3">
+            {newsLoading ? (
+              <p role="status" className="text-sm text-vice-text/80">
+                Cargando noticias oficiales…
+              </p>
+            ) : newsError ? (
+              <p role="status" className="text-sm text-vice-gold">
+                No se pudieron cargar las noticias oficiales ({newsError}).
+              </p>
+            ) : news.length === 0 ? (
+              <p className="text-sm text-vice-text/70">Aún no hay noticias oficiales para esta fuente.</p>
+            ) : (
+              <ul className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {news.map((n) => (
+                  <li
+                    key={n.id}
+                    id={`noticia-${n.slug}`}
+                    className={`rounded-xl border bg-white/5 p-4 ${
+                      highlight === n.slug ? 'border-vice-gold ring-2 ring-vice-gold' : 'border-white/10'
+                    }`}
+                  >
+                    <p className="text-xs text-vice-orange">
+                      {SOURCE_LABEL[n.source] ?? n.source} · {new Date(n.publishedAt).toLocaleDateString('es')}
+                    </p>
+                    <h3 className="mt-1 font-semibold">{n.title}</h3>
+                    {n.summary && <p className="mt-1 line-clamp-3 text-sm text-vice-text/80">{n.summary}</p>}
+                    <a
+                      href={n.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-vice-orange underline"
+                    >
+                      Leer en la fuente original
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </section>
 
         {/* Accesos */}
