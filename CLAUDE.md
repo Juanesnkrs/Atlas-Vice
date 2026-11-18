@@ -30,6 +30,14 @@ Toda decisión de arquitectura, base de datos, rutas y diseño está congelada e
 
 `graphify-out/` (ignorada en git) y `.claude/skills/graphify/` son carpetas válidas del proyecto, fuera del árbol de la sección 2. El agente `qa-mobile` NO debe borrarlas, moverlas ni marcarlas como violación de estructura.
 
+## Carpetas y archivos válidos adicionales
+
+También son válidos, fuera del árbol de la sección 2, y `qa-mobile` NO debe borrarlos ni marcarlos como violación:
+
+- `android/` e `ios/` (proyectos nativos generados por Capacitor).
+- `src/data/seed.ts` (datos semilla de ejemplo y capa de acceso offline-first).
+- `supabase/03_seed_data.sql` (datos de ejemplo generados desde `seed.ts`, mismos UUIDs).
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
@@ -40,3 +48,10 @@ Rules:
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
 - A committed graphify-out/graph.json is rewritten whole on every build, so a large diff to it in a pull request is expected. Do not flag it as churn or suggest skipping the graph rebuild or its hooks.
+
+## 5. Flujo de Trabajo Gitflow y Conventional Commits
+
+- PROHIBIDO hacer commits directos en `main` o `develop`.
+- Todo trabajo se hace en ramas `feature/*` creadas desde `develop` y se integra mediante Pull Request.
+- Los mensajes de commit siguen Conventional Commits en español, con estos prefijos: `feat:`, `fix:`, `ui:`, `chore:`, `docs:`.
+- Ejemplo: `ui: ajusta el espacio inferior de safe-area en ViceShell`.
