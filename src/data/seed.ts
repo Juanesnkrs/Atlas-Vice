@@ -1,16 +1,17 @@
 // =============================================================================
-// ATLAS VICE - Datos semilla + capa mínima de acceso a datos.
+// LeonidApp - Datos semilla + capa mínima de acceso a datos.
 // Excepción autorizada por el usuario a la regla de carpetas (src/data/seed.ts).
 // TODOS los datos de este archivo son DE EJEMPLO (metadata_json.sample = true):
 // no representan información oficial del juego. Solo usan columnas del esquema.
 // Lectura: API Fastify solo si isApiConfigured; si falla o está vacía -> seed.
 // =============================================================================
-import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
-import { apiFetch, isApiConfigured } from '../store/useAuthStore';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
+import { apiFetch, isApiConfigured, useAuthStore } from '../store/useAuthStore';
 import { useProgressStore, type ProgressKey } from '../store/useProgressStore';
 import type {
   Entity,
+  ForumApiResponse,
   ForumCategoria,
   ForumPost,
   ForumThread,
@@ -256,7 +257,7 @@ const th = (
 });
 
 export const SEED_THREADS: ForumThread[] = [
-  th(500, 901, 'General', 'Bienvenida a la comunidad de ATLAS VICE (datos de ejemplo)',
+  th(500, 901, 'General', 'Bienvenida a la comunidad de LeonidApp (datos de ejemplo)',
     'Este hilo es contenido de ejemplo. Usa el foro para compartir rutas, dudas y hallazgos. Respeta las etiquetas de spoiler.',
     57, 1, { pinned: true }),
   th(501, 902, 'Guias/Ayuda', '¿Cuál es la mejor ruta para empezar a coleccionar?',
@@ -406,10 +407,32 @@ export interface WorldData {
 }
 
 export interface ForumData {
+  /** En modo preview `contenido` llega vacio y `posts` es []. */
   threads: ForumThread[];
   posts: ForumPost[];
   profiles: Profile[];
   source: DataSource;
+  /** true cuando la API respondio en formato preview (sin sesion). */
+  preview?: boolean;
+}
+
+/** Recorta un ForumData a formato preview: sin contenido ni respuestas, max 50, recientes primero. */
+function toPreview(f: ForumData): ForumData {
+  const replies = new Map<string, number>();
+  for (const p of f.posts) replies.set(p.thread_id, (replies.get(p.thread_id) ?? 0) + 1);
+  const threads = [...f.threads]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 50)
+    .map((t) => ({ ...t, contenido: '', replies_count: t.replies_count ?? replies.get(t.id) ?? 0 }));
+  return { ...f, threads, posts: [], preview: true };
+}
+
+/** Tiempo relativo corto: "hace 5 min", "hace 2 h", "hace 3 d" (o "5 min ago" en ingles). */
+export function relativeTime(iso: string, lang: 'es' | 'en' = 'es'): string {
+  const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
+  const [n, unit] = mins < 60 ? [mins, 'min'] : mins < 1440 ? [Math.floor(mins / 60), 'h'] : [Math.floor(mins / 1440), 'd'];
+  if (mins < 1) return lang === 'es' ? 'ahora' : 'now';
+  return lang === 'es' ? `hace ${n} ${unit}` : `${n} ${unit} ago`;
 }
 
 export const SEED_WORLD: WorldData = {
@@ -439,8 +462,17 @@ async function fetchWorld(): Promise<WorldData> {
 
 async function fetchForum(): Promise<ForumData> {
   if (!isApiConfigured) return SEED_FORUM;
-  const f = await apiFetch<{ threads: ForumThread[]; posts: ForumPost[]; profiles: Profile[] }>('/api/forum');
+  const f = await apiFetch<ForumApiResponse>('/api/forum');
   if (f.threads.length === 0) return SEED_FORUM;
+  if (f.preview) {
+    return {
+      source: 'api',
+      preview: true,
+      posts: [],
+      threads: f.threads.map((t) => ({ ...t, contenido: '' })),
+      profiles: f.profiles.map((p) => ({ ...p, discord_id: null, rol: 'USER', created_at: '' })),
+    };
+  }
   return { ...f, source: 'api' };
 }
 
@@ -463,15 +495,25 @@ export function useWorldData(): DataResult<WorldData> {
   return { data: q.data, loading: q.isFetching, error: q.error ? q.error.message : null };
 }
 
-export function useForumData(): DataResult<ForumData> {
+export function useForumData(): DataResult<ForumData> & { isPreview: boolean } {
+  const qc = useQueryClient();
+  const authenticated = useAuthStore((s) => s.status === 'authenticated');
   const q = useQuery({
     queryKey: ['forum'],
     queryFn: fetchForum,
     enabled: isApiConfigured,
     initialData: SEED_FORUM,
     initialDataUpdatedAt: 0,
+    refetchInterval: 20_000,
+    refetchIntervalInBackground: false,
   });
-  return { data: q.data, loading: q.isFetching, error: q.error ? q.error.message : null };
+  // Al iniciar/cerrar sesion la cache cambia de forma (preview <-> completa).
+  useEffect(() => {
+    if (isApiConfigured) void qc.invalidateQueries({ queryKey: ['forum'] });
+  }, [authenticated, qc]);
+  const isPreview = !authenticated || q.data.preview === true;
+  const data = useMemo(() => (isPreview ? toPreview(q.data) : q.data), [isPreview, q.data]);
+  return { data, loading: q.isFetching, error: q.error ? q.error.message : null, isPreview };
 }
 
 // ---- Noticias oficiales y configuración pública (API Fastify) -----------------------------

@@ -427,7 +427,16 @@ export type Entity = Tables<'entities'>;
 export type MapMarker = Tables<'map_markers'>;
 export type UserProgress = Tables<'user_progress'>;
 export type Submission = Tables<'submissions'>;
-export type ForumThread = Tables<'forum_threads'>;
+/** `replies_count` lo calcula la API (agregacion sobre ForumPost); no se persiste. */
+export type ForumThread = Tables<'forum_threads'> & { replies_count?: number };
+/** Hilo en formato preview (invitado): sin `contenido`. Respuesta de GET /api/forum sin sesion. */
+export type ForumThreadPreview = Omit<Tables<'forum_threads'>, 'contenido'> & { replies_count: number };
+/** Autor publico reducido que devuelve la API en modo preview. */
+export type ForumProfilePreview = Pick<Tables<'profiles'>, 'id' | 'username' | 'avatar_url'>;
+/** Contrato de GET /api/forum: `preview: true` (sin sesion) o respuesta completa. */
+export type ForumApiResponse =
+  | { preview: true; threads: ForumThreadPreview[]; posts: []; profiles: ForumProfilePreview[] }
+  | { preview: false; threads: ForumThread[]; posts: ForumPost[]; profiles: Profile[] };
 export type ForumPost = Tables<'forum_posts'>;
 export type ForumVote = Tables<'forum_votes'>;
 
