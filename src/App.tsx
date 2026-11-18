@@ -48,7 +48,6 @@ const DOCK_ROUTE: Record<string, string> = {
 };
 
 const DESKTOP_DOCK: readonly DockItem[] = [
-  { id: 'hub', label: 'Hub', iconId: 'hub' },
   { id: 'map', label: 'Mapa', iconId: 'map' },
   { id: 'catalog', label: 'Catálogo', iconId: 'catalog' },
   { id: 'forum', label: 'Foro', iconId: 'forum' },

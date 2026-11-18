@@ -267,7 +267,7 @@ export function ViceShell({
         <main
           className={`relative min-h-0 flex-1 ${
             lockScroll ? 'overflow-hidden' : 'overflow-y-auto'
-          } ${dock ? 'pb-[calc(72px+var(--safe-bottom))] md:pb-24' : ''}`}
+          } ${dock ? 'pb-[72px] md:pb-24' : ''}`}
         >
           {children}
         </main>
