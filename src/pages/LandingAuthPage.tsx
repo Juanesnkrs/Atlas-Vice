@@ -1,96 +1,20 @@
-// P01 + P02 - Landing (Storytelling + SEO, pilar 7) y acceso PKCE (pilares 1 y 2).
-// Split-Hero: 40% panel de acceso (máx. 4 botones) / 60% narrativa de Leonida + artwork.
-// Nunca se guardan tokens en el cliente: la sesión es una cookie HttpOnly emitida por la API.
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+// P01 + P02 - Acceso `/entrar` (DesignSpec §7.3), réplica de Main.dc.html (escritorio) y
+// MobileHero.dc.html (móvil): conmutador Entrar / Explorar, 4 botones de acceso (pilar 1) y sesión
+// por cookie HttpOnly emitida por la API (pilar 2). Nunca se guardan tokens en el cliente.
+import { useEffect, useId, useState, type FormEvent } from 'react';
 import { SunsetBanner, ViceShell, ViceWordmark } from '../components/layout/ViceShell';
-import Footer from '../components/layout/Footer';
+import { Modal } from '../components/ui/Modal';
 import { PalmButton } from '../components/ui/PalmButton';
-import {
-  HERO_IMAGE,
-  SAMPLE_NOTICE,
-  forumCategoryLabel,
-  useForumData,
-  useOfficialNews,
-  usePublicConfig,
-} from '../data/seed';
+import { HERO_IMAGE, SEED_TIPS, usePublicConfig } from '../data/seed';
 import { isApiConfigured, useAuthStore, type OAuthProvider } from '../store/useAuthStore';
 import { navigate } from '../store/useRouteStore';
 
 const INPUT =
   'min-h-11 w-full rounded-xl border border-white/15 bg-white/10 px-4 text-base text-vice-text placeholder:text-vice-text/50 focus-visible:outline-2 focus-visible:outline-vice-gold';
+const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold';
 
 const safeNext = (next: string | null): string =>
   next && next.startsWith('/') && !next.startsWith('//') ? next : '/hub';
-
-// ---- SEO: title, meta, Open Graph y JSON-LD (se limpian al desmontar) ----------------------
-const SEO_TITLE = 'LeonidApp | Mapa, catálogo y guías de Leonida (Vice City, Grassrivers, Port Gellhorn)';
-const SEO_DESC =
-  'LeonidApp es la guía comunitaria de Leonida: mapa táctico, catálogo de armas y vehículos, foro y noticias oficiales de Rockstar y Take-Two. Entra como Invitado sin registro.';
-
-function useSeo(): void {
-  useEffect(() => {
-    const prevTitle = document.title;
-    document.title = SEO_TITLE;
-    const restore: Array<() => void> = [];
-    const setMeta = (attr: 'name' | 'property', key: string, content: string) => {
-      let el = document.head.querySelector<HTMLMetaElement>(`meta[${attr}="${key}"]`);
-      const created = !el;
-      const prev = el?.getAttribute('content') ?? null;
-      if (!el) {
-        el = document.createElement('meta');
-        el.setAttribute(attr, key);
-        document.head.appendChild(el);
-      }
-      el.setAttribute('content', content);
-      restore.push(() => {
-        if (created) el?.remove();
-        else if (prev !== null) el?.setAttribute('content', prev);
-      });
-    };
-    const origin = window.location.origin;
-    setMeta('name', 'description', SEO_DESC);
-    setMeta('property', 'og:title', SEO_TITLE);
-    setMeta('property', 'og:description', SEO_DESC);
-    setMeta('property', 'og:type', 'website');
-    setMeta('property', 'og:image', `${origin}${HERO_IMAGE}`);
-
-    const ld = document.createElement('script');
-    ld.type = 'application/ld+json';
-    ld.textContent = JSON.stringify({
-      '@context': 'https://schema.org',
-      '@graph': [
-        {
-          '@type': 'WebSite',
-          name: 'LeonidApp',
-          url: `${origin}/`,
-          description: SEO_DESC,
-          inLanguage: 'es',
-        },
-        {
-          '@type': 'Organization',
-          name: 'LeonidApp',
-          url: `${origin}/`,
-          logo: `${origin}/assets/vice-sunset-ref.jpg`,
-        },
-        {
-          '@type': 'WebApplication',
-          name: 'LeonidApp',
-          applicationCategory: 'GameApplication',
-          operatingSystem: 'Web, iOS, Android',
-          url: `${origin}/`,
-          image: `${origin}${HERO_IMAGE}`,
-        },
-      ],
-    });
-    document.head.appendChild(ld);
-
-    return () => {
-      document.title = prevTitle;
-      restore.forEach((fn) => fn());
-      ld.remove();
-    };
-  }, []);
-}
 
 // ---- Iconos de proveedor ------------------------------------------------------------
 const glyph = (d: string) => (
@@ -113,50 +37,19 @@ const PROVIDERS: ReadonlyArray<{ id: ProviderId; label: string }> = [
   { id: 'magic-link', label: 'Correo / Magic Link' },
 ];
 
-// ---- Diálogo accesible de Magic Link ---------------------------------------------------
-function MagicLinkDialog({ onClose, returnFocus }: { onClose: () => void; returnFocus: HTMLElement | null }) {
+// ---- Magic Link (Modal) ------------------------------------------------------------------------
+function MagicLinkDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const requestMagicLink = useAuthStore((s) => s.requestMagicLink);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const titleId = useId();
   const emailId = useId();
-
-  useEffect(() => {
-    inputRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-      const nodes = dialogRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled])');
-      if (!nodes || nodes.length === 0) return;
-      const first = nodes[0] as HTMLElement;
-      const last = nodes[nodes.length - 1] as HTMLElement;
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      returnFocus?.focus();
-    };
-  }, [onClose, returnFocus]);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Introduce un correo electrónico válido.');
+    if (!/^S+@S+.S+$/.test(email.trim())) return setError('Introduce un correo electrónico válido.');
     setBusy(true);
     const res = await requestMagicLink(email.trim());
     setBusy(false);
@@ -165,120 +58,116 @@ function MagicLinkDialog({ onClose, returnFocus }: { onClose: () => void; return
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className="glass w-full max-w-sm rounded-2xl p-6"
-      >
-        <h2 id={titleId} className="font-display text-xl font-bold">
-          Entrar con Magic Link
-        </h2>
-        <p className="mt-1 text-sm text-vice-text/85">
-          Te enviamos un enlace de un solo uso. Sin contraseñas.
+    <Modal open={open} onClose={onClose} title="Entrar con Magic Link">
+      <p className="text-sm text-vice-text/85">Te enviamos un enlace de un solo uso. Sin contraseñas.</p>
+      {sent ? (
+        <p role="status" className="mt-4 text-vice-cyan">
+          Si el correo es válido, recibirás el enlace en unos minutos. Revisa también el spam.
         </p>
-        {sent ? (
-          <p role="status" className="mt-4 text-vice-cyan">
-            Si el correo es válido, recibirás el enlace en unos minutos. Revisa también el spam.
-          </p>
-        ) : (
-          <form onSubmit={(e) => void onSubmit(e)} noValidate className="mt-4 flex flex-col gap-3">
-            <label htmlFor={emailId} className="text-sm font-medium">
-              Correo electrónico
-            </label>
-            <input
-              ref={inputRef}
-              id={emailId}
-              type="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@correo.com"
-              className={INPUT}
-            />
-            <div aria-live="polite" className="min-h-[1.25rem] text-sm">
-              {error && (
-                <p role="alert" className="text-vice-gold">
-                  {error}
-                </p>
-              )}
-            </div>
-            <PalmButton type="submit" fullWidth loading={busy}>
-              Enviar enlace
-            </PalmButton>
-          </form>
-        )}
-        <button
-          type="button"
-          onClick={onClose}
-          className="mt-2 flex min-h-11 w-full items-center justify-center rounded-xl text-sm text-vice-text/85 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-        >
-          Cerrar
-        </button>
-      </div>
+      ) : (
+        <form onSubmit={(e) => void onSubmit(e)} noValidate className="mt-4 flex flex-col gap-3">
+          <label htmlFor={emailId} className="text-sm font-medium">
+            Correo electrónico
+          </label>
+          <input
+            id={emailId}
+            type="email"
+            autoComplete="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="tu@correo.com"
+            className={INPUT}
+          />
+          <div aria-live="polite" className="min-h-[1.25rem] text-sm">
+            {error && (
+              <p role="alert" className="text-vice-gold">
+                {error}
+              </p>
+            )}
+          </div>
+          <PalmButton type="submit" fullWidth loading={busy}>
+            Enviar enlace
+          </PalmButton>
+        </form>
+      )}
+    </Modal>
+  );
+}
+
+// ---- Pestañas y ventajas ---------------------------------------------------------------------
+type Mode = 'login' | 'explore';
+
+const PERKS = ['Mapa y catálogo completos', 'Foro en modo lectura', 'Crea cuenta luego y suma tu avance'] as const;
+
+function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => void }) {
+  const tab = (m: Mode, label: string) => (
+    <button
+      type="button"
+      aria-pressed={mode === m}
+      onClick={() => onChange(m)}
+      className={`min-h-11 flex-1 rounded-[22px] text-[15px] font-bold ${FOCUS} ${
+        mode === m ? 'bg-vice-accent text-vice-ink' : 'text-vice-text'
+      }`}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex h-12 w-full max-w-[360px] rounded-[26px] border border-[rgba(246,146,89,0.3)] bg-[rgba(20,14,36,0.78)] p-1 md:h-[52px] md:bg-white/[0.07]">
+      {tab('login', 'Entrar')}
+      {tab('explore', 'Explorar')}
     </div>
   );
 }
 
-// ---- Narrativa de Leonida (Storytelling) ----------------------------------------------------
-const LORE: ReadonlyArray<{ id: string; name: string; text: string; href: string }> = [
-  {
-    id: 'vice-city',
-    name: 'Vice City',
-    text: 'Neón, playas y autopistas al atardecer. El corazón de Leonida late entre clubes, marinas y calles que nunca se apagan.',
-    href: '/mapa?region=Vice%20City',
-  },
-  {
-    id: 'grassrivers',
-    name: 'Grassrivers',
-    text: 'Pantanos, aire denso y secretos entre el cañaveral. Aquí se esconden coleccionables y rutas que solo conocen los locales.',
-    href: '/mapa?region=Grassrivers',
-  },
-  {
-    id: 'port-gellhorn',
-    name: 'Port Gellhorn',
-    text: 'Puerto, grúas y contenedores. Un lugar de contrabando y oportunidades donde cada muelle esconde una historia.',
-    href: '/mapa?region=Port%20Gellhorn',
-  },
-];
-
-function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`glass rounded-2xl p-5 ${className}`}>{children}</div>;
+/** Tarjeta flotante "Tip del día" sobre el artwork (solo escritorio). */
+function TipFloat() {
+  const [i, setI] = useState(0);
+  const tips = SEED_TIPS.slice(0, 3);
+  return (
+    <section aria-label="Tip del día" className="glass relative w-[580px] max-w-full rounded-[20px] px-7 pb-3.5 pt-6">
+      <span aria-hidden="true" className="pointer-events-none absolute -top-2 left-3 font-display text-[76px] font-bold leading-none text-[rgba(246,126,86,0.6)]">
+        &ldquo;
+      </span>
+      <h2 className="m-0 mb-2.5 font-display text-[22px] font-semibold uppercase tracking-[0.02em] text-white">Tip del día</h2>
+      <p aria-live="polite" className="m-0 min-h-[66px] text-[15px] leading-[1.55]">
+        {tips[i] ?? ''}
+      </p>
+      {tips.length > 1 && (
+        <div role="group" aria-label="Paginador de tips" className="flex items-center justify-end">
+          {tips.map((_, n) => (
+            <button
+              key={n}
+              type="button"
+              aria-label={`Ver tip ${n + 1} de ${tips.length}`}
+              aria-current={n === i ? 'true' : undefined}
+              onClick={() => setI(n)}
+              className={`flex h-11 min-w-11 items-center justify-center ${FOCUS}`}
+            >
+              <span className={`block h-1 w-[30px] rounded-sm ${n === i ? 'bg-[#F67E56]' : 'bg-white/60'}`} />
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 export default function LandingAuthPage({ next }: { next: string | null }) {
-  useSeo();
   const status = useAuthStore((s) => s.status);
   const storeError = useAuthStore((s) => s.error);
   const signInWithProvider = useAuthStore((s) => s.signInWithProvider);
   const continueAsGuest = useAuthStore((s) => s.continueAsGuest);
   const cfg = usePublicConfig();
-  const { news, loading: newsLoading, error: newsError } = useOfficialNews('all', 3);
-  const { data: forum, loading: forumLoading, error: forumError } = useForumData();
 
+  const [mode, setMode] = useState<Mode>('login');
   const [busy, setBusy] = useState<ProviderId | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [magicOpen, setMagicOpen] = useState(false);
   const [heroFailed, setHeroFailed] = useState(false);
-  const magicTrigger = useRef<HTMLElement | null>(null);
 
   const online = isApiConfigured;
   const providers = PROVIDERS.filter((p) => cfg.enabled_auth_providers.includes(p.id)).slice(0, 4);
-
-  const topThreads = useMemo(
-    () =>
-      [...forum.threads]
-        .sort((a, b) => Number(b.is_pinned) - Number(a.is_pinned) || b.upvotes_count - a.upvotes_count)
-        .slice(0, 3),
-    [forum.threads],
-  );
 
   // Sesión iniciada: continuar al destino.
   useEffect(() => {
@@ -287,13 +176,12 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
 
   const goGuest = () => {
     continueAsGuest();
-    navigate(safeNext(next), { replace: true });
+    navigate('/hub', { replace: true });
   };
 
   const onProvider = async (id: ProviderId) => {
     setError(null);
     if (id === 'magic-link') {
-      magicTrigger.current = document.activeElement as HTMLElement | null;
       setMagicOpen(true);
       return;
     }
@@ -305,243 +193,143 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
 
   const shownError = error ?? storeError;
 
+  const heroImage = heroFailed ? (
+    <SunsetBanner className="absolute inset-0 h-full w-full" />
+  ) : (
+    <img
+      src={HERO_IMAGE}
+      alt=""
+      className="absolute bottom-0 left-0 h-auto w-full max-w-none"
+      onError={() => setHeroFailed(true)}
+    />
+  );
+
   return (
     <ViceShell lockScroll={false}>
-      <div className="flex min-h-dvh flex-col md:min-h-[100dvh] md:flex-row">
-        {/* ---------------- Panel de acceso (40%) ---------------- */}
-        <section
-          id="acceso"
-          aria-labelledby="acceso-title"
-          className="glass relative z-20 flex w-full shrink-0 flex-col items-center px-6 pb-6 pt-8 md:sticky md:top-0 md:h-dvh md:w-[40%] md:overflow-y-auto md:border-y-0 md:border-l-0 md:px-12 md:pt-11"
+      <div className="flex min-h-dvh flex-col md:h-dvh md:flex-row md:overflow-hidden">
+        {/* Artwork móvil (MobileHero.dc.html): 290px con wordmark encima. */}
+        <div
+          className="relative h-[290px] w-full shrink-0 overflow-hidden md:hidden"
+          style={{ WebkitMaskImage: 'linear-gradient(180deg, #000 70%, transparent 100%)', maskImage: 'linear-gradient(180deg, #000 70%, transparent 100%)' }}
         >
-          <a href="/" aria-label="LeonidApp, inicio">
-            <ViceWordmark width={300} />
+          {heroImage}
+          <a href="/" aria-label="LEONIDAPP, ir a la portada" className="absolute inset-x-0 top-5 flex justify-center drop-shadow-[0_2px_10px_rgba(20,14,36,0.6)]">
+            <ViceWordmark width={240} />
           </a>
-          <h2 id="acceso-title" className="mt-6 font-display text-xl font-bold">
-            Accede a tu cuenta
-          </h2>
-          <p className="mt-1 text-center text-sm text-vice-text/85">
-            Sin contraseñas: inicio seguro con PKCE y sesión protegida en tu dispositivo.
-          </p>
+        </div>
 
-          <div className="mt-5 flex w-full max-w-sm flex-col gap-3">
-            {providers.map((p) => (
-              <PalmButton
-                key={p.id}
-                variant={p.id === 'magic-link' ? 'glass' : 'primary'}
-                fullWidth
-                loading={busy === p.id}
-                disabled={!online || busy !== null}
-                icon={GLYPHS[p.id]}
-                onClick={() => void onProvider(p.id)}
-              >
-                {p.label}
-              </PalmButton>
-            ))}
-            {providers.length === 0 && (
-              <p role="status" className="text-sm text-vice-gold">
-                El inicio de sesión está desactivado temporalmente. Puedes explorar como Invitado.
+        {/* Panel de acceso */}
+        <section
+          aria-labelledby="acceso-title"
+          className="relative z-20 flex w-full flex-1 flex-col items-center px-6 pb-6 md:w-[576px] md:flex-none md:border-r md:border-[rgba(246,146,89,0.25)] md:bg-[rgba(20,14,36,0.78)] md:px-[108px] md:backdrop-blur-[14px] md:pb-0 md:pt-11"
+        >
+          <a href="/" aria-label="LEONIDAPP, ir a la portada" className="hidden md:block">
+            <ViceWordmark width={360} />
+          </a>
+
+          <div className="-mt-5 flex w-full max-w-[360px] flex-col items-stretch md:mt-[22px]">
+            <ModeSwitch mode={mode} onChange={setMode} />
+
+            <div className="mt-3 rounded-3xl p-4 max-md:border max-md:border-[rgba(246,146,89,0.25)] max-md:bg-[rgba(20,14,36,0.78)] max-md:backdrop-blur-[14px] md:mt-5 md:p-0">
+              {mode === 'login' ? (
+                <>
+                  <h1 id="acceso-title" className="font-display text-[26px] font-bold leading-tight md:text-[28px]">
+                    Bienvenido a Leonida
+                  </h1>
+                  <p className="mt-1 text-[13px] text-vice-text/85">Entra para sincronizar tu progreso en todos tus dispositivos.</p>
+                  <div className="mt-4 flex flex-col gap-3">
+                    {providers.map((p) => (
+                      <PalmButton
+                        key={p.id}
+                        variant={p.id === 'magic-link' ? 'glass' : 'primary'}
+                        fullWidth
+                        className="min-h-12"
+                        loading={busy === p.id}
+                        disabled={!online || busy !== null}
+                        icon={GLYPHS[p.id]}
+                        onClick={() => void onProvider(p.id)}
+                      >
+                        {p.label}
+                      </PalmButton>
+                    ))}
+                    {providers.length === 0 && (
+                      <p role="status" className="text-sm text-vice-gold">
+                        El inicio de sesión está desactivado temporalmente. Puedes explorar como invitado.
+                      </p>
+                    )}
+                  </div>
+                  <div aria-live="polite" className="mt-3 min-h-[1.25rem] text-sm">
+                    {shownError && (
+                      <p role="alert" className="text-vice-gold">
+                        {shownError}
+                      </p>
+                    )}
+                  </div>
+                  {!online && (
+                    <p className="mt-2 rounded-xl border border-vice-gold/40 bg-white/5 p-3 text-xs text-vice-text/90">
+                      Sin conexión con el servidor: el inicio de sesión no está disponible. Puedes explorar como invitado y tu progreso se guarda en este dispositivo.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <h1 id="acceso-title" className="font-display text-[26px] font-bold leading-tight md:text-[28px]">
+                    Explora Leonida
+                  </h1>
+                  <p className="mt-1 text-[13px] text-vice-text/85">Entra sin cuenta. Tu progreso se guarda solo en este dispositivo.</p>
+                  <ul className="my-4 flex flex-col gap-3 text-[13px] md:rounded-[20px] md:border md:border-[rgba(246,146,89,0.25)] md:bg-white/5 md:px-5 md:py-[18px]">
+                    {PERKS.map((t) => (
+                      <li key={t} className="flex items-center gap-3">
+                        <span aria-hidden="true" className="h-2 w-2 shrink-0 rounded bg-[#F67E56]" />
+                        {t}
+                      </li>
+                    ))}
+                  </ul>
+                  <PalmButton fullWidth className="min-h-12" onClick={goGuest}>
+                    Continuar como invitado
+                  </PalmButton>
+                </>
+              )}
+            </div>
+            {cfg.maintenance_mode && (
+              <p role="status" className="glass mt-3 rounded-xl px-4 py-2 text-sm text-vice-gold">
+                Mantenimiento en curso: algunas funciones pueden no estar disponibles.
               </p>
             )}
           </div>
 
-          <div aria-live="polite" className="mt-3 min-h-[1.25rem] w-full max-w-sm text-sm">
-            {shownError && (
-              <p role="alert" className="text-vice-gold">
-                {shownError}
-              </p>
-            )}
-          </div>
-
-          {!online && (
-            <p className="mt-2 w-full max-w-sm rounded-xl border border-vice-gold/40 bg-white/5 p-3 text-xs text-vice-text/90">
-              La API no está configurada: la app corre en modo Invitado / offline. El inicio de
-              sesión no está disponible y tu progreso se guarda solo en este dispositivo.
-            </p>
-          )}
-
-          <p className="mt-auto pt-6 text-xs tracking-widest text-vice-text/70">
-            v0.1.0 · {online ? 'ONLINE' : 'OFFLINE'}
+          <p className="mt-auto pt-6 text-xs font-semibold tracking-wider text-vice-text md:pb-[30px]">
+            v0.1.0 •{' '}
+            <span className={online ? 'text-[#8CF0B5]' : 'text-vice-gold'}>
+              <span aria-hidden="true">● </span>
+              {online ? 'EN LÍNEA' : 'SIN CONEXIÓN'}
+            </span>
           </p>
         </section>
 
-        {/* ---------------- Zona pública: Storytelling + SEO (60%) ---------------- */}
-        <div className="relative flex min-w-0 flex-1 flex-col">
-          <header className="relative flex min-h-[560px] flex-col overflow-hidden px-6 pt-8 md:min-h-dvh md:px-12 md:pt-14">
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 100 100"
-              preserveAspectRatio="none"
-              className="pointer-events-none absolute inset-0 h-full w-full"
-            >
-              <line x1="38" y1="0" x2="12" y2="100" stroke="#F69259" strokeOpacity="0.7" strokeWidth="0.25" />
-              <line x1="46" y1="0" x2="20" y2="100" stroke="#E14B7B" strokeOpacity="0.45" strokeWidth="0.25" />
-            </svg>
-
-            <div
-              className="pointer-events-none absolute bottom-0 right-0 w-full overflow-hidden"
-              style={{
-                aspectRatio: '1080 / 815',
-                maxHeight: '62%',
-                WebkitMaskImage: 'linear-gradient(180deg, transparent 0, #000 56px)',
-                maskImage: 'linear-gradient(180deg, transparent 0, #000 56px)',
-              }}
-            >
-              {heroFailed ? (
-                <SunsetBanner className="absolute inset-0 h-full w-full" />
-              ) : (
-                <img
-                  src={HERO_IMAGE}
-                  alt="Lucía y Jason con pañuelos sobre el rostro frente a una gasolinera al atardecer"
-                  className="absolute bottom-0 left-0 h-auto w-full max-w-none"
-                  onError={() => setHeroFailed(true)}
-                />
-              )}
-            </div>
-
-            <div className="relative z-10 max-w-2xl">
-              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-vice-orange">
-                Guía comunitaria de Leonida
-              </p>
-              <h1 className="mt-3 font-display text-4xl font-bold leading-tight md:text-6xl">
-                Descubre Leonida: Vice City, Grassrivers y Port Gellhorn
-              </h1>
-              <p className="mt-4 text-lg text-vice-text/90">
-                Un estado de sol, neón y secretos. LeonidApp reúne el mapa táctico, el catálogo de
-                armas y vehículos, el foro y las noticias oficiales para que no se te escape nada.
-              </p>
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <PalmButton onClick={goGuest}>Entrar como Invitado</PalmButton>
-                <a
-                  href="#historia"
-                  className="flex min-h-11 items-center rounded-full px-4 text-[15px] font-semibold underline underline-offset-4 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-                >
-                  Conocer Leonida
-                </a>
-              </div>
-              <p className="mt-2 text-xs text-vice-text/75">
-                Sin registro. Tu progreso al 100% se guarda en este dispositivo y puedes sincronizarlo
-                al iniciar sesión.
-              </p>
-              {cfg.maintenance_mode && (
-                <p role="status" className="glass mt-3 rounded-xl px-4 py-2 text-sm text-vice-gold">
-                  Mantenimiento en curso: algunas funciones pueden no estar disponibles.
-                </p>
-              )}
-            </div>
-          </header>
-
-          <main className="relative z-10 flex flex-col gap-10 px-6 pb-12 pt-10 md:px-12">
-            <section id="historia" aria-labelledby="historia-title">
-              <h2 id="historia-title" className="font-display text-2xl font-bold md:text-3xl">
-                Tres rincones, una sola Leonida
-              </h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
-                {LORE.map((l) => (
-                  <article key={l.id} className="glass flex flex-col rounded-2xl p-5">
-                    <h3 className="font-display text-xl font-bold text-vice-orange">{l.name}</h3>
-                    <p className="mt-2 flex-1 text-sm text-vice-text/90">{l.text}</p>
-                    <a
-                      href={l.href}
-                      className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-vice-orange underline"
-                    >
-                      Ver en el mapa
-                    </a>
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section aria-labelledby="vivo-title">
-              <h2 id="vivo-title" className="font-display text-2xl font-bold md:text-3xl">
-                En vivo desde la comunidad
-              </h2>
-              <div className="mt-4 grid gap-4 lg:grid-cols-2">
-                <Card>
-                  <h3 className="font-display text-lg font-bold">Últimas noticias oficiales</h3>
-                  <div aria-live="polite" className="mt-3">
-                    {newsLoading ? (
-                      <p role="status" className="text-sm">
-                        Cargando noticias…
-                      </p>
-                    ) : newsError ? (
-                      <p role="status" className="text-sm text-vice-gold">
-                        No se pudieron cargar las noticias oficiales.
-                      </p>
-                    ) : news.length === 0 ? (
-                      <p className="text-sm text-vice-text/70">Aún no hay noticias oficiales.</p>
-                    ) : (
-                      <ul className="flex flex-col gap-3">
-                        {news.map((n) => (
-                          <li key={n.id} className="border-l-2 border-vice-magenta pl-3">
-                            <p className="text-xs text-vice-orange">
-                              {new Date(n.publishedAt).toLocaleDateString('es')}
-                            </p>
-                            <a
-                              href={`/noticias/${encodeURIComponent(n.slug)}`}
-                              className="font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-vice-gold"
-                            >
-                              {n.title}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                  <a
-                    href="/noticias"
-                    className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-vice-orange underline"
-                  >
-                    Todas las noticias
-                  </a>
-                </Card>
-
-                <Card>
-                  <h3 className="font-display text-lg font-bold">Hilos destacados del foro</h3>
-                  <div aria-live="polite" className="mt-3">
-                    {forumLoading && forum.source === 'seed' ? (
-                      <p role="status" className="text-sm">
-                        Cargando hilos…
-                      </p>
-                    ) : forumError ? (
-                      <p role="status" className="text-sm text-vice-gold">
-                        No se pudo leer el foro; mostrando datos de ejemplo.
-                      </p>
-                    ) : null}
-                    {topThreads.length === 0 ? (
-                      <p className="text-sm text-vice-text/70">Aún no hay hilos.</p>
-                    ) : (
-                      <ul className="flex flex-col gap-3">
-                        {topThreads.map((t) => (
-                          <li key={t.id}>
-                            <a
-                              href={`/foro?hilo=${t.id}`}
-                              className="block rounded-lg px-1 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-                            >
-                              <span className="text-xs text-vice-orange">{forumCategoryLabel(t.categoria)}</span>
-                              <span className="block font-semibold">{t.titulo}</span>
-                              <span className="text-xs text-vice-text/70">▲ {t.upvotes_count}</span>
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    {forum.source === 'seed' && (
-                      <p className="mt-2 text-xs text-vice-text/70">{SAMPLE_NOTICE}</p>
-                    )}
-                  </div>
-                </Card>
-              </div>
-            </section>
-          </main>
-
-          <Footer variant="full" />
+        {/* Artwork escritorio (Main.dc.html) */}
+        <div className="relative hidden min-w-0 flex-1 md:block">
+          <svg aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none" className="pointer-events-none absolute inset-0 h-full w-full">
+            <polygon points="8,0 35,0 74,100 47,100" fill="rgba(225,75,123,0.26)" />
+            <polygon points="100,4 100,40 81,100 65,100" fill="rgba(246,146,89,0.2)" />
+            <line x1="8" y1="0" x2="47" y2="100" stroke="#F67E56" strokeOpacity="0.8" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+            <line x1="35" y1="0" x2="74" y2="100" stroke="#E1307E" strokeOpacity="0.6" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+          </svg>
+          <div
+            role="img"
+            aria-label="Lucía y Jason con pañuelos sobre el rostro frente a una gasolinera al atardecer"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-[73%] overflow-hidden"
+            style={{ WebkitMaskImage: 'linear-gradient(180deg, transparent 0, #000 80px)', maskImage: 'linear-gradient(180deg, transparent 0, #000 80px)' }}
+          >
+            {heroImage}
+          </div>
+          <div className="absolute left-[70px] top-[70px] z-10 max-w-[calc(100%-100px)]">
+            <TipFloat />
+          </div>
         </div>
       </div>
 
-      {magicOpen && (
-        <MagicLinkDialog onClose={() => setMagicOpen(false)} returnFocus={magicTrigger.current} />
-      )}
+      <MagicLinkDialog open={magicOpen} onClose={() => setMagicOpen(false)} />
     </ViceShell>
   );
 }
