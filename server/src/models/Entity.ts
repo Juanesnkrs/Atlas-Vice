@@ -2,9 +2,12 @@ import { model, Schema, type Model } from 'mongoose';
 import { z } from 'zod';
 import { createdOnly, idField, jsonRecordSchema } from './common.js';
 
+export const slugSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(120);
+
 export const entitySchema = z.object({
   id: z.uuid().optional(),
   module_id: z.uuid(),
+  slug: slugSchema,
   titulo: z.string().min(1).max(160),
   subtitulo: z.string().max(240).nullable().optional(),
   categoria: z.string().min(1).max(80),
@@ -18,6 +21,7 @@ export const entityUpdateSchema = entitySchema.partial();
 export interface EntityDoc {
   _id: string;
   module_id: string;
+  slug: string;
   titulo: string;
   subtitulo?: string | null;
   categoria: string;
@@ -31,6 +35,7 @@ const s = new Schema<EntityDoc>(
   {
     _id: idField,
     module_id: { type: String, required: true, ref: 'Module' },
+    slug: { type: String, required: true },
     titulo: { type: String, required: true },
     subtitulo: { type: String, default: null },
     categoria: { type: String, required: true },
@@ -41,6 +46,7 @@ const s = new Schema<EntityDoc>(
   { timestamps: createdOnly, versionKey: false, minimize: false },
 );
 s.index({ module_id: 1, categoria: 1 });
+s.index({ module_id: 1, slug: 1 }, { unique: true });
 
 export const Entity: Model<EntityDoc> = model<EntityDoc>('Entity', s);
 export default Entity;
@@ -48,6 +54,7 @@ export default Entity;
 export const toEntityDTO = (e: EntityDoc) => ({
   id: e._id,
   module_id: e.module_id,
+  slug: e.slug,
   titulo: e.titulo,
   subtitulo: e.subtitulo ?? null,
   categoria: e.categoria,

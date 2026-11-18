@@ -33,6 +33,7 @@ const s = new Schema<OfficialNewsDoc>(
   },
   { timestamps: true },
 );
+s.index({ slug: 1 }, { unique: true });
 
 export const OfficialNews: Model<OfficialNewsDoc> = model<OfficialNewsDoc>('OfficialNews', s);
 export default OfficialNews;
