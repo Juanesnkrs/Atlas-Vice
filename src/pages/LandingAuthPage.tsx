@@ -14,6 +14,7 @@ import {
   usePublicConfig,
 } from '../data/seed';
 import { isApiConfigured, useAuthStore, type OAuthProvider } from '../store/useAuthStore';
+import { navigate } from '../store/useRouteStore';
 
 const INPUT =
   'min-h-11 w-full rounded-xl border border-white/15 bg-white/10 px-4 text-base text-vice-text placeholder:text-vice-text/50 focus-visible:outline-2 focus-visible:outline-vice-gold';
@@ -232,19 +233,19 @@ const LORE: ReadonlyArray<{ id: string; name: string; text: string; href: string
     id: 'vice-city',
     name: 'Vice City',
     text: 'Neón, playas y autopistas al atardecer. El corazón de Leonida late entre clubes, marinas y calles que nunca se apagan.',
-    href: '#/mapa?region=Vice%20City',
+    href: '/mapa?region=Vice%20City',
   },
   {
     id: 'grassrivers',
     name: 'Grassrivers',
     text: 'Pantanos, aire denso y secretos entre el cañaveral. Aquí se esconden coleccionables y rutas que solo conocen los locales.',
-    href: '#/mapa?region=Grassrivers',
+    href: '/mapa?region=Grassrivers',
   },
   {
     id: 'port-gellhorn',
     name: 'Port Gellhorn',
     text: 'Puerto, grúas y contenedores. Un lugar de contrabando y oportunidades donde cada muelle esconde una historia.',
-    href: '#/mapa?region=Port%20Gellhorn',
+    href: '/mapa?region=Port%20Gellhorn',
   },
 ];
 
@@ -281,12 +282,12 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
 
   // Sesión iniciada: continuar al destino.
   useEffect(() => {
-    if (status === 'authenticated') window.location.hash = `#${safeNext(next)}`;
+    if (status === 'authenticated') navigate(safeNext(next), { replace: true });
   }, [status, next]);
 
   const goGuest = () => {
     continueAsGuest();
-    window.location.hash = `#${safeNext(next)}`;
+    navigate(safeNext(next), { replace: true });
   };
 
   const onProvider = async (id: ProviderId) => {
@@ -313,7 +314,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
           aria-labelledby="acceso-title"
           className="glass relative z-20 flex w-full shrink-0 flex-col items-center px-6 pb-6 pt-8 md:sticky md:top-0 md:h-dvh md:w-[40%] md:overflow-y-auto md:border-y-0 md:border-l-0 md:px-12 md:pt-11"
         >
-          <a href="#/entrar" aria-label="LeonidApp, inicio">
+          <a href="/" aria-label="LeonidApp, inicio">
             <ViceWordmark width={300} />
           </a>
           <h2 id="acceso-title" className="mt-6 font-display text-xl font-bold">
@@ -477,7 +478,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
                               {new Date(n.publishedAt).toLocaleDateString('es')}
                             </p>
                             <a
-                              href={`#/noticias?item=${encodeURIComponent(n.slug)}`}
+                              href={`/noticias/${encodeURIComponent(n.slug)}`}
                               className="font-semibold hover:underline focus-visible:outline-2 focus-visible:outline-vice-gold"
                             >
                               {n.title}
@@ -488,7 +489,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
                     )}
                   </div>
                   <a
-                    href="#/noticias"
+                    href="/noticias"
                     className="mt-3 inline-flex min-h-11 items-center text-sm font-semibold text-vice-orange underline"
                   >
                     Todas las noticias
@@ -514,7 +515,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
                         {topThreads.map((t) => (
                           <li key={t.id}>
                             <a
-                              href={`#/foro?thread=${t.id}`}
+                              href={`/foro?hilo=${t.id}`}
                               className="block rounded-lg px-1 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
                             >
                               <span className="text-xs text-vice-orange">{forumCategoryLabel(t.categoria)}</span>

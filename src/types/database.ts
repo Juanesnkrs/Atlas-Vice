@@ -430,3 +430,70 @@ export type Submission = Tables<'submissions'>;
 export type ForumThread = Tables<'forum_threads'>;
 export type ForumPost = Tables<'forum_posts'>;
 export type ForumVote = Tables<'forum_votes'>;
+
+// =============================================================================
+// LeonidApp (MongoDB) - contratos de API reflejados desde server/src/models/*
+// Fuente: docs/LeonidApp-Arquitectura-Datos-MongoDB.md. No añadir campos nuevos.
+// =============================================================================
+export const SUBMISSION_TYPES = ['marker', 'entity', 'correction', 'contact', 'newsletter'] as const;
+export type SubmissionType = (typeof SUBMISSION_TYPES)[number];
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
+
+export interface SubmissionDTO {
+  id: string;
+  userId: string | null; // null solo en contact/newsletter
+  moduleSlug: string;
+  type: SubmissionType;
+  title: string;
+  payload: Record<string, unknown>;
+  coords: { x: number; y: number } | null;
+  status: SubmissionStatus;
+  reviewedBy: string | null; // 'system' en aprobación automática
+  promotedTo: { collection: 'MapMarker' | 'Entity'; id: string } | null;
+  createdAt: string;
+}
+
+export interface EntityDTO {
+  id: string;
+  module_id: string;
+  slug: string;
+  titulo: string;
+  subtitulo: string | null;
+  categoria: string;
+  imagen_url: string | null;
+  stats_json: Record<string, unknown>;
+  metadata_json: Record<string, unknown>;
+  created_at: string;
+  module_slug?: string; // solo en GET /api/modules/:moduleSlug/entities/:slug
+}
+
+export interface OfficialNewsDTO {
+  id: string;
+  title: string;
+  summary: string;
+  sourceUrl: string;
+  source: 'rockstar-newswire' | 'rockstar-youtube' | 'take-two-ir';
+  imageUrl: string | null;
+  publishedAt: string;
+  slug: string;
+}
+
+export type AdRoute = '/catalogo/:modulo/:slug' | '/guias' | '/guias/:slug' | '/noticias' | '/noticias/:slug' | '/foro';
+export type AdPosition = 'in-article' | 'after-content' | 'sidebar';
+export interface MonetizationConfig {
+  ads_enabled: boolean;
+  provider: 'none' | 'adsense';
+  publisher_id: string | null;
+  require_consent: true;
+  slots: Array<{ id: string; route: AdRoute; position: AdPosition; width: number; height: number; enabled: boolean }>;
+}
+
+export interface PublicConfigDTO {
+  maintenance_mode: boolean;
+  announcement: string | null;
+  feature_flags: Record<string, boolean>;
+  enabled_auth_providers: Array<'google' | 'discord' | 'apple' | 'magic-link'>;
+  social_links: Array<{ platform: string; url: string }>;
+  monetization: MonetizationConfig;
+  modules: Array<{ id: string; slug: string; nombre: string; icono: string; orden: number; isActive: boolean }>;
+}

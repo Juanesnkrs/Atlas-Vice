@@ -1,16 +1,24 @@
 // P05 - Inspector NUI: Armas / Vehículos / Coleccionables / Guías
 import { useEffect, useMemo, useState } from 'react';
 import { SunsetBanner } from '../components/layout/ViceShell';
+import { AdSlot } from '../components/ui/AdSlot';
+import { BottomSheet } from '../components/ui/BottomSheet';
 import { StatBar, type StatAccent } from '../components/ui/StatBar';
 import {
   SAMPLE_NOTICE,
+  STAT_LABELS,
+  entityHref,
+  entitySlug,
   forumCategoryLabel,
+  loreRefs,
   metaOf,
   statsOf,
+  useEntityDetail,
   useForumData,
   useWorldData,
 } from '../data/seed';
 import { useProgressStore } from '../store/useProgressStore';
+import { navigate, usePageMeta } from '../store/useRouteStore';
 import type { Entity } from '../types/database';
 
 type TabSlug = 'armas' | 'vehiculos' | 'coleccionables' | 'guias';
@@ -132,7 +140,9 @@ const META_LABELS: Record<string, string> = {
   region: 'Región',
 };
 
-export default function CatalogPage({ params }: { params: URLSearchParams }) {
+const MAX_COMPARE = 3;
+
+function CatalogInspector({ params }: { params: URLSearchParams }) {
   const { data, loading, error } = useWorldData();
   const { data: forum } = useForumData();
   const items = useProgressStore((s) => s.items);
@@ -157,19 +167,34 @@ export default function CatalogPage({ params }: { params: URLSearchParams }) {
   const list = cat === 'Todas' ? tabEntities : tabEntities.filter((e) => e.categoria === cat);
   const selected = list.find((e) => e.id === selectedId) ?? list[0] ?? null;
   const tabDef = TABS.find((t) => t.slug === tab) ?? TABS[0]!;
+  const compareTarget = selected
+    ? data.entities.find((e) => e.module_id === selected.module_id && e.id !== selected.id)
+    : undefined;
 
-  // Deep-link: #/catalogo?entity=ID
+  // Redirección heredada: /catalogo?entity=<uuid> -> /catalogo/:modulo/:slug (replaceState).
   const entityParam = params.get('entity');
   useEffect(() => {
     if (!entityParam) return;
     const e = data.entities.find((x) => x.id === entityParam);
-    const slug = e ? (modulesById.get(e.module_id)?.slug as TabSlug | undefined) : undefined;
-    if (e && slug) {
-      setTab(slug);
-      setCat('Todas');
-      setSelectedId(e.id);
-    }
+    const modSlug = e ? modulesById.get(e.module_id)?.slug : undefined;
+    if (e && modSlug) navigate(entityHref(e, modSlug), { replace: true });
   }, [entityParam, data.entities, modulesById]);
+
+  // Comparador por URL: /catalogo?comparar=slugA,slugB[,slugC] (2-3 entidades del mismo módulo).
+  const compareParam = params.get('comparar');
+  const compare = useMemo(() => {
+    if (compareParam === null) return null;
+    const slugs = [...new Set(compareParam.split(',').filter(Boolean))];
+    const found = slugs
+      .map((s) => data.entities.find((e) => entitySlug(e) === s))
+      .filter((e): e is Entity => e !== undefined);
+    const moduleId = found[0]?.module_id;
+    const entities = found.filter((e) => e.module_id === moduleId).slice(0, MAX_COMPARE);
+    return { entities, discarded: slugs.length - entities.length, moduleId };
+  }, [compareParam, data.entities]);
+  const setCompareSlugs = (slugs: string[]) =>
+    navigate(`/catalogo?comparar=${slugs.join(',')}`, { replace: true, keepScroll: true });
+  const closeCompare = () => navigate('/catalogo', { replace: true, keepScroll: true });
 
   // Si el módulo activo se desactiva, saltar al primer tab disponible.
   useEffect(() => {
@@ -349,9 +374,23 @@ export default function CatalogPage({ params }: { params: URLSearchParams }) {
                   </button>
                 )}
 
+                <a
+                  href={entityHref(selected, tabDef.slug)}
+                  className="flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-4 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+                >
+                  Ver ficha completa
+                </a>
+                {trackable && compareTarget && (
+                  <a
+                    href={`/catalogo?comparar=${entitySlug(selected)},${entitySlug(compareTarget)}`}
+                    className="flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-4 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+                  >
+                    Comparar con {compareTarget.titulo}
+                  </a>
+                )}
                 {linkedMarkers[0] ? (
                   <a
-                    href={`#/mapa?entity=${selected.id}`}
+                    href={`/mapa?marker=${linkedMarkers[0].id}`}
                     className="flex min-h-11 items-center justify-center rounded-xl bg-vice-accent px-4 font-bold text-vice-ink focus-visible:outline-2 focus-visible:outline-vice-gold"
                   >
                     Ver en mapa
@@ -362,7 +401,7 @@ export default function CatalogPage({ params }: { params: URLSearchParams }) {
                   </span>
                 )}
                 <a
-                  href={`#/foro?entity=${selected.id}`}
+                  href={`/foro?entity=${selected.id}`}
                   className="flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-4 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
                 >
                   Discutir ({threads.length})
@@ -372,7 +411,7 @@ export default function CatalogPage({ params }: { params: URLSearchParams }) {
                     {threads.slice(0, 3).map((t) => (
                       <li key={t.id}>
                         <a
-                          href={`#/foro?thread=${t.id}`}
+                          href={`/foro?hilo=${t.id}`}
                           className="block min-h-11 rounded-lg px-2 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
                         >
                           <span className="text-xs text-vice-orange">{forumCategoryLabel(t.categoria)} · ▲ {t.upvotes_count}</span>
@@ -429,6 +468,361 @@ export default function CatalogPage({ params }: { params: URLSearchParams }) {
           )}
         </section>
       </div>
+
+      <BottomSheet
+        open={compare !== null}
+        onClose={closeCompare}
+        title="Comparador"
+        closeLabel="Cerrar comparador"
+        className="md:w-[min(92vw,760px)]!"
+      >
+        {compare && (
+          <ComparePanel
+            entities={compare.entities}
+            discarded={compare.discarded}
+            candidates={data.entities.filter((e) => e.module_id === compare.moduleId)}
+            onChange={setCompareSlugs}
+          />
+        )}
+      </BottomSheet>
     </div>
   );
+}
+
+// ---- Comparador NUI: StatBar de 2-3 entidades del mismo módulo, lado a lado ---------------
+function ComparePanel({
+  entities,
+  discarded,
+  candidates,
+  onChange,
+}: {
+  entities: Entity[];
+  discarded: number;
+  candidates: Entity[];
+  onChange: (slugs: string[]) => void;
+}) {
+  const statMaps = entities.map((e) => new Map(statsOf(e).map((s) => [s.key, s.value] as const)));
+  const keys: string[] = [];
+  for (const m of statMaps) for (const k of m.keys()) if (!keys.includes(k)) keys.push(k);
+  const cols = entities.length;
+  const slugs = entities.map(entitySlug);
+  const replaceAt = (i: number, slug: string) => onChange(slugs.map((s, j) => (j === i ? slug : s)));
+  const free = candidates.filter((c) => !slugs.includes(entitySlug(c)));
+  const SELECT =
+    'min-h-11 w-full rounded-lg border border-white/20 bg-[#1a0a22] px-2 text-xs focus-visible:outline-2 focus-visible:outline-vice-gold';
+  if (entities.length < 2) {
+    return (
+      <div className="pt-2">
+        <p role="status" className="text-sm">
+          No se puede comparar: indica al menos 2 elementos válidos del mismo módulo (por ejemplo, desde la ficha o el Inspector).
+        </p>
+        <a href="/catalogo" className="mt-3 inline-flex min-h-11 items-center font-semibold text-vice-orange underline">
+          Volver al catálogo
+        </a>
+      </div>
+    );
+  }
+  return (
+    <div className="pt-2">
+      <p className="text-xs text-vice-text/70">La mejor cifra de cada fila se resalta. Las no comparables muestran —.</p>
+      {discarded > 0 && (
+        <p role="status" className="mt-1 text-xs text-vice-orange">
+          {discarded === 1 ? 'Se omitió 1 elemento' : `Se omitieron ${discarded} elementos`} no válidos o de otro módulo.
+        </p>
+      )}
+      <div
+        role="table"
+        aria-label="Comparación de estadísticas"
+        className="mt-3 flex flex-col gap-4"
+      >
+        <div role="row" className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+          {entities.map((e) => (
+            <div role="columnheader" key={e.id} className="min-w-0">
+              <div className="h-20 overflow-hidden rounded-xl bg-white/5">
+                <ItemVisual entity={e} className={e.imagen_url ? 'h-full w-full' : 'h-full w-full p-2'} />
+              </div>
+              <p className="mt-1 truncate font-display text-sm font-bold">{e.titulo}</p>
+              <select
+                aria-label={`Cambiar ${e.titulo}`}
+                value={entitySlug(e)}
+                onChange={(ev) => replaceAt(entities.indexOf(e), ev.target.value)}
+                className={`${SELECT} mt-1`}
+              >
+                {[e, ...free].map((c) => (
+                  <option key={c.id} value={entitySlug(c)}>
+                    {c.titulo}
+                  </option>
+                ))}
+              </select>
+              {entities.length > 2 && (
+                <button
+                  type="button"
+                  onClick={() => onChange(slugs.filter((s) => s !== entitySlug(e)))}
+                  className="mt-1 min-h-11 w-full rounded-lg border border-white/20 px-2 text-xs font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+                >
+                  Quitar
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        {keys.map((k) => {
+          const values = statMaps.map((m) => m.get(k));
+          const best = Math.max(...values.filter((v): v is number => typeof v === 'number'));
+          const label = STAT_LABELS[k] ?? k;
+          return (
+            <div role="row" key={k} className="grid gap-3" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+              {entities.map((e, i) => {
+                const v = values[i];
+                return (
+                  <div role="cell" key={e.id} className="min-w-0">
+                    {typeof v === 'number' ? (
+                      <StatBar
+                        label={label}
+                        value={v}
+                        valueLabel={v === best && values.filter((x) => x === best).length < cols ? `${v} · mejor` : String(v)}
+                        accent={v === best ? 'magenta' : 'cyan'}
+                      />
+                    ) : (
+                      <div className="text-[11px]">
+                        <span>{label}</span>
+                        <span className="float-right font-semibold" aria-label="no comparable">
+                          —
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+      {entities.length < MAX_COMPARE && free.length > 0 && (
+        <label className="mt-4 block text-xs font-semibold">
+          Añadir un tercer elemento
+          <select
+            value=""
+            onChange={(ev) => ev.target.value && onChange([...slugs, ev.target.value])}
+            className={`${SELECT} mt-1`}
+          >
+            <option value="">Elegir…</option>
+            {free.map((c) => (
+              <option key={c.id} value={entitySlug(c)}>
+                {c.titulo}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {keys.length === 0 && <p className="mt-3 text-sm text-vice-text/70">Estas entidades no tienen estadísticas comparables.</p>}
+    </div>
+  );
+}
+
+// ---- Ficha de entidad: /catalogo/:modulo/:slug (página editorial con scroll) --------------------
+const metaDescription = (e: Entity): string => {
+  const base = `${e.titulo}${e.subtitulo ? `: ${e.subtitulo}` : ''}. Estadísticas, ubicación en el mapa y hilos de la comunidad en LeonidApp.`;
+  return base.length > 160 ? `${base.slice(0, 157)}...` : base;
+};
+
+function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
+  const { entity, loading } = useEntityDetail(modulo, slug);
+  const { data } = useWorldData();
+  const { data: forum } = useForumData();
+  const items = useProgressStore((s) => s.items);
+  const toggle = useProgressStore((s) => s.toggle);
+
+  const moduleDef = data.modules.find((m) => m.slug === modulo);
+  const tabDef = TABS.find((t) => t.slug === modulo);
+
+  usePageMeta(
+    entity
+      ? { title: entity.titulo, description: metaDescription(entity), canonicalPath: `/catalogo/${modulo}/${slug}` }
+      : { title: loading ? 'Cargando ficha' : 'Ficha no encontrada', robots: 'noindex,nofollow' },
+  );
+
+  // Las guías viven en /guias/:slug.
+  useEffect(() => {
+    if (modulo === 'guias') navigate(`/guias/${slug}`, { replace: true });
+  }, [modulo, slug]);
+
+  if (!entity) {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-4 pb-8 pt-4">
+        <p role="status" className="glass rounded-2xl p-6 text-center">
+          {loading ? 'Cargando ficha…' : 'No encontramos esta ficha.'}{' '}
+          <a href="/catalogo" className="font-semibold text-vice-orange underline">
+            Volver al catálogo
+          </a>
+        </p>
+      </div>
+    );
+  }
+
+  const meta = metaOf(entity);
+  const stats = statsOf(entity);
+  const trackable = modulo !== 'guias';
+  const done = items[`entity:${entity.id}`]?.completado === true;
+  const markers = data.markers.filter((m) => m.entity_id === entity.id);
+  const threads = forum.threads
+    .filter((t) => t.entity_id === entity.id || markers.some((m) => m.id === t.marker_id))
+    .slice(0, 5);
+  const guidesModule = data.modules.find((m) => m.slug === 'guias');
+  const guides = data.entities.filter(
+    (g) =>
+      g.module_id === guidesModule?.id &&
+      g.id !== entity.id &&
+      (loreRefs(g).includes(entity.id) || loreRefs(g).some((r) => markers.some((m) => m.id === r))),
+  );
+  const similar = data.entities
+    .filter((e) => e.module_id === entity.module_id && e.id !== entity.id)
+    .slice(0, 3);
+
+  const LINK =
+    'flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold';
+
+  return (
+    <article className="mx-auto w-full max-w-4xl px-4 pb-10 pt-2 md:px-8">
+      <nav aria-label="Migas de pan" className="text-xs text-vice-text/80">
+        <ol className="flex flex-wrap items-center gap-1">
+          <li>
+            <a href="/catalogo" className="inline-flex min-h-11 items-center underline">
+              Catálogo
+            </a>
+          </li>
+          <li aria-hidden="true">›</li>
+          <li>{moduleDef?.nombre ?? tabDef?.label ?? modulo}</li>
+          <li aria-hidden="true">›</li>
+          <li aria-current="page">{entity.titulo}</li>
+        </ol>
+      </nav>
+
+      <header className="mt-2">
+        <p className="text-xs font-semibold uppercase tracking-widest text-vice-orange">{entity.categoria}</p>
+        <h1 className="font-display text-3xl font-bold">{entity.titulo}</h1>
+        {entity.subtitulo && <p className="text-vice-text/85">{entity.subtitulo}</p>}
+      </header>
+
+      <div className="mt-4 grid gap-5 md:grid-cols-2">
+        <section aria-label="Imagen" className="glass relative flex h-56 items-center justify-center overflow-hidden rounded-2xl md:h-72">
+          <ItemVisual
+            entity={entity}
+            className={entity.imagen_url ? 'absolute inset-0 h-full w-full' : 'relative h-4/5 w-4/5 drop-shadow-[0_10px_30px_rgba(225,48,126,0.5)]'}
+          />
+        </section>
+
+        <section aria-label="Estadísticas" className="glass flex flex-col gap-3 rounded-2xl p-5">
+          {stats.length > 0 ? (
+            stats.map((s, i) => <StatBar key={s.key} label={s.label} value={s.value} accent={ACCENTS[i % ACCENTS.length]} />)
+          ) : (
+            <p className="text-sm text-vice-text/70">Sin estadísticas numéricas.</p>
+          )}
+          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
+            {Object.entries(meta)
+              .filter(([k]) => k in META_LABELS)
+              .map(([k, v]) => (
+                <div key={k} className="contents">
+                  <dt className="text-vice-text/70">{META_LABELS[k]}</dt>
+                  <dd className="font-semibold">{fmtMeta(k, v)}</dd>
+                </div>
+              ))}
+          </dl>
+          {trackable && (
+            <button
+              type="button"
+              aria-pressed={done}
+              onClick={() => toggle({ entityId: entity.id })}
+              className={`min-h-11 rounded-xl px-4 font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
+                done ? 'bg-vice-gold text-vice-ink' : 'bg-white/10 hover:bg-white/20'
+              }`}
+            >
+              {done ? `${tabDef?.doneLabel ?? 'Completado'} al 100% (quitar)` : `Marcar como ${(tabDef?.doneLabel ?? 'completado').toLowerCase()}`}
+            </button>
+          )}
+        </section>
+      </div>
+
+      {/* Enlazado cruzado: Mapa, Foro, Guías */}
+      <section aria-labelledby="rel-title" className="mt-6">
+        <h2 id="rel-title" className="font-display text-xl font-bold">
+          Relacionado
+        </h2>
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {markers[0] ? (
+            <a href={`/mapa?marker=${markers[0].id}`} className={`${LINK} bg-vice-accent text-vice-ink`}>
+              Ver en el mapa{markers.length > 1 ? ` (${markers.length} puntos)` : ''}
+            </a>
+          ) : (
+            <span className="flex min-h-11 items-center rounded-xl border border-white/10 px-4 text-sm text-vice-text/60">
+              Sin ubicación en el mapa
+            </span>
+          )}
+          <a href={`/foro?entity=${entity.id}`} className={LINK}>
+            Abrir hilo sobre {entity.titulo}
+          </a>
+        </div>
+        {threads.length > 0 && (
+          <div className="mt-3">
+            <h3 className="font-display text-base font-bold">Hilos relacionados</h3>
+            <ul className="mt-1 flex flex-col text-sm">
+              {threads.map((t) => (
+                <li key={t.id}>
+                  <a href={`/foro?hilo=${t.id}`} className="block min-h-11 rounded-lg px-2 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold">
+                    <span className="text-xs text-vice-orange">{forumCategoryLabel(t.categoria)} · ▲ {t.upvotes_count}</span>
+                    <span className="block font-semibold">{t.titulo}</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {guides.length > 0 && (
+          <div className="mt-3">
+            <h3 className="font-display text-base font-bold">Guías que la mencionan</h3>
+            <ul className="mt-1 flex flex-col text-sm">
+              {guides.map((g) => (
+                <li key={g.id}>
+                  <a href={`/guias/${entitySlug(g)}`} className="flex min-h-11 items-center rounded-lg px-2 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold">
+                    {g.titulo}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {trackable && similar.length > 0 && (
+          <div className="mt-3">
+            <h3 className="font-display text-base font-bold">Comparar con otras de {moduleDef?.nombre ?? tabDef?.label ?? modulo}</h3>
+            <ul className="mt-1 flex flex-wrap gap-2 text-sm">
+              {similar.map((s) => (
+                <li key={s.id}>
+                  <a
+                    href={`/catalogo?comparar=${entitySlug(entity)},${entitySlug(s)}`}
+                    className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-4 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+                  >
+                    Comparar con {s.titulo}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
+      <AdSlot position="after-content" className="mt-8" />
+      <p className="mt-4 text-xs text-vice-text/60">{SAMPLE_NOTICE}</p>
+    </article>
+  );
+}
+
+export default function CatalogPage({
+  params,
+  detail,
+}: {
+  params: URLSearchParams;
+  /** Si se define, muestra la ficha /catalogo/:modulo/:slug en vez del Inspector. */
+  detail?: { modulo: string; slug: string };
+}) {
+  return detail ? <EntityDetail modulo={detail.modulo} slug={detail.slug} /> : <CatalogInspector params={params} />;
 }

@@ -34,6 +34,12 @@ interface RemoteProgress {
 
 interface ProgressState {
   items: Record<ProgressKey, LocalProgressItem>;
+  /**
+   * Pasos de guía completados por entityId (solo caché local en IndexedDB). La API de progreso solo
+   * conoce ENTITY/MARKER: al completar todos los pasos la guía se marca como completada y ESA marca
+   * sí se sincroniza con MongoDB.
+   */
+  guideSteps: Record<string, string[]>;
   syncStatus: SyncStatus;
   lastSyncedAt: string | null;
   syncError: string | null;
@@ -42,6 +48,8 @@ interface ProgressState {
   isCompleted: (target: ProgressTarget) => boolean;
   setCompleted: (target: ProgressTarget, completado: boolean) => void;
   toggle: (target: ProgressTarget) => void;
+  /** Marca/desmarca un paso de guía; `allStepIds` decide cuándo la guía queda completa. */
+  toggleGuideStep: (entityId: string, stepId: string, allStepIds: readonly string[]) => void;
   completedCount: (filter?: { kind: 'entity' | 'marker'; ids?: readonly string[] }) => number;
   /** Fusiona progreso local con la nube (pull + merge + push). */
   syncWithCloud: () => Promise<void>;
@@ -76,6 +84,7 @@ export const useProgressStore = create<ProgressState>()(
   persist(
     (set, get) => ({
       items: {},
+      guideSteps: {},
       syncStatus: 'idle',
       lastSyncedAt: null,
       syncError: null,
@@ -97,6 +106,15 @@ export const useProgressStore = create<ProgressState>()(
       },
 
       toggle: (target) => get().setCompleted(target, !get().isCompleted(target)),
+
+      toggleGuideStep: (entityId, stepId, allStepIds) => {
+        // Guía completada en otro dispositivo (solo llega la marca ENTITY): todos los pasos cuentan como hechos.
+        const prev = get().guideSteps[entityId] ?? (get().isCompleted({ entityId }) ? [...allStepIds] : []);
+        const next = prev.includes(stepId) ? prev.filter((x) => x !== stepId) : [...prev, stepId];
+        set((s) => ({ guideSteps: { ...s.guideSteps, [entityId]: next } }));
+        const complete = allStepIds.length > 0 && allStepIds.every((id) => next.includes(id));
+        if (complete !== get().isCompleted({ entityId })) get().setCompleted({ entityId }, complete);
+      },
 
       completedCount: (filter) => {
         const ids = filter?.ids ? new Set(filter.ids) : null;
@@ -154,12 +172,12 @@ export const useProgressStore = create<ProgressState>()(
         return syncInFlight;
       },
 
-      resetLocal: () => set({ items: {}, lastSyncedAt: null, syncError: null, syncStatus: 'idle' }),
+      resetLocal: () => set({ items: {}, guideSteps: {}, lastSyncedAt: null, syncError: null, syncStatus: 'idle' }),
     }),
     {
       name: 'atlas-vice-progress',
       storage: createJSONStorage(() => idbStorage),
-      partialize: (state) => ({ items: state.items, lastSyncedAt: state.lastSyncedAt }),
+      partialize: (state) => ({ items: state.items, guideSteps: state.guideSteps, lastSyncedAt: state.lastSyncedAt }),
       onRehydrateStorage: () => (state) => {
         useProgressStore.setState({ hydrated: true });
         if (state) void state.syncWithCloud();

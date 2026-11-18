@@ -6,6 +6,7 @@
 // Lectura: API Fastify solo si isApiConfigured; si falla o está vacía -> seed.
 // =============================================================================
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { apiFetch, isApiConfigured } from '../store/useAuthStore';
 import { useProgressStore, type ProgressKey } from '../store/useProgressStore';
 import type {
@@ -15,7 +16,9 @@ import type {
   ForumThread,
   MapMarker,
   Module,
+  MonetizationConfig,
   Profile,
+  PublicConfigDTO,
 } from '../types/database';
 
 // ---- Utilidades -------------------------------------------------------------
@@ -498,6 +501,9 @@ export interface PublicConfig {
   feature_flags: Record<string, boolean>;
   enabled_auth_providers: Array<'google' | 'discord' | 'apple' | 'magic-link'>;
   social_links: Array<{ platform: string; url: string }>;
+  /** Solo presentes cuando la API responde (GET /api/config/public). */
+  monetization?: MonetizationConfig;
+  modules?: PublicConfigDTO['modules'];
 }
 
 export const DEFAULT_PUBLIC_CONFIG: PublicConfig = {
@@ -576,4 +582,111 @@ export function useProgressSummary(): ProgressSummary {
   const done = categories.reduce((a, c) => a + c.done, 0);
   const total = categories.reduce((a, c) => a + c.total, 0);
   return { done, total, percent: total === 0 ? 0 : Math.round((done / total) * 100), categories };
+}
+
+// ---- Slugs, módulos activos y enlazado cruzado (docs/LeonidApp-Rutas-SEO-Monetizacion.md §2, §5) ----
+/** Entidad con `slug` opcional: la API lo trae; el seed lo deriva del título. */
+export type EntityWithSlug = Entity & { slug?: string };
+
+export const slugify = (text: string): string =>
+  text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120);
+
+export const entitySlug = (e: Entity): string => (e as EntityWithSlug).slug || slugify(e.titulo);
+
+/** Ruta limpia de la ficha de una entidad (o de la guía si el módulo es `guias`). */
+export const entityHref = (e: Entity, moduleSlug: string): string =>
+  moduleSlug === 'guias' ? `/guias/${entitySlug(e)}` : `/catalogo/${moduleSlug}/${entitySlug(e)}`;
+
+export interface GuideStep {
+  id: string;
+  title: string;
+  body: string;
+}
+
+/** Pasos de una guía: `metadata_json.steps` [{id,title,body}] (API) o `pasos` string[] (seed). */
+export function guideSteps(e: Entity): GuideStep[] {
+  const m = metaOf(e);
+  if (Array.isArray(m.steps)) {
+    return (m.steps as unknown[]).flatMap((raw, i): GuideStep[] => {
+      if (typeof raw === 'string') return [{ id: `s${i + 1}`, title: raw, body: '' }];
+      if (raw && typeof raw === 'object') {
+        const r = raw as { id?: unknown; title?: unknown; body?: unknown };
+        return [
+          {
+            id: typeof r.id === 'string' && r.id ? r.id : `s${i + 1}`,
+            title: typeof r.title === 'string' ? r.title : `Paso ${i + 1}`,
+            body: typeof r.body === 'string' ? r.body : '',
+          },
+        ];
+      }
+      return [];
+    });
+  }
+  if (Array.isArray(m.pasos)) {
+    return (m.pasos as unknown[])
+      .filter((p): p is string => typeof p === 'string')
+      .map((p, i) => ({ id: `s${i + 1}`, title: p, body: '' }));
+  }
+  return [];
+}
+
+/** UUID de Entity o MapMarker enlazados desde una guía (`metadata_json.lore_refs`). */
+export const loreRefs = (e: Entity): string[] => {
+  const r = metaOf(e).lore_refs;
+  return Array.isArray(r) ? (r as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+};
+
+/** Módulos activos: GET /api/config/public incluye también los inactivos; sin API se usa el seed. */
+export function useModuleGate(): { isActive: (slug: string) => boolean; catalogActive: boolean } {
+  const cfg = usePublicConfig();
+  const { data } = useWorldData();
+  return useMemo(() => {
+    const list: Array<{ slug: string; active: boolean }> = cfg.modules
+      ? cfg.modules.map((m) => ({ slug: m.slug, active: m.isActive }))
+      : data.modules.map((m) => ({ slug: m.slug, active: m.activo }));
+    const map = new Map(list.map((m) => [m.slug, m.active]));
+    // Un módulo desconocido (aún sin sembrar) no se oculta; uno marcado inactivo sí.
+    const isActive = (slug: string): boolean => map.get(slug) !== false;
+    const catalogActive = ['armas', 'vehiculos', 'coleccionables', 'guias'].some(isActive);
+    return { isActive, catalogActive };
+  }, [cfg.modules, data.modules]);
+}
+
+/** Entidad por módulo + slug: caché del mundo primero (offline-first), luego la API por slug. */
+export function useEntityDetail(
+  moduleSlug: string,
+  slug: string,
+): { entity: Entity | null; loading: boolean } {
+  const { data } = useWorldData();
+  const mod = data.modules.find((m) => m.slug === moduleSlug);
+  const local = mod ? (data.entities.find((e) => e.module_id === mod.id && entitySlug(e) === slug) ?? null) : null;
+  const q = useQuery({
+    queryKey: ['entity', moduleSlug, slug],
+    enabled: isApiConfigured && local === null,
+    staleTime: 60_000,
+    queryFn: () =>
+      apiFetch<Entity>(`/api/modules/${encodeURIComponent(moduleSlug)}/entities/${encodeURIComponent(slug)}`),
+  });
+  return { entity: local ?? q.data ?? null, loading: local === null && q.isLoading };
+}
+
+/** Noticia oficial por slug (solo API; nunca se inventa contenido). */
+export function useOfficialNewsItem(slug: string) {
+  const q = useQuery({
+    queryKey: ['news', 'item', slug],
+    enabled: isApiConfigured,
+    staleTime: 60_000,
+    queryFn: () => apiFetch<OfficialNews>(`/api/news/${encodeURIComponent(slug)}`),
+  });
+  return {
+    item: q.data ?? null,
+    loading: isApiConfigured && q.isLoading,
+    error: !isApiConfigured ? 'Sin API configurada.' : q.error ? q.error.message : null,
+  };
 }

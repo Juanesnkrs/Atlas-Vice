@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SunsetBanner } from '../components/layout/ViceShell';
 import { BottomSheet } from '../components/ui/BottomSheet';
 import {
+  entityHref,
   MAP_LAYERS,
   MAP_REGIONS,
   SAMPLE_NOTICE,
@@ -109,12 +110,14 @@ interface MarkerCardProps {
   marker: MapMarker;
   entityTitle: string | null;
   entityId: string | null;
+  /** Ruta limpia de la ficha (/catalogo/:modulo/:slug o /guias/:slug) cuando existe. */
+  catalogHref: string | null;
   done: boolean;
   onToggle: () => void;
   onClose: () => void;
 }
 
-function MarkerCard({ marker, entityTitle, entityId, done, onToggle, onClose }: MarkerCardProps) {
+function MarkerCard({ marker, entityTitle, entityId, catalogHref, done, onToggle, onClose }: MarkerCardProps) {
   const { data: forum } = useForumData();
   const threads = forum.threads.filter(
     (t) => t.marker_id === marker.id || (entityId !== null && t.entity_id === entityId),
@@ -134,7 +137,7 @@ function MarkerCard({ marker, entityTitle, entityId, done, onToggle, onClose }: 
       </div>
       {entityTitle && entityId && (
         <a
-          href={`#/catalogo?entity=${entityId}`}
+          href={catalogHref ?? `/catalogo?entity=${entityId}`}
           className="flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
         >
           Ver en catálogo: {entityTitle}
@@ -159,7 +162,7 @@ function MarkerCard({ marker, entityTitle, entityId, done, onToggle, onClose }: 
             {threads.slice(0, 3).map((t) => (
               <li key={t.id} className="text-sm">
                 <a
-                  href={`#/foro?thread=${t.id}`}
+                  href={`/foro?hilo=${t.id}`}
                   className="block min-h-11 rounded-lg px-2 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
                 >
                   <span className="text-xs text-vice-orange">{forumCategoryLabel(t.categoria)}</span>
@@ -171,7 +174,7 @@ function MarkerCard({ marker, entityTitle, entityId, done, onToggle, onClose }: 
           </ul>
         )}
         <a
-          href={`#/foro?marker=${marker.id}`}
+          href={`/foro?marker=${marker.id}`}
           className="mt-2 flex min-h-11 items-center justify-center rounded-xl bg-white/10 px-4 text-sm font-semibold hover:bg-white/20 focus-visible:outline-2 focus-visible:outline-vice-gold"
         >
           Discutir este punto
@@ -227,6 +230,8 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
 
   const selected = data.markers.find((m) => m.id === selectedId) ?? null;
   const selectedEntity = selected?.entity_id ? (entitiesById.get(selected.entity_id) ?? null) : null;
+  const selectedModule = selectedEntity ? modulesById.get(selectedEntity.module_id) : undefined;
+  const catalogHref = selectedEntity && selectedModule ? entityHref(selectedEntity, selectedModule.slug) : null;
 
   // ---- Utilidades de vista ---------------------------------------------------
   const toSvg = useCallback((cx: number, cy: number): { x: number; y: number } | null => {
@@ -365,6 +370,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       marker={selected}
       entityTitle={selectedEntity?.titulo ?? null}
       entityId={selectedEntity?.id ?? null}
+      catalogHref={catalogHref}
       done={isDone(selected.id)}
       onToggle={() => toggle({ markerId: selected.id })}
       onClose={() => setSelectedId(null)}

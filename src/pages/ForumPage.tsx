@@ -5,6 +5,7 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { BottomSheet } from '../components/ui/BottomSheet';
 import {
   DISCORD_URL,
+  entityHref,
   FORUM_CATEGORIES,
   SAMPLE_NOTICE,
   forumCategoryLabel,
@@ -89,6 +90,14 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
   const selected: ForumThread | null =
     forum.threads.find((t) => t.id === selectedId) ?? threads[0] ?? null;
   const posts = selected ? forum.posts.filter((p) => p.thread_id === selected.id) : [];
+  // Enlazado cruzado (chips): el destino solo se muestra si existe.
+  const selectedEntity = selected?.entity_id ? world.entities.find((e) => e.id === selected.entity_id) : undefined;
+  const selectedEntityModule = selectedEntity ? world.modules.find((m) => m.id === selectedEntity.module_id) : undefined;
+  const selectedEntityLink =
+    selectedEntity && selectedEntityModule
+      ? { title: selectedEntity.titulo, href: entityHref(selectedEntity, selectedEntityModule.slug) }
+      : null;
+  const selectedMarker = selected?.marker_id ? world.markers.find((m) => m.id === selected.marker_id) : undefined;
   const children = useMemo(() => {
     const m = new Map<string | null, ForumPost[]>();
     for (const p of posts) {
@@ -272,7 +281,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 px-3 pt-1 md:px-8">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="font-display text-xl font-bold tracking-wide md:text-2xl">COMUNIDAD ATLAS VICE</h1>
+        <h1 className="font-display text-xl font-bold tracking-wide md:text-2xl">COMUNIDAD LEONIDAPP</h1>
         <div className="flex items-center gap-2">
           <a
             href={DISCORD_URL}
@@ -345,7 +354,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
       {hasContext && (
         <p className="glass flex flex-wrap items-center gap-2 rounded-xl px-4 py-1 text-sm">
           Hilos sobre: <strong>{ctxLabel ?? 'este elemento'}</strong>
-          <a href="#/foro" className="flex min-h-11 items-center text-vice-orange underline">
+          <a href="/foro" className="flex min-h-11 items-center text-vice-orange underline">
             Quitar filtro
           </a>
         </p>
@@ -358,7 +367,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
           <p role="alert" className="text-vice-gold">
             {message}{' '}
             {!canWrite && (
-              <a href="#/entrar?next=/foro" className="inline-flex min-h-11 items-center underline">
+              <a href="/entrar?next=/foro" className="inline-flex min-h-11 items-center underline">
                 Iniciar sesión
               </a>
             )}
@@ -441,6 +450,20 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
               <p className="text-xs text-vice-text/70">
                 {nameOf(selected.user_id)} · {fmtDate(selected.created_at)}
               </p>
+              {(selectedEntityLink || selectedMarker) && (
+                <p className="mt-1 flex flex-wrap gap-2 text-xs">
+                  {selectedEntityLink && (
+                    <a href={selectedEntityLink.href} className="inline-flex min-h-11 items-center rounded-full bg-white/10 px-3 font-semibold text-vice-orange focus-visible:outline-2 focus-visible:outline-vice-gold">
+                      Ficha: {selectedEntityLink.title}
+                    </a>
+                  )}
+                  {selectedMarker && (
+                    <a href={`/mapa?marker=${selectedMarker.id}`} className="inline-flex min-h-11 items-center rounded-full bg-white/10 px-3 font-semibold text-vice-orange focus-visible:outline-2 focus-visible:outline-vice-gold">
+                      Mapa: {selectedMarker.titulo}
+                    </a>
+                  )}
+                </p>
+              )}
 
               {spoilerHidden ? (
                 <div className="mt-3 rounded-xl border border-vice-gold/40 p-4">

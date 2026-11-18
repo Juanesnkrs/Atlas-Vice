@@ -10,6 +10,7 @@ import {
   useOfficialNews,
   usePublicConfig,
   useProgressSummary,
+  useModuleGate,
   useWorldData,
   type NewsSource,
 } from '../data/seed';
@@ -23,12 +24,15 @@ const ACCENTS: Record<string, StatAccent> = {
   coleccionables: 'lilac',
 };
 
-const QUICK = [
-  { href: '#/mapa', title: 'Mapa de Leonida', text: 'Pines, capas y check 100%.' },
-  { href: '#/catalogo', title: 'Catálogo', text: 'Armas, vehículos y coleccionables.' },
-  { href: '#/foro', title: 'Foro', text: 'Hilos, votos y spoilers.' },
-  { href: '#/aportes', title: 'Aportar', text: 'Envía hallazgos (requiere cuenta).' },
-] as const;
+/** `module`: slug del módulo que debe estar activo para mostrar el acceso (los inactivos no se muestran). */
+const QUICK: ReadonlyArray<{ href: string; title: string; text: string; module?: string }> = [
+  { href: '/mapa', title: 'Mapa de Leonida', text: 'Pines, capas y check 100%.', module: 'mapa' },
+  { href: '/catalogo', title: 'Catálogo', text: 'Armas, vehículos y coleccionables.', module: 'catalogo' },
+  { href: '/guias', title: 'Guías', text: 'Pasos verificables y rutas.', module: 'guias' },
+  { href: '/foro', title: 'Foro', text: 'Hilos, votos y spoilers.', module: 'foro' },
+  { href: '/noticias', title: 'Noticias oficiales', text: 'Rockstar Games y Take-Two.' },
+  { href: '/aportar', title: 'Aportar', text: 'Envía hallazgos (requiere cuenta).' },
+];
 
 function Ring({ percent }: { percent: number }) {
   const r = 52;
@@ -76,6 +80,8 @@ export default function DashboardPage({
   const [source, setSource] = useState<NewsSource | 'all'>('all');
   const { news, loading: newsLoading, error: newsError } = useOfficialNews(source, 12);
   const cfg = usePublicConfig();
+  const { isActive, catalogActive } = useModuleGate();
+  const quick = QUICK.filter((q) => (q.module === 'catalogo' ? catalogActive : q.module ? isActive(q.module) : true));
   const newsRef = useRef<HTMLElement>(null);
   const summary = useProgressSummary();
   const { data, loading, error } = useWorldData();
@@ -185,7 +191,7 @@ export default function DashboardPage({
               </>
             ) : (
               <span>
-                <a href="#/entrar" className="inline-flex min-h-11 items-center text-vice-orange underline">
+                <a href="/entrar" className="inline-flex min-h-11 items-center text-vice-orange underline">
                   Inicia sesión
                 </a>{' '}
                 para sincronizar tu avance entre dispositivos.
@@ -216,7 +222,7 @@ export default function DashboardPage({
                   accent="gold"
                 />
                 <a
-                  href={r.nextId ? `#/mapa?marker=${r.nextId}` : '#/mapa'}
+                  href={r.nextId ? `/mapa?marker=${r.nextId}` : '/mapa'}
                   className="mt-3 inline-flex min-h-11 items-center rounded-full bg-vice-accent px-5 font-bold text-vice-ink focus-visible:outline-2 focus-visible:outline-vice-gold"
                 >
                   {r.nextId ? 'Ir al siguiente punto' : 'Ruta completa · ver mapa'}
@@ -283,7 +289,11 @@ export default function DashboardPage({
                     <p className="text-xs text-vice-orange">
                       {SOURCE_LABEL[n.source] ?? n.source} · {new Date(n.publishedAt).toLocaleDateString('es')}
                     </p>
-                    <h3 className="mt-1 font-semibold">{n.title}</h3>
+                    <h3 className="mt-1 font-semibold">
+                      <a href={`/noticias/${encodeURIComponent(n.slug)}`} className="hover:underline focus-visible:outline-2 focus-visible:outline-vice-gold">
+                        {n.title}
+                      </a>
+                    </h3>
                     {n.summary && <p className="mt-1 line-clamp-3 text-sm text-vice-text/80">{n.summary}</p>}
                     <a
                       href={n.sourceUrl}
@@ -301,8 +311,8 @@ export default function DashboardPage({
         </section>
 
         {/* Accesos */}
-        <nav aria-label="Accesos rápidos" className="grid gap-3 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-4">
-          {QUICK.map((q) => (
+        <nav aria-label="Accesos rápidos" className="grid gap-3 sm:grid-cols-2 lg:col-span-3 lg:grid-cols-3">
+          {quick.map((q) => (
             <a
               key={q.href}
               href={q.href}
