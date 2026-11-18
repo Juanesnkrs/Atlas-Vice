@@ -9,6 +9,8 @@ import { env, isProd } from './config/env.js';
 import authPlugin from './plugins/auth.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerCatalogRoutes } from './routes/catalog.js';
+import { registerNewsRoutes } from './routes/news.js';
+import { registerSubmissionRoutes } from './routes/submissions.js';
 import { registerConfigRoutes } from './routes/config.js';
 import { registerForumRoutes } from './routes/forum.js';
 import { registerProgressRoutes } from './routes/progress.js';
@@ -74,6 +76,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerCatalogRoutes(app);
   await registerProgressRoutes(app);
   await registerForumRoutes(app);
+  await registerSubmissionRoutes(app);
+  await registerNewsRoutes(app);
 
   // --- Agente 05 (SEO + noticias oficiales): cableado tolerante ---------------
   const seo = await optionalModule<{ registerSeoRoutes: (a: FastifyInstance) => Promise<void> }>('./routes/seo.js');

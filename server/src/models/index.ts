@@ -10,3 +10,4 @@ export * from './ForumVote.js';
 export * from './AppConfig.js';
 export * from './OfficialNews.js';
 export * from './AuditLog.js';
+export * from './Submission.js';

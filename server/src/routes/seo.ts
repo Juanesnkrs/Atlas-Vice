@@ -4,8 +4,10 @@ import Entity from '../models/Entity.js';
 import ForumThread from '../models/ForumThread.js';
 
 const MAX_URLS = 50_000;
-const STATIC_PATHS = ['/', '/mapa', '/catalogo', '/foro', '/noticias', '/guias'];
-const REGIONS = ['leonida-keys', 'grassrivers', 'port-gellhorn', 'vice-city', 'ambrosia', 'kalaga-park'];
+// El cliente usa enrutado hash (src/App.tsx): las rutas reales son `/#/ruta?param=`.
+const STATIC_PATHS = ['/', '/#/mapa', '/#/catalogo', '/#/foro', '/#/noticias'];
+// Mismos nombres que MAP_REGIONS en src/data/seed.ts (parametro `region` de MapPage).
+const REGIONS = ['Grassrivers', 'Port Gellhorn', 'Ambrosia', 'Vice Beach', 'Downtown', 'Ocean Beach', 'Leonida Keys'];
 
 interface UrlEntry {
   loc: string;
@@ -35,24 +37,18 @@ async function safe(fn: () => Promise<unknown>): Promise<Doc[]> {
 async function collectUrls(): Promise<UrlEntry[]> {
   const urls: UrlEntry[] = [
     ...STATIC_PATHS.map((p) => ({ loc: p })),
-    ...REGIONS.map((r) => ({ loc: `/mapa/${r}` })),
+    ...REGIONS.map((r) => ({ loc: `/#/mapa?region=${seg(r)}` })),
   ];
-  const entities = await safe(() =>
-    Entity.find({}).select('slug category type updatedAt').limit(20_000).lean().exec(),
-  );
-  for (const e of entities) {
-    if (!e.slug) continue;
-    const cat = e.category ?? e.type ?? 'general';
-    urls.push({ loc: `/catalogo/${seg(cat)}/${seg(e.slug)}`, lastmod: e.updatedAt });
-  }
+  const entities = await safe(() => Entity.find({}).select('_id created_at').limit(20_000).lean().exec());
+  for (const e of entities) urls.push({ loc: `/#/catalogo?entity=${seg(e._id)}`, lastmod: e.created_at });
   const threads = await safe(() =>
-    ForumThread.find({}).select('slug updatedAt').sort({ updatedAt: -1 }).limit(20_000).lean().exec(),
+    ForumThread.find({}).select('_id created_at').sort({ created_at: -1 }).limit(20_000).lean().exec(),
   );
-  for (const t of threads) urls.push({ loc: `/foro/${seg(t.slug ?? t._id)}`, lastmod: t.updatedAt });
+  for (const t of threads) urls.push({ loc: `/#/foro?thread=${seg(t._id)}`, lastmod: t.created_at });
   const news = await safe(() =>
     OfficialNews.find({}).select('slug publishedAt updatedAt').sort({ publishedAt: -1 }).limit(20_000).lean().exec(),
   );
-  for (const n of news) urls.push({ loc: `/noticias/${seg(n.slug)}`, lastmod: n.updatedAt ?? n.publishedAt });
+  for (const n of news) urls.push({ loc: `/#/noticias?item=${seg(n.slug)}`, lastmod: n.updatedAt ?? n.publishedAt });
   return urls.slice(0, MAX_URLS);
 }
 

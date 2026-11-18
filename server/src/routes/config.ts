@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { requireRole } from '../plugins/auth.js';
 import { AppConfig, appConfigUpdateSchema, getGlobalConfig } from '../models/AppConfig.js';
 import { AuditLog } from '../models/AuditLog.js';
-import { roleSchema, toPublicUserDTO, User, type UserDoc } from '../models/User.js';
+import { roleSchema, toPublicUserDTO, toSelfUserDTO, User, type UserDoc } from '../models/User.js';
 import { writeAudit } from '../services/audit.js';
 import { HttpError, idParamsSchema, parse } from '../services/validate.js';
 
@@ -16,6 +16,7 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
       announcement: c.announcement,
       feature_flags: c.feature_flags,
       enabled_auth_providers: c.enabled_auth_providers,
+      social_links: c.social_links ?? [],
     };
   });
 
@@ -25,6 +26,17 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
     const updated = await AppConfig.findOneAndUpdate({ key: 'global' }, { $set: patch }, { returnDocument: 'after' }).lean();
     await writeAudit(req, 'config.update', 'AppConfig', 'global', { patch });
     return updated;
+  });
+
+  app.get('/api/admin/users', { preHandler: requireRole('SUPER_ADMIN') }, async (req) => {
+    const q = parse(
+      z.object({ limit: z.coerce.number().int().min(1).max(200).default(50), q: z.string().max(80).optional() }),
+      req.query,
+    );
+    const esc = q.q?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const filter = esc ? { $or: [{ username: new RegExp(esc, 'i') }, { email: q.q!.toLowerCase() }] } : {};
+    const users = await User.find(filter).sort({ created_at: -1 }).limit(q.limit).lean<UserDoc[]>();
+    return { users: users.map(toSelfUserDTO) };
   });
 
   app.patch('/api/admin/users/:id/role', { preHandler: requireRole('SUPER_ADMIN') }, async (req) => {
