@@ -212,20 +212,22 @@ export function SunsetBanner({ className, label }: { className?: string; label?:
 export interface ViceShellProps {
   /** Contenido principal (slot). */
   children: ReactNode;
-  /** Muestra el header con wordmark. */
+  /** Muestra la cabecera con el wordmark (enlace a la portada). */
   showHeader?: boolean;
-  /** Contenido a la derecha del header (progreso, usuario...). */
+  /** Contenido a la derecha de la cabecera (enlaces, progreso, sesión...). */
   headerEnd?: ReactNode;
-  /** Contenido central del header (buscador...). */
+  /** Contenido central de la cabecera (buscador...). */
   headerCenter?: ReactNode;
-  /** Dock de navegación (p. ej. <BottomDock />). */
+  /** Dock de navegación (<BottomDock />): el contenido reserva su alto + safe area. */
   dock?: ReactNode;
   /**
-   * true (por defecto): HUD 100vw x 100vh sin scroll vertical (Mapa / Inspector).
+   * true (por defecto): HUD 100vw x 100vh sin scroll vertical (Mapa / Inspector / Foro).
    * false: el contenido puede desplazarse verticalmente.
    */
   lockScroll?: boolean;
-  /** Dibuja palmeras y skyline decorativos. */
+  /** Añade el RockstarFooter al final de la página (solo en páginas con scroll). */
+  footer?: boolean;
+  /** Dibuja palmeras y skyline decorativos (siempre detrás del contenido). */
   decorations?: boolean;
   className?: string;
 }
@@ -237,9 +239,11 @@ export function ViceShell({
   headerCenter,
   dock,
   lockScroll = true,
+  footer = false,
   decorations = true,
   className = '',
 }: ViceShellProps) {
+  const withFooter = footer && !lockScroll;
   return (
     <div
       className={`bg-sunset relative flex w-screen flex-col font-body text-vice-text ${
@@ -256,35 +260,43 @@ export function ViceShell({
         </div>
       )}
 
-      <div className="p-safe relative z-10 flex min-h-0 flex-1 flex-col">
+      <div className="pt-safe pl-safe pr-safe relative z-10 flex min-h-0 flex-1 flex-col">
         {showHeader && (
           <header className="flex shrink-0 items-center justify-between gap-4 px-4 py-3 md:px-8">
-            <ViceWordmark width={132} className="shrink-0" />
+            <a
+              href="/"
+              aria-label="LeonidApp, ir a la portada"
+              className="shrink-0 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold"
+            >
+              <ViceWordmark width={132} />
+            </a>
             {headerCenter && <div className="min-w-0 flex-1 md:max-w-xl">{headerCenter}</div>}
             {headerEnd && <div className="shrink-0">{headerEnd}</div>}
           </header>
         )}
 
         <main
-          className={`relative min-h-0 flex-1 ${
-            lockScroll ? 'overflow-hidden' : 'overflow-y-auto'
-          } ${dock && lockScroll ? 'md:pb-24' : ''}`}
+          className={`relative min-h-0 flex-1 ${lockScroll ? 'overflow-hidden' : 'overflow-y-auto'} ${
+            dock && lockScroll ? 'pb-[var(--dock-reserve)]' : ''
+          }`}
         >
           {children}
         </main>
 
-        <Footer variant={lockScroll ? 'compact' : 'full'} />
-
-        {/* Reserva el espacio del dock (móvil fijo / píldora de escritorio) para no tapar el footer */}
-        {dock && (
+        {withFooter && (
           <div
-            aria-hidden="true"
-            className={`h-[64px] shrink-0 ${lockScroll ? 'md:hidden' : 'md:h-24'}`}
-          />
+            className="relative z-20 shrink-0 bg-black"
+            style={dock ? { paddingBottom: 'var(--dock-reserve)' } : undefined}
+          >
+            <Footer />
+          </div>
         )}
-
-        {dock}
+        {!withFooter && dock && !lockScroll && (
+          <div aria-hidden="true" className="h-[var(--dock-reserve)] shrink-0" />
+        )}
       </div>
+
+      {dock}
     </div>
   );
 }

@@ -37,7 +37,7 @@ export function TipCard({
 
   return (
     <section
-      aria-label="Tip of the day"
+      aria-label="Tip del día"
       className={`glass overflow-hidden rounded-[20px] ${className}`}
     >
       <div className="relative h-28 w-full">
@@ -61,7 +61,7 @@ export function TipCard({
           &ldquo;
         </span>
         <h2 className="m-0 mb-2.5 font-display text-[22px] font-semibold tracking-[0.02em] text-white">
-          TIP OF THE DAY
+          Tip del día
         </h2>
         <p aria-live="polite" className="m-0 min-h-[66px] text-[15px] leading-[1.55] text-vice-text">
           {tips[current] ?? ''}

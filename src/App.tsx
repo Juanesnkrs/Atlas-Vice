@@ -4,8 +4,8 @@
 // vive en store/useRouteStore.ts; aquí está la tabla ruta -> vista y las guardas.
 // Regla de los 3 clics: Landing -> (Invitado) -> Hub -> Mapa / Catálogo / Foro -> ficha.
 //
-//   /                       P01+P02  Landing storytelling + Auth PKCE
-//   /entrar                 P02      Auth (noindex)
+//   /                       Portada pública (HomePage)
+//   /entrar                 P01+P02  Acceso: OAuth2 PKCE + Magic Link (noindex)
 //   /hub, /progreso         P03      Dashboard (noindex)
 //   /mapa                   P04      Mapa de Leonida (?region= &marker=)
 //   /catalogo               P05      Inspector NUI (?comparar=a,b[,c] abre el comparador)
@@ -18,7 +18,7 @@
 // La guarda de UI es cosmética: el servidor decide (RBAC en hooks Fastify).
 // =============================================================================
 import { useEffect, useMemo, type ReactNode } from 'react';
-import { BottomDock, type DockItem } from './components/layout/BottomDock';
+import { BottomDock, DOCK_ITEMS } from './components/layout/BottomDock';
 import { ViceShell } from './components/layout/ViceShell';
 import { PalmButton } from './components/ui/PalmButton';
 import { useModuleGate, useProgressSummary } from './data/seed';
@@ -27,11 +27,11 @@ import CatalogPage from './pages/CatalogPage';
 import DashboardPage from './pages/DashboardPage';
 import ForumPage from './pages/ForumPage';
 import GuidesPage from './pages/GuidesPage';
+import HomePage from './pages/HomePage';
 import LandingAuthPage from './pages/LandingAuthPage';
 import MapPage from './pages/MapPage';
 import NewsPage from './pages/NewsPage';
 import { isApiConfigured, useAuthStore } from './store/useAuthStore';
-import { useProgressStore } from './store/useProgressStore';
 import { installRouter, matchRoute, navigate, useLocation, usePageMeta, type PageMeta } from './store/useRouteStore';
 
 installRouter();
@@ -73,8 +73,13 @@ const NOINDEX = 'noindex,nofollow' as const;
 
 /** Metadatos estáticos por ruta. Las rutas con contenido dinámico los fijan en su propia vista. */
 const STATIC_META: Partial<Record<RouteId, PageMeta>> = {
-  // La landing fija su propio title/description/JSON-LD; aquí solo se restablece robots/canonical.
-  landing: { title: '', robots: 'index,follow', canonicalPath: '/' },
+  landing: {
+    title: 'Mapa, catálogo y guías de Leonida',
+    description:
+      'LeonidApp reúne el mapa interactivo de Leonida, el catálogo de armas, vehículos y coleccionables, guías y noticias oficiales.',
+    robots: 'index,follow',
+    canonicalPath: '/',
+  },
   login: { title: 'Entrar', description: 'Accede a LeonidApp con Google, Discord, Apple o Magic Link.', robots: NOINDEX },
   hub: { title: 'Hub', robots: NOINDEX },
   progress: { title: 'Mi progreso', robots: NOINDEX },
@@ -93,99 +98,78 @@ const STATIC_META: Partial<Record<RouteId, PageMeta>> = {
   contribute: { title: 'Aportar', robots: NOINDEX },
 };
 
+/** Ítem del dock resaltado por ruta (portada, guías, noticias y progreso no resaltan ninguno). */
 const DOCK_ACTIVE: Partial<Record<RouteId, string>> = {
   hub: 'hub',
-  progress: 'progress',
   map: 'map',
   catalog: 'catalog',
   entity: 'catalog',
   forum: 'forum',
   contribute: 'contribute',
-  guides: 'hub',
-  guide: 'hub',
-  news: 'hub',
-  newsItem: 'hub',
 };
 
-// ---- Navegación (dock): los módulos inactivos no aparecen -------------------------------
-function useDock(): { mobile: DockItem[]; desktop: DockItem[] } {
+// ---- Navegación (dock único): los módulos inactivos no aparecen ----------------------------
+function useDock() {
   const { isActive, catalogActive } = useModuleGate();
-  return useMemo(() => {
-    const map: DockItem = { id: 'map', label: 'Mapa', iconId: 'map', href: '/mapa' };
-    const catalog: DockItem = { id: 'catalog', label: 'Catálogo', iconId: 'catalog', href: '/catalogo' };
-    const forum: DockItem = { id: 'forum', label: 'Foro', iconId: 'forum', href: '/foro' };
-    const showMap = isActive('mapa');
-    const showForum = isActive('foro');
-    return {
-      mobile: [
-        { id: 'hub', label: 'Hub', iconId: 'hub', href: '/hub' },
-        ...(showMap ? [map] : []),
-        ...(catalogActive ? [catalog] : []),
-        ...(showForum ? [forum] : []),
-        { id: 'progress', label: 'Progreso', iconId: 'progress', href: '/progreso' },
-      ],
-      desktop: [
-        ...(showMap ? [map] : []),
-        ...(catalogActive ? [catalog] : []),
-        ...(showForum ? [forum] : []),
-        { id: 'contribute', label: 'Aportar', iconId: 'contribute', href: '/aportar' },
-      ],
-    };
-  }, [isActive, catalogActive]);
+  return useMemo(
+    () =>
+      DOCK_ITEMS.filter((item) => {
+        if (item.id === 'map') return isActive('mapa');
+        if (item.id === 'catalog') return catalogActive;
+        if (item.id === 'forum') return isActive('foro');
+        return true;
+      }),
+    [isActive, catalogActive],
+  );
 }
 
-// ---- Cabecera: progreso, estado de sincronización y sesión -----------------------
+// ---- Cabecera: enlaces editoriales, progreso y sesión --------------------------------------
+const HEADER_PILL =
+  'glass flex min-h-11 items-center rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold';
+
 function HeaderEnd() {
   const status = useAuthStore((s) => s.status);
   const profile = useAuthStore((s) => s.profile);
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
-  const syncStatus = useProgressStore((s) => s.syncStatus);
-  const syncError = useProgressStore((s) => s.syncError);
   const summary = useProgressSummary();
-
   const authenticated = status === 'authenticated';
-  let syncLabel = 'Local';
-  if (!isApiConfigured) syncLabel = 'Offline (sin API)';
-  else if (syncStatus === 'syncing') syncLabel = 'Sincronizando…';
-  else if (syncStatus === 'error') syncLabel = 'Error de sincronización';
-  else if (authenticated) syncLabel = 'Sincronizado';
-  const syncTone = syncStatus === 'error' ? 'text-vice-gold' : 'text-vice-text/70';
 
   return (
-    <div className="flex items-center gap-2 text-sm">
-      <span
-        role="status"
-        title={syncError ?? undefined}
-        className={`hidden whitespace-nowrap px-2 lg:inline ${syncTone}`}
-      >
-        {syncLabel}
-      </span>
+    <div className="flex items-center gap-2">
+      <nav aria-label="Secciones" className="mr-2 hidden items-center gap-1 md:flex">
+        {[
+          { href: '/guias', label: 'Guías' },
+          { href: '/noticias', label: 'Noticias' },
+        ].map((l) => (
+          <a
+            key={l.href}
+            href={l.href}
+            className="flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-vice-text hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+          >
+            {l.label}
+          </a>
+        ))}
+      </nav>
       <a
         href="/progreso"
-        className="glass flex min-h-11 items-center gap-2 rounded-full px-4 font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold"
+        className={`${HEADER_PILL} font-display text-vice-orange`}
         aria-label={`Progreso total ${summary.percent}%. Abrir mi avance`}
       >
-        <span className="hidden sm:inline">Progreso</span>
-        <span className="font-display text-vice-orange">{summary.percent}%</span>
+        {summary.percent}%
       </a>
       {authenticated ? (
         <button
           type="button"
           onClick={() => void signOut()}
-          className="glass flex min-h-11 items-center rounded-full px-4 font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold"
+          className={`${HEADER_PILL} gap-2`}
           aria-label="Cerrar sesión"
         >
-          <span className="hidden max-w-[10ch] truncate sm:inline">
-            {profile?.username ?? user?.email?.split('@')[0] ?? 'Cuenta'}
-          </span>
-          <span className="sm:ml-2 text-vice-orange">Salir</span>
+          <span className="max-w-[9ch] truncate">{profile?.username ?? user?.email?.split('@')[0] ?? 'Cuenta'}</span>
+          <span className="hidden text-vice-orange sm:inline">Salir</span>
         </button>
       ) : (
-        <a
-          href="/entrar"
-          className="glass flex min-h-11 items-center rounded-full px-4 font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold"
-        >
+        <a href="/entrar" className={HEADER_PILL}>
           Entrar
         </a>
       )}
@@ -199,13 +183,13 @@ function RequireAccount({ next, children }: { next: string; children: ReactNode 
   if (status === 'authenticated') return <>{children}</>;
   if (status === 'loading') {
     return (
-      <div className="flex h-full items-center justify-center p-6" role="status">
+      <div className="flex min-h-[60dvh] items-center justify-center p-6" role="status">
         Verificando sesión…
       </div>
     );
   }
   return (
-    <div className="flex h-full items-center justify-center p-6">
+    <div className="flex min-h-[60dvh] items-center justify-center p-6">
       <section className="glass max-w-md rounded-2xl p-8 text-center" aria-labelledby="lock-title">
         <h1 id="lock-title" className="font-display text-2xl font-bold">
           Necesitas una cuenta
@@ -235,7 +219,7 @@ const LOCKED: ReadonlySet<RouteId> = new Set<RouteId>(['map', 'catalog', 'forum'
 function Unavailable({ title, text }: { title: string; text: string }) {
   usePageMeta({ title, robots: NOINDEX });
   return (
-    <div className="flex h-full items-center justify-center p-6">
+    <div className="flex min-h-[60dvh] items-center justify-center p-6">
       <section className="glass max-w-md rounded-2xl p-8 text-center" aria-labelledby="na-title">
         <h1 id="na-title" className="font-display text-2xl font-bold">
           {title}
@@ -255,30 +239,25 @@ const MODULE_OFF = 'Este módulo está desactivado temporalmente.';
 
 export default function App() {
   const { path, params } = useLocation();
-  const status = useAuthStore((s) => s.status);
-  const guestMode = useAuthStore((s) => s.guestMode);
   const { isActive, catalogActive } = useModuleGate();
   const dock = useDock();
 
   const match = matchRoute(ROUTES, path);
   const route: RouteId | 'notfound' = match?.id ?? 'notfound';
-  const returning = status === 'authenticated' || guestMode;
 
-  // Metadatos por ruta (landing, guías, noticias y fichas los gestionan ellas mismas).
+  // Metadatos por ruta (guías, noticias y fichas los gestionan ellas mismas).
   const comparing = route === 'catalog' && params.has('comparar');
   const baseMeta = route === 'notfound' ? null : (STATIC_META[route] ?? null);
   const meta: PageMeta | null =
     comparing && baseMeta ? { ...baseMeta, robots: NOINDEX, canonicalPath: '/catalogo' } : baseMeta;
   usePageMeta(meta);
 
-  // Redirecciones de cliente (replaceState): /aportes -> /aportar; visitante recurrente en "/" -> Hub.
+  // Redirección de cliente (replaceState): /aportes -> /aportar.
   useEffect(() => {
     if (route === 'legacyContribute') navigate('/aportar', { replace: true });
-    else if (route === 'landing' && returning) navigate('/hub', { replace: true });
-  }, [route, returning]);
+  }, [route]);
 
   if (route === 'legacyContribute') return null;
-  if (route === 'landing') return returning ? null : <LandingAuthPage next={params.get('next')} />;
   if (route === 'login') return <LandingAuthPage next={params.get('next')} />;
 
   const modulo = match?.params.modulo ?? '';
@@ -286,6 +265,9 @@ export default function App() {
 
   let page: ReactNode;
   switch (route) {
+    case 'landing':
+      page = <HomePage />;
+      break;
     case 'hub':
       page = <DashboardPage section="hub" />;
       break;
@@ -345,13 +327,15 @@ export default function App() {
   }
 
   const activeId = route === 'notfound' ? undefined : DOCK_ACTIVE[route];
+  const locked = route !== 'notfound' && LOCKED.has(route);
 
   return (
     <ViceShell
       showHeader
-      lockScroll={route !== 'notfound' && LOCKED.has(route)}
+      lockScroll={locked}
+      footer={!locked}
       headerEnd={<HeaderEnd />}
-      dock={<BottomDock activeId={activeId} items={dock.mobile} desktopItems={dock.desktop} />}
+      dock={<BottomDock activeId={activeId} items={dock} />}
     >
       {page}
     </ViceShell>

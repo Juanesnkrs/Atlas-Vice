@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Modal } from '../ui/Modal';
 import { ApiError, apiFetch, isApiConfigured } from '../../store/useAuthStore';
 
 /* ------------------------------------------------------------------ */
@@ -76,6 +77,8 @@ interface Dict {
   contribute: string;
   forum: string;
   catalog: string;
+  guides: string;
+  news: string;
   contactCta: string;
   subscribeCta: string;
   language: string;
@@ -87,9 +90,7 @@ interface Dict {
   legal: string;
   dns: string;
   trademark: string;
-  openFooter: string;
   close: string;
-  closeFooter: string;
   email: string;
   message: string;
   send: string;
@@ -126,6 +127,8 @@ const DICT: Record<Lang, Dict> = {
     contribute: 'Aportes y moderación',
     forum: 'Foro de la comunidad',
     catalog: 'Catálogo de Leonida',
+    guides: 'Guías',
+    news: 'Noticias oficiales',
     contactCta: 'Escríbenos',
     subscribeCta: 'Recibir novedades',
     language: 'Idioma',
@@ -138,9 +141,7 @@ const DICT: Record<Lang, Dict> = {
     dns: 'No vender mi información',
     trademark:
       'LeonidApp es un proyecto de fans, independiente y sin ánimo de lucro. No está afiliado, respaldado ni patrocinado por Rockstar Games ni Take-Two Interactive. Grand Theft Auto, GTA, Vice City y Leonida son marcas registradas de sus respectivos propietarios.',
-    openFooter: 'Abrir información legal y enlaces',
     close: 'Cerrar',
-    closeFooter: 'Cerrar panel',
     email: 'Correo electrónico',
     message: 'Mensaje',
     send: 'Enviar',
@@ -175,6 +176,8 @@ const DICT: Record<Lang, Dict> = {
     contribute: 'Contributions & moderation',
     forum: 'Community forum',
     catalog: 'Leonida catalog',
+    guides: 'Guides',
+    news: 'Official news',
     contactCta: 'Write to us',
     subscribeCta: 'Get updates',
     language: 'Language',
@@ -187,9 +190,7 @@ const DICT: Record<Lang, Dict> = {
     dns: 'Do Not Sell My Information',
     trademark:
       'LeonidApp is an independent, non-profit fan project. It is not affiliated with, endorsed or sponsored by Rockstar Games or Take-Two Interactive. Grand Theft Auto, GTA, Vice City and Leonida are trademarks of their respective owners.',
-    openFooter: 'Open legal information and links',
     close: 'Close',
-    closeFooter: 'Close panel',
     email: 'Email',
     message: 'Message',
     send: 'Send',
@@ -426,97 +427,6 @@ function useSocialLinks(): SocialLink[] {
 }
 
 /* ------------------------------------------------------------------ */
-/* Modal accesible (foco atrapado, Esc cierra)                         */
-/* ------------------------------------------------------------------ */
-
-const FOCUSABLE =
-  'a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
-
-function Modal({
-  title,
-  onClose,
-  closeLabel,
-  children,
-}: {
-  title: string;
-  onClose: () => void;
-  closeLabel: string;
-  children: ReactNode;
-}) {
-  const titleId = useId();
-  const ref = useRef<HTMLDivElement>(null);
-  const closeRef = useRef(onClose);
-  closeRef.current = onClose;
-
-  useEffect(() => {
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    const node = ref.current;
-    node?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        closeRef.current();
-        return;
-      }
-      if (e.key !== 'Tab' || !node) return;
-      const items = Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE));
-      if (items.length === 0) {
-        e.preventDefault();
-        return;
-      }
-      const first = items[0]!;
-      const last = items[items.length - 1]!;
-      const active = document.activeElement;
-      if (e.shiftKey && (active === first || active === node)) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener('keydown', onKey, true);
-    return () => {
-      document.removeEventListener('keydown', onKey, true);
-      previous?.focus();
-    };
-  }, []);
-
-  return (
-    <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center">
-      <div aria-hidden="true" className="absolute inset-0 bg-black/80" onClick={onClose} />
-      <div
-        ref={ref}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        tabIndex={-1}
-        className="relative flex max-h-[88dvh] w-full max-w-xl flex-col rounded-t-2xl border border-white/20 bg-black text-white outline-none sm:rounded-2xl"
-      >
-        <div className="flex items-center justify-between gap-3 border-b border-white/15 px-5 py-3">
-          <h2 id={titleId} className="font-display text-lg font-bold">
-            {title}
-          </h2>
-          <button
-            type="button"
-            aria-label={closeLabel}
-            onClick={onClose}
-            className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-vice-gold"
-          >
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
-          </button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pt-4 pb-[calc(1.25rem+var(--safe-bottom))] text-sm leading-relaxed text-white/90">
-          {children}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* Formularios y ajustes de cookies                                    */
 /* ------------------------------------------------------------------ */
 
@@ -744,6 +654,12 @@ function FooterBody({
           <a className={LINK} href="/catalogo">
             {t.catalog}
           </a>
+          <a className={LINK} href="/guias">
+            {t.guides}
+          </a>
+          <a className={LINK} href="/noticias">
+            {t.news}
+          </a>
         </nav>
         <nav aria-label={t.subscribe} className="flex flex-col items-start">
           <h2 className={colTitle}>{t.subscribe}</h2>
@@ -809,11 +725,8 @@ function FooterBody({
   );
 }
 
-export interface FooterProps {
-  variant?: 'full' | 'compact';
-}
-
-export function Footer({ variant = 'full' }: FooterProps) {
+/** RockstarFooter: único pie de página, solo al final de las páginas con scroll. */
+export function RockstarFooter() {
   const [lang, setLangState] = useState<Lang>(() => {
     migrateLegacyStorage();
     const saved = readCookie(LANG_COOKIE);
@@ -821,31 +734,16 @@ export function Footer({ variant = 'full' }: FooterProps) {
     return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en') ? 'en' : 'es';
   });
   const [modal, setModal] = useState<ModalId | null>(null);
-  const [panel, setPanel] = useState(false);
   const t = DICT[lang];
-  const panelId = useId();
-  const panelRef = useRef<HTMLDivElement>(null);
-  const modalOpenRef = useRef(false);
-  modalOpenRef.current = modal !== null;
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
     writeCookie(LANG_COOKIE, l);
   }, []);
 
-  // Esc cierra el panel compacto (si no hay modal encima) y se bloquea el scroll de fondo ausente de efectos.
-  useEffect(() => {
-    if (!panel) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !modalOpenRef.current) setPanel(false);
-    };
-    document.addEventListener('keydown', onKey);
-    panelRef.current?.focus();
-    return () => document.removeEventListener('keydown', onKey);
-  }, [panel]);
-
   const modalNode = modal && (
     <Modal
+      open
       title={
         modal === 'cookies'
           ? t.cookieSettings
@@ -872,54 +770,6 @@ export function Footer({ variant = 'full' }: FooterProps) {
     </Modal>
   );
 
-  if (variant === 'compact') {
-    return (
-      <>
-        <div className="relative z-20 flex shrink-0 items-center justify-start bg-black px-3 md:px-6">
-          <button
-            type="button"
-            aria-expanded={panel}
-            aria-controls={panelId}
-            aria-label={t.openFooter}
-            onClick={() => setPanel((v) => !v)}
-            className="flex min-h-[44px] items-center gap-2 text-xs font-semibold text-white focus-visible:outline-2 focus-visible:outline-vice-gold md:min-h-[28px]"
-          >
-            <span>&copy; LeonidApp</span>
-            <span aria-hidden="true">{panel ? '▼' : '▲'}</span>
-          </button>
-        </div>
-        {panel && (
-          <div className="fixed inset-0 z-[60]">
-            <div aria-hidden="true" className="absolute inset-0 bg-black/60" onClick={() => setPanel(false)} />
-            <div
-              id={panelId}
-              ref={panelRef}
-              role="region"
-              aria-label="LeonidApp"
-              tabIndex={-1}
-              className="absolute inset-x-0 bottom-0 max-h-[85dvh] overflow-y-auto rounded-t-2xl border-t border-white/20 bg-black pb-[var(--safe-bottom)] text-white outline-none"
-            >
-              <div className="sticky top-0 z-10 flex justify-end bg-black px-3 pt-2">
-                <button
-                  type="button"
-                  aria-label={t.closeFooter}
-                  onClick={() => setPanel(false)}
-                  className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-vice-gold"
-                >
-                  <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <path d="M6 6l12 12M18 6L6 18" />
-                  </svg>
-                </button>
-              </div>
-              <FooterBody lang={lang} setLang={setLang} t={t} open={setModal} />
-            </div>
-          </div>
-        )}
-        {modalNode}
-      </>
-    );
-  }
-
   return (
     <>
       <footer className="relative z-20 shrink-0 bg-black pl-safe pr-safe text-white" aria-label="LeonidApp">
@@ -930,4 +780,4 @@ export function Footer({ variant = 'full' }: FooterProps) {
   );
 }
 
-export default Footer;
+export default RockstarFooter;
