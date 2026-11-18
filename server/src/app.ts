@@ -11,6 +11,7 @@ import { registerAuthRoutes } from './routes/auth.js';
 import { registerCatalogRoutes } from './routes/catalog.js';
 import { registerNewsRoutes } from './routes/news.js';
 import { registerSubmissionRoutes } from './routes/submissions.js';
+import { registerContactRoutes } from './routes/contact.js';
 import { registerConfigRoutes } from './routes/config.js';
 import { registerForumRoutes } from './routes/forum.js';
 import { registerProgressRoutes } from './routes/progress.js';
@@ -77,6 +78,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerProgressRoutes(app);
   await registerForumRoutes(app);
   await registerSubmissionRoutes(app);
+  await registerContactRoutes(app);
   await registerNewsRoutes(app);
 
   // --- Agente 05 (SEO + noticias oficiales): cableado tolerante ---------------
