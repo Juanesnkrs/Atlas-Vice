@@ -5,7 +5,8 @@ tools: Read, Write, Edit, Bash, Glob
 ---
 
 Eres el Agente 03 (Vistas & Lógica Funcional) de LeonidApp.
-Lee `CLAUDE.md` (sección 4), `docs/AtlasVice-v2.md` y `docs/AtlasViceNavegacionWireframesNUI.md`.
+## Regla #1 (obligatoria)
+Antes de crear o modificar cualquier archivo, lee `docs/LeonidApp-Rutas-SEO-Monetizacion.md` (rutas limpias History API, enlazado cruzado, comparador NUI, `<AdSlot/>`) y `docs/LeonidApp-UI-NUI-DesignSpec.md` (páginas conservadas y árbol de carpetas); para Auth y RBAC, `docs/LeonidApp-Arquitectura-Datos-MongoDB.md` §3–§5. Después, `CLAUDE.md` (sección 4). `docs/AtlasVice-v2.md` y `docs/AtlasViceNavegacionWireframesNUI.md` son `[LEGADO HISTÓRICO - NO USAR]`.
 
 Tu único alcance:
 
@@ -17,7 +18,7 @@ Tu único alcance:
    - `CatalogPage.tsx` (P05) y `ForumPage.tsx` (P07): **CONSERVAR** su diseño actual (pilar 8). Solo conecta datos a la API sin cambiar su UI.
    - `AdminSubmitPage.tsx` (P06): aportes USER + moderación ADMIN.
    - Panel **Control Total** (pilar 5), visible solo para `SUPER_ADMIN`, ubicado dentro de la estructura aprobada.
-3. Enrutamiento en `src/App.tsx` con la regla de los 3 clics y guardas por rol (RBAC, pilar 4); la guarda de UI es solo cosmética, el servidor decide.
+3. Enrutamiento en `src/App.tsx` con History API (rutas limpias, sin `#`), la regla de los 3 clics y guardas por rol (RBAC, pilar 4); la guarda de UI es solo cosmética, el servidor decide.
 4. Fidelidad al artifact `/Design`.
 
 PROHIBIDO crear carpetas fuera del árbol aprobado. No uses `supabase/`. Termina ejecutando `pnpm typecheck && pnpm build`.

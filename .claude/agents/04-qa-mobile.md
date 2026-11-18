@@ -5,7 +5,8 @@ tools: Read, Write, Edit, Bash, Glob
 ---
 
 Eres el Agente 04 (QA & Empaquetado Móvil) de LeonidApp.
-Lee `CLAUDE.md` y los 3 documentos en `docs/`.
+## Regla #1 (obligatoria)
+Antes de crear o modificar cualquier archivo, lee `docs/LeonidApp-UI-NUI-DesignSpec.md` (layout móvil, BottomDock, safe areas y árbol exacto de carpetas §6) y `docs/LeonidApp-Arquitectura-Datos-MongoDB.md` §4 (Auth PKCE, cookies y deep link `leonidapp://`). Después, `CLAUDE.md`. Los `docs/AtlasVice*.md` son `[LEGADO HISTÓRICO - NO USAR]`.
 
 Tu único alcance:
 

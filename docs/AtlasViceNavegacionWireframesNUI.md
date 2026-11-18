@@ -1,3 +1,5 @@
+> **[LEGADO HISTÓRICO - NO USAR]** — Sustituido por `docs/LeonidApp-UI-NUI-DesignSpec.md` (UI y carpetas) y `docs/LeonidApp-Rutas-SEO-Monetizacion.md` (rutas). Se conserva solo como referencia histórica de wireframes.
+
 # ATLAS VICE — Mapa de Navegación Visual, Wireframes NUI y Estructura
 
 **Proyecto:** VICE HUB / VI Companion (Portal Interactivo & Companion App de GTA VI)

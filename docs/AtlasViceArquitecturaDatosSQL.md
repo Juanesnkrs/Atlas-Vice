@@ -1,3 +1,5 @@
+> **[LEGADO HISTÓRICO - NO USAR]** — Sustituido por `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`. El motor es MongoDB; este DER SQL/Supabase se conserva solo como referencia histórica.
+
 # ATLAS VICE — Documento de Arquitectura de Datos y Esquema SQL
 
 **Proyecto:** VICE HUB / VI Companion (Portal Interactivo & Companion App de GTA VI)

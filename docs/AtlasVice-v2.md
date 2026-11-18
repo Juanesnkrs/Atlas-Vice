@@ -1,3 +1,5 @@
+> **[LEGADO HISTÓRICO - NO USAR]** — Sustituido por `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`, `docs/LeonidApp-Rutas-SEO-Monetizacion.md` y `docs/LeonidApp-UI-NUI-DesignSpec.md`. Se conserva solo como referencia histórica de requisitos (RF/HU).
+
 # ATLAS VICE — Especificación Técnica y Arquitectura del Sistema
 
 **Proyecto:** VICE HUB / VI Companion (Portal Interactivo & Companion App de GTA VI)  

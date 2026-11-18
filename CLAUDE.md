@@ -5,23 +5,23 @@
 - Nombre de producto: **LeonidApp**.
 - Application ID (Capacitor, iOS/Android): `com.leonidapp.companion`.
 - Esquema de deep links: `leonidapp://`.
-- El nombre "ATLAS VICE" sigue vigente solo como wordmark visual heredado (sección 3) y en nombres de documentos congelados en `/docs/`, hasta que se renombren.
+- El nombre "ATLAS VICE" sigue vigente solo como wordmark visual heredado (sección 3) y en los nombres de los documentos legados `AtlasVice*.md` de `/docs/`.
 
 ## 1. Fuente de Verdad Única
 
-Toda decisión de arquitectura, rutas y diseño está congelada en `/docs/`:
+Toda decisión de arquitectura, rutas y diseño está definida en estos 3 documentos maestros de `/docs/`:
 
-- `AtlasVice-v2.md` (Requisitos RF-01..07, Historias HU-01..07, Navegación P01..P07)
-- `AtlasViceArquitecturaDatosSQL.md` (DER original; **legado**: sirve de referencia conceptual de entidades, NO de motor)
-- `AtlasViceNavegacionWireframesNUI.md` (Wireframes NUI y estructura de carpetas)
+- `LeonidApp-Arquitectura-Datos-MongoDB.md` — las 10 colecciones Mongoose + Zod, RBAC (`GUEST` < `USER` < `MODERATOR` < `ADMIN` < `SUPER_ADMIN`), OAuth2 + PKCE con cookies HttpOnly y aprobación automática de `Submission`.
+- `LeonidApp-Rutas-SEO-Monetizacion.md` — rutas limpias con History API, SSR-lite (meta + JSON-LD) en Fastify, `sitemap.xml`, enlazado cruzado, comparador NUI y reglas de `<AdSlot/>`.
+- `LeonidApp-UI-NUI-DesignSpec.md` — tokens Vice Sunset NUI, fidelidad a `/Design` (`Mobile.dc.html`, `MobileHero.dc.html`), páginas conservadas, `<RockstarFooter/>` y árbol exacto de carpetas.
 
-Si un documento congelado contradice la sección 4 (arquitectura MongoDB) de este archivo, manda este archivo para persistencia y backend; los documentos mandan para rutas, wireframes y UX.
+Los documentos `AtlasVice-v2.md`, `AtlasViceArquitecturaDatosSQL.md` y `AtlasViceNavegacionWireframesNUI.md` son **[LEGADO HISTÓRICO - NO USAR]**: solo referencia histórica. Si este archivo y un documento `LeonidApp-*.md` difieren, manda el documento `LeonidApp-*.md` y este archivo debe corregirse.
 
 ## 2. Reglas Prohibidas (Zero Bloat)
 
 - PROHIBIDO instalar librerías de UI externas (Material UI, Chakra, Shadcn completo, Bootstrap). Todos los componentes se construyen en Tailwind sobre los tokens Vice NUI.
-- PROHIBIDO crear carpetas o archivos fuera del árbol aprobado (wireframes NUI + estructura de la sección 4 + carpetas válidas listadas abajo).
-- PROHIBIDO inventar campos o colecciones no aprobados: todo modelo Mongoose debe tener su schema Zod equivalente y reflejar las entidades del DER aprobado.
+- PROHIBIDO crear carpetas o archivos fuera del árbol aprobado (`docs/LeonidApp-UI-NUI-DesignSpec.md` §6 + carpetas válidas listadas abajo).
+- PROHIBIDO inventar campos o colecciones no aprobados: todo modelo Mongoose debe tener su schema Zod equivalente y reflejar exactamente las colecciones de `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`.
 - PROHIBIDO añadir código nuevo a `supabase/`: está deprecado (ver sección 4).
 - PROHIBIDO avanzar de fase sin ejecutar `pnpm typecheck` y `pnpm build` sin errores (en `server/` también su propio `typecheck` y `build`).
 - PROHIBIDO guardar tokens de sesión en `localStorage`/`sessionStorage`: solo cookies HttpOnly.
@@ -51,9 +51,9 @@ Si un documento congelado contradice la sección 4 (arquitectura MongoDB) de est
 1. **Auth PKCE**: flujo OAuth con PKCE, **máximo 4 botones** de proveedor/acceso en la pantalla de autenticación (sin añadir más).
 2. **Sesión con cookies HttpOnly**: tokens solo en cookies `HttpOnly` + `Secure` + `SameSite`; el cliente nunca lee el token. Deep link de retorno `leonidapp://`.
 3. **Noticias 100% oficiales**: únicamente fuentes oficiales de Rockstar Games / Take-Two. Prohibido contenido de terceros, rumores o scraping de medios. Ingesta mediante el worker del agente 05.
-4. **RBAC**: roles `USER`, `ADMIN`, `SUPER_ADMIN`. La autorización se aplica en el servidor (hook Fastify), nunca solo en la UI.
+4. **RBAC**: jerarquía `GUEST` (sin sesión, no persistido) < `USER` < `MODERATOR` < `ADMIN` < `SUPER_ADMIN`. La autorización se aplica en el servidor (hook Fastify), nunca solo en la UI.
 5. **Panel Control Total**: panel exclusivo de `SUPER_ADMIN` (gestión de roles, módulos, moderación y fuentes de noticias).
-6. **Footer estilo Rockstar**: pie de página institucional oscuro, columnas de enlaces, legales y avisos de marca registrada, sobre los tokens Vice NUI.
+6. **Footer estilo Rockstar** (`<RockstarFooter/>`): pie de página institucional negro `#000000`, Contact y Subscribe persistidos en MongoDB, selector de idioma, modal de cookies, columnas de enlaces, legales y avisos de marca registrada, sobre los tokens Vice NUI.
 7. **Landing SEO/Storytelling**: landing pública con narrativa, metadatos Open Graph, `sitemap.xml` y JSON-LD (ver agente 05).
 8. **Fidelidad al artifact `/Design`**: la UI replica el artifact `/Design`. Se **conservan** `src/pages/ForumPage.tsx` y `src/pages/CatalogPage.tsx` tal como están; solo se retocan para integrarlos con la API.
 
