@@ -223,7 +223,7 @@ function DetailPanel({ entity, tab, done, onToggle, markers, doneMarkers, thread
           <div className="flex flex-col gap-3">
             <h3 className="text-xs font-semibold uppercase tracking-widest text-vice-text/90">Estadísticas</h3>
             {stats.map((s, i) => (
-              <StatBar key={s.key} label={s.label} value={s.value} accent={ACCENTS[i % ACCENTS.length]} />
+              <StatBar key={s.key} label={s.label} value={s.value} valueLabel={s.display} accent={ACCENTS[i % ACCENTS.length]} />
             ))}
           </div>
         )}
@@ -850,7 +850,7 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
 
         <section aria-label="Estadísticas" className="glass flex flex-col gap-3 rounded-2xl p-5">
           {stats.length > 0 ? (
-            stats.map((s, i) => <StatBar key={s.key} label={s.label} value={s.value} accent={ACCENTS[i % ACCENTS.length]} />)
+            stats.map((s, i) => <StatBar key={s.key} label={s.label} value={s.value} valueLabel={s.display} accent={ACCENTS[i % ACCENTS.length]} />)
           ) : (
             <p className="text-sm text-vice-text/70">Sin estadísticas numéricas.</p>
           )}

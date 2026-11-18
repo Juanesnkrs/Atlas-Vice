@@ -342,14 +342,26 @@ export const STAT_LABELS: Record<string, string> = {
   frenado: 'Frenado',
   manejo: 'Manejo',
   rareza: 'Rareza',
+  maniobrabilidad_asfalto: 'Maniobrabilidad en asfalto',
+  maniobrabilidad_todoterreno: 'Maniobrabilidad todoterreno',
+  fuerza: 'Fuerza',
 };
 
-export const statsOf = (e: Entity): Array<{ key: string; label: string; value: number }> => {
+/**
+ * Estadísticas para las barras (0-100). Si la entidad trae `metadata_json.stats_juego`
+ * (escala 0-10 del juego, fichas importadas de grabaciones), `display` muestra ese valor exacto.
+ */
+export const statsOf = (e: Entity): Array<{ key: string; label: string; value: number; display?: string }> => {
   const s = e.stats_json;
   if (!s || typeof s !== 'object' || Array.isArray(s)) return [];
+  const juego = metaOf(e).stats_juego;
+  const exact = juego && typeof juego === 'object' && !Array.isArray(juego) ? (juego as Record<string, unknown>) : {};
   return Object.entries(s)
     .filter((kv): kv is [string, number] => typeof kv[1] === 'number')
-    .map(([key, value]) => ({ key, label: STAT_LABELS[key] ?? key, value }));
+    .map(([key, value]) => {
+      const g = exact[key];
+      return { key, label: STAT_LABELS[key] ?? key, value, display: typeof g === 'number' ? g.toFixed(1) : undefined };
+    });
 };
 
 export const metaOf = (e: Entity): Record<string, unknown> => {
