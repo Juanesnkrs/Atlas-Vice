@@ -57,6 +57,30 @@ Si un documento congelado contradice la sección 4 (arquitectura MongoDB) de est
 7. **Landing SEO/Storytelling**: landing pública con narrativa, metadatos Open Graph, `sitemap.xml` y JSON-LD (ver agente 05).
 8. **Fidelidad al artifact `/Design`**: la UI replica el artifact `/Design`. Se **conservan** `src/pages/ForumPage.tsx` y `src/pages/CatalogPage.tsx` tal como están; solo se retocan para integrarlos con la API.
 
+## Mapa de carpetas permitidas (código fuente)
+
+`src/` (cliente) — solo estas subcarpetas, más `App.tsx` y `main.tsx` en la raíz:
+
+- `components/layout`
+- `components/ui`
+- `data`
+- `pages`
+- `store`
+- `styles`
+- `types`
+
+`server/src/` (API) — solo estas subcarpetas, más `app.ts` e `index.ts` en la raíz:
+
+- `config`
+- `models`
+- `routes`
+- `plugins`
+- `services`
+- `workers`
+- `scripts`
+
+Cualquier archivo o carpeta fuera de este mapa lo elimina o reubica el `00-supervisor` en la auditoría.
+
 ## Carpetas válidas de herramientas (Graphify)
 
 `graphify-out/` (ignorada en git) y `.claude/skills/graphify/` son carpetas válidas del proyecto, fuera del árbol aprobado. El agente `04-qa-mobile` NO debe borrarlas, moverlas ni marcarlas como violación de estructura.
@@ -75,6 +99,7 @@ También son válidos, fuera del árbol aprobado, y `04-qa-mobile` NO debe borra
 
 | Agente | Alcance |
 | --- | --- |
+| `00-supervisor` | **Orquestador principal**: Tech Lead & QA Gatekeeper. Asigna tareas, audita estructura, builds y verificación en vivo; ningún bloque se commitea sin su aprobación |
 | `01-arquitecto-db` | Base del monorepo, MongoDB/Mongoose, Zod, tipos compartidos, stores |
 | `02-ui-vice-nui` | Sistema visual Vice NUI, componentes atómicos, Footer Rockstar |
 | `03-vistas-logica` | Vistas P01..P07, Auth PKCE, panel Control Total, integración API |
