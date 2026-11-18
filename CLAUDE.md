@@ -1,19 +1,30 @@
-# CLAUDE.md — Constitución Técnica de ATLAS VICE
+# CLAUDE.md — Constitución Técnica de LeonidApp (antes ATLAS VICE)
+
+## 0. Identidad
+
+- Nombre de producto: **LeonidApp**.
+- Application ID (Capacitor, iOS/Android): `com.leonidapp.companion`.
+- Esquema de deep links: `leonidapp://`.
+- El nombre "ATLAS VICE" sigue vigente solo como wordmark visual heredado (sección 3) y en nombres de documentos congelados en `/docs/`, hasta que se renombren.
 
 ## 1. Fuente de Verdad Única
 
-Toda decisión de arquitectura, base de datos, rutas y diseño está congelada en `/docs/`:
+Toda decisión de arquitectura, rutas y diseño está congelada en `/docs/`:
 
 - `AtlasVice-v2.md` (Requisitos RF-01..07, Historias HU-01..07, Navegación P01..P07)
-- `AtlasViceArquitecturaDatosSQL.md` (DER, 9 tablas PostgreSQL y políticas RLS)
+- `AtlasViceArquitecturaDatosSQL.md` (DER original; **legado**: sirve de referencia conceptual de entidades, NO de motor)
 - `AtlasViceNavegacionWireframesNUI.md` (Wireframes NUI y estructura de carpetas)
+
+Si un documento congelado contradice la sección 4 (arquitectura MongoDB) de este archivo, manda este archivo para persistencia y backend; los documentos mandan para rutas, wireframes y UX.
 
 ## 2. Reglas Prohibidas (Zero Bloat)
 
 - PROHIBIDO instalar librerías de UI externas (Material UI, Chakra, Shadcn completo, Bootstrap). Todos los componentes se construyen en Tailwind sobre los tokens Vice NUI.
-- PROHIBIDO crear carpetas o archivos fuera del árbol definido en `Atlas_Vice_Navegacion_Wireframes_NUI.pdf`.
-- PROHIBIDO modificar el esquema SQL o inventar columnas no aprobadas.
-- PROHIBIDO avanzar de fase sin ejecutar `pnpm typecheck` y `pnpm build` sin errores.
+- PROHIBIDO crear carpetas o archivos fuera del árbol aprobado (wireframes NUI + estructura de la sección 4 + carpetas válidas listadas abajo).
+- PROHIBIDO inventar campos o colecciones no aprobados: todo modelo Mongoose debe tener su schema Zod equivalente y reflejar las entidades del DER aprobado.
+- PROHIBIDO añadir código nuevo a `supabase/`: está deprecado (ver sección 4).
+- PROHIBIDO avanzar de fase sin ejecutar `pnpm typecheck` y `pnpm build` sin errores (en `server/` también su propio `typecheck` y `build`).
+- PROHIBIDO guardar tokens de sesión en `localStorage`/`sessionStorage`: solo cookies HttpOnly.
 
 ## 3. Tokens Visuales Obligatorios (Vice Sunset NUI)
 
@@ -26,17 +37,49 @@ Toda decisión de arquitectura, base de datos, rutas y diseño está congelada e
 - Escritorio: HUD flotante `100vw x 100vh` sin scroll vertical en Mapa (`P04`) e Inspector (`P05`).
 - Móvil (iOS/Android): Bottom Dock fijo de 5 iconos (`Hub`, `Mapa`, `Catálogo`, `Foro`, `Progreso`) + Bottom Sheets deslizables.
 
+## 4. Arquitectura LeonidApp (MongoDB)
+
+### Estructura de alto nivel
+
+- `src/` — Cliente Vite + React + TypeScript (strict) + Tailwind + Zustand + TanStack Query + idb-keyval (offline-first).
+- `server/` — API **Node.js + Fastify + TypeScript + Mongoose + Zod**. MongoDB es el único motor de persistencia. Validación de entrada/salida con Zod en cada ruta. Subcarpetas esperadas: `server/src/{config,models,routes,plugins,services,workers}`.
+- `supabase/` — **LEGADO DEPRECADO**. Se conserva solo como referencia histórica del DER y de los UUID de `seed.ts`. No se extiende, no se ejecuta y no se importa desde `src/` ni `server/`.
+- `android/` e `ios/` — proyectos nativos Capacitor con `appId` `com.leonidapp.companion`.
+
+### Los 8 pilares aprobados
+
+1. **Auth PKCE**: flujo OAuth con PKCE, **máximo 4 botones** de proveedor/acceso en la pantalla de autenticación (sin añadir más).
+2. **Sesión con cookies HttpOnly**: tokens solo en cookies `HttpOnly` + `Secure` + `SameSite`; el cliente nunca lee el token. Deep link de retorno `leonidapp://`.
+3. **Noticias 100% oficiales**: únicamente fuentes oficiales de Rockstar Games / Take-Two. Prohibido contenido de terceros, rumores o scraping de medios. Ingesta mediante el worker del agente 05.
+4. **RBAC**: roles `USER`, `ADMIN`, `SUPER_ADMIN`. La autorización se aplica en el servidor (hook Fastify), nunca solo en la UI.
+5. **Panel Control Total**: panel exclusivo de `SUPER_ADMIN` (gestión de roles, módulos, moderación y fuentes de noticias).
+6. **Footer estilo Rockstar**: pie de página institucional oscuro, columnas de enlaces, legales y avisos de marca registrada, sobre los tokens Vice NUI.
+7. **Landing SEO/Storytelling**: landing pública con narrativa, metadatos Open Graph, `sitemap.xml` y JSON-LD (ver agente 05).
+8. **Fidelidad al artifact `/Design`**: la UI replica el artifact `/Design`. Se **conservan** `src/pages/ForumPage.tsx` y `src/pages/CatalogPage.tsx` tal como están; solo se retocan para integrarlos con la API.
+
 ## Carpetas válidas de herramientas (Graphify)
 
-`graphify-out/` (ignorada en git) y `.claude/skills/graphify/` son carpetas válidas del proyecto, fuera del árbol de la sección 2. El agente `qa-mobile` NO debe borrarlas, moverlas ni marcarlas como violación de estructura.
+`graphify-out/` (ignorada en git) y `.claude/skills/graphify/` son carpetas válidas del proyecto, fuera del árbol aprobado. El agente `04-qa-mobile` NO debe borrarlas, moverlas ni marcarlas como violación de estructura.
 
 ## Carpetas y archivos válidos adicionales
 
-También son válidos, fuera del árbol de la sección 2, y `qa-mobile` NO debe borrarlos ni marcarlos como violación:
+También son válidos, fuera del árbol aprobado, y `04-qa-mobile` NO debe borrarlos ni marcarlos como violación:
 
+- `server/` (backend LeonidApp, sección 4).
+- `supabase/` (legado deprecado; no se borra, tampoco se amplía).
 - `android/` e `ios/` (proyectos nativos generados por Capacitor).
 - `src/data/seed.ts` (datos semilla de ejemplo y capa de acceso offline-first).
-- `supabase/03_seed_data.sql` (datos de ejemplo generados desde `seed.ts`, mismos UUIDs).
+- `supabase/03_seed_data.sql` (datos de ejemplo generados desde `seed.ts`, mismos UUIDs; legado).
+
+## Subagentes (`.claude/agents/`)
+
+| Agente | Alcance |
+| --- | --- |
+| `01-arquitecto-db` | Base del monorepo, MongoDB/Mongoose, Zod, tipos compartidos, stores |
+| `02-ui-vice-nui` | Sistema visual Vice NUI, componentes atómicos, Footer Rockstar |
+| `03-vistas-logica` | Vistas P01..P07, Auth PKCE, panel Control Total, integración API |
+| `04-qa-mobile` | Capacitor `com.leonidapp.companion`, auditoría de estructura, builds |
+| `05-workers-seo` | Worker de noticias oficiales Rockstar/Take-Two, `sitemap.xml`, JSON-LD |
 
 ## graphify
 
@@ -53,5 +96,5 @@ Rules:
 
 - PROHIBIDO hacer commits directos en `main` o `develop`.
 - Todo trabajo se hace en ramas `feature/*` creadas desde `develop` y se integra mediante Pull Request.
-- Los mensajes de commit siguen Conventional Commits en español, con estos prefijos: `feat:`, `fix:`, `ui:`, `chore:`, `docs:`.
+- Los mensajes de commit siguen Conventional Commits en español, con estos prefijos: `feat:`, `fix:`, `ui:`, `chore:`, `docs:` (se admite scope, p. ej. `docs(agents):`).
 - Ejemplo: `ui: ajusta el espacio inferior de safe-area en ViceShell`.
