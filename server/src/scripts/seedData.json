@@ -1,0 +1,966 @@
+{
+ "profiles": [
+  {
+   "id": "a71a5000-0000-4000-8000-000000000901",
+   "username": "NeonRider",
+   "avatar_url": null,
+   "discord_id": null,
+   "rol": "ADMIN",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000902",
+   "username": "PalmaDorada",
+   "avatar_url": null,
+   "discord_id": null,
+   "rol": "USER",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000903",
+   "username": "KeysCaptain",
+   "avatar_url": null,
+   "discord_id": null,
+   "rol": "USER",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000904",
+   "username": "LuzDeOcean",
+   "avatar_url": null,
+   "discord_id": null,
+   "rol": "USER",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000905",
+   "username": "TurboMiami",
+   "avatar_url": null,
+   "discord_id": null,
+   "rol": "USER",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  }
+ ],
+ "modules": [
+  {
+   "id": "a71a5000-0000-4000-8000-000000000001",
+   "slug": "mapa",
+   "nombre": "Mapa de Leonida",
+   "icono": "map",
+   "activo": true,
+   "orden": 1,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000002",
+   "slug": "armas",
+   "nombre": "Armas",
+   "icono": "crosshair",
+   "activo": true,
+   "orden": 2,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000003",
+   "slug": "vehiculos",
+   "nombre": "Vehículos",
+   "icono": "car",
+   "activo": true,
+   "orden": 3,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000004",
+   "slug": "coleccionables",
+   "nombre": "Coleccionables",
+   "icono": "gem",
+   "activo": true,
+   "orden": 4,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000005",
+   "slug": "guias",
+   "nombre": "Guías y Misiones",
+   "icono": "book",
+   "activo": true,
+   "orden": 5,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000006",
+   "slug": "foro",
+   "nombre": "Foro y Comunidad",
+   "icono": "messages",
+   "activo": true,
+   "orden": 6,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000007",
+   "slug": "radio",
+   "nombre": "Estaciones de Radio",
+   "icono": "radio",
+   "activo": false,
+   "orden": 7,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  }
+ ],
+ "entities": [
+  {
+   "id": "a71a5000-0000-4000-8000-000000000010",
+   "module_id": "a71a5000-0000-4000-8000-000000000002",
+   "titulo": "Pistola Compacta C9",
+   "subtitulo": "Arma corta de uso diario",
+   "categoria": "Pistolas",
+   "imagen_url": null,
+   "stats_json": {
+    "dano": 38,
+    "cadencia": 62,
+    "precision": 70,
+    "alcance": 35
+   },
+   "metadata_json": {
+    "ubicacion": "Ocean Beach",
+    "precio": 1200,
+    "municion": "9 mm",
+    "silueta": "pistol",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000011",
+   "module_id": "a71a5000-0000-4000-8000-000000000002",
+   "titulo": "Revólver Magnum R44",
+   "subtitulo": "Gran potencia, recarga lenta",
+   "categoria": "Pistolas",
+   "imagen_url": null,
+   "stats_json": {
+    "dano": 82,
+    "cadencia": 25,
+    "precision": 66,
+    "alcance": 48
+   },
+   "metadata_json": {
+    "ubicacion": "Vice Beach",
+    "precio": 3400,
+    "municion": ".44",
+    "silueta": "pistol",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000012",
+   "module_id": "a71a5000-0000-4000-8000-000000000002",
+   "titulo": "Subfusil Ráfaga S7",
+   "subtitulo": "Cadencia alta a corta distancia",
+   "categoria": "Subfusiles",
+   "imagen_url": null,
+   "stats_json": {
+    "dano": 42,
+    "cadencia": 90,
+    "precision": 48,
+    "alcance": 30
+   },
+   "metadata_json": {
+    "ubicacion": "Downtown",
+    "precio": 2800,
+    "municion": "9 mm",
+    "silueta": "smg",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000013",
+   "module_id": "a71a5000-0000-4000-8000-000000000002",
+   "titulo": "Fusil de Asalto Leonida AR",
+   "subtitulo": "Versátil en todo rango",
+   "categoria": "Rifles de Asalto",
+   "imagen_url": null,
+   "stats_json": {
+    "dano": 64,
+    "cadencia": 74,
+    "precision": 68,
+    "alcance": 72
+   },
+   "metadata_json": {
+    "ubicacion": "Port Gellhorn",
+    "precio": 5200,
+    "municion": "5.56",
+    "silueta": "rifle",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000014",
+   "module_id": "a71a5000-0000-4000-8000-000000000002",
+   "titulo": "Carabina Táctica CT-3",
+   "subtitulo": "Ligera y estable",
+   "categoria": "Rifles de Asalto",
+   "imagen_url": null,
+   "stats_json": {
+    "dano": 58,
+    "cadencia": 70,
+    "precision": 78,
+    "alcance": 66
+   },
+   "metadata_json": {
+    "ubicacion": "Grassrivers",
+    "precio": 4600,
+    "municion": "5.56",
+    "silueta": "rifle",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000015",
+   "module_id": "a71a5000-0000-4000-8000-000000000002",
+   "titulo": "Escopeta Corredera P-12",
+   "subtitulo": "Devastadora de cerca",
+   "categoria": "Escopetas",
+   "imagen_url": null,
+   "stats_json": {
+    "dano": 92,
+    "cadencia": 28,
+    "precision": 30,
+    "alcance": 18
+   },
+   "metadata_json": {
+    "ubicacion": "Grassrivers",
+    "precio": 3100,
+    "municion": "Calibre 12",
+    "silueta": "shotgun",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000016",
+   "module_id": "a71a5000-0000-4000-8000-000000000002",
+   "titulo": "Rifle de Precisión Halcón",
+   "subtitulo": "Disparo único a larga distancia",
+   "categoria": "Francotiradores",
+   "imagen_url": null,
+   "stats_json": {
+    "dano": 95,
+    "cadencia": 15,
+    "precision": 96,
+    "alcance": 98
+   },
+   "metadata_json": {
+    "ubicacion": "Ambrosia",
+    "precio": 7800,
+    "municion": ".308",
+    "silueta": "sniper",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000020",
+   "module_id": "a71a5000-0000-4000-8000-000000000003",
+   "titulo": "Deportivo Cometa GT",
+   "subtitulo": "Coupé de alto rendimiento",
+   "categoria": "Deportivos",
+   "imagen_url": null,
+   "stats_json": {
+    "velocidad": 92,
+    "aceleracion": 88,
+    "frenado": 70,
+    "manejo": 84
+   },
+   "metadata_json": {
+    "ubicacion": "Vice Beach",
+    "precio": 148000,
+    "plazas": 2,
+    "silueta": "sports",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000021",
+   "module_id": "a71a5000-0000-4000-8000-000000000003",
+   "titulo": "Muscle Bruto V8",
+   "subtitulo": "Par motor y humo",
+   "categoria": "Muscle",
+   "imagen_url": null,
+   "stats_json": {
+    "velocidad": 80,
+    "aceleracion": 78,
+    "frenado": 52,
+    "manejo": 50
+   },
+   "metadata_json": {
+    "ubicacion": "Grassrivers",
+    "precio": 72000,
+    "plazas": 2,
+    "silueta": "muscle",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000022",
+   "module_id": "a71a5000-0000-4000-8000-000000000003",
+   "titulo": "SUV Cayo Explorer",
+   "subtitulo": "Robusto para caminos de tierra",
+   "categoria": "SUV",
+   "imagen_url": null,
+   "stats_json": {
+    "velocidad": 62,
+    "aceleracion": 55,
+    "frenado": 64,
+    "manejo": 60
+   },
+   "metadata_json": {
+    "ubicacion": "Grassrivers",
+    "precio": 54000,
+    "plazas": 5,
+    "silueta": "suv",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000023",
+   "module_id": "a71a5000-0000-4000-8000-000000000003",
+   "titulo": "Sedán Costero LX",
+   "subtitulo": "Cómodo y discreto",
+   "categoria": "Sedanes",
+   "imagen_url": null,
+   "stats_json": {
+    "velocidad": 60,
+    "aceleracion": 58,
+    "frenado": 68,
+    "manejo": 66
+   },
+   "metadata_json": {
+    "ubicacion": "Downtown",
+    "precio": 38000,
+    "plazas": 4,
+    "silueta": "sedan",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000024",
+   "module_id": "a71a5000-0000-4000-8000-000000000003",
+   "titulo": "Moto Relámpago 600",
+   "subtitulo": "Ágil entre el tráfico",
+   "categoria": "Motos",
+   "imagen_url": null,
+   "stats_json": {
+    "velocidad": 86,
+    "aceleracion": 92,
+    "frenado": 60,
+    "manejo": 72
+   },
+   "metadata_json": {
+    "ubicacion": "Ocean Beach",
+    "precio": 26000,
+    "plazas": 2,
+    "silueta": "bike",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000025",
+   "module_id": "a71a5000-0000-4000-8000-000000000003",
+   "titulo": "Lancha Marea Veloz",
+   "subtitulo": "Perfecta para los Cayos",
+   "categoria": "Náuticos",
+   "imagen_url": null,
+   "stats_json": {
+    "velocidad": 78,
+    "aceleracion": 66,
+    "frenado": 40,
+    "manejo": 58
+   },
+   "metadata_json": {
+    "ubicacion": "Leonida Keys",
+    "precio": 64000,
+    "plazas": 4,
+    "silueta": "boat",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000030",
+   "module_id": "a71a5000-0000-4000-8000-000000000004",
+   "titulo": "Paquetes Ocultos",
+   "subtitulo": "Cápsulas escondidas por toda la isla",
+   "categoria": "Paquetes Ocultos",
+   "imagen_url": "/assets/complexmusic_1794873298_4032011328293408607_12790857096.jpg",
+   "stats_json": {
+    "rareza": 40
+   },
+   "metadata_json": {
+    "region": "Varias",
+    "total": 3,
+    "ubicacion": "Varias regiones",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000031",
+   "module_id": "a71a5000-0000-4000-8000-000000000004",
+   "titulo": "Reliquias de la Costa",
+   "subtitulo": "Piezas antiguas halladas en el litoral",
+   "categoria": "Reliquias",
+   "imagen_url": "/assets/rockstargames_1782392540_3927315665585859597_184595688.jpg",
+   "stats_json": {
+    "rareza": 70
+   },
+   "metadata_json": {
+    "region": "Vice Beach",
+    "total": 2,
+    "ubicacion": "Vice Beach y Ocean Beach",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000032",
+   "module_id": "a71a5000-0000-4000-8000-000000000004",
+   "titulo": "Graffitis de Downtown",
+   "subtitulo": "Obras de arte urbano por descubrir",
+   "categoria": "Graffitis",
+   "imagen_url": "/assets/complexmusic_1794873298_4032011329073355805_12790857096.jpg",
+   "stats_json": {
+    "rareza": 35
+   },
+   "metadata_json": {
+    "region": "Downtown",
+    "total": 1,
+    "ubicacion": "Downtown",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000033",
+   "module_id": "a71a5000-0000-4000-8000-000000000004",
+   "titulo": "Placas de Matrícula Raras",
+   "subtitulo": "Series limitadas de matrículas",
+   "categoria": "Reliquias",
+   "imagen_url": "/assets/rockstargames_1790262334_3993332294647284992_184595688.jpg",
+   "stats_json": {
+    "rareza": 82
+   },
+   "metadata_json": {
+    "region": "Port Gellhorn",
+    "total": 1,
+    "ubicacion": "Port Gellhorn",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000034",
+   "module_id": "a71a5000-0000-4000-8000-000000000004",
+   "titulo": "Cápsulas del Pantano",
+   "subtitulo": "Escondidas entre la vegetación",
+   "categoria": "Paquetes Ocultos",
+   "imagen_url": "/assets/complexmusic_1794873298_4032011331254611421_12790857096.jpg",
+   "stats_json": {
+    "rareza": 58
+   },
+   "metadata_json": {
+    "region": "Grassrivers",
+    "total": 1,
+    "ubicacion": "Grassrivers",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000035",
+   "module_id": "a71a5000-0000-4000-8000-000000000004",
+   "titulo": "Postales de los Cayos",
+   "subtitulo": "Imágenes de colección del archipiélago",
+   "categoria": "Graffitis",
+   "imagen_url": "/assets/rockstargames_1791475498_4003509049827826360_184595688.jpg",
+   "stats_json": {
+    "rareza": 46
+   },
+   "metadata_json": {
+    "region": "Leonida Keys",
+    "total": 1,
+    "ubicacion": "Leonida Keys",
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000040",
+   "module_id": "a71a5000-0000-4000-8000-000000000005",
+   "titulo": "Primer día en Leonida",
+   "subtitulo": "Cómo empezar sin perderse",
+   "categoria": "Consejos",
+   "imagen_url": null,
+   "stats_json": {},
+   "metadata_json": {
+    "spoiler": false,
+    "pasos": [
+     "Explora la costa cercana al inicio.",
+     "Activa el mapa y revisa las capas.",
+     "Marca todo hallazgo para llevar tu avance."
+    ],
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000041",
+   "module_id": "a71a5000-0000-4000-8000-000000000005",
+   "titulo": "Ruta de la Tienda de Armas",
+   "subtitulo": "Recorrido por tiendas de la costa",
+   "categoria": "Tiendas",
+   "imagen_url": null,
+   "stats_json": {},
+   "metadata_json": {
+    "spoiler": false,
+    "pasos": [
+     "Empieza en Ocean Beach.",
+     "Sigue la costa hasta Vice Beach.",
+     "Compara precios en el Inspector."
+    ],
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000042",
+   "module_id": "a71a5000-0000-4000-8000-000000000005",
+   "titulo": "Evento aleatorio en carretera",
+   "subtitulo": "Cómo reconocerlo y qué esperar",
+   "categoria": "Eventos",
+   "imagen_url": null,
+   "stats_json": {},
+   "metadata_json": {
+    "spoiler": false,
+    "pasos": [
+     "Circula por la autopista de Grassrivers.",
+     "Detente al ver el vehículo averiado.",
+     "Interactúa con el conductor."
+    ],
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000043",
+   "module_id": "a71a5000-0000-4000-8000-000000000005",
+   "titulo": "Misión de ejemplo: Gasolinera",
+   "subtitulo": "Resumen con avisos de spoiler",
+   "categoria": "Misión Principal",
+   "imagen_url": null,
+   "stats_json": {},
+   "metadata_json": {
+    "spoiler": true,
+    "pasos": [
+     "Llega a la gasolinera antes del atardecer.",
+     "Observa la zona antes de actuar.",
+     "Sal por la vía lateral."
+    ],
+    "sample": true
+   },
+   "created_at": "2026-06-01T12:00:00.000Z"
+  }
+ ],
+ "markers": [
+  {
+   "id": "a71a5000-0000-4000-8000-000000000100",
+   "entity_id": "a71a5000-0000-4000-8000-000000000030",
+   "region": "Vice Beach",
+   "titulo": "Paquete oculto junto al muelle",
+   "descripcion": "Cápsula escondida bajo el pasamanos del muelle.",
+   "coord_x": 765.25,
+   "coord_y": 318.5,
+   "media_url": "/assets/complexmusic_1794873298_4032011328293408607_12790857096.jpg",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000101",
+   "entity_id": "a71a5000-0000-4000-8000-000000000030",
+   "region": "Downtown",
+   "titulo": "Paquete oculto en la azotea",
+   "descripcion": "Accesible desde la escalera de incendios.",
+   "coord_x": 618,
+   "coord_y": 352.75,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000102",
+   "entity_id": "a71a5000-0000-4000-8000-000000000030",
+   "region": "Grassrivers",
+   "titulo": "Paquete oculto en el embarcadero",
+   "descripcion": "Cerca del embarcadero de madera.",
+   "coord_x": 262.5,
+   "coord_y": 178,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000103",
+   "entity_id": "a71a5000-0000-4000-8000-000000000031",
+   "region": "Vice Beach",
+   "titulo": "Reliquia de la costa",
+   "descripcion": "Pieza antigua semienterrada en la arena.",
+   "coord_x": 800,
+   "coord_y": 280.25,
+   "media_url": "/assets/rockstargames_1782392540_3927315665585859597_184595688.jpg",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000104",
+   "entity_id": "a71a5000-0000-4000-8000-000000000032",
+   "region": "Downtown",
+   "titulo": "Graffiti en el callejón",
+   "descripcion": "Mural visible desde el callejón trasero.",
+   "coord_x": 590.5,
+   "coord_y": 385,
+   "media_url": "/assets/complexmusic_1794873298_4032011329073355805_12790857096.jpg",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000105",
+   "entity_id": "a71a5000-0000-4000-8000-000000000033",
+   "region": "Port Gellhorn",
+   "titulo": "Placa rara en el astillero",
+   "descripcion": "Sobre la baranda de un contenedor.",
+   "coord_x": 520,
+   "coord_y": 140.5,
+   "media_url": "/assets/rockstargames_1790262334_3993332294647284992_184595688.jpg",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000106",
+   "entity_id": "a71a5000-0000-4000-8000-000000000034",
+   "region": "Grassrivers",
+   "titulo": "Cápsula del pantano",
+   "descripcion": "Entre las raíces de un manglar.",
+   "coord_x": 215.75,
+   "coord_y": 225,
+   "media_url": "/assets/complexmusic_1794873298_4032011331254611421_12790857096.jpg",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000107",
+   "entity_id": "a71a5000-0000-4000-8000-000000000035",
+   "region": "Leonida Keys",
+   "titulo": "Postal de los Cayos",
+   "descripcion": "En el faro del cayo más pequeño.",
+   "coord_x": 330,
+   "coord_y": 610,
+   "media_url": "/assets/rockstargames_1791475498_4003509049827826360_184595688.jpg",
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000108",
+   "entity_id": "a71a5000-0000-4000-8000-000000000031",
+   "region": "Ocean Beach",
+   "titulo": "Reliquia de Ocean Beach",
+   "descripcion": "Bajo el paseo marítimo.",
+   "coord_x": 695.5,
+   "coord_y": 480,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000109",
+   "entity_id": "a71a5000-0000-4000-8000-000000000010",
+   "region": "Ocean Beach",
+   "titulo": "Tienda de armas Ocean",
+   "descripcion": "Venta de la Pistola Compacta C9.",
+   "coord_x": 705,
+   "coord_y": 455.5,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000110",
+   "entity_id": "a71a5000-0000-4000-8000-000000000011",
+   "region": "Vice Beach",
+   "titulo": "Armería de Vice Beach",
+   "descripcion": "Venta del Revólver Magnum R44.",
+   "coord_x": 745.25,
+   "coord_y": 360,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000111",
+   "entity_id": "a71a5000-0000-4000-8000-000000000013",
+   "region": "Port Gellhorn",
+   "titulo": "Depósito de ejemplo",
+   "descripcion": "Punto de venta del Fusil Leonida AR.",
+   "coord_x": 548,
+   "coord_y": 118,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000112",
+   "entity_id": "a71a5000-0000-4000-8000-000000000016",
+   "region": "Ambrosia",
+   "titulo": "Torre de vigilancia",
+   "descripcion": "Ubicación de ejemplo del rifle de precisión.",
+   "coord_x": 810,
+   "coord_y": 170.5,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000113",
+   "entity_id": "a71a5000-0000-4000-8000-000000000020",
+   "region": "Vice Beach",
+   "titulo": "Concesionario Cometa",
+   "descripcion": "Exposición del Deportivo Cometa GT.",
+   "coord_x": 780.5,
+   "coord_y": 340,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000114",
+   "entity_id": "a71a5000-0000-4000-8000-000000000021",
+   "region": "Grassrivers",
+   "titulo": "Taller del pantano",
+   "descripcion": "Aparece el Muscle Bruto V8 en el taller.",
+   "coord_x": 240,
+   "coord_y": 268.25,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000115",
+   "entity_id": "a71a5000-0000-4000-8000-000000000025",
+   "region": "Leonida Keys",
+   "titulo": "Marina de los Cayos",
+   "descripcion": "Amarre de la Lancha Marea Veloz.",
+   "coord_x": 410,
+   "coord_y": 575,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000116",
+   "entity_id": "a71a5000-0000-4000-8000-000000000041",
+   "region": "Ocean Beach",
+   "titulo": "Inicio de la ruta de tiendas",
+   "descripcion": "Primer punto de la guía de tiendas.",
+   "coord_x": 690,
+   "coord_y": 500.5,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000117",
+   "entity_id": "a71a5000-0000-4000-8000-000000000042",
+   "region": "Grassrivers",
+   "titulo": "Evento de carretera",
+   "descripcion": "Zona donde puede aparecer el evento de ejemplo.",
+   "coord_x": 330,
+   "coord_y": 210,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000118",
+   "entity_id": "a71a5000-0000-4000-8000-000000000040",
+   "region": "Vice Beach",
+   "titulo": "Punto de partida de ejemplo",
+   "descripcion": "Primer paso de la guía de inicio.",
+   "coord_x": 735,
+   "coord_y": 300,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000119",
+   "entity_id": null,
+   "region": "Downtown",
+   "titulo": "Mirador del centro",
+   "descripcion": "Punto de interés sin entidad asociada.",
+   "coord_x": 640.25,
+   "coord_y": 330,
+   "media_url": null,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  }
+ ],
+ "threads": [
+  {
+   "id": "a71a5000-0000-4000-8000-000000000500",
+   "user_id": "a71a5000-0000-4000-8000-000000000901",
+   "entity_id": null,
+   "marker_id": null,
+   "categoria": "General",
+   "titulo": "Bienvenida a la comunidad de ATLAS VICE (datos de ejemplo)",
+   "contenido": "Este hilo es contenido de ejemplo. Usa el foro para compartir rutas, dudas y hallazgos. Respeta las etiquetas de spoiler.",
+   "is_spoiler": false,
+   "is_pinned": true,
+   "upvotes_count": 57,
+   "created_at": "2026-06-01T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000501",
+   "user_id": "a71a5000-0000-4000-8000-000000000902",
+   "entity_id": "a71a5000-0000-4000-8000-000000000030",
+   "marker_id": null,
+   "categoria": "Guias/Ayuda",
+   "titulo": "¿Cuál es la mejor ruta para empezar a coleccionar?",
+   "contenido": "Estoy empezando y quiero ordenar los paquetes ocultos por región. ¿Alguna ruta sugerida desde Vice Beach?",
+   "is_spoiler": false,
+   "is_pinned": false,
+   "upvotes_count": 34,
+   "created_at": "2026-06-12T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000502",
+   "user_id": "a71a5000-0000-4000-8000-000000000903",
+   "entity_id": null,
+   "marker_id": "a71a5000-0000-4000-8000-000000000107",
+   "categoria": "Secretos",
+   "titulo": "Posible hallazgo cerca del faro de los Cayos",
+   "contenido": "Contenido de ejemplo marcado como spoiler: creo haber visto algo cerca del faro. ¿Alguien más lo confirmó?",
+   "is_spoiler": true,
+   "is_pinned": false,
+   "upvotes_count": 88,
+   "created_at": "2026-06-14T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000503",
+   "user_id": "a71a5000-0000-4000-8000-000000000904",
+   "entity_id": null,
+   "marker_id": null,
+   "categoria": "Crews",
+   "titulo": "Busco crew para explorar de noche",
+   "contenido": "Hilo de ejemplo. Horario: noches de fin de semana. Se agradece micrófono y buen humor.",
+   "is_spoiler": false,
+   "is_pinned": false,
+   "upvotes_count": 12,
+   "created_at": "2026-06-20T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000504",
+   "user_id": "a71a5000-0000-4000-8000-000000000905",
+   "entity_id": "a71a5000-0000-4000-8000-000000000020",
+   "marker_id": null,
+   "categoria": "Guias/Ayuda",
+   "titulo": "Comparativa: Deportivo Cometa GT vs Muscle Bruto V8",
+   "contenido": "Comparo velocidad, aceleración y manejo con el Inspector. ¿Qué prefieren para carretera?",
+   "is_spoiler": false,
+   "is_pinned": false,
+   "upvotes_count": 41,
+   "created_at": "2026-06-22T12:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000505",
+   "user_id": "a71a5000-0000-4000-8000-000000000902",
+   "entity_id": null,
+   "marker_id": "a71a5000-0000-4000-8000-000000000109",
+   "categoria": "General",
+   "titulo": "Tienda de armas de Ocean Beach: precios de ejemplo",
+   "contenido": "¿Los precios de la Pistola Compacta se parecen a los del catálogo del portal? Dato de ejemplo.",
+   "is_spoiler": false,
+   "is_pinned": false,
+   "upvotes_count": 9,
+   "created_at": "2026-06-29T12:00:00.000Z"
+  }
+ ],
+ "posts": [
+  {
+   "id": "a71a5000-0000-4000-8000-000000000600",
+   "thread_id": "a71a5000-0000-4000-8000-000000000501",
+   "user_id": "a71a5000-0000-4000-8000-000000000901",
+   "parent_post_id": null,
+   "contenido": "Empieza por la costa y avanza hacia Downtown; así no cruzas dos veces las mismas calles.",
+   "upvotes_count": 14,
+   "created_at": "2026-06-12T15:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000601",
+   "thread_id": "a71a5000-0000-4000-8000-000000000501",
+   "user_id": "a71a5000-0000-4000-8000-000000000902",
+   "parent_post_id": "a71a5000-0000-4000-8000-000000000600",
+   "contenido": "Gracias, lo pruebo hoy con la capa de Coleccionables activada.",
+   "upvotes_count": 3,
+   "created_at": "2026-06-13T15:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000602",
+   "thread_id": "a71a5000-0000-4000-8000-000000000501",
+   "user_id": "a71a5000-0000-4000-8000-000000000904",
+   "parent_post_id": "a71a5000-0000-4000-8000-000000000600",
+   "contenido": "Yo marco cada paquete al 100% para ver cuánto me falta por región.",
+   "upvotes_count": 6,
+   "created_at": "2026-06-13T15:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000603",
+   "thread_id": "a71a5000-0000-4000-8000-000000000501",
+   "user_id": "a71a5000-0000-4000-8000-000000000903",
+   "parent_post_id": null,
+   "contenido": "Los Cayos conviene dejarlos para el final: hace falta lancha.",
+   "upvotes_count": 9,
+   "created_at": "2026-06-14T15:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000604",
+   "thread_id": "a71a5000-0000-4000-8000-000000000502",
+   "user_id": "a71a5000-0000-4000-8000-000000000901",
+   "parent_post_id": null,
+   "contenido": "Aviso de spoiler: tomen estas teorías con cautela, es contenido de ejemplo.",
+   "upvotes_count": 21,
+   "created_at": "2026-06-15T15:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000605",
+   "thread_id": "a71a5000-0000-4000-8000-000000000502",
+   "user_id": "a71a5000-0000-4000-8000-000000000905",
+   "parent_post_id": "a71a5000-0000-4000-8000-000000000604",
+   "contenido": "Coincido. Prefiero esperar a que haya más información.",
+   "upvotes_count": 4,
+   "created_at": "2026-06-16T15:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000606",
+   "thread_id": "a71a5000-0000-4000-8000-000000000504",
+   "user_id": "a71a5000-0000-4000-8000-000000000904",
+   "parent_post_id": null,
+   "contenido": "Para carretera recta, el Deportivo Cometa GT; para terracería, el SUV.",
+   "upvotes_count": 11,
+   "created_at": "2026-06-23T15:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000607",
+   "thread_id": "a71a5000-0000-4000-8000-000000000504",
+   "user_id": "a71a5000-0000-4000-8000-000000000903",
+   "parent_post_id": "a71a5000-0000-4000-8000-000000000606",
+   "contenido": "Sin duda; y la moto para tráfico urbano.",
+   "upvotes_count": 2,
+   "created_at": "2026-06-24T15:00:00.000Z"
+  },
+  {
+   "id": "a71a5000-0000-4000-8000-000000000608",
+   "thread_id": "a71a5000-0000-4000-8000-000000000503",
+   "user_id": "a71a5000-0000-4000-8000-000000000902",
+   "parent_post_id": null,
+   "contenido": "Me apunto, aviso por aquí cuando esté conectado.",
+   "upvotes_count": 3,
+   "created_at": "2026-06-21T15:00:00.000Z"
+  }
+ ]
+}
