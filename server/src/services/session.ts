@@ -10,13 +10,13 @@ const SESSION_TTL_S = 60 * 60 * 24 * 7;
 const key = new TextEncoder().encode(env.JWT_SECRET);
 const ISSUER = 'leonidapp';
 
-export async function signSession(userId: string): Promise<string> {
+export async function signSession(userId: string, ttlSeconds: number = SESSION_TTL_S): Promise<string> {
   return new SignJWT({ typ: 'session' })
     .setProtectedHeader({ alg: 'HS256' })
     .setSubject(userId)
     .setIssuer(ISSUER)
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_TTL_S}s`)
+    .setExpirationTime(`${ttlSeconds}s`)
     .sign(key);
 }
 

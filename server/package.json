@@ -9,6 +9,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "seed": "tsc -p tsconfig.json && node dist/scripts/seed.js",
+    "demo:access": "tsc -p tsconfig.json && node --env-file-if-exists=.env dist/scripts/demoAccess.js",
     "import:catalog": "tsc -p tsconfig.json && node --env-file-if-exists=.env dist/scripts/importCatalog.js"
   },
   "dependencies": {
