@@ -10,7 +10,7 @@ import {
   useProgressSummary,
   useWorldData,
 } from '../data/seed';
-import { isSupabaseConfigured, useAuthStore } from '../store/useAuthStore';
+import { isApiConfigured, useAuthStore } from '../store/useAuthStore';
 import { useProgressStore } from '../store/useProgressStore';
 
 const ACCENTS: Record<string, StatAccent> = {
@@ -93,13 +93,13 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
         <span className="text-vice-text/60">{SAMPLE_NOTICE}</span>
       </p>
 
-      {(error || loading || !isSupabaseConfigured) && (
+      {(error || loading || !isApiConfigured) && (
         <p role="status" className="glass mt-3 rounded-xl px-4 py-2 text-sm">
           {error
-            ? `No se pudo leer Supabase (${error}). Mostrando datos de ejemplo.`
+            ? `No se pudo leer la API (${error}). Mostrando datos de ejemplo.`
             : loading
-              ? 'Cargando datos desde Supabase…'
-              : 'Sin Supabase configurado: mostrando datos de ejemplo y trabajando sin conexión.'}
+              ? 'Cargando datos desde la API…'
+              : 'Sin API configurada: mostrando datos de ejemplo y trabajando sin conexión.'}
         </p>
       )}
 

@@ -3,10 +3,10 @@
 // Excepción autorizada por el usuario a la regla de carpetas (src/data/seed.ts).
 // TODOS los datos de este archivo son DE EJEMPLO (metadata_json.sample = true):
 // no representan información oficial del juego. Solo usan columnas del esquema.
-// Lectura: Supabase solo si isSupabaseConfigured; si falla o está vacío -> seed.
+// Lectura: API Fastify solo si isApiConfigured; si falla o está vacía -> seed.
 // =============================================================================
 import { useQuery } from '@tanstack/react-query';
-import { isSupabaseConfigured, supabase } from '../store/useAuthStore';
+import { apiFetch, isApiConfigured } from '../store/useAuthStore';
 import { useProgressStore, type ProgressKey } from '../store/useProgressStore';
 import type {
   Entity,
@@ -393,7 +393,7 @@ export function markerLayer(
 }
 
 // ---- Capa de acceso a datos -----------------------------------------------------------
-export type DataSource = 'seed' | 'supabase';
+export type DataSource = 'seed' | 'api';
 
 export interface WorldData {
   modules: Module[];
@@ -424,42 +424,28 @@ export const SEED_FORUM: ForumData = {
 };
 
 async function fetchWorld(): Promise<WorldData> {
-  if (!supabase) return SEED_WORLD;
-  const [m, e, k] = await Promise.all([
-    supabase.from('modules').select('*').order('orden'),
-    supabase.from('entities').select('*').order('created_at'),
-    supabase.from('map_markers').select('*').order('created_at'),
+  if (!isApiConfigured) return SEED_WORLD;
+  const [modules, entities, markers] = await Promise.all([
+    apiFetch<Module[]>('/api/modules'),
+    apiFetch<Entity[]>('/api/entities'),
+    apiFetch<MapMarker[]>('/api/markers'),
   ]);
-  const err = m.error ?? e.error ?? k.error;
-  if (err) throw new Error(err.message);
-  const entities = e.data ?? [];
-  const markers = (k.data ?? []).map((row) => ({
-    ...row,
-    coord_x: Number(row.coord_x),
-    coord_y: Number(row.coord_y),
-  }));
   if (entities.length === 0 && markers.length === 0) return SEED_WORLD;
-  return { modules: m.data ?? [], entities, markers, source: 'supabase' };
+  return { modules, entities, markers, source: 'api' };
 }
 
 async function fetchForum(): Promise<ForumData> {
-  if (!supabase) return SEED_FORUM;
-  const [t, p, pr] = await Promise.all([
-    supabase.from('forum_threads').select('*').order('created_at', { ascending: false }),
-    supabase.from('forum_posts').select('*').order('created_at'),
-    supabase.from('profiles').select('*'),
-  ]);
-  const err = t.error ?? p.error ?? pr.error;
-  if (err) throw new Error(err.message);
-  if ((t.data ?? []).length === 0) return SEED_FORUM;
-  return { threads: t.data ?? [], posts: p.data ?? [], profiles: pr.data ?? [], source: 'supabase' };
+  if (!isApiConfigured) return SEED_FORUM;
+  const f = await apiFetch<{ threads: ForumThread[]; posts: ForumPost[]; profiles: Profile[] }>('/api/forum');
+  if (f.threads.length === 0) return SEED_FORUM;
+  return { ...f, source: 'api' };
 }
 
 export interface DataResult<T> {
   data: T;
-  /** Cargando desde Supabase (mientras tanto se muestra el seed). */
+  /** Cargando desde la API (mientras tanto se muestra el seed). */
   loading: boolean;
-  /** Mensaje si Supabase falló: se mantiene el seed. */
+  /** Mensaje si la API falló: se mantiene el seed. */
   error: string | null;
 }
 
@@ -467,7 +453,7 @@ export function useWorldData(): DataResult<WorldData> {
   const q = useQuery({
     queryKey: ['world'],
     queryFn: fetchWorld,
-    enabled: isSupabaseConfigured,
+    enabled: isApiConfigured,
     initialData: SEED_WORLD,
     initialDataUpdatedAt: 0,
   });
@@ -478,7 +464,7 @@ export function useForumData(): DataResult<ForumData> {
   const q = useQuery({
     queryKey: ['forum'],
     queryFn: fetchForum,
-    enabled: isSupabaseConfigured,
+    enabled: isApiConfigured,
     initialData: SEED_FORUM,
     initialDataUpdatedAt: 0,
   });

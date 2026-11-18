@@ -1,14 +1,13 @@
 // =============================================================================
-// ATLAS VICE - Store de progreso al 100% (RF-01, RF-04, HU-02, HU-03, RNF-02)
-// Caché local offline-first en IndexedDB (idb-keyval) + sincronización con
-// `public.user_progress` en Supabase cuando hay sesión.
+// LEONIDAPP - Store de progreso al 100% (RF-01, RF-04, HU-02, HU-03, RNF-02)
+// Caché local offline-first en IndexedDB (idb-keyval) + sincronización con la API
+// Fastify (`/api/progress`) cuando hay sesión por cookie.
 // Resolución de conflictos: last-write-wins por `updated_at`.
 // =============================================================================
 import { del, get as idbGet, set as idbSet } from 'idb-keyval';
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
-import type { TablesInsert, UserProgress } from '../types/database';
-import { supabase, useAuthStore } from './useAuthStore';
+import { apiFetch, isApiConfigured, useAuthStore } from './useAuthStore';
 
 // ---- Tipos ------------------------------------------------------------------
 export type ProgressTarget = { entityId: string } | { markerId: string };
@@ -19,11 +18,19 @@ export interface LocalProgressItem {
   marker_id: string | null;
   completado: boolean;
   updated_at: string;
-  /** `false` = cambio local pendiente de subir a Supabase. */
+  /** `false` = cambio local pendiente de subir a la API. */
   synced: boolean;
 }
 
 export type SyncStatus = 'idle' | 'syncing' | 'error';
+
+/** Forma del contrato `/api/progress` (target_type + target_id). */
+interface RemoteProgress {
+  target_type: 'ENTITY' | 'MARKER';
+  target_id: string;
+  completado: boolean;
+  updated_at: string;
+}
 
 interface ProgressState {
   items: Record<ProgressKey, LocalProgressItem>;
@@ -46,11 +53,8 @@ interface ProgressState {
 export const progressKey = (target: ProgressTarget): ProgressKey =>
   'entityId' in target ? `entity:${target.entityId}` : `marker:${target.markerId}`;
 
-const keyFromRow = (row: Pick<UserProgress, 'entity_id' | 'marker_id'>): ProgressKey | null => {
-  if (row.entity_id) return `entity:${row.entity_id}`;
-  if (row.marker_id) return `marker:${row.marker_id}`;
-  return null;
-};
+const keyFromRemote = (r: RemoteProgress): ProgressKey =>
+  r.target_type === 'ENTITY' ? `entity:${r.target_id}` : `marker:${r.target_id}`;
 
 const isNewer = (a: string, b: string): boolean => Date.parse(a) > Date.parse(b);
 
@@ -106,81 +110,43 @@ export const useProgressStore = create<ProgressState>()(
 
       syncWithCloud: () => {
         if (syncInFlight) return syncInFlight;
-        const userId = useAuthStore.getState().user?.id;
-        if (!supabase || !userId) return Promise.resolve();
+        if (!isApiConfigured || !useAuthStore.getState().user) return Promise.resolve();
         if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve();
-        const client = supabase;
 
         syncInFlight = (async () => {
           set({ syncStatus: 'syncing', syncError: null });
           try {
-            // 1. Pull remoto.
-            const { data: remote, error: pullError } = await client
-              .from('user_progress')
-              .select('*')
-              .eq('user_id', userId);
-            if (pullError) throw pullError;
-
-            // 2. Merge last-write-wins.
-            const merged: Record<ProgressKey, LocalProgressItem> = { ...get().items };
-            for (const row of remote ?? []) {
-              const key = keyFromRow(row);
-              if (!key) continue;
-              const local = merged[key];
-              if (!local || !isNewer(local.updated_at, row.updated_at)) {
-                merged[key] = {
-                  entity_id: row.entity_id,
-                  marker_id: row.marker_id,
-                  completado: row.completado,
-                  updated_at: row.updated_at,
-                  synced: true,
-                };
-              }
-            }
-
-            // 3. Push de pendientes locales. Dos lotes: cada UNIQUE del esquema
-            //    (uq_user_entity / uq_user_marker) requiere su propio onConflict.
-            const pending = (Object.entries(merged) as [ProgressKey, LocalProgressItem][]).filter(
-              ([, it]) => !it.synced,
-            );
-            const toRow = (it: LocalProgressItem): TablesInsert<'user_progress'> => ({
-              user_id: userId,
-              entity_id: it.entity_id,
-              marker_id: it.marker_id,
-              completado: it.completado,
-              updated_at: it.updated_at,
+            // 1. Push de pendientes locales; la API fusiona (LWW) y devuelve el estado completo.
+            const local = get().items;
+            const pending = (Object.values(local) as LocalProgressItem[]).filter((it) => !it.synced);
+            const body: RemoteProgress[] = pending.flatMap((it) => {
+              const target_type = it.entity_id ? ('ENTITY' as const) : ('MARKER' as const);
+              const target_id = it.entity_id ?? it.marker_id;
+              return target_id ? [{ target_type, target_id, completado: it.completado, updated_at: it.updated_at }] : [];
             });
-            const entityRows = pending.filter(([, it]) => it.entity_id).map(([, it]) => toRow(it));
-            const markerRows = pending
-              .filter(([, it]) => !it.entity_id && it.marker_id)
-              .map(([, it]) => toRow(it));
+            const { items: remote } =
+              body.length > 0
+                ? await apiFetch<{ items: RemoteProgress[] }>('/api/progress', { method: 'PUT', json: { items: body } })
+                : await apiFetch<{ items: RemoteProgress[] }>('/api/progress');
 
-            if (entityRows.length > 0) {
-              const { error } = await client
-                .from('user_progress')
-                .upsert(entityRows, { onConflict: 'user_id,entity_id' });
-              if (error) throw error;
-            }
-            if (markerRows.length > 0) {
-              const { error } = await client
-                .from('user_progress')
-                .upsert(markerRows, { onConflict: 'user_id,marker_id' });
-              if (error) throw error;
-            }
-
-            // 4. Marcar como sincronizado solo lo subido sin cambios posteriores.
+            // 2. Merge last-write-wins sobre el estado vivo (por si hubo cambios durante la petición).
             const current = get().items;
             const next: Record<ProgressKey, LocalProgressItem> = { ...current };
-            for (const [key, it] of Object.entries(merged) as [ProgressKey, LocalProgressItem][]) {
+            for (const r of remote) {
+              const key = keyFromRemote(r);
               const live = current[key];
-              if (!live || live.updated_at === it.updated_at || isNewer(it.updated_at, live.updated_at)) {
-                next[key] = { ...it, synced: true };
-              }
+              if (live && !live.synced && isNewer(live.updated_at, r.updated_at)) continue; // local más reciente
+              next[key] = {
+                entity_id: r.target_type === 'ENTITY' ? r.target_id : null,
+                marker_id: r.target_type === 'MARKER' ? r.target_id : null,
+                completado: r.completado,
+                updated_at: r.updated_at,
+                synced: true,
+              };
             }
             set({ items: next, syncStatus: 'idle', lastSyncedAt: new Date().toISOString() });
           } catch (err) {
-            const message = err instanceof Error ? err.message : String((err as { message?: unknown })?.message ?? err);
-            set({ syncStatus: 'error', syncError: message });
+            set({ syncStatus: 'error', syncError: err instanceof Error ? err.message : String(err) });
           } finally {
             syncInFlight = null;
           }

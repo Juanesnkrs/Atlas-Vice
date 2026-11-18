@@ -243,8 +243,8 @@ export default function CatalogPage({ params }: { params: URLSearchParams }) {
 
       {(loading || error) && (
         <p role="status" className="text-xs text-vice-text/80">
-          {loading ? 'Cargando desde Supabase… ' : ''}
-          {error ? `Supabase no disponible (${error}); usando el seed.` : ''}
+          {loading ? 'Cargando desde la API… ' : ''}
+          {error ? `API no disponible (${error}); usando el seed.` : ''}
         </p>
       )}
 

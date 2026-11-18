@@ -2,8 +2,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { SEED_MODULES, useForumData, useWorldData } from '../data/seed';
-import { isSupabaseConfigured, supabase, useAuthStore } from '../store/useAuthStore';
+import { apiFetch, isApiConfigured, useAuthStore } from '../store/useAuthStore';
 import type { Json, Module, Submission, SubmissionEstado, SubmissionTipo } from '../types/database';
+
+/**
+ * La cola de aportes (`submissions`) no forma parte de las colecciones Mongo aprobadas todavía:
+ * sin endpoint, estos flujos quedan inactivos (null) hasta que exista `/api/submissions`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PendingSubmissionsApi = { from: (table: string) => any };
+const submissionsApi = null as PendingSubmissionsApi | null;
 
 const TIPOS: ReadonlyArray<{ value: SubmissionTipo; label: string }> = [
   { value: 'MARKER', label: 'Marcador / ubicación' },
@@ -53,7 +61,7 @@ export default function AdminSubmitPage() {
   const [adminMsg, setAdminMsg] = useState<string | null>(null);
 
   const isAdmin = profile?.rol === 'ADMIN';
-  const online = isSupabaseConfigured && supabase !== null;
+  const online = isApiConfigured;
   const nameOf = (id: string): string => forum.profiles.find((p) => p.id === id)?.username ?? id.slice(0, 8);
 
   // ---- Mis aportes -----------------------------------------------------------------
@@ -61,8 +69,8 @@ export default function AdminSubmitPage() {
     queryKey: ['submissions', 'mine', user?.id],
     enabled: online && user !== null,
     queryFn: async (): Promise<Submission[]> => {
-      if (!supabase || !user) return [];
-      const { data, error } = await supabase
+      if (!submissionsApi || !user) return [];
+      const { data, error } = await submissionsApi
         .from('submissions')
         .select('*')
         .eq('user_id', user.id)
@@ -77,8 +85,8 @@ export default function AdminSubmitPage() {
     queryKey: ['submissions', 'all'],
     enabled: online && isAdmin,
     queryFn: async (): Promise<Submission[]> => {
-      if (!supabase) return [];
-      const { data, error } = await supabase
+      if (!submissionsApi) return [];
+      const { data, error } = await submissionsApi
         .from('submissions')
         .select('*')
         .order('created_at', { ascending: false });
@@ -90,20 +98,16 @@ export default function AdminSubmitPage() {
   const modulesQ = useQuery({
     queryKey: ['admin-modules'],
     enabled: online && isAdmin,
-    queryFn: async (): Promise<Module[]> => {
-      if (!supabase) return SEED_MODULES;
-      const { data, error } = await supabase.from('modules').select('*').order('orden');
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    },
+    queryFn: (): Promise<Module[]> =>
+      isApiConfigured ? apiFetch<Module[]>('/api/modules?all=1') : Promise.resolve(SEED_MODULES),
   });
 
   // ---- Envío P06.1 ---------------------------------------------------------------------
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMsg(null);
-    if (!supabase || !user) {
-      setMsg({ ok: false, text: 'Sin conexión con Supabase: no se puede enviar el aporte ahora.' });
+    if (!submissionsApi || !user) {
+      setMsg({ ok: false, text: 'Los aportes aún no están disponibles en la API.' });
       return;
     }
     const form = e.currentTarget;
@@ -146,7 +150,7 @@ export default function AdminSubmitPage() {
       payload.objetivo = get('objetivo');
     }
     setBusy(true);
-    const { error } = await supabase
+    const { error } = await submissionsApi
       .from('submissions')
       .insert({ user_id: user.id, tipo, payload_json: payload, estado: 'PENDIENTE' });
     setBusy(false);
@@ -161,11 +165,11 @@ export default function AdminSubmitPage() {
 
   // ---- Moderación P06.2 -------------------------------------------------------------------
   const moderate = async (s: Submission, estado: SubmissionEstado) => {
-    if (!supabase) return;
+    if (!submissionsApi) return;
     setAdminMsg(null);
     const p = payloadOf(s);
     if (estado === 'APROBADO' && s.tipo === 'MARKER') {
-      const { error } = await supabase.from('map_markers').insert({
+      const { error } = await submissionsApi.from('map_markers').insert({
         region: str(p.region),
         titulo: str(p.titulo),
         descripcion: str(p.descripcion) || null,
@@ -176,7 +180,7 @@ export default function AdminSubmitPage() {
       if (error) return setAdminMsg(`No se pudo publicar el marcador: ${error.message}`);
     }
     if (estado === 'APROBADO' && s.tipo === 'ENTITY') {
-      const { error } = await supabase.from('entities').insert({
+      const { error } = await submissionsApi.from('entities').insert({
         module_id: str(p.module_id),
         titulo: str(p.titulo),
         subtitulo: str(p.subtitulo) || null,
@@ -185,7 +189,7 @@ export default function AdminSubmitPage() {
       });
       if (error) return setAdminMsg(`No se pudo publicar la entidad: ${error.message}`);
     }
-    const { error } = await supabase.from('submissions').update({ estado }).eq('id', s.id);
+    const { error } = await submissionsApi.from('submissions').update({ estado }).eq('id', s.id);
     if (error) return setAdminMsg(`No se pudo actualizar el estado: ${error.message}`);
     setAdminMsg(
       estado === 'APROBADO' && s.tipo === 'CORRECTION'
@@ -197,10 +201,13 @@ export default function AdminSubmitPage() {
   };
 
   const toggleModule = async (m: Module) => {
-    if (!supabase) return;
+    if (!isApiConfigured) return;
     setAdminMsg(null);
-    const { error } = await supabase.from('modules').update({ activo: !m.activo }).eq('id', m.id);
-    if (error) return setAdminMsg(`No se pudo cambiar el módulo: ${error.message}`);
+    try {
+      await apiFetch(`/api/modules/${m.id}`, { method: 'PATCH', json: { activo: !m.activo } });
+    } catch (err) {
+      return setAdminMsg(`No se pudo cambiar el módulo: ${err instanceof Error ? err.message : 'error'}`);
+    }
     void qc.invalidateQueries({ queryKey: ['admin-modules'] });
     void qc.invalidateQueries({ queryKey: ['world'] });
   };
@@ -215,7 +222,7 @@ export default function AdminSubmitPage() {
       </p>
       {!online && (
         <p role="status" className="glass mt-3 rounded-xl px-4 py-2 text-sm text-vice-gold">
-          Supabase no está configurado: el envío y la moderación no están disponibles sin conexión.
+          La API no está configurada: el envío y la moderación no están disponibles sin conexión.
         </p>
       )}
 
@@ -361,7 +368,7 @@ export default function AdminSubmitPage() {
             Mis aportes
           </h2>
           {!online ? (
-            <p className="mt-3 text-sm text-vice-text/70">Disponible al conectar con Supabase.</p>
+            <p className="mt-3 text-sm text-vice-text/70">Disponible al conectar con la API.</p>
           ) : mine.isLoading ? (
             <p role="status" className="mt-3 text-sm">
               Cargando…

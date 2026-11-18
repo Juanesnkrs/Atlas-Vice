@@ -4,7 +4,7 @@ import { SunsetBanner, ViceShell, ViceWordmark } from '../components/layout/Vice
 import { PalmButton } from '../components/ui/PalmButton';
 import { TipCard } from '../components/ui/TipCard';
 import { HERO_IMAGE, SAMPLE_NOTICE, SEED_TIPS } from '../data/seed';
-import { isSupabaseConfigured, useAuthStore } from '../store/useAuthStore';
+import { isApiConfigured, useAuthStore } from '../store/useAuthStore';
 
 type Tab = 'login' | 'explore';
 type View = 'form' | 'recover';
@@ -93,7 +93,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
   };
 
   const shownError = error ?? storeError;
-  const online = isSupabaseConfigured;
+  const online = isApiConfigured;
 
   return (
     <ViceShell lockScroll={false} className="md:h-dvh md:overflow-hidden">
@@ -273,7 +273,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
 
             {!online && (
               <p className="mt-2 rounded-xl border border-vice-gold/40 bg-white/5 p-3 text-xs text-vice-text/90">
-                Supabase no está configurado: la app corre en modo Invitado / offline. Email y
+                La API no está configurada: la app corre en modo Invitado / offline. Email y
                 Discord no están disponibles; tu progreso se guarda solo en este dispositivo.
               </p>
             )}

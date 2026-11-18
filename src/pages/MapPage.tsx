@@ -566,8 +566,8 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
         className="pointer-events-none absolute bottom-[4.75rem] left-3 z-10 hidden max-w-xs text-xs text-vice-text/75 md:bottom-24 md:block"
       >
         {SAMPLE_NOTICE}
-        {loading && ' Cargando desde Supabase…'}
-        {error && ` Supabase no disponible (${error}); usando el seed.`}
+        {loading && ' Cargando desde la API…'}
+        {error && ` API no disponible (${error}); usando el seed.`}
       </p>
 
       {/* Ficha P04.3: panel flotante (escritorio) / Bottom Sheet (móvil) */}

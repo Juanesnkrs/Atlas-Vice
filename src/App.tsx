@@ -22,7 +22,7 @@ import DashboardPage from './pages/DashboardPage';
 import ForumPage from './pages/ForumPage';
 import LandingAuthPage from './pages/LandingAuthPage';
 import MapPage from './pages/MapPage';
-import { isSupabaseConfigured, useAuthStore } from './store/useAuthStore';
+import { isApiConfigured, useAuthStore } from './store/useAuthStore';
 import { useProgressStore } from './store/useProgressStore';
 
 type RouteId = 'landing' | 'hub' | 'progress' | 'map' | 'catalog' | 'forum' | 'contribute';
@@ -89,7 +89,7 @@ function HeaderEnd() {
 
   const authenticated = status === 'authenticated';
   let syncLabel = 'Local';
-  if (!isSupabaseConfigured) syncLabel = 'Offline (sin Supabase)';
+  if (!isApiConfigured) syncLabel = 'Offline (sin API)';
   else if (syncStatus === 'syncing') syncLabel = 'Sincronizando…';
   else if (syncStatus === 'error') syncLabel = 'Error de sincronización';
   else if (authenticated) syncLabel = 'Sincronizado';
@@ -157,9 +157,9 @@ function RequireAccount({ next, children }: { next: string; children: ReactNode 
           Como Invitado puedes explorar el mapa, el catálogo y el foro en lectura. Para aportar o
           publicar inicia sesión con Email o Discord.
         </p>
-        {!isSupabaseConfigured && (
+        {!isApiConfigured && (
           <p className="mt-3 text-sm text-vice-gold">
-            Esta copia funciona sin conexión a Supabase, por lo que el inicio de sesión no está
+            Esta copia funciona sin conexión a la API, por lo que el inicio de sesión no está
             disponible.
           </p>
         )}

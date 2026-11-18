@@ -12,7 +12,7 @@ import {
   useWorldData,
   type ForumData,
 } from '../data/seed';
-import { supabase, useAuthStore } from '../store/useAuthStore';
+import { apiFetch, isApiConfigured, useAuthStore } from '../store/useAuthStore';
 import type { ForumCategoria, ForumPost, ForumThread } from '../types/database';
 
 type SortMode = 'trend' | 'recent';
@@ -32,7 +32,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
   const profile = useAuthStore((s) => s.profile);
 
   const canWrite = status === 'authenticated' && user !== null;
-  const remote = supabase !== null && forum.source === 'supabase';
+  const remote = isApiConfigured && forum.source === 'api';
 
   const [cat, setCat] = useState<'all' | ForumCategoria>('all');
   const [sort, setSort] = useState<SortMode>('trend');
@@ -107,13 +107,8 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
     initialData: [] as string[],
     initialDataUpdatedAt: 0,
     queryFn: async (): Promise<string[]> => {
-      if (!supabase || !user) return [];
-      const { data, error: err } = await supabase
-        .from('forum_votes')
-        .select('target_type,target_id')
-        .eq('user_id', user.id);
-      if (err) throw new Error(err.message);
-      return (data ?? []).map((v) => `${v.target_type}:${v.target_id}`);
+      const { votes } = await apiFetch<{ votes: Array<{ target_type: string; target_id: string }> }>('/api/forum/votes');
+      return votes.map((v) => `${v.target_type}:${v.target_id}`);
     },
   });
   const votesKey = ['votes', user?.id ?? 'anon', remote];
@@ -147,13 +142,12 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
       });
     };
     apply(delta);
-    if (!remote || !supabase) return;
-    const res = had
-      ? await supabase.from('forum_votes').delete().eq('user_id', user.id).eq('target_type', type).eq('target_id', id)
-      : await supabase.from('forum_votes').insert({ user_id: user.id, target_type: type, target_id: id });
-    if (res.error) {
+    if (!remote) return;
+    try {
+      await apiFetch('/api/forum/votes/toggle', { method: 'POST', json: { target_type: type, target_id: id } });
+    } catch (err) {
       apply(-delta);
-      setMessage(`No se pudo registrar el voto: ${res.error.message}`);
+      setMessage(`No se pudo registrar el voto: ${err instanceof Error ? err.message : 'error'}`);
     }
   };
 
@@ -181,14 +175,15 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
     setBusy(true);
     setMessage(null);
     let created: ForumThread;
-    if (remote && supabase) {
-      const { data, error: err } = await supabase.from('forum_threads').insert(base).select('*').single();
-      if (err || !data) {
+    if (remote) {
+      try {
+        const { user_id: _uid, ...payload } = base;
+        created = await apiFetch<ForumThread>('/api/forum/threads', { method: 'POST', json: payload });
+      } catch (err) {
         setBusy(false);
-        setMessage(`No se pudo publicar: ${err?.message ?? 'respuesta vacía'}`);
+        setMessage(`No se pudo publicar: ${err instanceof Error ? err.message : 'error'}`);
         return;
       }
-      created = data;
     } else {
       created = {
         ...base,
@@ -197,7 +192,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
         upvotes_count: 0,
         created_at: new Date().toISOString(),
       };
-      setMessage('Publicado solo en esta sesión: no hay conexión con Supabase (datos de ejemplo).');
+      setMessage('Publicado solo en esta sesión: no hay conexión con la API (datos de ejemplo).');
     }
     patchForum((f) => ({ ...f, threads: [created, ...f.threads] }));
     setBusy(false);
@@ -218,17 +213,18 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
     setMessage(null);
     const base = { thread_id: selected.id, user_id: user.id, parent_post_id: replyTo, contenido };
     let created: ForumPost;
-    if (remote && supabase) {
-      const { data, error: err } = await supabase.from('forum_posts').insert(base).select('*').single();
-      if (err || !data) {
+    if (remote) {
+      try {
+        const { user_id: _uid, ...payload } = base;
+        created = await apiFetch<ForumPost>('/api/forum/posts', { method: 'POST', json: payload });
+      } catch (err) {
         setBusy(false);
-        setMessage(`No se pudo responder: ${err?.message ?? 'respuesta vacía'}`);
+        setMessage(`No se pudo responder: ${err instanceof Error ? err.message : 'error'}`);
         return;
       }
-      created = data;
     } else {
       created = { ...base, id: crypto.randomUUID(), upvotes_count: 0, created_at: new Date().toISOString() };
-      setMessage('Respuesta guardada solo en esta sesión (sin Supabase).');
+      setMessage('Respuesta guardada solo en esta sesión (sin API).');
     }
     patchForum((f) => ({ ...f, posts: [...f.posts, created] }));
     setReplyText('');
@@ -356,8 +352,8 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
       )}
 
       <div aria-live="polite" className="text-xs">
-        {loading && <p>Cargando desde Supabase…</p>}
-        {error && <p className="text-vice-gold">Supabase no disponible ({error}); usando el seed.</p>}
+        {loading && <p>Cargando desde la API…</p>}
+        {error && <p className="text-vice-gold">API no disponible ({error}); usando el seed.</p>}
         {message && (
           <p role="alert" className="text-vice-gold">
             {message}{' '}
