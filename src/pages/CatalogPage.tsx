@@ -1,8 +1,9 @@
-// P05 - Inspector NUI: Armas / Vehículos / Coleccionables / Guías
-import { useEffect, useMemo, useState } from 'react';
+// P05 - Inspector NUI: Armas / Vehículos / Coleccionables (las guías viven en /guias)
+import { useEffect, useId, useMemo, useState } from 'react';
 import { SunsetBanner } from '../components/layout/ViceShell';
 import { AdSlot } from '../components/ui/AdSlot';
 import { BottomSheet } from '../components/ui/BottomSheet';
+import { PalmButton } from '../components/ui/PalmButton';
 import { StatBar, type StatAccent } from '../components/ui/StatBar';
 import {
   SAMPLE_NOTICE,
@@ -17,17 +18,17 @@ import {
   useForumData,
   useWorldData,
 } from '../data/seed';
+import { useAuthStore } from '../store/useAuthStore';
 import { useProgressStore } from '../store/useProgressStore';
 import { navigate, usePageMeta } from '../store/useRouteStore';
-import type { Entity } from '../types/database';
+import type { Entity, ForumThread, MapMarker } from '../types/database';
 
-type TabSlug = 'armas' | 'vehiculos' | 'coleccionables' | 'guias';
+type TabSlug = 'armas' | 'vehiculos' | 'coleccionables';
 
 const TABS: ReadonlyArray<{ slug: TabSlug; label: string; heading: string; doneLabel: string }> = [
   { slug: 'armas', label: 'Armas', heading: 'ARMERÍA', doneLabel: 'Obtenida' },
   { slug: 'vehiculos', label: 'Vehículos', heading: 'GARAJE', doneLabel: 'Obtenido' },
   { slug: 'coleccionables', label: 'Coleccionables', heading: 'COLECCIONABLES', doneLabel: 'Completado' },
-  { slug: 'guias', label: 'Guías', heading: 'GUÍAS Y MISIONES', doneLabel: '' },
 ];
 
 const ACCENTS: StatAccent[] = ['magenta', 'gold', 'cyan', 'lilac'];
@@ -95,6 +96,7 @@ function VehiclePaths({ kind }: { kind: string }) {
 
 function Silhouette({ entity, className = '' }: { entity: Entity; className?: string }) {
   const meta = metaOf(entity);
+  const gid = useId();
   const kind = String(meta.silueta ?? '');
   const isWeapon = kind in WEAPON_PATHS;
   return (
@@ -102,9 +104,15 @@ function Silhouette({ entity, className = '' }: { entity: Entity; className?: st
       role="img"
       aria-label={`Silueta de ${entity.titulo}`}
       viewBox={isWeapon ? '0 0 200 100' : '0 0 240 100'}
-      className={className}
-      fill="currentColor"
+      className={`text-[#F67E56] ${className}`}
+      fill={`url(#${gid})`}
     >
+      <defs>
+        <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1="0" y1="20" x2="200" y2="90">
+          <stop offset="0" stopColor="#E1307E" />
+          <stop offset="1" stopColor="#F69259" />
+        </linearGradient>
+      </defs>
       {isWeapon ? <path d={WEAPON_PATHS[kind]} /> : <VehiclePaths kind={kind} />}
     </svg>
   );
@@ -122,7 +130,7 @@ function ItemVisual({ entity, className = '' }: { entity: Entity; className?: st
     return <Artwork src={entity.imagen_url} alt={entity.titulo} className={`object-cover ${className}`} />;
   }
   if (metaOf(entity).silueta) {
-    return <Silhouette entity={entity} className={`text-vice-text/90 ${className}`} />;
+    return <Silhouette entity={entity} className={className} />;
   }
   return <SunsetBanner className={className} />;
 }
@@ -142,11 +150,233 @@ const META_LABELS: Record<string, string> = {
 
 const MAX_COMPARE = 3;
 
+const forumHref = (guest: boolean, path: string): string => (guest ? '/foro' : path);
+
+function useIsDesktop(): boolean {
+  const query = '(min-width: 768px)';
+  const [match, setMatch] = useState(() => window.matchMedia(query).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(query);
+    const on = () => setMatch(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  return match;
+}
+
+function MapPinIcon({ off = false }: { off?: boolean }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width="18"
+      height="18"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="shrink-0"
+    >
+      <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0113 0c0 5.4-6.5 11-6.5 11z" />
+      <circle cx="12" cy="10" r="2.3" />
+      {off && <path d="M4 4l16 16" />}
+    </svg>
+  );
+}
+
+const ACTION =
+  'flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-xl border border-white/20 px-2 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold';
+
+interface DetailPanelProps {
+  entity: Entity;
+  tab: (typeof TABS)[number];
+  done: boolean;
+  onToggle: () => void;
+  markers: MapMarker[];
+  doneMarkers: number;
+  threads: ForumThread[];
+  compareTarget: Entity | undefined;
+  guest: boolean;
+  /** Muestra el título (se omite en el BottomSheet, que ya lo lleva en su cabecera). */
+  heading: boolean;
+  /** Escritorio: el cuerpo hace scroll interno y las acciones quedan siempre visibles. */
+  pinned: boolean;
+}
+
+/** Ficha resumida del elemento seleccionado: aside en escritorio, BottomSheet en móvil. */
+function DetailPanel({ entity, tab, done, onToggle, markers, doneMarkers, threads, compareTarget, guest, heading, pinned }: DetailPanelProps) {
+  const meta = metaOf(entity);
+  const stats = statsOf(entity);
+  return (
+    <div className={`flex flex-col gap-3 ${pinned ? "h-full min-h-0" : ""}`}>
+      <div className={`flex flex-col gap-3 ${pinned ? "min-h-0 flex-1 overflow-y-auto pr-1" : ""}`}>
+        <div>
+          <span className="inline-block rounded-xl border border-vice-orange/50 bg-vice-orange/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-vice-gold">
+            {entity.categoria}
+          </span>
+          {heading && <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{entity.titulo}</h2>}
+          {entity.subtitulo && <p className={`${heading ? '' : 'mt-2 '}text-sm text-vice-text/80`}>{entity.subtitulo}</p>}
+        </div>
+
+        {stats.length > 0 && (
+          <div className="flex flex-col gap-3">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-vice-text/90">Estadísticas</h3>
+            {stats.map((s, i) => (
+              <StatBar key={s.key} label={s.label} value={s.value} accent={ACCENTS[i % ACCENTS.length]} />
+            ))}
+          </div>
+        )}
+
+        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-xl bg-white/5 p-3 text-sm">
+          {Object.entries(meta)
+            .filter(([k]) => k in META_LABELS)
+            .map(([k, v]) => (
+              <div key={k} className="contents">
+                <dt className="text-vice-text/70">{META_LABELS[k]}</dt>
+                <dd className="font-semibold">{fmtMeta(k, v)}</dd>
+              </div>
+            ))}
+          <div className="contents">
+            <dt className="text-vice-text/70">Puntos en el mapa</dt>
+            <dd className="font-semibold">
+              {doneMarkers}/{markers.length}
+            </dd>
+          </div>
+        </dl>
+
+        {threads.length > 0 && (
+          <ul aria-label="Hilos relacionados" className="flex flex-col text-sm">
+            {threads.slice(0, 2).map((t) => (
+              <li key={t.id}>
+                <a
+                  href={forumHref(guest, `/foro?hilo=${t.id}`)}
+                  className="block min-h-11 rounded-lg px-2 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+                >
+                  <span className="text-xs text-vice-orange">
+                    {forumCategoryLabel(t.categoria)} · ▲ {t.upvotes_count}
+                  </span>
+                  <span className="block font-semibold">{t.titulo}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="flex shrink-0 flex-col gap-3">
+        <button
+          type="button"
+          aria-pressed={done}
+          onClick={onToggle}
+          className={`min-h-11 whitespace-nowrap rounded-xl px-4 font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
+            done ? 'bg-vice-gold text-vice-ink' : 'bg-white/10 hover:bg-white/20'
+          }`}
+        >
+          {done ? `${tab.doneLabel} al 100% (quitar)` : `Marcar como ${tab.doneLabel.toLowerCase()}`}
+        </button>
+
+        {markers[0] ? (
+          <PalmButton as="a" href={`/mapa?marker=${markers[0].id}`} fullWidth className="min-h-12! whitespace-nowrap text-base!">
+            Ver en el mapa
+          </PalmButton>
+        ) : (
+          <p className="flex items-center gap-2 text-sm text-vice-text/70">
+            <MapPinIcon off />
+            Sin ubicación en el mapa
+          </p>
+        )}
+
+        <div className={`grid gap-2 ${compareTarget ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <a href={entityHref(entity, tab.slug)} aria-label={`Ver ficha completa de ${entity.titulo}`} className={ACTION}>
+            Ver ficha
+          </a>
+          {compareTarget && (
+            <a
+              href={`/catalogo?comparar=${entitySlug(entity)},${entitySlug(compareTarget)}`}
+              aria-label={`Comparar ${entity.titulo} con ${compareTarget.titulo}`}
+              title={`Comparar con ${compareTarget.titulo}`}
+              className={ACTION}
+            >
+              Comparar
+            </a>
+          )}
+          <a
+            href={forumHref(guest, `/foro?entity=${entity.id}`)}
+            aria-label={`Discutir ${entity.titulo} en el foro (${threads.length} hilos)`}
+            className={ACTION}
+          >
+            Discutir ({threads.length})
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const ZOOM_BTN =
+  'glass flex h-11 w-11 items-center justify-center rounded-xl hover:brightness-110 focus-visible:outline-2 focus-visible:outline-vice-gold';
+
+/** Visor del Inspector (escritorio): marco con zoom 0.8x-1.8x como `Inspector.dc.html`. */
+function Viewer({ entity }: { entity: Entity }) {
+  const [zoom, setZoom] = useState(1);
+  const step = (d: number) => setZoom((z) => Math.min(1.8, Math.max(0.8, Math.round((z + d) * 10) / 10)));
+  const credit = entity.imagen_url ? 'Artwork' : metaOf(entity).silueta ? 'Silueta vectorial ilustrativa' : '';
+  return (
+    <section aria-label="Visor" className="flex min-h-0 flex-col items-center gap-3">
+      <div className="flex min-h-0 w-full flex-1 items-center justify-center">
+        <div className="relative aspect-square h-full max-h-[460px] max-w-full overflow-hidden rounded-[28px] border border-vice-orange/35 bg-[linear-gradient(160deg,#4B2262,#1E1030)] shadow-[0_30px_60px_rgba(0,0,0,0.45),0_0_0_6px_rgba(246,126,86,0.14)]">
+          <div
+            className="absolute inset-0 flex items-center justify-center transition-transform duration-200 motion-reduce:transition-none"
+            style={{ transform: `scale(${zoom})` }}
+          >
+            <div
+              aria-hidden="true"
+              className="absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(225,48,126,0.35),transparent_65%)]"
+            />
+            <ItemVisual
+              entity={entity}
+              className={
+                entity.imagen_url
+                  ? 'absolute inset-0 h-full w-full'
+                  : 'relative h-4/5 w-4/5 drop-shadow-[0_10px_30px_rgba(225,48,126,0.5)]'
+              }
+            />
+          </div>
+        </div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <button type="button" aria-label="Alejar" onClick={() => step(-0.2)} className={ZOOM_BTN}>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <path d="M5 12h14" />
+          </svg>
+        </button>
+        <span className="glass flex h-11 min-w-28 items-center justify-center gap-2 rounded-xl text-xs font-semibold tracking-widest">
+          ZOOM <span className="text-vice-gold">x{zoom.toFixed(1)}</span>
+        </span>
+        <button type="button" aria-label="Acercar" onClick={() => step(0.2)} className={ZOOM_BTN}>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+        <button type="button" aria-label="Restablecer zoom" onClick={() => setZoom(1)} className={ZOOM_BTN}>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M4 12a8 8 0 108-8H8M8 4L4.5 7.5 8 11" />
+          </svg>
+        </button>
+      </div>
+      {credit && <p className="shrink-0 text-xs text-vice-text/80">{credit}</p>}
+    </section>
+  );
+}
+
 function CatalogInspector({ params }: { params: URLSearchParams }) {
-  const { data, loading, error } = useWorldData();
+  const { data, error } = useWorldData();
   const { data: forum } = useForumData();
   const items = useProgressStore((s) => s.items);
   const toggle = useProgressStore((s) => s.toggle);
+  const guest = useAuthStore((s) => s.status !== 'authenticated');
+  const isDesktop = useIsDesktop();
 
   const modulesById = useMemo(() => new Map(data.modules.map((m) => [m.id, m])), [data.modules]);
   const activeSlugs = useMemo(
@@ -158,11 +388,9 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
   const [tab, setTab] = useState<TabSlug>('armas');
   const [cat, setCat] = useState<string>('Todas');
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [showSpoiler, setShowSpoiler] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  const inTab = (slug: TabSlug): Entity[] =>
-    data.entities.filter((e) => modulesById.get(e.module_id)?.slug === slug);
-  const tabEntities = inTab(tab);
+  const tabEntities = data.entities.filter((e) => modulesById.get(e.module_id)?.slug === tab);
   const categories = ['Todas', ...Array.from(new Set(tabEntities.map((e) => e.categoria)))];
   const list = cat === 'Todas' ? tabEntities : tabEntities.filter((e) => e.categoria === cat);
   const selected = list.find((e) => e.id === selectedId) ?? list[0] ?? null;
@@ -196,13 +424,22 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
     navigate(`/catalogo?comparar=${slugs.join(',')}`, { replace: true, keepScroll: true });
   const closeCompare = () => navigate('/catalogo', { replace: true, keepScroll: true });
 
+  // /catalogo?modulo=<Module.slug> abre esa pestaña; slug desconocido, inactivo o 'guias' -> primera disponible.
+  const moduloParam = params.get('modulo');
+  useEffect(() => {
+    if (moduloParam === null) return;
+    const wanted = TABS.find((t) => t.slug === moduloParam && activeSlugs.has(t.slug)) ?? TABS.find((t) => activeSlugs.has(t.slug));
+    if (!wanted) return;
+    setTab(wanted.slug);
+    setCat('Todas');
+    setSelectedId(null);
+  }, [moduloParam, activeSlugs]);
+
   // Si el módulo activo se desactiva, saltar al primer tab disponible.
   useEffect(() => {
     const first = tabs[0];
     if (first && !tabs.some((t) => t.slug === tab)) setTab(first.slug);
   }, [tabs, tab]);
-
-  useEffect(() => setShowSpoiler(false), [selected?.id]);
 
   const linkedMarkers = selected ? data.markers.filter((m) => m.entity_id === selected.id) : [];
   const threads = selected
@@ -211,21 +448,38 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
       )
     : [];
   const done = (e: Entity): boolean => items[`entity:${e.id}`]?.completado === true;
-  const meta = selected ? metaOf(selected) : {};
-  const stats = selected ? statsOf(selected) : [];
-  const trackable = tab !== 'guias';
-  const pasos = Array.isArray(meta.pasos) ? (meta.pasos as string[]) : [];
-  const spoilerHidden = tab === 'guias' && meta.spoiler === true && !showSpoiler;
+
+  const detail = selected && (
+    <DetailPanel
+      entity={selected}
+      tab={tabDef}
+      done={done(selected)}
+      onToggle={() => toggle({ entityId: selected.id })}
+      markers={linkedMarkers}
+      doneMarkers={linkedMarkers.filter((m) => items[`marker:${m.id}`]?.completado).length}
+      threads={threads}
+      compareTarget={compareTarget}
+      guest={guest}
+      heading={isDesktop}
+      pinned={isDesktop}
+    />
+  );
+
+  const notice = error
+    ? 'No se pudo conectar con el servidor: se muestran datos de ejemplo.'
+    : data.source === 'seed'
+      ? SAMPLE_NOTICE
+      : null;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 px-3 pt-1 md:px-8">
-      {/* Cabecera y tabs */}
+      {/* Cabecera y pestañas */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <h1 className="font-display text-xl font-bold tracking-wide md:text-2xl">
+        <h1 className="font-display text-xl font-bold uppercase tracking-wide text-vice-gold md:text-2xl">
           {tabDef.heading}
-          <span className="text-vice-orange"> // {cat.toUpperCase()}</span>
+          {cat !== 'Todas' && <span className="text-vice-orange"> // {cat}</span>}
         </h1>
-        <div role="tablist" aria-label="Categorías del catálogo" className="flex gap-1 overflow-x-auto">
+        <div role="tablist" aria-label="Categorías del catálogo" className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {tabs.map((t) => (
             <button
               key={t.slug}
@@ -237,8 +491,8 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
                 setCat('Todas');
                 setSelectedId(null);
               }}
-              className={`min-h-11 whitespace-nowrap rounded-full px-4 text-sm font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-                tab === t.slug ? 'bg-vice-accent text-vice-ink' : 'glass hover:bg-white/10'
+              className={`min-h-11 whitespace-nowrap rounded-full border border-vice-orange/30 px-5 text-sm font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
+                tab === t.slug ? 'bg-vice-accent text-vice-ink' : 'bg-white/10 hover:bg-white/15'
               }`}
             >
               {t.label}
@@ -247,227 +501,108 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
         </div>
       </div>
 
-      <div role="group" aria-label="Filtrar por categoría" className="flex gap-1 overflow-x-auto">
-        {categories.map((c) => (
-          <button
-            key={c}
-            type="button"
-            aria-pressed={cat === c}
-            onClick={() => {
-              setCat(c);
-              setSelectedId(null);
-            }}
-            className={`min-h-11 whitespace-nowrap rounded-full border px-4 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-              cat === c ? 'border-vice-orange bg-white/15' : 'border-white/15 hover:bg-white/10'
-            }`}
-          >
-            {c}
-          </button>
-        ))}
-      </div>
-
-      {(loading || error) && (
-        <p role="status" className="text-xs text-vice-text/80">
-          {loading ? 'Cargando desde la API… ' : ''}
-          {error ? `API no disponible (${error}); usando el seed.` : ''}
-        </p>
+      {categories.length > 2 && (
+        <div role="group" aria-label="Filtrar por categoría" className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {categories.map((c) => (
+            <button
+              key={c}
+              type="button"
+              aria-pressed={cat === c}
+              onClick={() => {
+                setCat(c);
+                setSelectedId(null);
+              }}
+              className={`min-h-11 whitespace-nowrap rounded-full border px-4 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold md:min-h-9 ${
+                cat === c ? 'border-vice-orange bg-white/15' : 'border-white/15 hover:bg-white/10'
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col gap-3 md:grid md:grid-cols-[minmax(250px,320px)_1fr_minmax(280px,340px)] md:gap-5">
-        {/* Visor + estadísticas (arriba y fijo en móvil) */}
-        <div className="order-1 flex shrink-0 flex-col gap-3 max-md:max-h-[44dvh] max-md:overflow-y-auto md:contents">
-          <section
-            aria-label="Visor"
-            className="glass relative flex h-36 items-center justify-center overflow-hidden rounded-2xl md:order-2 md:h-auto"
-          >
-            {selected ? (
-              <>
-                <div
-                  aria-hidden="true"
-                  className="absolute inset-0 bg-[radial-gradient(circle_at_50%_60%,rgba(225,48,126,0.35),transparent_65%)]"
-                />
-                <ItemVisual
-                  entity={selected}
-                  className={
-                    selected.imagen_url
-                      ? 'absolute inset-0 h-full w-full'
-                      : 'relative h-4/5 w-4/5 max-w-[640px] drop-shadow-[0_10px_30px_rgba(225,48,126,0.5)]'
-                  }
-                />
-                <p className="absolute bottom-3 left-4 right-4 truncate rounded-lg bg-[#1a0a22]/70 px-3 py-1 font-display text-lg font-bold">
-                  {selected.titulo}
-                </p>
-              </>
-            ) : (
-              <p className="text-vice-text/70">Sin elementos en esta categoría.</p>
-            )}
-          </section>
-
-          <aside aria-label="Estadísticas" className="glass flex flex-col gap-3 rounded-2xl p-4 md:order-3 md:overflow-y-auto">
-            {selected ? (
-              <>
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-widest text-vice-orange">{selected.categoria}</p>
-                  <h2 className="font-display text-xl font-bold">{selected.titulo}</h2>
-                  {selected.subtitulo && <p className="text-sm text-vice-text/80">{selected.subtitulo}</p>}
-                </div>
-
-                {stats.length > 0 && (
-                  <div className="flex flex-col gap-3">
-                    {stats.map((s, i) => (
-                      <StatBar key={s.key} label={s.label} value={s.value} accent={ACCENTS[i % ACCENTS.length]} />
-                    ))}
-                  </div>
-                )}
-
-                <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-                  {Object.entries(meta)
-                    .filter(([k]) => k in META_LABELS)
-                    .map(([k, v]) => (
-                      <div key={k} className="contents">
-                        <dt className="text-vice-text/70">{META_LABELS[k]}</dt>
-                        <dd className="font-semibold">{fmtMeta(k, v)}</dd>
-                      </div>
-                    ))}
-                  <div className="contents">
-                    <dt className="text-vice-text/70">Puntos en el mapa</dt>
-                    <dd className="font-semibold">
-                      {linkedMarkers.filter((m) => items[`marker:${m.id}`]?.completado).length}/{linkedMarkers.length}
-                    </dd>
-                  </div>
-                </dl>
-
-                {tab === 'guias' && (
-                  <div>
-                    <h3 className="font-display text-base font-bold">Pasos</h3>
-                    {spoilerHidden ? (
-                      <div className="mt-1 rounded-xl border border-vice-gold/40 p-3 text-sm">
-                        <p>Contenido con spoiler.</p>
-                        <button
-                          type="button"
-                          onClick={() => setShowSpoiler(true)}
-                          className="mt-2 min-h-11 rounded-full bg-white/10 px-4 font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold"
-                        >
-                          Mostrar spoiler
-                        </button>
-                      </div>
-                    ) : (
-                      <ol className="mt-1 list-decimal pl-5 text-sm">
-                        {pasos.map((p) => (
-                          <li key={p}>{p}</li>
-                        ))}
-                      </ol>
-                    )}
-                  </div>
-                )}
-
-                {trackable && (
-                  <button
-                    type="button"
-                    aria-pressed={done(selected)}
-                    onClick={() => toggle({ entityId: selected.id })}
-                    className={`min-h-11 rounded-xl px-4 font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-                      done(selected) ? 'bg-vice-gold text-vice-ink' : 'bg-white/10 hover:bg-white/20'
-                    }`}
-                  >
-                    {done(selected) ? `${tabDef.doneLabel} al 100% (quitar)` : `Marcar como ${tabDef.doneLabel.toLowerCase()}`}
-                  </button>
-                )}
-
-                <a
-                  href={entityHref(selected, tabDef.slug)}
-                  className="flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-4 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-                >
-                  Ver ficha completa
-                </a>
-                {trackable && compareTarget && (
-                  <a
-                    href={`/catalogo?comparar=${entitySlug(selected)},${entitySlug(compareTarget)}`}
-                    className="flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-4 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-                  >
-                    Comparar con {compareTarget.titulo}
-                  </a>
-                )}
-                {linkedMarkers[0] ? (
-                  <a
-                    href={`/mapa?marker=${linkedMarkers[0].id}`}
-                    className="flex min-h-11 items-center justify-center rounded-xl bg-vice-accent px-4 font-bold text-vice-ink focus-visible:outline-2 focus-visible:outline-vice-gold"
-                  >
-                    Ver en mapa
-                  </a>
-                ) : (
-                  <span className="flex min-h-11 items-center justify-center rounded-xl border border-white/10 px-4 text-sm text-vice-text/60">
-                    Sin ubicación en el mapa
-                  </span>
-                )}
-                <a
-                  href={`/foro?entity=${selected.id}`}
-                  className="flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-4 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-                >
-                  Discutir ({threads.length})
-                </a>
-                {threads.length > 0 && (
-                  <ul aria-label="Hilos relacionados" className="flex flex-col text-sm">
-                    {threads.slice(0, 3).map((t) => (
-                      <li key={t.id}>
-                        <a
-                          href={`/foro?hilo=${t.id}`}
-                          className="block min-h-11 rounded-lg px-2 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-                        >
-                          <span className="text-xs text-vice-orange">{forumCategoryLabel(t.categoria)} · ▲ {t.upvotes_count}</span>
-                          <span className="block font-semibold">{t.titulo}</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <p className="text-xs text-vice-text/60">{SAMPLE_NOTICE}</p>
-              </>
-            ) : (
-              <p className="text-vice-text/70">Selecciona un elemento.</p>
-            )}
-          </aside>
-        </div>
-
-        {/* Rejilla (izquierda en escritorio) */}
-        <section
-          aria-label="Selección"
-          className="order-2 min-h-0 flex-1 overflow-y-auto pb-2 md:order-1"
-        >
+      <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[minmax(260px,360px)_minmax(0,1fr)_minmax(300px,360px)] md:grid-rows-[minmax(0,1fr)] md:gap-5">
+        {/* Rejilla de selección */}
+        <section aria-label="Selección" className="glass flex min-h-0 flex-1 flex-col rounded-2xl p-3 md:p-4">
+          <div className="mb-3 flex items-baseline justify-between px-1">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-vice-text/90">{tabDef.label}</h2>
+            <span className="text-xs text-vice-text/80">{list.length} en total</span>
+          </div>
           {list.length === 0 ? (
             <p className="p-4 text-vice-text/70">No hay elementos para mostrar.</p>
           ) : (
-            <ul className="grid grid-cols-3 gap-2">
-              {list.map((e) => (
-                <li key={e.id}>
-                  <button
-                    type="button"
-                    aria-pressed={selected?.id === e.id}
-                    aria-label={`${e.titulo}${done(e) ? ', completado' : ''}`}
-                    onClick={() => setSelectedId(e.id)}
-                    className={`glass relative flex aspect-square min-h-[44px] w-full flex-col items-center justify-center overflow-hidden rounded-xl p-1 focus-visible:outline-2 focus-visible:outline-vice-gold ${
-                      selected?.id === e.id ? 'border-vice-magenta ring-2 ring-vice-magenta' : 'hover:border-vice-orange'
-                    }`}
-                  >
-                    <ItemVisual
-                      entity={e}
-                      className={e.imagen_url ? 'absolute inset-0 h-full w-full' : 'h-3/5 w-4/5'}
-                    />
-                    <span className="absolute inset-x-0 bottom-0 truncate bg-[#1a0a22]/75 px-1 text-[11px] font-semibold">
-                      {e.titulo}
-                    </span>
-                    {done(e) && (
-                      <span aria-hidden="true" className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-vice-gold text-xs font-bold text-vice-ink">
-                        ✓
+            <ul className="grid min-h-0 flex-1 grid-cols-3 content-start gap-x-2.5 gap-y-3 overflow-y-auto pb-1">
+              {list.map((e) => {
+                const sel = selected?.id === e.id;
+                return (
+                  <li key={e.id} className="min-w-0">
+                    <button
+                      type="button"
+                      aria-pressed={sel}
+                      aria-label={`${e.titulo}${done(e) ? ', completado' : ''}`}
+                      title={e.titulo}
+                      onClick={() => {
+                        setSelectedId(e.id);
+                        setSheetOpen(true);
+                      }}
+                      className="flex w-full flex-col gap-1.5 rounded-xl text-left focus-visible:outline-2 focus-visible:outline-vice-gold"
+                    >
+                      <span
+                        className={`relative flex aspect-square w-full items-center justify-center overflow-hidden rounded-[14px] bg-[linear-gradient(160deg,#3A1E55,#1E1030)] ${
+                          sel
+                            ? 'border-2 border-vice-orange shadow-[0_0_0_4px_rgba(246,126,86,0.3)]'
+                            : 'border border-vice-orange/30'
+                        }`}
+                      >
+                        <ItemVisual
+                          entity={e}
+                          className={e.imagen_url ? 'absolute inset-0 h-full w-full' : 'h-3/5 w-4/5'}
+                        />
+                        {done(e) && (
+                          <span
+                            aria-hidden="true"
+                            className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-vice-gold text-xs font-bold text-vice-ink"
+                          >
+                            ✓
+                          </span>
+                        )}
                       </span>
-                    )}
-                  </button>
-                </li>
-              ))}
+                      <span className="line-clamp-2 px-0.5 text-[11px] font-semibold leading-tight">{e.titulo}</span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
+
+        {isDesktop &&
+          (selected ? (
+            <>
+              <Viewer key={selected.id} entity={selected} />
+              <aside aria-label="Detalle" className="glass min-h-0 rounded-2xl p-5">
+                {detail}
+              </aside>
+            </>
+          ) : (
+            <p className="col-span-2 self-center text-center text-vice-text/70">Sin elementos en esta categoría.</p>
+          ))}
       </div>
+
+      {notice && (
+        <p role="status" className="shrink-0 pb-1 text-[11px] text-vice-text/60">
+          {notice}
+        </p>
+      )}
+
+      <BottomSheet
+        open={sheetOpen && !isDesktop && selected !== null && compare === null}
+        onClose={() => setSheetOpen(false)}
+        title={selected?.titulo}
+      >
+        {detail}
+      </BottomSheet>
 
       <BottomSheet
         open={compare !== null}
@@ -630,6 +765,7 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
   const { entity, loading } = useEntityDetail(modulo, slug);
   const { data } = useWorldData();
   const { data: forum } = useForumData();
+  const guest = useAuthStore((s) => s.status !== 'authenticated');
   const items = useProgressStore((s) => s.items);
   const toggle = useProgressStore((s) => s.toggle);
 
@@ -754,11 +890,12 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
               Ver en el mapa{markers.length > 1 ? ` (${markers.length} puntos)` : ''}
             </a>
           ) : (
-            <span className="flex min-h-11 items-center rounded-xl border border-white/10 px-4 text-sm text-vice-text/60">
+            <p className="flex min-h-11 items-center gap-2 px-1 text-sm text-vice-text/70">
+              <MapPinIcon off />
               Sin ubicación en el mapa
-            </span>
+            </p>
           )}
-          <a href={`/foro?entity=${entity.id}`} className={LINK}>
+          <a href={forumHref(guest, `/foro?entity=${entity.id}`)} className={LINK}>
             Abrir hilo sobre {entity.titulo}
           </a>
         </div>
@@ -768,7 +905,7 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
             <ul className="mt-1 flex flex-col text-sm">
               {threads.map((t) => (
                 <li key={t.id}>
-                  <a href={`/foro?hilo=${t.id}`} className="block min-h-11 rounded-lg px-2 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold">
+                  <a href={forumHref(guest, `/foro?hilo=${t.id}`)} className="block min-h-11 rounded-lg px-2 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold">
                     <span className="text-xs text-vice-orange">{forumCategoryLabel(t.categoria)} · ▲ {t.upvotes_count}</span>
                     <span className="block font-semibold">{t.titulo}</span>
                   </a>
@@ -811,7 +948,7 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
       </section>
 
       <AdSlot position="after-content" className="mt-8" />
-      <p className="mt-4 text-xs text-vice-text/60">{SAMPLE_NOTICE}</p>
+      {data.source === 'seed' && <p className="mt-4 text-[11px] text-vice-text/60">{SAMPLE_NOTICE}</p>}
     </article>
   );
 }
