@@ -9,16 +9,47 @@ import { writeAudit } from '../services/audit.js';
 import { HttpError, idParamsSchema, parse } from '../services/validate.js';
 
 export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
-  /** Hilos + respuestas + autores (forma `ForumData` del cliente). */
-  app.get('/api/forum', async () => {
-    const [threads, posts] = await Promise.all([
-      ForumThread.find().sort({ is_pinned: -1, created_at: -1 }).limit(500).lean<ForumThreadDoc[]>(),
-      ForumPost.find().sort({ created_at: 1 }).limit(5000).lean<ForumPostDoc[]>(),
+  /**
+   * Hilos + respuestas + autores (forma `ForumData` del cliente).
+   * Sin sesion: solo lista en vivo en formato preview (sin `contenido` ni `posts`), 50 max,
+   * ignorando filtros (DesignSpec 7.5). Con sesion: respuesta completa + `replies_count`.
+   */
+  app.get('/api/forum', async (req, reply) => {
+    void reply.header('Cache-Control', 'no-store').header('Vary', 'Cookie');
+    const preview = req.authUser === null;
+    const threads = preview
+      ? await ForumThread.find().select('-contenido').sort({ created_at: -1 }).limit(50).lean<ForumThreadDoc[]>()
+      : await ForumThread.find().sort({ is_pinned: -1, created_at: -1 }).limit(500).lean<ForumThreadDoc[]>();
+    const [posts, counts] = await Promise.all([
+      preview
+        ? Promise.resolve<ForumPostDoc[]>([])
+        : ForumPost.find().sort({ created_at: 1 }).limit(5000).lean<ForumPostDoc[]>(),
+      ForumPost.aggregate<{ _id: string; n: number }>([
+        { $match: { thread_id: { $in: threads.map((t) => t._id) } } },
+        { $group: { _id: '$thread_id', n: { $sum: 1 } } },
+      ]),
     ]);
+    const replies = new Map(counts.map((c) => [c._id, c.n]));
     const authorIds = [...new Set([...threads.map((t) => t.user_id), ...posts.map((p) => p.user_id)])];
     const users = await User.find({ _id: { $in: authorIds } }).lean<UserDoc[]>();
+    const withReplies = (t: ForumThreadDoc) => ({ ...toThreadDTO(t), replies_count: replies.get(t._id) ?? 0 });
+    if (preview) {
+      return {
+        preview: true as const,
+        threads: threads.map((t) => {
+          const { contenido: _omit, ...rest } = withReplies(t);
+          return rest;
+        }),
+        posts: [],
+        profiles: users.map((u) => {
+          const { id, username, avatar_url } = toPublicUserDTO(u);
+          return { id, username, avatar_url };
+        }),
+      };
+    }
     return {
-      threads: threads.map(toThreadDTO),
+      preview: false as const,
+      threads: threads.map(withReplies),
       posts: posts.map(toPostDTO),
       profiles: users.map(toPublicUserDTO),
     };
