@@ -5,7 +5,7 @@ import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import { OfficialNews } from '../models/OfficialNews.js';
 import { clearSsrCache } from '../services/ssrLite.js';
-import { NEWS_SOURCES, isAllowedUrl, type NewsSourceConfig } from './sources.js';
+import { NEWS_SOURCES, isAllowedUrl, isRelevant, type NewsSourceConfig } from './sources.js';
 
 const USER_AGENT = 'LeonidAppNewsBot/1.0';
 const TIMEOUT_MS = 10_000;
@@ -22,7 +22,7 @@ export const officialNewsSchema = z.object({
 });
 export type OfficialNewsInput = z.infer<typeof officialNewsSchema>;
 
-type Logger = { info: (...a: unknown[]) => void; warn: (...a: unknown[]) => void; error: (...a: unknown[]) => void };
+type Logger = { debug: (...a: unknown[]) => void; info: (...a: unknown[]) => void; warn: (...a: unknown[]) => void; error: (...a: unknown[]) => void };
 let log: Logger = console;
 let running = false;
 const robotsCache = new Map<string, { rules: string[]; at: number }>();
@@ -144,58 +144,6 @@ function parseFeed(body: string, source: NewsSourceConfig): unknown[] {
   return out;
 }
 
-/** Extraccion ligera del Newswire: JSON-LD / __NEXT_DATA__ embebidos en el HTML. */
-function parseNewswire(body: string, source: NewsSourceConfig): unknown[] {
-  const out: unknown[] = [];
-  const seen = new Set<string>();
-  const walk = (node: unknown, depth = 0): void => {
-    if (!node || depth > 12) return;
-    if (Array.isArray(node)) return node.forEach((n) => walk(n, depth + 1));
-    if (typeof node !== 'object') return;
-    const o = node as Record<string, unknown>;
-    const title = o.title ?? o.headline ?? o.name;
-    const rawUrl = o.url ?? o.link ?? o.permalink;
-    if (typeof title === 'string' && typeof rawUrl === 'string') {
-      let abs: string | null = null;
-      try {
-        abs = new URL(rawUrl, 'https://www.rockstargames.com').toString();
-      } catch {
-        /* ignorar */
-      }
-      if (abs && /\/newswire\/article\//.test(abs) && !seen.has(abs)) {
-        seen.add(abs);
-        const image = o.image as { url?: unknown } | string | undefined;
-        const img = o.imageUrl ?? (typeof image === 'object' ? image?.url : image);
-        out.push({
-          title: stripHtml(title),
-          summary: excerpt(String(o.summary ?? o.description ?? o.excerpt ?? '')),
-          sourceUrl: abs,
-          imageUrl: typeof img === 'string' ? img : undefined,
-          publishedAt: toDate(o.publishedAt ?? o.datePublished ?? o.date ?? o.created) ?? new Date(),
-          source: source.id,
-        });
-      }
-    }
-    Object.values(o).forEach((v) => walk(v, depth + 1));
-  };
-  for (const m of body.matchAll(/<script[^>]*type="application\/(?:ld\+)?json"[^>]*>([\s\S]*?)<\/script>/gi)) {
-    try {
-      walk(JSON.parse(m[1] ?? ''));
-    } catch {
-      /* json invalido */
-    }
-  }
-  const next = /<script[^>]*id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/i.exec(body);
-  if (next) {
-    try {
-      walk(JSON.parse(next[1] ?? ''));
-    } catch {
-      /* json invalido */
-    }
-  }
-  return out;
-}
-
 const makeSlug = (title: string, url: string): string => {
   const base = title
     .normalize('NFD')
@@ -213,13 +161,17 @@ async function ingestSource(source: NewsSourceConfig): Promise<number> {
     return 0;
   }
   const body = await fetchText(source.url);
-  const raw = source.kind === 'newswire-html' ? parseNewswire(body, source) : parseFeed(body, source);
+  const raw = parseFeed(body, source);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ops: any[] = [];
   for (const r of raw.slice(0, MAX_ITEMS_PER_SOURCE)) {
     const parsed = officialNewsSchema.safeParse(r);
     if (!parsed.success) continue;
     const it = parsed.data;
+    if (!isRelevant(source, it.title, it.summary)) {
+      log.debug({ source: source.id, title: it.title }, 'item descartado por relevancia');
+      continue;
+    }
     ops.push({
       updateOne: {
         filter: { sourceUrl: it.sourceUrl },

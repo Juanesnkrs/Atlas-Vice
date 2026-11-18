@@ -148,17 +148,21 @@ const NOINDEX_PAGES: Record<string, string> = {
   '/aportar': 'Aportar',
 };
 
+const LANDING_DESCRIPTION =
+  'Explora el mapa interactivo de Leonida, el catálogo de armas, vehículos y coleccionables, guías, noticias oficiales y el foro de la comunidad.';
+
 const landing = (): PageMeta =>
   base({
     path: '/',
-    title: 'Atlas interactivo de Leonida',
+    title: 'Mapa, catálogo y guías de Leonida',
+    description: LANDING_DESCRIPTION,
     jsonLd: [
       {
         '@context': 'https://schema.org',
         '@type': 'WebSite',
         name: SITE_NAME,
         url: baseUrl() + '/',
-        description: DEFAULT_DESCRIPTION,
+        description: LANDING_DESCRIPTION,
         inLanguage: 'es',
         potentialAction: {
           '@type': 'SearchAction',
@@ -400,7 +404,7 @@ async function withDb<T>(fn: () => Promise<T>): Promise<T | null> {
 export function renderHead(meta: PageMeta): string {
   const url = baseUrl() + (meta.path === '/404' ? '' : meta.path);
   const full = `${truncate(meta.title, 60 - SITE_NAME.length - 3)} · ${SITE_NAME}`;
-  const title = meta.path === '/' ? `${SITE_NAME} · ${truncate(meta.title, 40)}` : full;
+  const title = meta.path === '/' ? `${SITE_NAME} · ${truncate(meta.title, 57)}` : full;
   const desc = truncate(meta.description, 160);
   const e = escHtml;
   const lines = [
