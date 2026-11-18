@@ -1,4 +1,5 @@
 import { useId, type CSSProperties, type ReactNode } from 'react';
+import Footer from './Footer';
 
 /* ------------------------------------------------------------------ */
 /* SVG decorativos reutilizables (Vice Sunset NUI)                     */
@@ -83,11 +84,11 @@ const WORDMARK_PALMS: ReadonlyArray<readonly [number, number, number, number]> =
   [384, 18, 36, 112],
 ];
 
-/** Wordmark "ATLAS VICE": relleno sunset, palmeras internas y skyline bajo el texto. */
+/** Wordmark "LEONIDAPP": relleno sunset, palmeras internas y skyline bajo el texto. */
 export function ViceWordmark({
   className,
   width = 360,
-  title = 'ATLAS VICE',
+  title = 'LEONIDAPP',
 }: {
   className?: string;
   width?: number;
@@ -123,10 +124,10 @@ export function ViceWordmark({
             fontFamily="Jost, system-ui, sans-serif"
             fontWeight={700}
             fontSize={74}
-            textLength={404}
+            textLength={380}
             lengthAdjust="spacingAndGlyphs"
           >
-            ATLAS VICE
+            LEONIDAPP
           </text>
         </clipPath>
       </defs>
@@ -147,14 +148,14 @@ export function ViceWordmark({
         fontFamily="Jost, system-ui, sans-serif"
         fontWeight={700}
         fontSize={74}
-        textLength={404}
+        textLength={380}
         lengthAdjust="spacingAndGlyphs"
         fill="none"
         stroke="#FFFFFF"
         strokeOpacity="0.9"
         strokeWidth="1.3"
       >
-        ATLAS VICE
+        LEONIDAPP
       </text>
       <svg x="14" y="104" width="392" height="34" viewBox="0 0 1000 80" preserveAspectRatio="none">
         <path d={SKYLINE_PATH} fill="#5A2A73" />
@@ -267,10 +268,20 @@ export function ViceShell({
         <main
           className={`relative min-h-0 flex-1 ${
             lockScroll ? 'overflow-hidden' : 'overflow-y-auto'
-          } ${dock ? 'pb-[72px] md:pb-24' : ''}`}
+          } ${dock && lockScroll ? 'md:pb-24' : ''}`}
         >
           {children}
         </main>
+
+        <Footer variant={lockScroll ? 'compact' : 'full'} />
+
+        {/* Reserva el espacio del dock (móvil fijo / píldora de escritorio) para no tapar el footer */}
+        {dock && (
+          <div
+            aria-hidden="true"
+            className={`h-[64px] shrink-0 ${lockScroll ? 'md:hidden' : 'md:h-24'}`}
+          />
+        )}
 
         {dock}
       </div>
