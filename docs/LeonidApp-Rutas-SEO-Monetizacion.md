@@ -9,8 +9,10 @@
 ## 1. Enrutado con History API
 
 - El cliente usa **rutas limpias con History API** (`history.pushState` + evento `popstate`). Queda **eliminado el enrutado hash** (`#/…`).
-- Sin librería de router externa: el enrutador vive en `src/App.tsx` (tabla `ruta → vista`, coincidencia de patrones `:param`).
-- Fastify sirve `index.html` (con SSR-lite, §3) para toda ruta del cliente que no empiece por `/api/`, `/assets/`, `/sitemap.xml` ni `/robots.txt` (fallback SPA). Rutas desconocidas → `404` real con `<meta name="robots" content="noindex">`.
+- Sin librería de router externa: el núcleo (`navigate`, `popstate`, interceptación de `<a href>` internos, `matchRoute`, `usePageMeta`) vive en `src/store/useRouteStore.ts`; la tabla `ruta → vista` y las guardas, en `src/App.tsx`.
+- Fastify es el origen único en producción:
+  - Sirve los archivos estáticos compilados de `dist/` (`/assets/*` y demás rutas con extensión) con `node:fs`, sin dependencias nuevas: tipo MIME por extensión, protección contra path traversal (la ruta resuelta debe quedar dentro de `dist/`), `Cache-Control: public, max-age=31536000, immutable` para `/assets/*` y `404` JSON si el archivo no existe.
+  - Sirve `index.html` (con SSR-lite, §3) para toda ruta del cliente que no empiece por `/api/`, no tenga extensión y no sea `/sitemap.xml` ni `/robots.txt` (fallback SPA). Rutas desconocidas → `404` real con `<meta name="robots" content="noindex">`.
 - Compatibilidad: el cliente convierte `#/<ruta>` heredado a `/<ruta>` con `history.replaceState` una sola vez al arrancar.
 
 ### 1.1 Mapa oficial de rutas públicas (indexables)
@@ -41,7 +43,7 @@
 Solo estado de vista; la URL canónica nunca los incluye:
 
 - `/mapa?region=<Region>&marker=<uuid>` — centra/resalta.
-- `/foro?categoria=<Categoria>&hilo=<uuid>` — filtra/abre hilo.
+- `/foro?categoria=<Categoria>&hilo=<uuid>&entity=<uuid>&marker=<uuid>` — filtra por categoría, abre hilo, o muestra los hilos de una entidad / un marcador (enlazado cruzado §5). `ForumPage.tsx` usa internamente `thread`; `App.tsx` traduce `hilo → thread`.
 - `/catalogo?comparar=<slugA>,<slugB>[,<slugC>]` — abre el comparador NUI (§5).
 - `/entrar?next=<ruta interna>` — retorno tras login (validado en servidor como ruta interna).
 
@@ -65,7 +67,7 @@ Solo estado de vista; la URL canónica nunca los incluye:
 
 ## 3. SSR-lite en Fastify (meta tags + JSON-LD)
 
-Fastify **no** renderiza React. Inyecta en `index.html` (plantilla leída una vez al arrancar, `dist/index.html`) un bloque de `<head>` por ruta, entre los marcadores `<!--ssr-head-->` y `<!--/ssr-head-->`:
+Fastify **no** renderiza React. La lógica vive en `server/src/services/ssrLite.ts` (resolución de ruta, caché, render del `<head>`) y se conecta en `routes/seo.ts`. Inyecta en `index.html` (plantilla leída una vez al arrancar, `dist/index.html`) un bloque de `<head>` por ruta, entre los marcadores `<!--ssr-head-->` y `<!--/ssr-head-->`:
 
 | Elemento | Regla |
 | --- | --- |
@@ -81,8 +83,8 @@ Fastify **no** renderiza React. Inyecta en `index.html` (plantilla leída una ve
 | Ruta | Tipos JSON-LD |
 | --- | --- |
 | `/` | `WebSite` (con `SearchAction` hacia `/catalogo?q=`) + `Organization` (LeonidApp, sin afiliación con Rockstar) |
-| `/catalogo/:modulo/:slug` | `Thing` / `CreativeWork` + `BreadcrumbList` (Catálogo › Módulo › Entidad) |
-| `/guias/:slug` | `Article` + `BreadcrumbList` |
+| `/catalogo/:modulo/:slug` | `Thing` / `CreativeWork` (con `isPartOf` = módulo) + `BreadcrumbList` (Inicio › Catálogo › Entidad; no hay página de módulo, así que el módulo no es un nivel de la miga) |
+| `/guias/:slug` | `HowTo` (con `HowToStep` por cada `metadata_json.steps[]`) si la guía tiene pasos; si no, `Article`. Siempre + `BreadcrumbList` |
 | `/noticias/:slug` | `NewsArticle` (`headline`, `datePublished`, `image`, `isBasedOn` = `sourceUrl` oficial) + `BreadcrumbList` |
 | `/mapa`, `/foro`, `/noticias`, `/guias`, `/catalogo` | `CollectionPage` + `BreadcrumbList` |
 

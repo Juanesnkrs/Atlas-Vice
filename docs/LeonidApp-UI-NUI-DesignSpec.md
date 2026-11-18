@@ -92,8 +92,10 @@ Pie institucional estilo Rockstar sobre fondo **negro `#000000`**, presente en t
 
 | Acción | Endpoint | Persistencia | Validación |
 | --- | --- | --- | --- |
-| Contact | `POST /api/contact` `{ email, message }` | `Submission` con `type: 'contact'`, `moduleSlug: 'leonidapp'`, `userId` de la sesión o `null` | Zod: `email` válido, `message` 10–2000 chars; rate limit 5/hora/IP; honeypot |
-| Subscribe | `POST /api/subscribe` `{ email, locale }` | `Submission` con `type: 'newsletter'`, deduplicado por `payload.email` | Zod; rate limit 5/hora/IP; respuesta idéntica exista o no (sin enumeración) |
+| Contact | `POST /api/contact` `{ email, message, website }` | `Submission` con `type: 'contact'`, `moduleSlug: 'leonidapp'`, `userId` de la sesión o `null` | Zod: `email` válido (≤ 254), `message` 10–2000 chars tras `trim`; rate limit 5/hora/IP; honeypot `website` (campo oculto, debe llegar vacío: si trae texto se responde `201 { ok: true }` sin guardar nada) |
+| Subscribe | `POST /api/subscribe` `{ email, locale, website }` | `Submission` con `type: 'newsletter'`, deduplicado por `payload.email` | Zod: `locale ∈ {'es','en'}` (idioma activo del selector del Footer); mismo honeypot; rate limit 5/hora/IP; respuesta idéntica `201 { ok: true }` exista o no (sin enumeración) |
+
+El título de la `Submission` de contacto es `Contacto de <email>` (no hay campo `name`).
 
 - Se elimina el guardado en `localStorage` de estos formularios: el estado vive en memoria (React/Zustand) hasta el envío.
 - Estados de UI: `idle` → `sending` → `sent` / `error` (con mensaje y reintento). Sin conexión: se informa y no se envía (no hay outbox local).
@@ -129,12 +131,12 @@ src/
 ├── data/              seed.ts (capa offline-first y fallback)
 ├── pages/             LandingAuthPage.tsx · DashboardPage.tsx · MapPage.tsx · CatalogPage.tsx
 │                      ForumPage.tsx · AdminSubmitPage.tsx · GuidesPage.tsx · NewsPage.tsx
-├── store/             useAuthStore.ts · useProgressStore.ts
+├── store/             useAuthStore.ts · useProgressStore.ts · useRouteStore.ts (router History API)
 ├── styles/            vice-nui.css
 └── types/             database.ts
 ```
 
-`GuidesPage.tsx` (`/guias`, `/guias/:slug`) y `NewsPage.tsx` (`/noticias`, `/noticias/:slug`) son las únicas páginas nuevas aprobadas. Ninguna otra subcarpeta en `src/`.
+`GuidesPage.tsx` (`/guias`, `/guias/:slug`) y `NewsPage.tsx` (`/noticias`, `/noticias/:slug`) son las únicas páginas nuevas aprobadas; `useRouteStore.ts` es el único store nuevo aprobado. Ninguna otra subcarpeta en `src/`.
 
 ### 6.2 API `server/src/`
 
@@ -149,12 +151,12 @@ server/src/
 ├── routes/     auth.ts · catalog.ts · config.ts · forum.ts · news.ts · progress.ts · seo.ts
 │               submissions.ts · contact.ts
 ├── plugins/    auth.ts
-├── services/   audit.ts · mailer.ts · oauth.ts · session.ts · users.ts · validate.ts · submissions.ts
+├── services/   audit.ts · mailer.ts · oauth.ts · session.ts · users.ts · validate.ts · submissions.ts · ssrLite.ts
 ├── workers/    officialNewsWorker.ts · sources.ts
 └── scripts/    seed.ts · seedData.json
 ```
 
-`routes/contact.ts` (Contact + Subscribe) y `services/submissions.ts` (promoción automática) son los únicos archivos nuevos aprobados en `server/src/`.
+`routes/contact.ts` (Contact + Subscribe), `services/submissions.ts` (promoción automática) y `services/ssrLite.ts` (SSR-lite) son los únicos archivos nuevos aprobados en `server/src/`.
 
 ### 6.3 Fuera del árbol, válidos
 

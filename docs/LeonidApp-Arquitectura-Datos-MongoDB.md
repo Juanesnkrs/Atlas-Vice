@@ -118,7 +118,7 @@ Mongoose: `monetization: { type: Schema.Types.Mixed, default: { ads_enabled: fal
 | `categoria` | String | `z.string().min(1).max(80)` | Índice `{ module_id, categoria }`. |
 | `imagen_url` | String \| null | `.nullable().optional()` | |
 | `stats_json` | Mixed | `jsonRecordSchema` | Fuente del comparador NUI (valores numéricos). |
-| `metadata_json` | Mixed | `jsonRecordSchema` | En guías: `body_md`, `lore_refs[]`. |
+| `metadata_json` | Mixed | `jsonRecordSchema` | En guías: `body_md`, `lore_refs[]` y `steps[]` = `{ id, title, body }` ordenados (fuente del progreso por pasos y del JSON-LD `HowTo`). |
 | `created_at` | Date | — | |
 
 ### 2.5 `MapMarker` — `models/MapMarker.ts`
