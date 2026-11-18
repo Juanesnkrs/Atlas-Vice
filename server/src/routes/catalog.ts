@@ -27,6 +27,26 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     return rows.map(toModuleDTO);
   });
 
+  // Consulta por slug (URLs limpias /catalogo/:modulo/:slug y /guias/:slug). Solo modulos activos.
+  const moduleSlugParams = z.object({ moduleSlug: z.string().min(1).max(60) });
+
+  app.get('/api/modules/:moduleSlug/entities', async (req) => {
+    const { moduleSlug } = parse(moduleSlugParams, req.params);
+    const mod = await Module.findOne({ slug: moduleSlug, activo: true }).lean<ModuleDoc>();
+    if (!mod) throw new HttpError(404, 'Modulo no encontrado');
+    const rows = await Entity.find({ module_id: mod._id }).sort({ created_at: 1 }).lean<EntityDoc[]>();
+    return rows.map(toEntityDTO);
+  });
+
+  app.get('/api/modules/:moduleSlug/entities/:slug', async (req) => {
+    const { moduleSlug, slug } = parse(moduleSlugParams.extend({ slug: z.string().min(1).max(120) }), req.params);
+    const mod = await Module.findOne({ slug: moduleSlug, activo: true }).lean<ModuleDoc>();
+    if (!mod) throw new HttpError(404, 'Modulo no encontrado');
+    const doc = await Entity.findOne({ module_id: mod._id, slug }).lean<EntityDoc>();
+    if (!doc) throw new HttpError(404, 'Entidad no encontrada');
+    return { ...toEntityDTO(doc), module_slug: mod.slug };
+  });
+
   app.post('/api/modules', admin, async (req, reply) => {
     const body = parse(moduleSchema, req.body);
     const { id, ...rest } = body;

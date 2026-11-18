@@ -1,15 +1,24 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { requireRole } from '../plugins/auth.js';
-import { AppConfig, appConfigUpdateSchema, getGlobalConfig } from '../models/AppConfig.js';
+import {
+  AppConfig,
+  appConfigUpdateSchema,
+  DEFAULT_MONETIZATION,
+  getGlobalConfig,
+  monetizationSchema,
+} from '../models/AppConfig.js';
+import { Module, type ModuleDoc } from '../models/Module.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { roleSchema, toPublicUserDTO, toSelfUserDTO, User, type UserDoc } from '../models/User.js';
 import { writeAudit } from '../services/audit.js';
 import { HttpError, idParamsSchema, parse } from '../services/validate.js';
 
 export async function registerConfigRoutes(app: FastifyInstance): Promise<void> {
-  app.get('/api/config/public', async (_req, reply) => {
+  const publicConfig = async (_req: unknown, reply: { header: (k: string, v: string) => unknown }) => {
     const c = await getGlobalConfig();
+    const mods = await Module.find({}).sort({ orden: 1 }).lean<ModuleDoc[]>();
+    const mon = monetizationSchema.safeParse(c.monetization ?? DEFAULT_MONETIZATION);
     reply.header('cache-control', 'public, max-age=30');
     return {
       maintenance_mode: c.maintenance_mode,
@@ -17,8 +26,19 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
       feature_flags: c.feature_flags,
       enabled_auth_providers: c.enabled_auth_providers,
       social_links: c.social_links ?? [],
+      monetization: mon.success ? mon.data : monetizationSchema.parse({}),
+      modules: mods.map((m) => ({
+        id: m._id,
+        slug: m.slug,
+        nombre: m.nombre,
+        icono: m.icono,
+        orden: m.orden,
+        isActive: m.activo,
+      })),
     };
-  });
+  };
+  app.get('/api/config', publicConfig);
+  app.get('/api/config/public', publicConfig);
 
   app.patch('/api/admin/config', { preHandler: requireRole('SUPER_ADMIN') }, async (req) => {
     const patch = parse(appConfigUpdateSchema, req.body);

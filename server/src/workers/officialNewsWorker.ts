@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import { OfficialNews } from '../models/OfficialNews.js';
+import { clearSsrCache } from '../services/ssrLite.js';
 import { NEWS_SOURCES, isAllowedUrl, type NewsSourceConfig } from './sources.js';
 
 const USER_AGENT = 'LeonidAppNewsBot/1.0';
@@ -229,6 +230,7 @@ async function ingestSource(source: NewsSourceConfig): Promise<number> {
   }
   if (!ops.length) return 0;
   const res = await OfficialNews.bulkWrite(ops, { ordered: false });
+  if (res.upsertedCount) clearSsrCache();
   return res.upsertedCount ?? 0;
 }
 
