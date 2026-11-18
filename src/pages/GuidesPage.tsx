@@ -55,23 +55,31 @@ function GuideCard({ guide }: { guide: Entity }) {
   const steps = guideSteps(guide);
   const { count, percent } = useGuideProgress(guide, steps.length);
   return (
-    <li className="glass flex flex-col rounded-2xl p-4">
-      <p className="text-xs font-semibold uppercase tracking-widest text-vice-orange">{guide.categoria}</p>
-      <h2 className="font-display text-lg font-bold">
-        <a href={`/guias/${entitySlug(guide)}`} className="hover:underline focus-visible:outline-2 focus-visible:outline-vice-gold">
+    <li className="glass relative flex flex-col rounded-[22px] p-5 transition-colors focus-within:border-vice-orange hover:border-vice-orange/70">
+      <p>
+        <span className="inline-block rounded-full bg-white/15 px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em]">
+          {guide.categoria}
+        </span>
+      </p>
+      <h2 className="mt-2 font-display text-xl font-bold leading-snug">
+        <a
+          href={`/guias/${entitySlug(guide)}`}
+          className="after:absolute after:inset-0 after:rounded-[22px] focus-visible:outline-2 focus-visible:outline-vice-gold"
+        >
           {guide.titulo}
         </a>
       </h2>
-      {guide.subtitulo && <p className="text-sm text-vice-text/85">{guide.subtitulo}</p>}
+      {guide.subtitulo && <p className="mt-1 text-sm text-vice-text/85">{guide.subtitulo}</p>}
       {steps.length > 0 && (
-        <StatBar className="mt-3" label="Tu avance" value={percent} valueLabel={`${count}/${steps.length}`} accent="gold" />
+        <StatBar className="mt-4" label="Tu avance" value={percent} valueLabel={`${count}/${steps.length}`} accent="gold" />
       )}
+      <p className="mt-3 text-sm font-semibold text-[#FFC09A]">{count > 0 ? 'Continuar guía →' : 'Empezar guía →'}</p>
     </li>
   );
 }
 
 function GuidesIndex() {
-  const { data, loading, error } = useWorldData();
+  const { data, error } = useWorldData();
   usePageMeta({
     title: 'Guías y misiones',
     description: 'Guías paso a paso de Leonida con progreso verificable: primeros pasos, rutas de tiendas, eventos y misiones.',
@@ -82,20 +90,19 @@ function GuidesIndex() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-2 md:px-8">
-      <h1 className="font-display text-3xl font-bold">Guías y misiones</h1>
-      <p className="mt-1 text-sm text-vice-text/80">
+      <h1 className="font-display text-3xl font-bold tracking-[0.02em] text-[#FFC09A] md:text-4xl">Guías y misiones</h1>
+      <p className="mt-1 max-w-2xl text-sm text-vice-text/85">
         Sigue cada guía paso a paso y marca lo que ya hiciste: tu avance se guarda en el dispositivo y, con cuenta, se sincroniza.
       </p>
-      {(loading || error) && (
-        <p role="status" className="mt-2 text-xs text-vice-text/80">
-          {loading ? 'Cargando desde la API… ' : ''}
-          {error ? `API no disponible (${error}); usando el seed.` : ''}
+      {error && (
+        <p role="status" className="mt-2 text-xs text-vice-gold">
+          Sin conexión con el servidor: mostrando los últimos datos guardados.
         </p>
       )}
       {guides.length === 0 ? (
-        <p className="mt-6 text-vice-text/70">Aún no hay guías publicadas.</p>
+        <p className="glass mt-6 rounded-2xl p-5 text-vice-text/80">Aún no hay guías publicadas.</p>
       ) : (
-        <ul className="mt-5 grid gap-3 md:grid-cols-2">
+        <ul className="mt-5 grid gap-4 md:grid-cols-2">
           {guides.map((g) => (
             <GuideCard key={g.id} guide={g} />
           ))}
@@ -113,7 +120,7 @@ function GuidesIndex() {
 function GuideDetail({ slug }: { slug: string }) {
   const { entity: guide, loading } = useEntityDetail('guias', slug);
   const { data } = useWorldData();
-  const { data: forum } = useForumData();
+  const { data: forum, isPreview } = useForumData();
   const toggleStep = useProgressStore((s) => s.toggleGuideStep);
   const wide = useWide();
   const [showSpoiler, setShowSpoiler] = useState(false);
@@ -162,7 +169,8 @@ function GuideDetail({ slug }: { slug: string }) {
     return [];
   });
   const ownMarkers = data.markers.filter((m) => m.entity_id === guide.id);
-  const threads = forum.threads
+  // Invitado: la lista del foro es solo un escaparate (sin vínculos a entidad), así que no hay hilos concretos.
+  const threads = (isPreview ? [] : forum.threads)
     .filter((t) => t.entity_id === guide.id || ownMarkers.some((m) => m.id === t.marker_id))
     .slice(0, 5);
 
@@ -183,13 +191,17 @@ function GuideDetail({ slug }: { slug: string }) {
           </ol>
         </nav>
         <header className="mt-1">
-          <p className="text-xs font-semibold uppercase tracking-widest text-vice-orange">{guide.categoria}</p>
-          <h1 className="font-display text-3xl font-bold">{guide.titulo}</h1>
+          <p>
+            <span className="inline-block rounded-full bg-white/15 px-3 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em]">
+              {guide.categoria}
+            </span>
+          </p>
+          <h1 className="mt-2 font-display text-3xl font-bold text-[#FFC09A] md:text-4xl">{guide.titulo}</h1>
           {guide.subtitulo && <p className="text-vice-text/85">{guide.subtitulo}</p>}
         </header>
 
         {steps.length > 0 && (
-          <div className="glass mt-4 rounded-2xl p-4">
+          <div className="glass mt-4 rounded-[22px] p-5">
             <StatBar
               label="Progreso de la guía"
               value={percent}
@@ -226,7 +238,7 @@ function GuideDetail({ slug }: { slug: string }) {
                 const inputId = `paso-${st.id}`;
                 return (
                   <li key={st.id} className="flex flex-col gap-2">
-                    <div className="glass flex items-start gap-3 rounded-xl p-3">
+                    <div className="glass flex items-start gap-3 rounded-2xl p-4">
                       <input
                         id={inputId}
                         type="checkbox"
@@ -241,7 +253,7 @@ function GuideDetail({ slug }: { slug: string }) {
                         className="mt-1 h-6 w-6 shrink-0 accent-[#E1307E]"
                       />
                       <label htmlFor={inputId} className="min-h-11 flex-1 cursor-pointer">
-                        <span className="text-xs text-vice-orange">Paso {i + 1}</span>
+                        <span className="text-xs font-semibold tracking-[0.08em] text-vice-orange">PASO {i + 1}</span>
                         <span className={`block font-semibold ${checked ? 'line-through opacity-70' : ''}`}>{st.title}</span>
                         {st.body && <span className="mt-1 block text-sm text-vice-text/85">{st.body}</span>}
                       </label>
@@ -295,7 +307,7 @@ function GuideDetail({ slug }: { slug: string }) {
               ))}
             </ul>
           )}
-          <a href={`/foro?entity=${guide.id}`} className={`${LINK} mt-2 w-fit`}>
+          <a href={isPreview ? '/foro' : `/foro?entity=${guide.id}`} className={`${LINK} mt-2 w-fit`}>
             Abrir hilo sobre esta guía
           </a>
         </section>

@@ -1,45 +1,103 @@
-// P07 - Foro y Comunidad: tablón (P07.1), hilo con respuestas anidadas (P07.2),
-// votos, tag spoiler y enlace a Discord. Lectura pública / escritura autenticada.
+// P07 - Foro y Comunidad (Forum.dc.html + pestaña Foro de Mobile.dc.html).
+// Invitado: escaparate en vivo (solo lista en formato preview, DesignSpec §7.5). Cualquier control
+// abre el muro de registro; ningún contenido de hilo llega a renderizarse. Con sesión: foro completo.
+// La restricción real la aplica el servidor: aquí solo se evita pedir/mostrar lo que no corresponde.
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type FormEvent } from 'react';
 import { BottomSheet } from '../components/ui/BottomSheet';
+import { Modal } from '../components/ui/Modal';
+import { PalmButton } from '../components/ui/PalmButton';
 import {
   DISCORD_URL,
   entityHref,
   FORUM_CATEGORIES,
   SAMPLE_NOTICE,
   forumCategoryLabel,
+  relativeTime,
   useForumData,
   useWorldData,
   type ForumData,
 } from '../data/seed';
 import { apiFetch, isApiConfigured, useAuthStore } from '../store/useAuthStore';
+import { navigate } from '../store/useRouteStore';
 import type { ForumCategoria, ForumPost, ForumThread } from '../types/database';
 
 type SortMode = 'trend' | 'recent';
+
+const LOGIN_HREF = '/entrar?next=/foro';
+const WALL_TITLE = 'Crea tu cuenta gratis para leer la conversación';
 const INPUT =
-  'min-h-11 w-full rounded-xl border border-white/15 bg-white/10 px-4 text-base text-vice-text placeholder:text-vice-text/50 focus-visible:outline-2 focus-visible:outline-vice-gold';
+  'min-h-11 w-full rounded-xl border border-vice-orange/30 bg-white/[0.07] px-4 text-base text-vice-text placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold';
 const BTN =
   'flex min-h-11 items-center justify-center rounded-xl px-4 font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold';
+const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#FFC09A]';
 
-const fmtDate = (iso: string): string => new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short' });
+const TAG_BG: Record<ForumCategoria, string> = {
+  General: 'bg-white/20',
+  'Guias/Ayuda': 'bg-vice-cyan/45',
+  Secretos: 'bg-vice-lilac/50',
+  Crews: 'bg-vice-gold/45',
+};
+const AVATARS = ['#FF9CC4', '#8FE3EC', '#CDBBFF', '#FFD98A', '#A7EEBF'];
+const avatarOf = (name: string): string => AVATARS[(name.charCodeAt(0) + name.length) % AVATARS.length] ?? '#FF9CC4';
+
+function CategoryTag({ categoria }: { categoria: ForumCategoria }) {
+  return (
+    <span className={`rounded-[10px] px-2.5 py-0.5 text-[10px] font-semibold tracking-[0.06em] text-white md:text-[11px] ${TAG_BG[categoria]}`}>
+      {forumCategoryLabel(categoria).toUpperCase()}
+    </span>
+  );
+}
+
+function SpoilerTag() {
+  return <span className="rounded-[10px] bg-vice-gold px-2.5 py-0.5 text-[10px] font-bold tracking-[0.06em] text-vice-ink md:text-[11px]">SPOILER</span>;
+}
+
+function LiveBadge() {
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold tracking-[0.12em] text-[#5CE08F]">
+      <span aria-hidden="true" className="h-2 w-2 animate-vice-pulse rounded-full bg-[#5CE08F]" />
+      EN VIVO
+    </span>
+  );
+}
+
+function LockIcon({ size }: { size: number }) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
+      <path d="M8 10.5V8a4 4 0 018 0v2.5" />
+    </svg>
+  );
+}
 
 export default function ForumPage({ params }: { params: URLSearchParams }) {
-  const { data: forum, loading, error } = useForumData();
+  const { data: forum, error, isPreview } = useForumData();
   const { data: world } = useWorldData();
   const qc = useQueryClient();
   const status = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
 
-  const canWrite = status === 'authenticated' && user !== null;
+  const guest = isPreview;
+  const canWrite = !guest && status === 'authenticated' && user !== null;
   const remote = isApiConfigured && forum.source === 'api';
+
+  const deepLink = params.has('thread') || params.has('entity') || params.has('marker');
+  const [wallRequested, setWallRequested] = useState(deepLink);
+  const wallOpen = wallRequested && guest && status !== 'loading';
+  const openWall = () => setWallRequested(true);
+  const closeWall = () => {
+    setWallRequested(false);
+    // El enlace profundo (?hilo= / ?entity= / ?marker=) no debe reabrir el muro al refrescar.
+    if (deepLink) navigate('/foro', { replace: true });
+  };
 
   const [cat, setCat] = useState<'all' | ForumCategoria>('all');
   const [sort, setSort] = useState<SortMode>('trend');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(params.get('thread'));
-  const [mobileDetail, setMobileDetail] = useState(params.get('thread') !== null);
+  const [mobileDetail, setMobileDetail] = useState(params.get('thread') !== null && !guest);
   const [revealed, setRevealed] = useState<Set<string>>(new Set());
   const [composeOpen, setComposeOpen] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
@@ -47,9 +105,9 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Contexto (P07.3): hilos de una entidad o de un marcador.
-  const ctxEntity = params.get('entity');
-  const ctxMarker = params.get('marker');
+  // Contexto (P07.3): hilos de una entidad o de un marcador (solo con sesión).
+  const ctxEntity = guest ? null : params.get('entity');
+  const ctxMarker = guest ? null : params.get('marker');
   const ctxLabel = ctxEntity
     ? world.entities.find((e) => e.id === ctxEntity)?.titulo
     : ctxMarker
@@ -69,26 +127,31 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
     for (const p of forum.posts) c.set(p.thread_id, (c.get(p.thread_id) ?? 0) + 1);
     return c;
   }, [forum.posts]);
+  const repliesOf = (t: ForumThread): number => t.replies_count ?? replyCount.get(t.id) ?? 0;
 
+  const sortShown: SortMode = guest ? 'recent' : sort;
   const threads = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = forum.threads.filter(
       (t) =>
-        (cat === 'all' || t.categoria === cat) &&
-        (!ctxEntity || t.entity_id === ctxEntity) &&
-        (!ctxMarker || t.marker_id === ctxMarker) &&
-        (!q || `${t.titulo} ${t.contenido}`.toLowerCase().includes(q)),
+        guest ||
+        ((cat === 'all' || t.categoria === cat) &&
+          (!ctxEntity || t.entity_id === ctxEntity) &&
+          (!ctxMarker || t.marker_id === ctxMarker) &&
+          (!q || `${t.titulo} ${t.contenido}`.toLowerCase().includes(q))),
     );
     return list.sort((a, b) => {
+      if (guest) return Date.parse(b.created_at) - Date.parse(a.created_at);
       if (a.is_pinned !== b.is_pinned) return a.is_pinned ? -1 : 1;
       return sort === 'trend'
         ? b.upvotes_count - a.upvotes_count
         : Date.parse(b.created_at) - Date.parse(a.created_at);
     });
-  }, [forum.threads, cat, sort, search, ctxEntity, ctxMarker]);
+  }, [forum.threads, guest, cat, sort, search, ctxEntity, ctxMarker]);
 
-  const selected: ForumThread | null =
-    forum.threads.find((t) => t.id === selectedId) ?? threads[0] ?? null;
+  const selected: ForumThread | null = guest
+    ? null
+    : (forum.threads.find((t) => t.id === selectedId) ?? threads[0] ?? null);
   const posts = selected ? forum.posts.filter((p) => p.thread_id === selected.id) : [];
   // Enlazado cruzado (chips): el destino solo se muestra si existe.
   const selectedEntity = selected?.entity_id ? world.entities.find((e) => e.id === selected.entity_id) : undefined;
@@ -98,20 +161,31 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
       ? { title: selectedEntity.titulo, href: entityHref(selectedEntity, selectedEntityModule.slug) }
       : null;
   const selectedMarker = selected?.marker_id ? world.markers.find((m) => m.id === selected.marker_id) : undefined;
-  const children = useMemo(() => {
-    const m = new Map<string | null, ForumPost[]>();
+
+  // Respuestas en orden de lectura (DFS) con su profundidad.
+  const flatPosts = useMemo(() => {
+    const byParent = new Map<string | null, ForumPost[]>();
     for (const p of posts) {
-      const arr = m.get(p.parent_post_id) ?? [];
+      const arr = byParent.get(p.parent_post_id) ?? [];
       arr.push(p);
-      m.set(p.parent_post_id, arr);
+      byParent.set(p.parent_post_id, arr);
     }
-    for (const arr of m.values()) arr.sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
-    return m;
+    for (const arr of byParent.values()) arr.sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+    const out: Array<{ post: ForumPost; depth: number }> = [];
+    const walk = (parent: string | null, depth: number) => {
+      for (const p of byParent.get(parent) ?? []) {
+        out.push({ post: p, depth });
+        walk(p.id, Math.min(depth + 1, 3));
+      }
+    };
+    walk(null, 0);
+    return out;
   }, [posts]);
 
   // ---- Votos --------------------------------------------------------------------------
+  const votesKey = ['votes', user?.id ?? 'anon', remote];
   const votesQ = useQuery({
-    queryKey: ['votes', user?.id ?? 'anon', remote],
+    queryKey: votesKey,
     enabled: canWrite && remote,
     initialData: [] as string[],
     initialDataUpdatedAt: 0,
@@ -120,15 +194,15 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
       return votes.map((v) => `${v.target_type}:${v.target_id}`);
     },
   });
-  const votesKey = ['votes', user?.id ?? 'anon', remote];
   const myVotes = new Set(votesQ.data);
 
   const patchForum = (fn: (d: ForumData) => ForumData) =>
     qc.setQueryData<ForumData>(['forum'], (d) => (d ? fn(d) : d));
 
+  /** Invitado: abre el muro y corta la acción. */
   const requireAccount = (): boolean => {
     if (canWrite) return true;
-    setMessage('Necesitas una cuenta para publicar, responder o votar.');
+    openWall();
     return false;
   };
 
@@ -201,7 +275,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
         upvotes_count: 0,
         created_at: new Date().toISOString(),
       };
-      setMessage('Publicado solo en esta sesión: no hay conexión con la API (datos de ejemplo).');
+      setMessage('Publicado solo en esta sesión: no hay conexión con la API.');
     }
     patchForum((f) => ({ ...f, threads: [created, ...f.threads] }));
     setBusy(false);
@@ -242,113 +316,40 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
   };
 
   const spoilerHidden = selected?.is_spoiler === true && !revealed.has(selected.id);
-
-  const renderPosts = (parent: string | null, depth: number) =>
-    (children.get(parent) ?? []).map((p) => (
-      <li key={p.id} className={depth > 0 ? 'ml-3 border-l border-white/15 pl-3' : ''}>
-        <div className="rounded-xl bg-white/5 p-3">
-          <p className="text-xs text-vice-text/70">
-            <span className="font-semibold text-vice-orange">{nameOf(p.user_id)}</span> · {fmtDate(p.created_at)}
-          </p>
-          <p className="mt-1 whitespace-pre-wrap text-sm">{p.contenido}</p>
-          <div className="mt-1 flex items-center gap-1">
-            <button
-              type="button"
-              aria-pressed={myVotes.has(`POST:${p.id}`)}
-              aria-label={`Votar respuesta, ${p.upvotes_count} votos`}
-              onClick={() => void vote('POST', p.id)}
-              className={`${BTN} gap-1 px-3 text-sm ${myVotes.has(`POST:${p.id}`) ? 'text-vice-gold' : 'text-vice-text/80'}`}
-            >
-              ▲ {p.upvotes_count}
-            </button>
-            <button
-              type="button"
-              onClick={() => setReplyTo(p.id)}
-              className={`${BTN} px-3 text-sm text-vice-text/80 hover:bg-white/10`}
-            >
-              Responder
-            </button>
-          </div>
-        </div>
-        {(children.get(p.id)?.length ?? 0) > 0 && (
-          <ul className={`mt-2 flex flex-col gap-2 ${depth >= 3 ? 'ml-0' : ''}`}>{renderPosts(p.id, Math.min(depth + 1, 4))}</ul>
-        )}
-      </li>
-    ));
-
   const replyTarget = replyTo ? posts.find((p) => p.id === replyTo) : null;
+  const startCompose = () => {
+    if (requireAccount()) setComposeOpen(true);
+  };
+
+  const votedThread = selected ? myVotes.has(`THREAD:${selected.id}`) : false;
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 px-3 pt-1 md:px-8">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="font-display text-xl font-bold tracking-wide md:text-2xl">COMUNIDAD LEONIDAPP</h1>
-        <div className="flex items-center gap-2">
-          <a
-            href={DISCORD_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`${BTN} glass hidden text-sm sm:flex`}
-          >
-            Discord oficial
-          </a>
-          <button
-            type="button"
-            onClick={() => (canWrite ? setComposeOpen(true) : requireAccount())}
-            className={`${BTN} bg-vice-accent font-bold text-vice-ink max-md:hidden`}
-          >
-            + Hilo
-          </button>
+      {/* Cabecera del foro: título, categorías y "+ Hilo" */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <h1 className="font-display text-2xl font-bold tracking-[0.04em] text-[#FFC09A] md:text-[26px]">COMUNIDAD</h1>
+        <div role="tablist" aria-label="Categorías del foro" className="order-last flex w-full gap-2 overflow-x-auto [scrollbar-width:none] md:order-none md:w-auto">
+          {([{ value: 'all', label: 'Todos' }, ...FORUM_CATEGORIES] as const).map((c) => {
+            const on = (guest ? 'all' : cat) === c.value;
+            return (
+              <button
+                key={c.value}
+                type="button"
+                role="tab"
+                aria-selected={on}
+                onClick={() => (guest ? openWall() : setCat(c.value))}
+                className={`h-11 shrink-0 whitespace-nowrap rounded-full border border-vice-orange/30 px-4 text-[13px] font-bold md:px-5 md:text-sm ${FOCUS} ${
+                  on ? 'bg-vice-accent text-vice-ink' : 'bg-white/[0.07] text-vice-text hover:bg-white/15'
+                }`}
+              >
+                {c.label}
+              </button>
+            );
+          })}
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <div role="tablist" aria-label="Categorías" className="flex gap-1 overflow-x-auto">
-          {([{ value: 'all', label: 'Todos' }, ...FORUM_CATEGORIES] as const).map((c) => (
-            <button
-              key={c.value}
-              type="button"
-              role="tab"
-              aria-selected={cat === c.value}
-              onClick={() => setCat(c.value)}
-              className={`min-h-11 whitespace-nowrap rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-                cat === c.value ? 'bg-vice-accent text-vice-ink' : 'glass hover:bg-white/10'
-              }`}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-        <label className="sr-only" htmlFor="forum-search">
-          Buscar hilos
-        </label>
-        <input
-          id="forum-search"
-          type="search"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar hilos…"
-          className={`${INPUT} glass max-w-[220px]`}
-        />
-        <div role="group" aria-label="Ordenar" className="flex gap-1">
-          {(
-            [
-              ['trend', 'Tendencia'],
-              ['recent', 'Recientes'],
-            ] as const
-          ).map(([v, l]) => (
-            <button
-              key={v}
-              type="button"
-              aria-pressed={sort === v}
-              onClick={() => setSort(v)}
-              className={`min-h-11 rounded-full border px-3 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-                sort === v ? 'border-vice-orange bg-white/15' : 'border-white/15 hover:bg-white/10'
-              }`}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
+        <PalmButton onClick={startCompose} className="ml-auto h-12 rounded-full px-6 text-base max-md:hidden">
+          + HILO
+        </PalmButton>
       </div>
 
       {hasContext && (
@@ -360,198 +361,335 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
         </p>
       )}
 
-      <div aria-live="polite" className="text-xs">
-        {loading && <p>Cargando desde la API…</p>}
-        {error && <p className="text-vice-gold">API no disponible ({error}); usando el seed.</p>}
+      <div aria-live="polite" className="text-xs empty:hidden">
+        {error && <p className="text-vice-gold">Sin conexión con el servidor: mostrando los últimos datos guardados.</p>}
         {message && (
           <p role="alert" className="text-vice-gold">
-            {message}{' '}
-            {!canWrite && (
-              <a href="/entrar?next=/foro" className="inline-flex min-h-11 items-center underline">
-                Iniciar sesión
-              </a>
-            )}
+            {message}
           </p>
         )}
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[minmax(300px,420px)_1fr]">
-        {/* P07.1 Tablón */}
+      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[minmax(340px,500px)_1fr]">
+        {/* P07.1 Lista de hilos */}
         <section
           aria-label="Lista de hilos"
-          className={`min-h-0 overflow-y-auto pb-2 ${mobileDetail ? 'max-md:hidden' : ''}`}
+          className={`flex min-h-0 flex-col md:overflow-hidden md:rounded-[20px] md:border md:border-vice-orange/25 md:bg-[rgba(20,14,36,0.78)] md:backdrop-blur-hud ${mobileDetail ? 'max-md:hidden' : ''}`}
         >
-          {threads.length === 0 ? (
-            <p className="glass rounded-xl p-4 text-vice-text/80">No hay hilos con estos filtros.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {threads.map((t) => {
-                const active = selected?.id === t.id;
-                return (
-                  <li key={t.id}>
-                    <button
-                      type="button"
-                      aria-current={active ? 'true' : undefined}
-                      onClick={() => {
-                        setSelectedId(t.id);
-                        setMobileDetail(true);
-                        setReplyTo(null);
-                      }}
-                      className={`glass flex min-h-[44px] w-full flex-col gap-1 rounded-xl p-3 text-left focus-visible:outline-2 focus-visible:outline-vice-gold ${
-                        active ? 'border-vice-magenta ring-1 ring-vice-magenta' : 'hover:border-vice-orange'
-                      }`}
-                    >
-                      <span className="flex flex-wrap items-center gap-2 text-xs">
-                        {t.is_pinned && <span className="font-bold text-vice-gold">FIJADO</span>}
-                        <span className="rounded-full bg-white/10 px-2 py-0.5 font-semibold text-vice-orange">
-                          {forumCategoryLabel(t.categoria)}
-                        </span>
-                        {t.is_spoiler && (
-                          <span className="rounded-full bg-vice-magenta px-2 py-0.5 font-bold text-vice-ink">SPOILER</span>
-                        )}
-                      </span>
-                      <span className="font-display text-base font-bold leading-snug">{t.titulo}</span>
-                      <span className="text-xs text-vice-text/75">
-                        ▲ {t.upvotes_count} · {replyCount.get(t.id) ?? 0} respuestas · {nameOf(t.user_id)} · {fmtDate(t.created_at)}
-                      </span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          <div className="flex items-center justify-between gap-3 px-1 pb-2 md:px-5 md:pb-2 md:pt-4">
+            <h2 className="text-xs font-semibold tracking-[0.1em] text-vice-text/90">HILOS · {threads.length}</h2>
+            {remote && <LiveBadge />}
+          </div>
+          <div className="flex items-center gap-2 px-1 pb-2 md:px-5">
+            {guest ? (
+              <button type="button" onClick={openWall} className={`${INPUT} flex min-w-0 flex-1 items-center text-left text-vice-text/60`}>
+                Buscar hilos…
+              </button>
+            ) : (
+              <>
+                <label className="sr-only" htmlFor="forum-search">
+                  Buscar hilos
+                </label>
+                <input
+                  id="forum-search"
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Buscar hilos…"
+                  className={`${INPUT} min-w-0 flex-1`}
+                />
+              </>
+            )}
+            <div role="group" aria-label="Ordenar" className="flex shrink-0 gap-1">
+              {(
+                [
+                  ['trend', 'Tendencia'],
+                  ['recent', 'Recientes'],
+                ] as const
+              ).map(([v, l]) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={sortShown === v}
+                  onClick={() => (guest ? openWall() : setSort(v))}
+                  className={`min-h-11 rounded-full border px-3 text-xs font-semibold ${FOCUS} ${
+                    sortShown === v ? 'border-vice-orange bg-white/15' : 'border-white/15 hover:bg-white/10'
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-0 pb-24 md:px-2.5 md:pb-2.5">
+            {threads.length === 0 ? (
+              <p className="glass rounded-xl p-4 text-vice-text/80">No hay hilos con estos filtros.</p>
+            ) : (
+              <ul className="flex flex-col gap-2.5 md:gap-1.5">
+                {threads.map((t) => {
+                  const active = selected?.id === t.id;
+                  const voted = myVotes.has(`THREAD:${t.id}`);
+                  const author = nameOf(t.user_id);
+                  return (
+                    <li key={t.id}>
+                      <div
+                        className={`flex gap-3 rounded-[18px] border p-3.5 max-md:bg-[rgba(20,14,36,0.78)] max-md:backdrop-blur-hud md:rounded-2xl ${
+                          active
+                            ? 'border-vice-orange/25 md:border-vice-coral/75 md:bg-vice-coral/20'
+                            : 'border-vice-orange/25 md:border-vice-orange/15 md:bg-white/[0.04]'
+                        }`}
+                      >
+                        <button
+                          type="button"
+                          aria-pressed={voted}
+                          aria-label={`Votar hilo, ${t.upvotes_count} votos`}
+                          onClick={() => void vote('THREAD', t.id)}
+                          className={`flex min-h-14 w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[14px] border text-xs font-semibold text-white md:hidden ${FOCUS} ${
+                            voted ? 'border-vice-coral bg-vice-coral/35' : 'border-vice-orange/30 bg-white/[0.07]'
+                          }`}
+                        >
+                          <span aria-hidden="true">▲</span>
+                          <span>{t.upvotes_count}</span>
+                        </button>
+                        <button
+                          type="button"
+                          aria-current={active ? 'true' : undefined}
+                          onClick={() => {
+                            if (guest) {
+                              openWall();
+                              return;
+                            }
+                            setSelectedId(t.id);
+                            setMobileDetail(true);
+                            setReplyTo(null);
+                          }}
+                          className={`min-h-11 min-w-0 flex-1 rounded-lg text-left ${FOCUS}`}
+                        >
+                          <span className="flex flex-wrap items-center gap-2">
+                            {t.is_pinned && <span className="text-[10px] font-bold tracking-[0.06em] text-vice-gold md:text-[11px]">FIJADO</span>}
+                            <CategoryTag categoria={t.categoria} />
+                            {t.is_spoiler && <SpoilerTag />}
+                          </span>
+                          <span className="mt-1.5 block text-sm font-medium leading-snug text-white md:mt-2 md:text-[15px]">{t.titulo}</span>
+                          <span className="mt-1.5 flex flex-wrap gap-x-3.5 gap-y-0.5 text-xs text-vice-text/80 md:mt-2">
+                            <span className="font-semibold text-[#FFC09A] max-md:hidden">▲ {t.upvotes_count}</span>
+                            <span>{repliesOf(t)} respuestas</span>
+                            <span>{author}</span>
+                            <span>{relativeTime(t.created_at)}</span>
+                          </span>
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {forum.source === 'seed' && <p className="mt-3 px-1 text-[11px] text-vice-text/60">{SAMPLE_NOTICE}</p>}
+          </div>
         </section>
 
-        {/* P07.2 Hilo */}
+        {/* P07.2 Hilo (con sesión) o invitación al registro (invitado) */}
         <section
-          aria-label="Lectura de hilo"
-          className={`glass min-h-0 overflow-y-auto rounded-2xl p-4 md:p-5 ${mobileDetail ? '' : 'max-md:hidden'}`}
+          aria-label={guest ? 'Únete a la comunidad' : 'Hilo activo'}
+          className={`glass min-h-0 flex-col overflow-hidden rounded-[20px] ${mobileDetail ? 'flex' : 'hidden md:flex'}`}
         >
-          {!selected ? (
-            <p className="text-vice-text/70">Selecciona un hilo.</p>
-          ) : (
-            <article>
-              <button
-                type="button"
-                onClick={() => setMobileDetail(false)}
-                className={`${BTN} -ml-2 mb-1 text-sm text-vice-orange hover:bg-white/10 md:hidden`}
-              >
-                ← Volver al tablón
-              </button>
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="rounded-full bg-white/10 px-2 py-0.5 font-semibold text-vice-orange">
-                  {forumCategoryLabel(selected.categoria)}
-                </span>
-                {selected.is_spoiler && (
-                  <span className="rounded-full bg-vice-magenta px-2 py-0.5 font-bold text-vice-ink">SPOILER</span>
-                )}
-              </div>
-              <h2 className="mt-1 font-display text-2xl font-bold leading-tight">{selected.titulo}</h2>
-              <p className="text-xs text-vice-text/70">
-                {nameOf(selected.user_id)} · {fmtDate(selected.created_at)}
+          {guest ? (
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8 text-center">
+              <span className="flex h-16 w-16 items-center justify-center rounded-full bg-vice-accent text-vice-ink">
+                <LockIcon size={30} />
+              </span>
+              <h2 className="max-w-md font-display text-2xl font-bold leading-tight md:text-3xl">Entra a la conversación</h2>
+              <p className="max-w-sm text-sm leading-relaxed text-vice-text/85">
+                Lee los hilos completos, responde, vota y comparte tus hallazgos con la comunidad. Crear tu cuenta es gratis.
               </p>
-              {(selectedEntityLink || selectedMarker) && (
-                <p className="mt-1 flex flex-wrap gap-2 text-xs">
-                  {selectedEntityLink && (
-                    <a href={selectedEntityLink.href} className="inline-flex min-h-11 items-center rounded-full bg-white/10 px-3 font-semibold text-vice-orange focus-visible:outline-2 focus-visible:outline-vice-gold">
-                      Ficha: {selectedEntityLink.title}
-                    </a>
-                  )}
-                  {selectedMarker && (
-                    <a href={`/mapa?marker=${selectedMarker.id}`} className="inline-flex min-h-11 items-center rounded-full bg-white/10 px-3 font-semibold text-vice-orange focus-visible:outline-2 focus-visible:outline-vice-gold">
-                      Mapa: {selectedMarker.titulo}
-                    </a>
-                  )}
-                </p>
-              )}
-
-              {spoilerHidden ? (
-                <div className="mt-3 rounded-xl border border-vice-gold/40 p-4">
-                  <p className="text-sm">Este hilo contiene spoilers.</p>
-                  <button
-                    type="button"
-                    onClick={() => setRevealed((s) => new Set(s).add(selected.id))}
-                    className={`${BTN} mt-2 bg-white/10 hover:bg-white/20`}
-                  >
-                    Mostrar contenido
-                  </button>
-                </div>
-              ) : (
-                <p className="mt-3 whitespace-pre-wrap">{selected.contenido}</p>
-              )}
-
-              <div className="mt-2 flex items-center gap-2">
+              <PalmButton as="a" href={LOGIN_HREF} className="min-h-12 rounded-full px-8 text-base">
+                Crear cuenta gratis
+              </PalmButton>
+            </div>
+          ) : !selected ? (
+            <p className="p-6 text-vice-text/70">Selecciona un hilo.</p>
+          ) : (
+            <>
+              <div className="px-5 pb-3 pt-4 md:px-7 md:pb-4 md:pt-5">
                 <button
                   type="button"
-                  aria-pressed={myVotes.has(`THREAD:${selected.id}`)}
-                  aria-label={`Votar hilo, ${selected.upvotes_count} votos`}
-                  onClick={() => void vote('THREAD', selected.id)}
-                  className={`${BTN} glass gap-2 ${myVotes.has(`THREAD:${selected.id}`) ? 'text-vice-gold' : ''}`}
+                  onClick={() => setMobileDetail(false)}
+                  className={`${BTN} -ml-2 mb-1 text-sm text-vice-orange hover:bg-white/10 md:hidden`}
                 >
-                  ▲ {selected.upvotes_count}
+                  ← Volver al tablón
                 </button>
-                <a href={DISCORD_URL} target="_blank" rel="noopener noreferrer" className={`${BTN} glass text-sm`}>
-                  Discutir en Discord
-                </a>
+                <div className="flex flex-wrap items-center gap-2">
+                  <CategoryTag categoria={selected.categoria} />
+                  {selected.is_spoiler && <SpoilerTag />}
+                </div>
+                <h2 className="mt-2.5 font-display text-2xl font-bold leading-tight md:text-[28px]">{selected.titulo}</h2>
+                <div className="mt-2.5 flex flex-wrap items-center gap-2.5 text-[13px] text-vice-text/85">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-7 w-7 items-center justify-center rounded-full text-[13px] font-bold text-vice-ink"
+                    style={{ background: avatarOf(nameOf(selected.user_id)) }}
+                  >
+                    {nameOf(selected.user_id).charAt(0).toUpperCase()}
+                  </span>
+                  <span className="font-medium text-white">{nameOf(selected.user_id)}</span>
+                  <span>· {relativeTime(selected.created_at)}</span>
+                  <button
+                    type="button"
+                    aria-pressed={votedThread}
+                    aria-label={`Votar hilo, ${selected.upvotes_count} votos`}
+                    onClick={() => void vote('THREAD', selected.id)}
+                    className={`ml-auto min-h-11 rounded-full border px-4 text-sm font-semibold text-white ${FOCUS} ${
+                      votedThread ? 'border-vice-coral bg-vice-coral/35' : 'border-vice-orange/30 bg-white/[0.07]'
+                    }`}
+                  >
+                    ▲ {selected.upvotes_count}
+                  </button>
+                </div>
+                {(selectedEntityLink || selectedMarker) && (
+                  <p className="mt-1 flex flex-wrap gap-2 text-xs">
+                    {selectedEntityLink && (
+                      <a href={selectedEntityLink.href} className={`inline-flex min-h-11 items-center rounded-full bg-white/10 px-3 font-semibold text-vice-orange ${FOCUS}`}>
+                        Ficha: {selectedEntityLink.title}
+                      </a>
+                    )}
+                    {selectedMarker && (
+                      <a href={`/mapa?marker=${selectedMarker.id}`} className={`inline-flex min-h-11 items-center rounded-full bg-white/10 px-3 font-semibold text-vice-orange ${FOCUS}`}>
+                        Mapa: {selectedMarker.titulo}
+                      </a>
+                    )}
+                  </p>
+                )}
               </div>
 
-              <h3 className="mt-5 font-display text-lg font-bold">Respuestas ({posts.length})</h3>
-              {posts.length === 0 ? (
-                <p className="mt-1 text-sm text-vice-text/70">Sé la primera persona en responder.</p>
-              ) : (
-                <ul className="mt-2 flex flex-col gap-2">{renderPosts(null, 0)}</ul>
-              )}
-
-              <form onSubmit={(e) => void submitReply(e)} className="mt-4 flex flex-col gap-2">
-                <label htmlFor="reply" className="text-sm font-medium">
-                  {replyTarget ? `Respondiendo a ${nameOf(replyTarget.user_id)}` : 'Respuesta rápida'}
-                  {replyTarget && (
+              <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-3 md:px-7">
+                <div className="relative">
+                  <p
+                    aria-hidden={spoilerHidden || undefined}
+                    className={`whitespace-pre-wrap text-[15px] leading-[1.65] text-vice-text ${spoilerHidden ? 'select-none blur-[9px]' : ''}`}
+                  >
+                    {selected.contenido}
+                  </p>
+                  {spoilerHidden && (
                     <button
                       type="button"
-                      onClick={() => setReplyTo(null)}
-                      className="ml-2 min-h-11 text-vice-orange underline"
+                      onClick={() => setRevealed((s) => new Set(s).add(selected.id))}
+                      className={`absolute left-1/2 top-1/2 min-h-11 -translate-x-1/2 -translate-y-1/2 rounded-full border border-vice-orange/50 bg-[rgba(20,14,36,0.92)] px-5 text-sm font-semibold text-white ${FOCUS}`}
                     >
-                      Cancelar
+                      Mostrar spoiler
                     </button>
                   )}
-                </label>
-                <textarea
-                  id="reply"
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  rows={3}
-                  placeholder={canWrite ? 'Escribe tu respuesta…' : 'Inicia sesión para responder'}
-                  className={`${INPUT} py-2`}
-                />
-                <button
-                  type="submit"
-                  disabled={busy}
-                  className={`${BTN} self-end bg-vice-accent font-bold text-vice-ink disabled:opacity-50`}
+                </div>
+
+                <h3 className="mb-1 mt-6 text-xs font-semibold tracking-[0.1em] text-vice-text/90">RESPUESTAS · {posts.length}</h3>
+                {posts.length === 0 ? (
+                  <p className="text-sm text-vice-text/70">Sé la primera persona en responder.</p>
+                ) : (
+                  <ul>
+                    {flatPosts.map(({ post: p, depth }) => {
+                      const name = nameOf(p.user_id);
+                      const pv = myVotes.has(`POST:${p.id}`);
+                      return (
+                        <li key={p.id} className="mt-3.5 flex gap-3" style={{ marginLeft: `${depth * 1.75}rem` }}>
+                          <span
+                            aria-hidden="true"
+                            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold text-vice-ink"
+                            style={{ background: avatarOf(name) }}
+                          >
+                            {name.charAt(0).toUpperCase()}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] text-vice-text/80">
+                              <span className="font-semibold text-white">{name}</span> · {relativeTime(p.created_at)}
+                            </p>
+                            <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-vice-text">{p.contenido}</p>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                aria-pressed={pv}
+                                aria-label={`Votar respuesta, ${p.upvotes_count} votos`}
+                                onClick={() => void vote('POST', p.id)}
+                                className={`${BTN} px-2 text-[13px] ${pv ? 'text-[#FFC09A]' : 'text-vice-text/85'}`}
+                              >
+                                ▲ {p.upvotes_count}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setReplyTo(p.id)}
+                                className={`${BTN} px-3 text-[13px] text-vice-text/85 hover:bg-white/10`}
+                              >
+                                Responder
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+
+              <form
+                onSubmit={(e) => void submitReply(e)}
+                className="flex flex-wrap items-end gap-3 border-t border-vice-orange/25 px-5 pb-4 pt-3.5 md:flex-nowrap md:px-7"
+              >
+                <div className="min-w-0 flex-1 basis-full md:basis-0">
+                  <label htmlFor="reply" className="mb-1 flex items-center text-xs text-vice-text/80">
+                    {replyTarget ? `Respondiendo a ${nameOf(replyTarget.user_id)}` : 'Respuesta rápida'}
+                    {replyTarget && (
+                      <button type="button" onClick={() => setReplyTo(null)} className="ml-2 min-h-11 text-vice-orange underline">
+                        Cancelar
+                      </button>
+                    )}
+                  </label>
+                  <textarea
+                    id="reply"
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    rows={2}
+                    placeholder="Escribe tu respuesta…"
+                    className="w-full resize-none rounded-2xl border border-vice-orange/30 bg-white/[0.07] px-4 py-3 text-sm text-white placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold"
+                  />
+                </div>
+                <PalmButton type="submit" loading={busy} className="h-[52px] rounded-full px-6 text-[15px]">
+                  Responder
+                </PalmButton>
+                <a
+                  href={DISCORD_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`glass flex h-[52px] items-center gap-2 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold tracking-[0.04em] text-white hover:brightness-110 ${FOCUS}`}
                 >
-                  {busy ? 'Enviando…' : canWrite ? 'Responder' : 'Responder (requiere cuenta)'}
-                </button>
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <rect x="2.5" y="5" width="19" height="13" rx="5" />
+                    <circle cx="9" cy="11.5" r="1.3" fill="currentColor" />
+                    <circle cx="15" cy="11.5" r="1.3" fill="currentColor" />
+                  </svg>
+                  DISCORD OFICIAL
+                </a>
               </form>
-            </article>
+            </>
           )}
-          <p className="mt-4 text-xs text-vice-text/60">{SAMPLE_NOTICE}</p>
         </section>
       </div>
 
       {/* Botón flotante móvil */}
-      <button
-        type="button"
-        aria-label="Publicar un hilo"
-        onClick={() => (canWrite ? setComposeOpen(true) : requireAccount())}
-        className="fixed bottom-[calc(84px+var(--safe-bottom))] right-[calc(1rem+var(--safe-right))] z-30 flex h-14 w-14 items-center justify-center rounded-full bg-vice-accent text-3xl font-bold text-vice-ink shadow-hud focus-visible:outline-2 focus-visible:outline-vice-gold md:hidden"
-      >
-        +
-      </button>
+      {!mobileDetail && (
+        <button
+          type="button"
+          aria-label="Nuevo hilo"
+          onClick={startCompose}
+          className="fixed bottom-[calc(96px+var(--safe-bottom))] right-[calc(1.25rem+var(--safe-right))] z-30 flex h-14 w-14 items-center justify-center rounded-full border border-white/30 bg-vice-accent text-vice-ink shadow-hud focus-visible:outline-2 focus-visible:outline-vice-gold md:hidden"
+        >
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="2.6">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        </button>
+      )}
 
       <BottomSheet open={composeOpen} onClose={() => setComposeOpen(false)} title="Nuevo hilo">
         <form onSubmit={(e) => void submitThread(e)} className="flex flex-col gap-3 pt-2">
-          {hasContext && (
-            <p className="text-xs text-vice-orange">Vinculado a: {ctxLabel ?? 'elemento seleccionado'}</p>
-          )}
+          {hasContext && <p className="text-xs text-vice-orange">Vinculado a: {ctxLabel ?? 'elemento seleccionado'}</p>}
           <div>
             <label htmlFor="nt-cat" className="mb-1 block text-sm font-medium">
               Categoría
@@ -580,11 +718,32 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
             <input type="checkbox" name="spoiler" className="h-5 w-5 accent-[#E1307E]" />
             Contiene spoilers
           </label>
-          <button type="submit" disabled={busy} className={`${BTN} bg-vice-accent font-bold text-vice-ink disabled:opacity-50`}>
+          <PalmButton type="submit" loading={busy} fullWidth className="min-h-11 rounded-xl">
             {busy ? 'Publicando…' : 'Publicar hilo'}
-          </button>
+          </PalmButton>
         </form>
       </BottomSheet>
+
+      {/* Muro de registro (invitados): Modal (BottomSheet en móvil) */}
+      <Modal
+        open={wallOpen}
+        onClose={closeWall}
+        title={WALL_TITLE}
+        footer={
+          <>
+            <PalmButton as="a" href={LOGIN_HREF} fullWidth className="min-h-12 rounded-full px-6 text-base">
+              Crear cuenta gratis
+            </PalmButton>
+            <button type="button" onClick={closeWall} className={`${BTN} text-sm text-vice-text/85 hover:bg-white/10`}>
+              Ahora no
+            </button>
+          </>
+        }
+      >
+        <p className="text-sm leading-relaxed text-vice-text/90">
+          Los hilos, las respuestas y los votos son para cuentas registradas. Es gratis y solo te lleva un minuto.
+        </p>
+      </Modal>
     </div>
   );
 }
