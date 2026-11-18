@@ -471,6 +471,69 @@ export function useForumData(): DataResult<ForumData> {
   return { data: q.data, loading: q.isFetching, error: q.error ? q.error.message : null };
 }
 
+// ---- Noticias oficiales y configuración pública (API Fastify) -----------------------------
+export type NewsSource = 'rockstar-newswire' | 'rockstar-youtube' | 'take-two-ir';
+
+export const NEWS_SOURCES: ReadonlyArray<{ value: NewsSource | 'all'; label: string }> = [
+  { value: 'all', label: 'Todas' },
+  { value: 'rockstar-newswire', label: 'Rockstar Newswire' },
+  { value: 'rockstar-youtube', label: 'Rockstar YouTube' },
+  { value: 'take-two-ir', label: 'Take-Two IR' },
+];
+
+export interface OfficialNews {
+  id: string;
+  title: string;
+  summary: string;
+  sourceUrl: string;
+  source: NewsSource;
+  imageUrl: string | null;
+  publishedAt: string;
+  slug: string;
+}
+
+export interface PublicConfig {
+  maintenance_mode: boolean;
+  announcement: string | null;
+  feature_flags: Record<string, boolean>;
+  enabled_auth_providers: Array<'google' | 'discord' | 'apple' | 'magic-link'>;
+  social_links: Array<{ platform: string; url: string }>;
+}
+
+export const DEFAULT_PUBLIC_CONFIG: PublicConfig = {
+  maintenance_mode: false,
+  announcement: null,
+  feature_flags: {},
+  enabled_auth_providers: ['google', 'discord', 'apple', 'magic-link'],
+  social_links: [],
+};
+
+/** Las noticias NUNCA se inventan: sin API el resultado es una lista vacía. */
+export function useOfficialNews(source: NewsSource | 'all' = 'all', limit = 12) {
+  const q = useQuery({
+    queryKey: ['news', source, limit],
+    enabled: isApiConfigured,
+    staleTime: 60_000,
+    queryFn: () =>
+      apiFetch<OfficialNews[]>(`/api/news?limit=${limit}${source === 'all' ? '' : `&source=${source}`}`),
+  });
+  return {
+    news: q.data ?? [],
+    loading: isApiConfigured && q.isLoading,
+    error: !isApiConfigured ? 'Sin API configurada.' : q.error ? q.error.message : null,
+  };
+}
+
+export function usePublicConfig(): PublicConfig {
+  const q = useQuery({
+    queryKey: ['config', 'public'],
+    enabled: isApiConfigured,
+    staleTime: 30_000,
+    queryFn: () => apiFetch<PublicConfig>('/api/config/public'),
+  });
+  return q.data ?? DEFAULT_PUBLIC_CONFIG;
+}
+
 // ---- Progreso agregado (Hub / header) ---------------------------------------------------
 export interface ProgressCategory {
   id: 'markers' | 'armas' | 'vehiculos' | 'coleccionables';

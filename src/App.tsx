@@ -1,15 +1,16 @@
 // =============================================================================
-// ATLAS VICE - Enrutador hash mínimo + guardas (sin react-router: funciona bajo
+// LEONIDAPP - Enrutador hash mínimo + guardas (sin react-router: funciona bajo
 // Capacitor y offline). Regla de los 3 clics: Landing -> (Invitado) -> Hub ->
 // Mapa / Catálogo / Foro -> ficha. El dock está siempre a un toque.
 //
 //   #/ , #/entrar  P01+P02  Landing / Auth (Split-Hero)
 //   #/hub          P03      Dashboard (Hub)
 //   #/progreso     P03      Dashboard, sección de progreso
+//   #/noticias     P03      Hub enfocado en Noticias Oficiales (?item=<slug> resalta una)
 //   #/mapa         P04      Mapa de Leonida       (lectura libre)
 //   #/catalogo     P05      Inspector NUI         (lectura libre)
 //   #/foro         P07      Foro                  (lectura libre; escribir = cuenta)
-//   #/aportes      P06      Aportes (cuenta) y moderación (solo ADMIN)
+//   #/aportes      P06      Aportes (cuenta), moderación (ADMIN), Control Total (SUPER_ADMIN)
 // =============================================================================
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { BottomDock, type DockItem } from './components/layout/BottomDock';
@@ -25,13 +26,14 @@ import MapPage from './pages/MapPage';
 import { isApiConfigured, useAuthStore } from './store/useAuthStore';
 import { useProgressStore } from './store/useProgressStore';
 
-type RouteId = 'landing' | 'hub' | 'progress' | 'map' | 'catalog' | 'forum' | 'contribute';
+type RouteId = 'landing' | 'hub' | 'progress' | 'map' | 'catalog' | 'forum' | 'contribute' | 'news';
 
 const PATHS: Record<string, RouteId> = {
   '/': 'landing',
   '/entrar': 'landing',
   '/hub': 'hub',
   '/progreso': 'progress',
+  '/noticias': 'news',
   '/mapa': 'map',
   '/catalogo': 'catalog',
   '/foro': 'forum',
@@ -44,6 +46,7 @@ const DOCK_ROUTE: Record<string, string> = {
   catalog: '#/catalogo',
   forum: '#/foro',
   progress: '#/progreso',
+  news: '#/noticias',
   contribute: '#/aportes',
 };
 
@@ -155,7 +158,7 @@ function RequireAccount({ next, children }: { next: string; children: ReactNode 
         </h1>
         <p className="mt-3 text-vice-text/85">
           Como Invitado puedes explorar el mapa, el catálogo y el foro en lectura. Para aportar o
-          publicar inicia sesión con Email o Discord.
+          publicar inicia sesión con Google, Discord, Apple o Magic Link.
         </p>
         {!isApiConfigured && (
           <p className="mt-3 text-sm text-vice-gold">
@@ -197,7 +200,7 @@ export default function App() {
     return <LandingAuthPage next={params.get('next')} />;
   }
 
-  const activeId = route === 'contribute' ? 'contribute' : route;
+  const activeId = route === 'news' ? 'hub' : route;
 
   let page: ReactNode;
   switch (route) {
@@ -206,6 +209,9 @@ export default function App() {
       break;
     case 'progress':
       page = <DashboardPage section="progress" />;
+      break;
+    case 'news':
+      page = <DashboardPage section="news" highlight={params.get('item')} />;
       break;
     case 'map':
       page = <MapPage params={params} />;
