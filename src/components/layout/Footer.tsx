@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { apiFetch, isApiConfigured } from '../../store/useAuthStore';
+import { ApiError, apiFetch, isApiConfigured } from '../../store/useAuthStore';
 
 /* ------------------------------------------------------------------ */
 /* Footer estilo Rockstar (pilar 6): negro puro, enlaces funcionales,  */
@@ -10,23 +10,61 @@ type Lang = 'es' | 'en';
 type DocId = 'about' | 'privacy' | 'cookiePolicy' | 'legal' | 'dns';
 type ModalId = DocId | 'cookies' | 'contact' | 'subscribe';
 
-const LANG_KEY = 'leonidapp.lang';
-const COOKIE_KEY = 'leonidapp.cookies';
-const CONTACT_KEY = 'leonidapp.contact.outbox';
-const SUB_KEY = 'leonidapp.subscribe';
+const LANG_COOKIE = 'leonidapp_lang';
+const CONSENT_COOKIE = 'leonidapp_consent';
+const CONSENT_VERSION = 1;
+const LEGACY_LANG_KEY = 'leonidapp.lang';
+const LEGACY_CONSENT_KEY = 'leonidapp.cookies';
 
-function readStore(key: string): string | null {
-  try {
-    return window.localStorage.getItem(key);
-  } catch {
-    return null;
+function readCookie(name: string): string | null {
+  const prefix = `${name}=`;
+  for (const part of document.cookie.split('; ')) {
+    if (part.startsWith(prefix)) {
+      try {
+        return decodeURIComponent(part.slice(prefix.length));
+      } catch {
+        return null;
+      }
+    }
   }
+  return null;
 }
-function writeStore(key: string, value: string): void {
+
+function writeCookie(name: string, value: string): void {
+  const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+}
+
+/** Migración única: copia las claves antiguas de localStorage a cookies y las borra. */
+function migrateLegacyStorage(): void {
   try {
-    window.localStorage.setItem(key, value);
+    const legacyLang = window.localStorage.getItem(LEGACY_LANG_KEY);
+    if (legacyLang !== null) {
+      if (readCookie(LANG_COOKIE) === null && (legacyLang === 'es' || legacyLang === 'en')) {
+        writeCookie(LANG_COOKIE, legacyLang);
+      }
+      window.localStorage.removeItem(LEGACY_LANG_KEY);
+    }
+    const legacyConsent = window.localStorage.getItem(LEGACY_CONSENT_KEY);
+    if (legacyConsent !== null) {
+      if (readCookie(CONSENT_COOKIE) === null) {
+        const p = JSON.parse(legacyConsent) as Partial<CookiePrefs>;
+        writeCookie(
+          CONSENT_COOKIE,
+          JSON.stringify({
+            necessary: true,
+            preferences: p.preferences === true,
+            analytics: p.analytics === true,
+            marketing: p.marketing === true,
+            version: CONSENT_VERSION,
+            date: new Date().toISOString(),
+          }),
+        );
+      }
+      window.localStorage.removeItem(LEGACY_CONSENT_KEY);
+    }
   } catch {
-    /* almacenamiento no disponible */
+    /* almacenamiento no disponible o JSON inválido: se ignora */
   }
 }
 
@@ -52,14 +90,16 @@ interface Dict {
   openFooter: string;
   close: string;
   closeFooter: string;
-  name: string;
   email: string;
   message: string;
   send: string;
   sentContact: string;
   sentSubscribe: string;
   invalidEmail: string;
-  localNote: string;
+  sending: string;
+  messageLength: string;
+  networkError: string;
+  sendError: string;
   subscribeText: string;
   contactText: string;
   necessary: string;
@@ -101,15 +141,16 @@ const DICT: Record<Lang, Dict> = {
     openFooter: 'Abrir información legal y enlaces',
     close: 'Cerrar',
     closeFooter: 'Cerrar panel',
-    name: 'Nombre',
     email: 'Correo electrónico',
     message: 'Mensaje',
     send: 'Enviar',
-    sentContact: 'Mensaje guardado en este dispositivo. Gracias por escribirnos.',
-    sentSubscribe: 'Listo: tu preferencia se guardó en este dispositivo.',
+    sentContact: 'Mensaje enviado. Gracias por escribirnos.',
+    sending: 'Enviando...',
+    messageLength: 'El mensaje debe tener entre 10 y 2000 caracteres.',
+    networkError: 'Sin conexión con el servidor. Inténtalo de nuevo.',
+    sendError: 'No se pudo enviar. Inténtalo de nuevo más tarde.',
+    sentSubscribe: 'Listo: te has suscrito a las novedades de LeonidApp.',
     invalidEmail: 'Introduce un correo válido.',
-    localNote:
-      'Este formulario funciona en local: los datos se guardan solo en tu navegador y no se envían a ningún servidor.',
     subscribeText: 'Deja tu correo para recibir las novedades de LeonidApp cuando estén disponibles.',
     contactText: 'Cuéntanos tu duda, error o sugerencia sobre LeonidApp.',
     necessary: 'Necesarias',
@@ -149,15 +190,16 @@ const DICT: Record<Lang, Dict> = {
     openFooter: 'Open legal information and links',
     close: 'Close',
     closeFooter: 'Close panel',
-    name: 'Name',
     email: 'Email',
     message: 'Message',
     send: 'Send',
-    sentContact: 'Message saved on this device. Thanks for writing to us.',
-    sentSubscribe: 'Done: your preference was saved on this device.',
+    sentContact: 'Message sent. Thanks for writing to us.',
+    sending: 'Sending...',
+    messageLength: 'The message must be between 10 and 2000 characters.',
+    networkError: 'No connection to the server. Please try again.',
+    sendError: 'Could not send. Please try again later.',
+    sentSubscribe: 'Done: you are subscribed to LeonidApp news.',
     invalidEmail: 'Enter a valid email.',
-    localNote:
-      'This form works locally: data is stored only in your browser and is not sent to any server.',
     subscribeText: 'Leave your email to receive LeonidApp news when they become available.',
     contactText: 'Tell us about a question, bug or suggestion regarding LeonidApp.',
     necessary: 'Necessary',
@@ -485,66 +527,72 @@ const BTN =
 const BTN_PRIMARY = `${BTN} bg-white text-black hover:bg-white/85`;
 const BTN_GHOST = `${BTN} border border-white/50 text-white hover:bg-white/15`;
 
-function LocalForm({ kind, t }: { kind: 'contact' | 'subscribe'; t: Dict }) {
-  const [done, setDone] = useState(false);
+function ApiForm({ kind, t, lang }: { kind: 'contact' | 'subscribe'; t: Dict; lang: Lang }) {
+  const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [error, setError] = useState('');
-  const submit = (e: FormEvent<HTMLFormElement>) => {
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (state === 'loading') return;
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get('email') ?? '').trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
       setError(t.invalidEmail);
+      setState('error');
       return;
     }
-    const name = String(fd.get('name') ?? '').trim().slice(0, 80);
-    const message = String(fd.get('message') ?? '').trim().slice(0, 1000);
-    const key = kind === 'contact' ? CONTACT_KEY : SUB_KEY;
-    let list: unknown[] = [];
-    try {
-      const parsed: unknown = JSON.parse(readStore(key) ?? '[]');
-      if (Array.isArray(parsed)) list = parsed.slice(-19);
-    } catch {
-      list = [];
+    const message = String(fd.get('message') ?? '').trim();
+    const website = String(fd.get('website') ?? '');
+    if (kind === 'contact' && (message.length < 10 || message.length > 2000)) {
+      setError(t.messageLength);
+      setState('error');
+      return;
     }
-    list.push({ at: new Date().toISOString(), name, email, message });
-    writeStore(key, JSON.stringify(list));
     setError('');
-    setDone(true);
+    setState('loading');
+    try {
+      await apiFetch<{ ok: boolean }>(kind === 'contact' ? '/api/contact' : '/api/subscribe', {
+        method: 'POST',
+        json: kind === 'contact' ? { email, message, website } : { email, locale: lang, website },
+      });
+      setState('done');
+    } catch (err) {
+      setError(err instanceof ApiError && err.status === 0 ? t.networkError : t.sendError);
+      setState('error');
+    }
   };
-  if (done) {
+  if (state === 'done') {
     return (
       <p role="status" className="font-semibold text-white">
         {kind === 'contact' ? t.sentContact : t.sentSubscribe}
       </p>
     );
   }
+  const loading = state === 'loading';
   return (
-    <form onSubmit={submit} noValidate className="flex flex-col gap-3">
+    <form onSubmit={submit} noValidate aria-busy={loading} className="relative flex flex-col gap-3">
       <p>{kind === 'contact' ? t.contactText : t.subscribeText}</p>
-      {kind === 'contact' && (
-        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide">
-          {t.name}
-          <input name="name" maxLength={80} autoComplete="name" className={FIELD} />
-        </label>
-      )}
       <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide">
         {t.email}
-        <input name="email" type="email" required maxLength={120} autoComplete="email" className={FIELD} />
+        <input name="email" type="email" required maxLength={254} autoComplete="email" className={FIELD} />
       </label>
       {kind === 'contact' && (
         <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide">
           {t.message}
-          <textarea name="message" rows={4} maxLength={1000} className={FIELD} />
+          <textarea name="message" required rows={4} minLength={10} maxLength={2000} className={FIELD} />
         </label>
       )}
-      {error && (
-        <p role="alert" className="text-sm font-semibold text-[#FF8FB0]">
-          {error}
-        </p>
-      )}
-      <p className="text-xs text-white/70">{t.localNote}</p>
-      <button type="submit" className={`${BTN_PRIMARY} self-start`}>
-        {t.send}
+      <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+        <input type="text" name="website" tabIndex={-1} autoComplete="off" defaultValue="" />
+      </div>
+      <div aria-live="assertive">
+        {error && (
+          <p role="alert" className="text-sm font-semibold text-[#FF8FB0]">
+            {error}
+          </p>
+        )}
+      </div>
+      <button type="submit" disabled={loading} className={`${BTN_PRIMARY} self-start disabled:opacity-60`}>
+        {loading ? t.sending : t.send}
       </button>
     </form>
   );
@@ -558,7 +606,7 @@ interface CookiePrefs {
 
 function loadCookiePrefs(): CookiePrefs {
   try {
-    const raw = readStore(COOKIE_KEY);
+    const raw = readCookie(CONSENT_COOKIE);
     if (raw) {
       const p = JSON.parse(raw) as Partial<CookiePrefs>;
       return { analytics: p.analytics === true, preferences: p.preferences === true, marketing: p.marketing === true };
@@ -572,7 +620,10 @@ function loadCookiePrefs(): CookiePrefs {
 function CookieSettings({ t, onDone }: { t: Dict; onDone: () => void }) {
   const [prefs, setPrefs] = useState<CookiePrefs>(loadCookiePrefs);
   const persist = (p: CookiePrefs) => {
-    writeStore(COOKIE_KEY, JSON.stringify({ necessary: true, ...p, decidedAt: new Date().toISOString() }));
+    writeCookie(
+      CONSENT_COOKIE,
+      JSON.stringify({ necessary: true, ...p, version: CONSENT_VERSION, date: new Date().toISOString() }),
+    );
     onDone();
   };
   const rows: Array<{ key: keyof CookiePrefs; label: string; text: string }> = [
@@ -681,16 +732,16 @@ function FooterBody({
         </nav>
         <nav aria-label={t.collaborate} className="flex flex-col items-start">
           <h2 className={colTitle}>{t.collaborate}</h2>
-          <a className={LINK} href="#/aportes">
+          <a className={LINK} href="/aportar">
             {t.contribute}
           </a>
         </nav>
         <nav aria-label={t.community} className="flex flex-col items-start">
           <h2 className={colTitle}>{t.community}</h2>
-          <a className={LINK} href="#/foro">
+          <a className={LINK} href="/foro">
             {t.forum}
           </a>
-          <a className={LINK} href="#/catalogo">
+          <a className={LINK} href="/catalogo">
             {t.catalog}
           </a>
         </nav>
@@ -764,7 +815,8 @@ export interface FooterProps {
 
 export function Footer({ variant = 'full' }: FooterProps) {
   const [lang, setLangState] = useState<Lang>(() => {
-    const saved = readStore(LANG_KEY);
+    migrateLegacyStorage();
+    const saved = readCookie(LANG_COOKIE);
     if (saved === 'es' || saved === 'en') return saved;
     return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en') ? 'en' : 'es';
   });
@@ -778,7 +830,7 @@ export function Footer({ variant = 'full' }: FooterProps) {
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
-    writeStore(LANG_KEY, l);
+    writeCookie(LANG_COOKIE, l);
   }, []);
 
   // Esc cierra el panel compacto (si no hay modal encima) y se bloquea el scroll de fondo ausente de efectos.
@@ -809,7 +861,7 @@ export function Footer({ variant = 'full' }: FooterProps) {
       {modal === 'cookies' ? (
         <CookieSettings t={t} onDone={() => setModal(null)} />
       ) : modal === 'contact' || modal === 'subscribe' ? (
-        <LocalForm kind={modal} t={t} />
+        <ApiForm kind={modal} t={t} lang={lang} />
       ) : (
         <div className="flex flex-col gap-3">
           {DOCS[lang][modal].body.map((p) => (
