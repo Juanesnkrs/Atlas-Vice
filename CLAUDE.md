@@ -35,7 +35,7 @@ Los documentos `AtlasVice-v2.md`, `AtlasViceArquitecturaDatosSQL.md` y `AtlasVic
 - Artwork protagonista del hero (P01/P02): `public/assets/hero-gas-station.jpg`, recortado por debajo del título del póster para no cortar texto, con degradado de fusión superior. La referencia cálida es `public/assets/vice-sunset-ref.jpg`.
 - Foro (P07): la categoría se muestra como `Guías / Ayuda` y se guarda como `'Guias/Ayuda'`. Scrollbars oscuros con pulgar sunset.
 - Escritorio: HUD flotante `100vw x 100vh` sin scroll vertical en Mapa (`P04`) e Inspector (`P05`).
-- Móvil (iOS/Android): Bottom Dock fijo de 5 iconos (`Hub`, `Mapa`, `Catálogo`, `Foro`, `Progreso`) + Bottom Sheets deslizables.
+- Escritorio y móvil (iOS/Android): el mismo Bottom Dock de 5 ítems (`Hub`, `Mapa`, `Catálogo`, `Foro`, `Aportar`); el Progreso se abre desde el botón de % de la cabecera. En móvil, Bottom Sheets deslizables.
 
 ## 4. Arquitectura LeonidApp (MongoDB)
 
@@ -55,7 +55,7 @@ Los documentos `AtlasVice-v2.md`, `AtlasViceArquitecturaDatosSQL.md` y `AtlasVic
 5. **Panel Control Total**: panel exclusivo de `SUPER_ADMIN` (gestión de roles, módulos, moderación y fuentes de noticias).
 6. **Footer estilo Rockstar** (`<RockstarFooter/>`): pie de página institucional negro `#000000`, Contact y Subscribe persistidos en MongoDB, selector de idioma, modal de cookies, columnas de enlaces, legales y avisos de marca registrada, sobre los tokens Vice NUI.
 7. **Landing SEO/Storytelling**: landing pública con narrativa, metadatos Open Graph, `sitemap.xml` y JSON-LD (ver agente 05).
-8. **Fidelidad al artifact `/Design`**: la UI replica el artifact `/Design`. Se **conservan** `src/pages/ForumPage.tsx` y `src/pages/CatalogPage.tsx` tal como están; solo se retocan para integrarlos con la API.
+8. **Fidelidad al artifact `/Design`**: la UI replica el artifact `/Design` (copia en `docs/referencias-ui/design/`), con las decisiones del Rediseño v2 (`docs/LeonidApp-UI-NUI-DesignSpec.md` §7), que prevalecen. `CatalogPage.tsx` y `ForumPage.tsx` se ajustan a `Inspector.dc.html` y `Forum.dc.html`.
 
 ## Mapa de carpetas permitidas (código fuente)
 

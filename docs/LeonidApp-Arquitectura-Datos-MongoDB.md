@@ -225,7 +225,7 @@ Inmutable: solo `insert` mediante `services/audit.ts#writeAudit`. Se escribe en 
 
 | Rol | Persistido | Rango | Capacidades |
 | --- | --- | --- | --- |
-| `GUEST` | No (ausencia de sesión; `req.authUser === null`) | — | Lectura pública (mapa, catálogo, guías, noticias, foro). Progreso solo local (IndexedDB). Puede enviar `contact` y `newsletter`. |
+| `GUEST` | No (ausencia de sesión; `req.authUser === null`) | — | Lectura pública de mapa, catálogo, guías y noticias. Del **foro**, solo la lista en vivo en formato *preview* (sin contenido, respuestas, filtros, búsqueda ni votos: `LeonidApp-UI-NUI-DesignSpec.md` §7.5). Progreso solo local (IndexedDB). Puede enviar `contact` y `newsletter`. |
 | `USER` | Sí (default) | 0 | Progreso sincronizado, crear hilos/posts, votar, crear `Submission` (`marker`, `entity`, `correction`). |
 | `MODERATOR` | Sí | 1 | Lo anterior + fijar/ocultar hilos, revisar `Submission`. Sus propios aportes se aprueban automáticamente (§5). |
 | `ADMIN` | Sí | 2 | Lo anterior + CRUD de `Module`, `Entity`, `MapMarker`; bandeja `contact`. |

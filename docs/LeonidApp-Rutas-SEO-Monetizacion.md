@@ -19,7 +19,7 @@
 
 | Ruta | Vista | Fuente de datos | Sitemap |
 | --- | --- | --- | --- |
-| `/` | P01/P02 Landing storytelling + Auth PKCE | `AppConfig`, últimas `OfficialNews` | Sí |
+| `/` | Portada (`HomePage.tsx`, DesignSpec §7.2): hero compacto, tarjetas de secciones, noticias, guías y foro en vivo | `Module`, `Entity`, `OfficialNews`, `ForumThread` (preview) | Sí |
 | `/mapa` | P04 Mapa de Leonida (HUD 100vh) | `MapMarker` | Sí |
 | `/catalogo` | P05 Catálogo/Inspector (`CatalogPage.tsx`) | `Module`, `Entity` | Sí |
 | `/catalogo/:modulo/:slug` | P05 ficha de entidad | `Module.slug` + `Entity.slug` | Sí (una URL por entidad) |
@@ -36,7 +36,7 @@
 | --- | --- | --- |
 | `/hub` | P03 Dashboard (icono `Hub` del BottomDock) | Contenido personal |
 | `/progreso` | P03 sección de progreso (icono `Progreso`) | Contenido personal |
-| `/entrar` | P02 Auth (panel de acceso de la landing) | Formulario |
+| `/entrar` | P01/P02 Acceso (`LandingAuthPage.tsx`, réplica de `Main.dc.html` / `MobileHero.dc.html` con los 4 proveedores, DesignSpec §7.3) | Formulario |
 
 ### 1.3 Parámetros de consulta permitidos
 
@@ -45,6 +45,7 @@ Solo estado de vista; la URL canónica nunca los incluye:
 - `/mapa?region=<Region>&marker=<uuid>` — centra/resalta.
 - `/foro?categoria=<Categoria>&hilo=<uuid>&entity=<uuid>&marker=<uuid>` — filtra por categoría, abre hilo, o muestra los hilos de una entidad / un marcador (enlazado cruzado §5). `ForumPage.tsx` usa internamente `thread`; `App.tsx` traduce `hilo → thread`.
 - `/catalogo?comparar=<slugA>,<slugB>[,<slugC>]` — abre el comparador NUI (§5).
+- `/catalogo?modulo=<Module.slug>` — abre el Inspector en la pestaña de ese módulo (accesos de la portada). Canonical `/catalogo`. Un slug inexistente o inactivo abre la primera pestaña disponible.
 - `/entrar?next=<ruta interna>` — retorno tras login (validado en servidor como ruta interna).
 
 ### 1.4 Redirecciones `301`
