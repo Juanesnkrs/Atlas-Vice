@@ -1,8 +1,9 @@
-// P06 - Centro de aportes (USER), moderación (ADMIN / SUPER_ADMIN) y panel "Control Total"
+// P06 - Centro de aportes (USER), moderación (MODERATOR+), catálogo y mapa (ADMIN+) y panel "Control Total"
 // (EXCLUSIVO de SUPER_ADMIN). La UI oculta lo que no corresponde al rol, pero el servidor decide.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, type FormEvent } from 'react';
 import { DEFAULT_PUBLIC_CONFIG, NEWS_SOURCES, useWorldData, usePublicConfig, type PublicConfig } from '../data/seed';
+import { CatalogAdminPanel } from '../components/ui/CatalogAdminPanel';
 import { apiFetch, isApiConfigured, useAuthStore, type Role } from '../store/useAuthStore';
 import type { AdPosition, AdRoute, MonetizationConfig } from '../types/database';
 
@@ -66,7 +67,7 @@ function StatusBadge({ status }: { status: SubStatus }) {
   );
 }
 
-type TabId = 'aportes' | 'moderacion' | 'control';
+type TabId = 'aportes' | 'moderacion' | 'catalogo' | 'control';
 
 // =============================================================================
 // Pestaña 1: aportes (USER autenticado)
@@ -292,7 +293,7 @@ function AportesTab() {
 }
 
 // =============================================================================
-// Pestaña 2: moderación (ADMIN / SUPER_ADMIN)
+// Pestaña 2: moderación (MODERATOR+), catálogo y mapa (ADMIN+)
 // =============================================================================
 function ModeracionTab() {
   const qc = useQueryClient();
@@ -1071,11 +1072,13 @@ export default function AdminSubmitPage() {
   const online = isApiConfigured;
 
   const authenticated = status === 'authenticated';
-  const canModerate = hasRole('ADMIN');
+  const canModerate = hasRole('MODERATOR');
+  const isAdmin = hasRole('ADMIN');
   const isSuper = role === 'SUPER_ADMIN';
 
   const tabs: Array<{ id: TabId; label: string }> = [{ id: 'aportes', label: 'Aportes' }];
   if (canModerate) tabs.push({ id: 'moderacion', label: 'Moderación' });
+  if (isAdmin) tabs.push({ id: 'catalogo', label: 'Catálogo y mapa' });
   if (isSuper) tabs.push({ id: 'control', label: 'Control Total' });
   const current = tabs.some((t) => t.id === tab) ? tab : 'aportes';
 
@@ -1119,6 +1122,12 @@ export default function AdminSubmitPage() {
           <div role="tabpanel" id={`panel-${current}`} aria-labelledby={`tab-${current}`} className="mt-4">
             {current === 'aportes' && <AportesTab />}
             {current === 'moderacion' && canModerate && <ModeracionTab />}
+            {current === 'catalogo' && isAdmin && (
+              <div className="grid gap-5">
+                <CatalogAdminPanel />
+                {!isSuper && <AuditPanel />}
+              </div>
+            )}
             {current === 'control' && isSuper && <ControlTotalTab />}
           </div>
         </>

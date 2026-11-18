@@ -104,6 +104,8 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
   const [replyText, setReplyText] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const canModerate = useAuthStore((s) => s.hasRole('MODERATOR'));
+  const [confirmDel, setConfirmDel] = useState<{ kind: 'thread' | 'post'; id: string } | null>(null);
 
   // Contexto (P07.3): hilos de una entidad o de un marcador (solo con sesión).
   const ctxEntity = guest ? null : params.get('entity');
@@ -198,6 +200,48 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
 
   const patchForum = (fn: (d: ForumData) => ForumData) =>
     qc.setQueryData<ForumData>(['forum'], (d) => (d ? fn(d) : d));
+
+  // Moderación (MODERATOR+): el servidor decide; la UI solo oculta los botones.
+  const moderate = async (fn: () => Promise<void>, okMsg: string) => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      await fn();
+      setMessage(okMsg);
+      void qc.invalidateQueries({ queryKey: ['forum'] });
+    } catch (err) {
+      setMessage(`No se pudo moderar: ${err instanceof Error ? err.message : 'error'}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const togglePin = (t: ForumThread) =>
+    moderate(async () => {
+      await apiFetch(`/api/forum/threads/${t.id}/pin`, { method: 'PATCH', json: { is_pinned: !t.is_pinned } });
+      patchForum((f) => ({ ...f, threads: f.threads.map((x) => (x.id === t.id ? { ...x, is_pinned: !t.is_pinned } : x)) }));
+    }, t.is_pinned ? 'Hilo desfijado.' : 'Hilo fijado.');
+  const confirmDelete = async () => {
+    const target = confirmDel;
+    if (!target) return;
+    setConfirmDel(null);
+    if (target.kind === 'thread') {
+      await moderate(async () => {
+        await apiFetch(`/api/forum/threads/${target.id}`, { method: 'DELETE' });
+        patchForum((f) => ({
+          ...f,
+          threads: f.threads.filter((x) => x.id !== target.id),
+          posts: f.posts.filter((x) => x.thread_id !== target.id),
+        }));
+        setSelectedId(null);
+        setMobileDetail(false);
+      }, 'Hilo borrado.');
+    } else {
+      await moderate(async () => {
+        await apiFetch(`/api/forum/posts/${target.id}`, { method: 'DELETE' });
+        patchForum((f) => ({ ...f, posts: f.posts.filter((x) => x.id !== target.id) }));
+      }, 'Respuesta borrada.');
+    }
+  };
 
   /** Invitado: abre el muro y corta la acción. */
   const requireAccount = (): boolean => {
@@ -546,6 +590,26 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
                     ▲ {selected.upvotes_count}
                   </button>
                 </div>
+                {canModerate && remote && (
+                  <div role="group" aria-label="Moderación del hilo" className="mt-2 flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void togglePin(selected)}
+                      className={`${BTN} border border-vice-gold/50 px-4 text-sm text-vice-gold hover:bg-white/10 disabled:opacity-50 ${FOCUS}`}
+                    >
+                      {selected.is_pinned ? 'Desfijar' : 'Fijar'}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => setConfirmDel({ kind: 'thread', id: selected.id })}
+                      className={`${BTN} border border-vice-rose/60 px-4 text-sm text-vice-rose hover:bg-white/10 disabled:opacity-50 ${FOCUS}`}
+                    >
+                      Borrar hilo
+                    </button>
+                  </div>
+                )}
                 {(selectedEntityLink || selectedMarker) && (
                   <p className="mt-1 flex flex-wrap gap-2 text-xs">
                     {selectedEntityLink && (
@@ -620,6 +684,16 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
                               >
                                 Responder
                               </button>
+                              {canModerate && remote && (
+                                <button
+                                  type="button"
+                                  disabled={busy}
+                                  onClick={() => setConfirmDel({ kind: 'post', id: p.id })}
+                                  className={`${BTN} px-3 text-[13px] text-vice-rose hover:bg-white/10 disabled:opacity-50`}
+                                >
+                                  Borrar post
+                                </button>
+                              )}
                             </div>
                           </div>
                         </li>
@@ -686,6 +760,28 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
           </svg>
         </button>
       )}
+
+      <Modal
+        open={confirmDel !== null}
+        onClose={() => setConfirmDel(null)}
+        title={confirmDel?.kind === 'thread' ? 'Borrar hilo' : 'Borrar respuesta'}
+        footer={
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setConfirmDel(null)} className={`${BTN} flex-1 bg-white/10 hover:bg-white/20`}>
+              Cancelar
+            </button>
+            <button type="button" onClick={() => void confirmDelete()} className={`${BTN} flex-1 bg-vice-rose font-bold text-vice-ink`}>
+              Borrar
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm">
+          {confirmDel?.kind === 'thread'
+            ? 'Se borrará el hilo con todas sus respuestas y votos. Esta acción no se puede deshacer.'
+            : 'Se borrará esta respuesta y sus votos. Esta acción no se puede deshacer.'}
+        </p>
+      </Modal>
 
       <BottomSheet open={composeOpen} onClose={() => setComposeOpen(false)} title="Nuevo hilo">
         <form onSubmit={(e) => void submitThread(e)} className="flex flex-col gap-3 pt-2">
