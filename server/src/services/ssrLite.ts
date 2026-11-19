@@ -120,11 +120,6 @@ const STATIC_PAGES: Record<string, { title: string; description: string; collect
     description: 'Mapa interactivo de Leonida con regiones, puntos de interes y marcadores de la comunidad.',
     collection: 'Mapa de Leonida',
   },
-  '/catalogo': {
-    title: 'Catalogo de Leonida',
-    description: 'Catalogo de vehiculos, armas, personajes, negocios y mas elementos de Leonida con sus estadisticas.',
-    collection: 'Catalogo',
-  },
   '/guias': {
     title: 'Guias',
     description: 'Guias paso a paso y ayuda de la comunidad para explorar Leonida.',
@@ -140,6 +135,10 @@ const STATIC_PAGES: Record<string, { title: string; description: string; collect
     description: 'Foro de la comunidad: guias, ayuda y debates sobre Leonida.',
     collection: 'Foro',
   },
+};
+const CATALOG_ROOT = {
+  title: 'Catalogo de Leonida',
+  description: 'Catalogo de vehiculos, armas, coleccionables y mas elementos de Leonida con sus estadisticas.',
 };
 const NOINDEX_PAGES: Record<string, string> = {
   '/hub': 'Hub',
@@ -279,6 +278,57 @@ async function guidePage(slug: string): Promise<PageMeta> {
   });
 }
 
+const CATALOG_DEFAULT = 'armas';
+
+/** Categoria por defecto del catalogo: `armas` si esta activa; si no, la primera activa por `orden` (excluye guias). null sin BD/modulos. */
+export async function defaultCategory(): Promise<string | null> {
+  return withDb(async () => {
+    const mods = (await Module.find({ activo: true, slug: { $ne: GUIDES_MODULE } })
+      .select('slug')
+      .sort({ orden: 1 })
+      .lean()
+      .exec()) as Doc[];
+    if (mods.some((m) => m.slug === CATALOG_DEFAULT)) return CATALOG_DEFAULT;
+    return mods[0] ? String(mods[0].slug) : null;
+  });
+}
+
+async function categoryPage(moduleSlug: string): Promise<Resolved> {
+  if (moduleSlug === GUIDES_MODULE) return { kind: 'redirect', to: '/guias' };
+  const mod = (await Module.findOne({ slug: moduleSlug, activo: true }).lean().exec()) as Doc | null;
+  if (!mod) return { kind: 'page', meta: notFound() };
+  const count = await Entity.countDocuments({ module_id: mod._id }).exec();
+  const path = `/catalogo/${moduleSlug}`;
+  const description = truncate(
+    `${mod.nombre} de Leonida: ${count} ${count === 1 ? 'ficha' : 'fichas'} con estadisticas y detalles en el catalogo de LeonidApp.`,
+    160,
+  );
+  return {
+    kind: 'page',
+    meta: base({
+      path,
+      title: `${mod.nombre} de Leonida`,
+      description,
+      jsonLd: [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: mod.nombre,
+          description,
+          url: baseUrl() + path,
+          numberOfItems: count,
+          isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: baseUrl() + '/' },
+        },
+        crumbs([
+          ['Inicio', '/'],
+          ['Catalogo', '/catalogo'],
+          [mod.nombre, path],
+        ]),
+      ],
+    }),
+  };
+}
+
 async function entityPage(moduleSlug: string, slug: string): Promise<Resolved> {
   const mod = (await Module.findOne({ slug: moduleSlug, activo: true }).lean().exec()) as Doc | null;
   if (!mod) return { kind: 'page', meta: notFound() };
@@ -304,11 +354,12 @@ async function entityPage(moduleSlug: string, slug: string): Promise<Resolved> {
           image: [image],
           genre: e.categoria,
           url: baseUrl() + path,
-          isPartOf: { '@type': 'CollectionPage', name: mod.nombre, url: `${baseUrl()}/catalogo` },
+          isPartOf: { '@type': 'CollectionPage', name: mod.nombre, url: `${baseUrl()}/catalogo/${moduleSlug}` },
         },
         crumbs([
           ['Inicio', '/'],
           ['Catalogo', '/catalogo'],
+          [mod.nombre, `/catalogo/${moduleSlug}`],
           [e.titulo, path],
         ]),
       ],
@@ -322,6 +373,38 @@ const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const cache = new Map<string, { exp: number; meta: PageMeta }>();
 export const clearSsrCache = (): void => cache.clear();
 
+/** `/catalogo`: `?entity` -> URL limpia del item; `?q`/`?comparar` sirven la shell; sin query o `?modulo` -> 301 a la categoria. */
+async function catalogRoot(search: URLSearchParams): Promise<Resolved> {
+  const entity = search.get('entity');
+  if (entity) {
+    const r = await withDb(async () => {
+      const e = (await Entity.findOne({ _id: entity }).select('slug module_id').lean().exec()) as Doc | null;
+      const m = e ? ((await Module.findOne({ _id: e.module_id }).select('slug').lean().exec()) as Doc | null) : null;
+      return e && m ? `/${m.slug === GUIDES_MODULE ? 'guias' : `catalogo/${m.slug}`}/${e.slug}` : null;
+    });
+    if (r) return { kind: 'redirect', to: r };
+  }
+  const shell = (robots: PageMeta['robots'], cat: string | null): Resolved => ({
+    kind: 'page',
+    meta: base({
+      path: cat ? `/catalogo/${cat}` : '/catalogo',
+      title: CATALOG_ROOT.title,
+      description: CATALOG_ROOT.description,
+      robots,
+    }),
+  });
+  const def = await defaultCategory();
+  if (search.get('comparar')) return shell('noindex,nofollow', def);
+  if (search.has('q')) return shell('index,follow', def);
+  const modulo = search.get('modulo');
+  if (modulo && SLUG_RE.test(modulo) && modulo !== GUIDES_MODULE) {
+    const active = await withDb(async () => Module.exists({ slug: modulo, activo: true }).exec());
+    if (active) return { kind: 'redirect', to: `/catalogo/${modulo}` };
+  }
+  if (def) return { kind: 'redirect', to: `/catalogo/${def}` };
+  return shell('index,follow', null);
+}
+
 /** Decide que mostrar para una ruta. Nunca lanza: ante fallo de BD devuelve la cabecera generica. */
 export async function resolveRoute(pathname: string, search: URLSearchParams): Promise<Resolved> {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
@@ -334,22 +417,11 @@ export async function resolveRoute(pathname: string, search: URLSearchParams): P
       meta: base({ path, title: NOINDEX_PAGES[path], robots: 'noindex,nofollow' }),
     };
   }
+  if (path === '/catalogo') return catalogRoot(search);
   const st = STATIC_PAGES[path];
   if (st) {
-    if (path === '/catalogo' && search.get('comparar')) {
-      return { kind: 'page', meta: base({ path, title: st.title, description: st.description, robots: 'noindex,nofollow' }) };
-    }
-    const entity = path === '/catalogo' ? search.get('entity') : null;
     const item = path === '/noticias' ? search.get('item') : null;
     if (item && SLUG_RE.test(item)) return { kind: 'redirect', to: `/noticias/${item}` };
-    if (entity) {
-      const r = await withDb(async () => {
-        const e = (await Entity.findOne({ _id: entity }).select('slug module_id').lean().exec()) as Doc | null;
-        const m = e ? ((await Module.findOne({ _id: e.module_id }).select('slug').lean().exec()) as Doc | null) : null;
-        return e && m ? `/${m.slug === GUIDES_MODULE ? 'guias' : `catalogo/${m.slug}`}/${e.slug}` : null;
-      });
-      if (r) return { kind: 'redirect', to: r };
-    }
     return {
       kind: 'page',
       meta: base({
@@ -361,7 +433,10 @@ export async function resolveRoute(pathname: string, search: URLSearchParams): P
     };
   }
 
-  const m = /^\/(noticias|guias)\/([^/]+)$/.exec(path) ?? /^\/catalogo\/([^/]+)\/([^/]+)$/.exec(path);
+  const m =
+    /^\/(noticias|guias)\/([^/]+)$/.exec(path) ??
+    /^\/catalogo\/([^/]+)\/([^/]+)$/.exec(path) ??
+    /^\/catalogo\/([^/]+)$/.exec(path);
   if (!m) return { kind: 'page', meta: notFound() };
 
   const cached = cache.get(path);
@@ -369,16 +444,16 @@ export async function resolveRoute(pathname: string, search: URLSearchParams): P
 
   const isCatalog = path.startsWith('/catalogo/');
   const a = m[1]!;
-  const b = m[2]!;
-  const slugOk = isCatalog ? SLUG_RE.test(a) && SLUG_RE.test(b) : SLUG_RE.test(b);
+  const b = m[2];
+  const slugOk = isCatalog ? SLUG_RE.test(a) && (b === undefined || SLUG_RE.test(b)) : SLUG_RE.test(b!);
   if (!slugOk) return { kind: 'page', meta: notFound() };
 
   try {
     if (!dbReady()) throw new Error('db no disponible');
     let res: Resolved;
-    if (isCatalog) res = await entityPage(a, b);
-    else if (a === 'noticias') res = { kind: 'page', meta: await newsPage(b) };
-    else res = { kind: 'page', meta: await guidePage(b) };
+    if (isCatalog) res = b === undefined ? await categoryPage(a) : await entityPage(a, b);
+    else if (a === 'noticias') res = { kind: 'page', meta: await newsPage(b!) };
+    else res = { kind: 'page', meta: await guidePage(b!) };
     if (res.kind === 'page' && res.meta.status === 200) {
       if (cache.size >= CACHE_MAX) cache.clear();
       cache.set(path, { exp: Date.now() + CACHE_TTL_MS, meta: res.meta });

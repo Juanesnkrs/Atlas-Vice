@@ -10,7 +10,7 @@ import { baseUrl, clientDistDir, escHtml, injectHead, loadTemplate, resolveRoute
 const MAX_URLS = 50_000;
 const GUIDES_MODULE = 'guias';
 // Rutas publicas indexables de docs §1.1 (sin /aportar, que es noindex).
-const STATIC_PATHS = ['/', '/mapa', '/catalogo', '/guias', '/noticias', '/foro'];
+const STATIC_PATHS = ['/', '/mapa', '/guias', '/noticias', '/foro'];
 
 interface UrlEntry {
   loc: string; // ruta limpia, sin '#' ni query
@@ -64,14 +64,22 @@ export async function collectUrls(): Promise<UrlEntry[]> {
     .filter((n) => n.slug)
     .map((n) => ({ loc: `/noticias/${seg(n.slug)}`, lastmod: validDate(n.updatedAt) ?? validDate(n.publishedAt) }));
 
+  // Una pagina de categoria por modulo activo (no guias) con al menos una ficha.
+  const catLastmod = new Map<string, Date | undefined>();
+  for (const e of entities) {
+    const mod = slugById.get(String(e.module_id));
+    if (!mod || !e.slug || mod === GUIDES_MODULE) continue;
+    catLastmod.set(mod, maxDate([catLastmod.get(mod), validDate(e.created_at)]));
+  }
+  const categories: UrlEntry[] = [...catLastmod].map(([mod, lastmod]) => ({ loc: `/catalogo/${seg(mod)}`, lastmod }));
+
   const staticLastmod: Record<string, Date | undefined> = {
     '/': maxDate(newsUrls.map((u) => u.lastmod)),
-    '/catalogo': maxDate(catalog.map((u) => u.lastmod)),
     '/guias': maxDate(guides.map((u) => u.lastmod)),
     '/noticias': maxDate(newsUrls.map((u) => u.lastmod)),
   };
   const statics = STATIC_PATHS.map((p) => ({ loc: p, lastmod: staticLastmod[p] }));
-  return [...statics, ...catalog, ...guides, ...newsUrls];
+  return [...statics, ...categories, ...catalog, ...guides, ...newsUrls];
 }
 
 const lm = (d?: Date) => (d ? `<lastmod>${d.toISOString()}</lastmod>` : '');

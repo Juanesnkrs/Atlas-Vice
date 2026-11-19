@@ -21,8 +21,9 @@
 | --- | --- | --- | --- |
 | `/` | Portada (`HomePage.tsx`, DesignSpec §7.2): hero compacto, tarjetas de secciones, noticias, guías y foro en vivo | `Module`, `Entity`, `OfficialNews`, `ForumThread` (preview) | Sí |
 | `/mapa` | P04 Mapa de Leonida (HUD 100vh) | `MapMarker` | Sí |
-| `/catalogo` | P05 Catálogo/Inspector (`CatalogPage.tsx`) | `Module`, `Entity` | Sí |
-| `/catalogo/:modulo/:slug` | P05 ficha de entidad | `Module.slug` + `Entity.slug` | Sí (una URL por entidad) |
+| `/catalogo` | Entrada del catálogo: redirige `301` a la categoría por defecto (§1.4); solo sirve la shell con `?q=` / `?comparar=` | `Module` | No (canonical = categoría por defecto) |
+| `/catalogo/:categoria` | P05 Catálogo/Inspector de una categoría (`CatalogPage.tsx`); `:categoria` = `Module.slug` de un módulo activo distinto de `guias` (`armas`, `vehiculos`, `coleccionables`, ...) | `Module`, `Entity` | Sí (solo categorías activas con al menos una ficha) |
+| `/catalogo/:categoria/:itemSlug` | P05 ficha de entidad (`Module.slug` + `Entity.slug`) | `Module.slug` + `Entity.slug` | Sí (una URL por entidad) |
 | `/guias` | Índice de guías (editorial) | `Entity` del módulo `guias` | Sí |
 | `/guias/:slug` | Guía (editorial) | `Entity.slug` del módulo `guias` | Sí |
 | `/noticias` | Listado de noticias oficiales | `OfficialNews` | Sí |
@@ -44,8 +45,12 @@ Solo estado de vista; la URL canónica nunca los incluye:
 
 - `/mapa?pin=<slug>&region=<Region>&capas=<id,id>&ocultar=1` — estado de vista del mapa. `pin` centra y abre la ficha del marcador con ese `MapMarker.slug` (se mantienen `marker=<uuid>` y `entity=<uuid>` por compatibilidad); `region` filtra por `MapMarker.region`; `capas` lista las capas visibles (ids de `MAP_LAYERS`, separados por coma; ausente = todas); `ocultar=1` oculta los marcadores ya completados del usuario. Los filtros se combinan con AND y se sincronizan con la URL sin añadir entradas al historial.
 - `/foro?categoria=<Categoria>&hilo=<uuid>&entity=<uuid>&marker=<uuid>` — filtra por categoría, abre hilo, o muestra los hilos de una entidad / un marcador (enlazado cruzado §5). `ForumPage.tsx` usa internamente `thread`; `App.tsx` traduce `hilo → thread`.
-- `/catalogo?comparar=<slugA>,<slugB>[,<slugC>]` — abre el comparador NUI (§5).
-- `/catalogo?modulo=<Module.slug>` — abre el Inspector en la pestaña de ese módulo (accesos de la portada). Canonical `/catalogo`. Un slug inexistente o inactivo abre la primera pestaña disponible.
+- `/catalogo/:categoria?comparar=<slugA>,<slugB>[,<slugC>]` y `/catalogo?comparar=...` — abre el comparador NUI (§5). Sin redirección; `noindex`.
+- `/catalogo?q=<texto>` — búsqueda (destino de `SearchAction`). Sirve la shell sin redirigir; canonical = categoría por defecto.
+- `/catalogo/:categoria/:itemSlug?vista=ficha` — **decisión ("Ver ficha")**: la URL canónica del ítem es el Inspector con el ítem preseleccionado (en móvil, `BottomSheet` abierto). La ficha completa (estadísticas, guías relacionadas, comparar con similares y `<AdSlot position="after-content"/>`) no se perdió: es la vista ampliada de la misma URL y el botón `Ver ficha` enlaza a `?vista=ficha`. El canonical sigue siendo `/catalogo/:categoria/:itemSlug` (sin query), por lo que no hay contenido duplicado ni URL nueva en el sitemap. En esta vista la página hace scroll y muestra el Footer.
+- Estado de navegación del Inspector = URL: seleccionar tarjeta hace `pushState` a `/catalogo/:categoria/:itemSlug`; cambiar de categoría, `pushState` a `/catalogo/:categoria`; `/catalogo` y `?modulo=`/`?entity=` heredados usan `replaceState`. El sheet móvil y el comparador, si se abrieron desde la propia app, se cierran con `history.back()` (la entrada queda marcada en `history.state`); si fue un deep link, con `replaceState` a la URL sin ítem/`comparar`. Nunca se apilan entradas basura.
+- Cliente: al cambiar de categoría/ítem `usePageMeta` actualiza `<title>`, description, canonical, `og:*` y sustituye el JSON-LD del servidor (categoría = `CollectionPage` + `BreadcrumbList`; ítem = `CreativeWork` + `BreadcrumbList`); categoría o ítem inexistente = estado vacío en cliente + `noindex`.
+- `/catalogo?modulo=<Module.slug>` — forma antigua, ya no es una vista: redirige `301` a `/catalogo/:categoria` (§1.4).
 - `/entrar?next=<ruta interna>` — retorno tras login (validado en servidor como ruta interna).
 
 ### 1.4 Redirecciones `301`
@@ -53,8 +58,15 @@ Solo estado de vista; la URL canónica nunca los incluye:
 | Origen | Destino |
 | --- | --- |
 | `/aportes` | `/aportar` |
-| `/catalogo?entity=<uuid>` | `/catalogo/:modulo/:slug` resuelto |
+| `/catalogo` (sin query) | `/catalogo/armas` (o la primera categoría activa por `Module.orden` si `armas` no está activa) |
+| `/catalogo?modulo=<slug>` | `/catalogo/<slug>` si el módulo está activo; si no existe, está inactivo o es `guias`, la categoría por defecto |
+| `/catalogo?entity=<uuid>` | `/catalogo/:categoria/:itemSlug` resuelto (o `/guias/:slug` si es guía) |
+| `/catalogo/guias` | `/guias` |
 | `/noticias?item=<slug>` | `/noticias/:slug` |
+
+No redirigen: `/catalogo?q=...` y `/catalogo?comparar=...` (la shell se sirve con `200`; el comparador lleva `noindex`).
+
+`404` SSR-lite (HTTP `404`, `noindex,nofollow`, sin canonical, con la shell de la SPA para que el cliente muestre su estado vacío): categoría inexistente o inactiva (`/catalogo/nada`), ítem inexistente (`/catalogo/armas/nada`) e ítem existente bajo otra categoría.
 
 ---
 
@@ -84,10 +96,11 @@ Fastify **no** renderiza React. La lógica vive en `server/src/services/ssrLite.
 | Ruta | Tipos JSON-LD |
 | --- | --- |
 | `/` | `WebSite` (con `SearchAction` hacia `/catalogo?q=`) + `Organization` (LeonidApp, sin afiliación con Rockstar) |
-| `/catalogo/:modulo/:slug` | `Thing` / `CreativeWork` (con `isPartOf` = módulo) + `BreadcrumbList` (Inicio › Catálogo › Entidad; no hay página de módulo, así que el módulo no es un nivel de la miga) |
+| `/catalogo/:categoria` | `CollectionPage` (`name` = `Module.nombre`, `numberOfItems` = nº de fichas) + `BreadcrumbList` (Inicio › Catálogo › Categoría) |
+| `/catalogo/:categoria/:itemSlug` | `CreativeWork` (con `isPartOf` = `CollectionPage` de la categoría) + `BreadcrumbList` (Inicio › Catálogo › Categoría › Ítem, todas con URL real) |
 | `/guias/:slug` | `HowTo` (con `HowToStep` por cada `metadata_json.steps[]`) si la guía tiene pasos; si no, `Article`. Siempre + `BreadcrumbList` |
 | `/noticias/:slug` | `NewsArticle` (`headline`, `datePublished`, `image`, `isBasedOn` = `sourceUrl` oficial) + `BreadcrumbList` |
-| `/mapa`, `/foro`, `/noticias`, `/guias`, `/catalogo` | `CollectionPage` + `BreadcrumbList` |
+| `/mapa`, `/foro`, `/noticias`, `/guias` | `CollectionPage` + `BreadcrumbList` |
 
 Reglas:
 
@@ -102,8 +115,8 @@ Reglas:
 ## 4. `GET /sitemap.xml` y `robots.txt`
 
 - `GET /sitemap.xml` (Fastify, `server/src/routes/seo.ts`) genera **URLs limpias sin `#`** y sin parámetros de consulta.
-- Incluye: rutas estáticas de §1.1 (excepto `/aportar`), una URL por `Entity` (`/catalogo/:modulo/:slug`, de módulos `activo`), una por guía (`/guias/:slug`) y una por `OfficialNews` (`/noticias/:slug`).
-- `lastmod` real: `Entity.created_at`, `OfficialNews.updatedAt` / `publishedAt`; las estáticas usan la fecha máxima de su colección.
+- Incluye: rutas estáticas de §1.1 (excepto `/aportar`), una URL por categoría (`/catalogo/:categoria`, solo módulos `activo` distintos de `guias` con al menos una ficha; **no** se lista `/catalogo` a secas), una URL por `Entity` (`/catalogo/:categoria/:itemSlug`, de módulos `activo`), una por guía (`/guias/:slug`) y una por `OfficialNews` (`/noticias/:slug`).
+- `lastmod` real: `Entity.created_at`, `OfficialNews.updatedAt` / `publishedAt`; las estáticas y las categorías usan la fecha máxima de sus fichas. Sin duplicados ni URLs antiguas (`?modulo=`, `?entity=`).
 - Límite 50 000 URLs por archivo; si se supera, `GET /sitemap.xml` devuelve un `sitemapindex` con `/sitemap-<n>.xml`.
 - `Content-Type: application/xml; charset=utf-8`, `Cache-Control: public, max-age=3600`.
 - `robots.txt` (en `public/`): `Allow: /`, `Disallow: /api/`, `Disallow: /aportar`, `Disallow: /hub`, `Disallow: /progreso`, `Disallow: /entrar`, `Sitemap: <PUBLIC_SITE_URL>/sitemap.xml`.
@@ -117,7 +130,7 @@ Cada relación es un enlace real `<a href>` con ruta limpia (rastreable), deriva
 | Desde | Hacia | Campo | Enlace |
 | --- | --- | --- | --- |
 | Ficha `Entity` (Catálogo) | Mapa | `MapMarker.entity_id = Entity._id` | `Ver en el mapa` → `/mapa?marker=<id>` |
-| Pin `MapMarker` (Mapa) | Catálogo | `MapMarker.entity_id` | `Ver ficha` → `/catalogo/:modulo/:slug` |
+| Pin `MapMarker` (Mapa) | Catálogo | `MapMarker.entity_id` | `Ver ficha` → `/catalogo/:categoria/:itemSlug` |
 | Ficha `Entity` / Pin | Foro | `ForumThread.entity_id` / `marker_id` | `Hilos relacionados` → `/foro?hilo=<id>` (máx. 5) y `Abrir hilo` precargado |
 | Hilo del Foro | Catálogo / Mapa | `entity_id` / `marker_id` | chips bajo el título |
 | Guía (Lore) | Catálogo / Mapa | `metadata_json.lore_refs[]` (UUID de `Entity` o `MapMarker`) | enlaces en el cuerpo y bloque "En esta guía" |
@@ -131,7 +144,7 @@ Reglas: sin enlaces rotos (solo se renderiza si el destino existe), anclas descr
 - Compara **2 o 3** `Entity` del **mismo módulo** sobre las claves numéricas comunes de `stats_json`.
 - Se abre en `/catalogo?comparar=a,b[,c]` como `BottomSheet` (móvil) o panel HUD (escritorio) **superpuesto**: no altera el layout de `CatalogPage.tsx`.
 - Cada métrica se muestra con `StatBar`; la mejor por fila se resalta con el acento sunset (`#E1307E` → `#F67E56`); valores no comparables se muestran como `—`.
-- Canonical → `/catalogo`; `noindex` cuando hay `?comparar`.
+- Canonical → `/catalogo/:categoria` (por defecto `armas`); `noindex` cuando hay `?comparar`.
 - Sin datos remotos adicionales: usa la caché TanStack/IndexedDB de las entidades (offline-first).
 
 ---
@@ -147,7 +160,7 @@ Configuración en `AppConfig.monetization` (ver documento de datos §2.2). Compo
 | `/guias` | `after-content` |
 | `/guias/:slug` | `in-article` (tras el 2.º bloque, máx. 1), `after-content`, `sidebar` (solo escritorio ≥ 1280px) |
 | `/noticias`, `/noticias/:slug` | `after-content` |
-| `/catalogo/:modulo/:slug` | `after-content` (bajo la ficha, nunca dentro del Inspector HUD) |
+| `/catalogo/:categoria/:itemSlug` | `after-content` (bajo la ficha, nunca dentro del Inspector HUD) |
 | `/foro` | `after-content` (tras la lista de hilos, nunca entre posts) |
 
 Máximo **2 `AdSlot` por página**.
