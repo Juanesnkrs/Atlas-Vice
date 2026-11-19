@@ -1,4 +1,4 @@
-// Motor del mapa de Leonida (P04): SVG propio + requestAnimationFrame.
+// Motor del mapa de Leonida (P04): teselas en <canvas> + capa interactiva SVG propia + requestAnimationFrame.
 // - La transformación {x, y, scale} vive en una ref y se aplica por DOM en cada frame: arrastrar,
 //   hacer zoom, la inercia y los vuelos NO provocan renders de React.
 // - React solo se renderiza cuando cambia el nivel de zoom (clustering) o el viewport sale del
@@ -6,8 +6,8 @@
 // - Trazos con vector-effect: non-scaling-stroke y rótulos/pines a tamaño constante en pantalla
 //   mediante la variable CSS --k (= 1 / escala).
 import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type Ref } from 'react';
-import { ISLAND_BBOX, LEONIDA_MAP, MAP_H, MAP_W, loadBaseTerrain, loadDetailLayers, type RouteShield, type TerrainBase, type TerrainDetail } from '../../data/leonidaMap';
-import { buildBasePaths, buildDetailPaths, paintMap, WATER, type BasePaths, type DetailPaths } from './mapPaint';
+import { ISLAND_BBOX, MAP_H, MAP_W } from '../../data/leonidaMap';
+import { loadTileManifest, paintTiles, TileStore, WATER, type TileManifest } from './mapPaint';
 
 export interface MapPin {
   id: string;
@@ -171,18 +171,7 @@ function buildItems(pins: ReadonlyArray<MapPin>, view: ViewState, selectedId: st
 
 // ---- Capas estáticas (React.memo: no se re-renderizan jamás) -------------------------------------------------
 const CSS = `
-.lm-l{pointer-events:none;font-family:Jost,sans-serif;font-weight:700;fill:#F4EEF6;stroke:#10234A;paint-order:stroke;stroke-linejoin:round;text-anchor:middle;dominant-baseline:central;stroke-width:3.5px}
-.lm-region{font-size:calc(13px * var(--lf,1));letter-spacing:2px}
-.lm-city{font-size:calc(11px * var(--lf,1));letter-spacing:1px;fill:#FFD9C2}
-.lm-water{font-size:calc(11px * var(--lf,1));letter-spacing:3px;font-style:italic;font-weight:600;fill:#8FA8E0;stroke:#10234A}
-.lm-county{font-size:calc(10px * var(--lf,1));letter-spacing:2.5px;font-style:italic;font-weight:600;fill:#E8C9A0;stroke:#10234A}
-.lm-land{font-size:calc(10px * var(--lf,1));letter-spacing:1px;font-style:italic;font-weight:600;fill:#D8E9B0;stroke:#1F3A1E}
-.lm-poi{font-size:calc(10px * var(--lf,1));letter-spacing:.6px;font-weight:600;fill:#D9C7F2;stroke:#2A1B47}
-.lm-border{font-size:calc(8px * var(--lf,1));letter-spacing:.8px;font-style:italic;font-weight:600;fill:#F1DDBF;stroke:#10234A;stroke-width:3px}
-[data-h="1"]{visibility:hidden}
 [data-capture="1"] .lm-pin{pointer-events:none}
-.lm-sh text{font-family:Jost,sans-serif;font-weight:700;font-size:9px;text-anchor:middle;dominant-baseline:central;fill:#1A0F2A;paint-order:normal;stroke:none}
-[data-lod="0"] .lm-t1,[data-lod="0"] .lm-t2,[data-lod="1"] .lm-t2{display:none}
 .lm-pin{cursor:pointer;outline:none}
 .lm-pin:focus-visible .lm-ring,[data-sel="1"] .lm-ring{stroke:#FFC857;opacity:1}
 .lm-ring{fill:none;stroke:transparent;stroke-width:2.5;opacity:0}
@@ -192,64 +181,6 @@ const CSS = `
 `;
 
 const NS = { vectorEffect: 'non-scaling-stroke' } as const;
-
-/** Rótulos y escudos de ruta: capa de texto en SVG, siempre bajo los pines y clusters. La visibilidad por colisión la decide runLabels. */
-const LabelsLayer = memo(function LabelsLayer({ shields }: { shields: ReadonlyArray<RouteShield> | null }) {
-  const m = LEONIDA_MAP;
-  return (
-    <g style={{ pointerEvents: 'none' }}>
-      {m.labels.map((l, i) => {
-        const shown = (t: string): string => (l.kind === 'region' ? t.toUpperCase() : t);
-        const cls = `lm-l lm-${l.kind}`;
-        return (
-          <g
-            key={i}
-            data-lbl={i}
-            data-x={l.x}
-            data-y={l.y}
-            data-tier={l.tier}
-            data-kind={l.kind}
-            data-rot={l.rot ?? 0}
-            data-lines={l.sub ? 2 : 1}
-            data-wt={l.sub && l.sub.length > l.text.length ? l.sub : l.text}
-            className={l.tier === 0 ? undefined : `lm-t${l.tier}`}
-            style={{ transform: `${pxPos(l.x, l.y)}${l.rot ? ` rotate(${l.rot}deg)` : ''}` }}
-          >
-            <text className={cls} y={l.sub ? -4.5 : 0}>
-              {shown(l.text)}
-            </text>
-            {l.sub && (
-              <text className={cls} y={4.5}>
-                {l.sub}
-              </text>
-            )}
-          </g>
-        );
-      })}
-      {shields?.map((s, i) => (
-        <g
-          key={`sh${i}`}
-          data-lbl={`s${i}`}
-          data-x={s[2]}
-          data-y={s[3]}
-          data-tier={1}
-          data-kind="shield"
-          className="lm-t1 lm-sh"
-          style={{ transform: pxPos(s[2], s[3]) }}
-        >
-          {s[1] === 'i' ? (
-            <path d="M-9-9H9V3L0 11L-9 3Z" fill="#F4EEF6" stroke="#1A0F2A" strokeWidth={1.4} strokeLinejoin="round" />
-          ) : s[1] === 'u' ? (
-            <circle r={9} fill="#F4EEF6" stroke="#1A0F2A" strokeWidth={1.4} />
-          ) : (
-            <rect x={-9} y={-7} width={18} height={14} rx={4} fill="#F4EEF6" stroke="#1A0F2A" strokeWidth={1.4} />
-          )}
-          <text fontSize={s[0].length > 2 ? 7.5 : 9}>{s[0]}</text>
-        </g>
-      ))}
-    </g>
-  );
-});
 
 /** Calca de referencia (Modo Editor): imagen local alineada al lienzo, bajo los pines. */
 const RefOverlay = memo(function RefOverlay({ data: r }: { data: MapRefOverlay }) {
@@ -282,45 +213,6 @@ const TracerOverlay = memo(function TracerOverlay({ tracer }: { tracer: MapTrace
   );
 });
 
-// ---- Colisión de rótulos -------------------------------------------------------------------------------------------
-interface Box {
-  x0: number;
-  y0: number;
-  x1: number;
-  y1: number;
-}
-const LABEL_FONT: Record<string, { font: string; ls: number }> = {
-  region: { font: '700 13px Jost, sans-serif', ls: 2 },
-  county: { font: 'italic 600 10px Jost, sans-serif', ls: 2.5 },
-  city: { font: '700 11px Jost, sans-serif', ls: 1 },
-  water: { font: 'italic 600 11px Jost, sans-serif', ls: 3 },
-  land: { font: 'italic 600 10px Jost, sans-serif', ls: 1 },
-  poi: { font: '600 10px Jost, sans-serif', ls: 0.6 },
-  border: { font: 'italic 600 8px Jost, sans-serif', ls: 0.8 },
-};
-let measureCtx: CanvasRenderingContext2D | null | undefined;
-const widthCache = new Map<string, number>();
-function textWidth(text: string, kind: string, lf: number): number {
-  const key = `${kind}|${text}|${lf}`;
-  const hit = widthCache.get(key);
-  if (hit !== undefined) return hit;
-  if (measureCtx === undefined) measureCtx = document.createElement('canvas').getContext('2d');
-  const spec = LABEL_FONT[kind] ?? LABEL_FONT.city!;
-  let w = text.length * 7 * lf;
-  if (measureCtx) {
-    measureCtx.font = spec.font;
-    const shown = kind === 'region' ? text.toUpperCase() : text;
-    w = (measureCtx.measureText(shown).width + spec.ls * shown.length) * lf;
-  }
-  widthCache.set(key, w);
-  return w;
-}
-/** Margen mínimo (px) entre un rótulo y el borde de la zona útil del viewport. */
-const LABEL_EDGE_PX = 6;
-/** Interfaz flotante que ningún rótulo puede tapar: controles, HUD (glass), cabecera, dock y sheets/diálogos. */
-const UI_SELECTOR = 'button, input, select, header, nav, aside, fieldset, .glass, [role="dialog"], [role="status"]';
-const overlaps = (a: Box, b: Box, pad = 3): boolean => a.x0 < b.x1 + pad && a.x1 > b.x0 - pad && a.y0 < b.y1 + pad && a.y1 > b.y0 - pad;
-
 // ---- Componente ---------------------------------------------------------------------------------------------------
 export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, selectedId, onSelect, onBackgroundClick, crosshair, editable, insets, ariaLabel, className = '' }: MapCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -335,36 +227,18 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
   const [view, setView] = useState<ViewState | null>(null);
   const [fitState, setFitState] = useState(1);
 
-  // Geometría pesada fuera del bundle: la base (LOD 0) al entrar, el detalle (LOD 1/2) al acercar el zoom.
-  const [base, setBase] = useState<TerrainBase | null>(null);
-  const [detail, setDetail] = useState<TerrainDetail | null>(null);
-  const wantDetail = (view?.level ?? 0) >= 1;
+  // Pirámide de teselas: el manifiesto se pide al entrar; las teselas, bajo demanda.
+  const tileStore = useRef<TileStore | null>(null);
+  const [manifest, setManifest] = useState<TileManifest | null>(null);
   useEffect(() => {
     let live = true;
-    loadBaseTerrain()
-      .then((d) => {
-        if (!live) return;
-        setBase(d);
-        // calienta la caché del detalle en reposo (no lo pinta hasta que se acerque el zoom)
-        const warm = (): void => void loadDetailLayers().catch(() => undefined);
-        if ('requestIdleCallback' in window) window.requestIdleCallback(warm, { timeout: 4000 });
-        else setTimeout(warm, 2000);
-      })
+    loadTileManifest()
+      .then((m) => live && setManifest(m))
       .catch(() => undefined);
     return () => {
       live = false;
     };
   }, []);
-  useEffect(() => {
-    if (!wantDetail || detail) return;
-    let live = true;
-    loadDetailLayers()
-      .then((d) => live && setDetail(d))
-      .catch(() => undefined);
-    return () => {
-      live = false;
-    };
-  }, [wantDetail, detail]);
 
   // Props leídas desde el bucle de animación sin re-crear callbacks.
   const insetsRef = useRef<Required<MapInsets>>({ top: 0, right: 0, bottom: 0, left: 0 });
@@ -415,15 +289,15 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
     [bounds],
   );
 
-  // ---- Capa estática en <canvas>: bitmap en caché movido por CSS; se repinta solo si hace falta ----------------------------------
+  // ---- Teselas en <canvas>: bitmap en caché movido por CSS; se repinta solo si hace falta ----------------------------------
   const bgRef = useRef<HTMLCanvasElement>(null);
-  const basePaths = useRef<BasePaths | null>(null);
-  const detailPaths = useRef<DetailPaths | null>(null);
-  const bgState = useRef<{ x0: number; y0: number; x1: number; y1: number; s: number; lod: 0 | 1 | 2 } | null>(null);
+  const bgState = useRef<{ x0: number; y0: number; x1: number; y1: number; s: number; z: number } | null>(null);
   const bgTimer = useRef(0);
   const bgRaf = useRef(0);
-  const lblTimer = useRef(0);
-  const itemsRef = useRef<Item[]>([]);
+
+  const isTouch = (): boolean => window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+  const bitmapDpr = (cssW: number, cssH: number): number =>
+    Math.min(isTouch() ? DPR_MAX_TOUCH : DPR_MAX_DESKTOP, window.devicePixelRatio || 1, 6144 / cssW, 6144 / cssH);
 
   const placeBg = useCallback(() => {
     const cv = bgRef.current;
@@ -438,16 +312,13 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
     if (!cv || size.current.w === 0) return;
     const { x, y, s } = cur.current;
     const { w, h } = size.current;
-    const rel = s / fit.current;
-    const lod: 0 | 1 | 2 = rel < 1.7 ? 0 : rel < 3.4 ? 1 : 2;
-    const touch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
-    const margin = touch ? BG_MARGIN_TOUCH : BG_MARGIN_DESKTOP;
+    const margin = isTouch() ? BG_MARGIN_TOUCH : BG_MARGIN_DESKTOP;
     const mx = (w * margin) / s;
     const my = (h * margin) / s;
     const R = { x0: -x / s - mx, y0: -y / s - my, x1: (w - x) / s + mx, y1: (h - y) / s + my };
     const cssW = (R.x1 - R.x0) * s;
     const cssH = (R.y1 - R.y0) * s;
-    const dpr = Math.min(touch ? DPR_MAX_TOUCH : DPR_MAX_DESKTOP, window.devicePixelRatio || 1, 6144 / cssW, 6144 / cssH);
+    const dpr = bitmapDpr(cssW, cssH);
     const pw = Math.max(1, Math.round(cssW * dpr));
     const ph = Math.max(1, Math.round(cssH * dpr));
     if (cv.width !== pw) cv.width = pw;
@@ -456,8 +327,11 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
     cv.style.height = `${cssH}px`;
     const ctx = cv.getContext('2d');
     if (!ctx) return;
-    paintMap(ctx, basePaths.current, detailPaths.current, { ...R, s, sx: pw / (R.x1 - R.x0), sy: ph / (R.y1 - R.y0), lod });
-    bgState.current = { ...R, s, lod };
+    const store = tileStore.current;
+    const sx = pw / (R.x1 - R.x0);
+    const z = store ? store.levelFor(sx) : 0;
+    paintTiles(ctx, store, { ...R, sx, sy: ph / (R.y1 - R.y0), z });
+    bgState.current = { ...R, s, z };
     placeBg();
   }, [placeBg]);
 
@@ -474,139 +348,6 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
     bgTimer.current = window.setTimeout(flushBg, 160);
   }, [flushBg]);
 
-  /**
-   * Colisión de rótulos por cajas (P0 > P1 > P2 > escudos). Un rótulo se oculta si choca con otro de mayor prioridad, con un pin/cluster
-   * o con la interfaz flotante (botones, paneles, cabecera, dock, sheets); los P0/P1 prueban antes posiciones desplazadas arriba/abajo.
-   * Los rótulos horizontales que se salen del viewport se desplazan hacia dentro (si su ancla está dentro) y los girados se ocultan.
-   */
-  const runLabels = useCallback(() => {
-    const svg = svgRef.current;
-    const wrap = wrapRef.current;
-    if (!svg || !wrap || size.current.w === 0) return;
-    const { x, y, s } = cur.current;
-    const { w, h } = size.current;
-    const rel = s / fit.current;
-    const lod = rel < 1.7 ? 0 : rel < 3.4 ? 1 : 2;
-    const lf = w < 768 ? 0.82 : 1;
-    const ins = insetsRef.current;
-    const safe: Box = { x0: ins.left + LABEL_EDGE_PX, y0: ins.top + LABEL_EDGE_PX, x1: w - ins.right - LABEL_EDGE_PX, y1: h - ins.bottom - LABEL_EDGE_PX };
-    const obstacles = itemsRef.current.map((it) => {
-      const wx = it.kind === 'pin' ? it.pin.x : it.x;
-      const wy = it.kind === 'pin' ? it.pin.y : it.y;
-      const cx = wx * s + x;
-      const cy = wy * s + y;
-      const r = it.kind === 'pin' ? 15 : 22;
-      return { cx, cy, box: { x0: cx - r, y0: cy - r, x1: cx + r, y1: cy + r } as Box };
-    });
-    // interfaz flotante fuera del lienzo (botones de zoom y Modo editor, HUD, cabecera, dock, sheets): zonas seguras de pantalla
-    const wr = wrap.getBoundingClientRect();
-    const ui: Box[] = [];
-    document.querySelectorAll<HTMLElement>(UI_SELECTOR).forEach((el) => {
-      if (wrap.contains(el)) return;
-      const r = el.getBoundingClientRect();
-      if (r.width < 8 || r.height < 8) return;
-      const b: Box = { x0: r.left - wr.left - 3, y0: r.top - wr.top - 3, x1: r.right - wr.left + 3, y1: r.bottom - wr.top + 3 };
-      if (b.x1 > 0 && b.y1 > 0 && b.x0 < w && b.y0 < h) ui.push(b);
-    });
-    interface Cand {
-      el: SVGElement;
-      text: SVGTextElement | null;
-      bw: number;
-      bh: number;
-      sx: number;
-      sy: number;
-      prio: number;
-      rot: number;
-      shift: boolean;
-      step: number;
-    }
-    const cands: Cand[] = [];
-    const setHidden = (el: SVGElement, hide: boolean): void => {
-      if ((el.dataset.h === '1') === hide) return;
-      if (hide) el.dataset.h = '1';
-      else delete el.dataset.h;
-    };
-    svg.querySelectorAll<SVGElement>('[data-lbl]').forEach((el) => {
-      const tier = Number(el.dataset.tier);
-      if (tier > lod) return; // ya oculto por LOD
-      const sx = Number(el.dataset.x) * s + x;
-      const sy = Number(el.dataset.y) * s + y;
-      if (sx < -140 || sx > w + 140 || sy < -140 || sy > h + 140) {
-        setHidden(el, true);
-        return;
-      }
-      const kind = el.dataset.kind ?? 'city';
-      const rot = Number(el.dataset.rot ?? 0);
-      let bw = 24;
-      let bh = 22;
-      if (kind !== 'shield') {
-        const lines = Number(el.dataset.lines ?? 1);
-        bw = textWidth(el.dataset.wt ?? el.textContent ?? '', kind, lf) + 6;
-        bh = (kind === 'border' ? 9 : 14) * lf * lines + 6;
-        if (rot !== 0) {
-          const a = (rot * Math.PI) / 180;
-          [bw, bh] = [Math.abs(bw * Math.cos(a)) + Math.abs(bh * Math.sin(a)), Math.abs(bw * Math.sin(a)) + Math.abs(bh * Math.cos(a))];
-        }
-      }
-      cands.push({
-        el,
-        text: kind === 'shield' ? null : el.querySelector('text'),
-        bw,
-        bh,
-        sx,
-        sy,
-        prio: kind === 'shield' ? 3 : tier,
-        rot,
-        shift: kind !== 'shield' && rot === 0,
-        step: bh + 4,
-      });
-    });
-    cands.sort((a, b) => a.prio - b.prio);
-    const placed: Box[] = [];
-    for (const c of cands) {
-      const tries = c.shift && c.prio <= 1 ? [0, -c.step, c.step, -2 * c.step, 2 * c.step] : [0];
-      let ok: { box: Box; dx: number; dy: number } | null = null;
-      // el ancla debe estar dentro de la zona útil; si no, el rótulo sale del viewport y se oculta
-      const anchorIn = c.sx >= safe.x0 && c.sx <= safe.x1 && c.sy >= safe.y0 && c.sy <= safe.y1;
-      if (anchorIn || !c.shift) {
-        for (const off of tries) {
-          let dx = 0;
-          let dy = off;
-          let box: Box = { x0: c.sx - c.bw / 2, y0: c.sy + dy - c.bh / 2, x1: c.sx + c.bw / 2, y1: c.sy + dy + c.bh / 2 };
-          if (c.shift) {
-            if (c.bw > safe.x1 - safe.x0 || c.bh > safe.y1 - safe.y0) break;
-            dx = Math.max(0, safe.x0 - box.x0) - Math.max(0, box.x1 - safe.x1);
-            const ddy = Math.max(0, safe.y0 - box.y0) - Math.max(0, box.y1 - safe.y1);
-            dy += ddy;
-            box = { x0: box.x0 + dx, y0: box.y0 + ddy, x1: box.x1 + dx, y1: box.y1 + ddy };
-          } else if (box.x0 < safe.x0 || box.y0 < safe.y0 || box.x1 > safe.x1 || box.y1 > safe.y1) continue;
-          let hit = false;
-          for (const o of obstacles) if (overlaps(box, o.box)) { hit = true; break; }
-          if (!hit) for (const u of ui) if (overlaps(box, u, 0)) { hit = true; break; }
-          if (!hit) for (const p of placed) if (overlaps(box, p)) { hit = true; break; }
-          if (!hit) {
-            ok = { box, dx, dy };
-            break;
-          }
-        }
-      }
-      setHidden(c.el, ok === null);
-      if (ok) {
-        placed.push(ok.box);
-        if (c.text && c.shift) {
-          const nx = String(Math.round(ok.dx));
-          const ny = String(Math.round(ok.dy));
-          if (c.text.getAttribute('x') !== nx) c.text.setAttribute('x', nx);
-          if (c.text.getAttribute('y') !== ny) c.text.setAttribute('y', ny);
-        }
-      }
-    }
-  }, []);
-  const scheduleLabels = useCallback(() => {
-    clearTimeout(lblTimer.current);
-    lblTimer.current = window.setTimeout(runLabels, 80);
-  }, [runLabels]);
-
   /** Escribe la transformación en el DOM y, solo si cambia el nivel/rect, avisa a React. */
   const apply = useCallback(() => {
     const g = worldRef.current;
@@ -616,20 +357,21 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
     g.setAttribute('transform', `translate(${x} ${y}) scale(${s})`);
     svg.style.setProperty('--k', String(1 / s));
     const rel = s / fit.current;
-    const lod = rel < 1.7 ? '0' : rel < 3.4 ? '1' : '2';
-    if (svg.dataset.lod !== lod) svg.dataset.lod = lod;
     placeBg();
-    scheduleLabels();
 
     const level = Math.floor(Math.log2(Math.max(rel, 0.01)) * 2);
     const { w, h } = size.current;
     const vr: Rect = { x0: -x / s, y0: -y / s, x1: (w - x) / s, y1: (h - y) / s };
-    if (basePaths.current) {
+    const store = tileStore.current;
+    if (store) {
       const st = bgState.current;
-      const lodN = Number(lod);
       if (!st) flushBg();
-      else if (vr.x0 < st.x0 || vr.y0 < st.y0 || vr.x1 > st.x1 || vr.y1 > st.y1 || st.lod !== lodN) flushBg();
-      else if (Math.abs(s / st.s - 1) > 0.04) settleBg();
+      else if (vr.x0 < st.x0 || vr.y0 < st.y0 || vr.x1 > st.x1 || vr.y1 > st.y1) flushBg();
+      else if (Math.abs(s / st.s - 1) > 0.04) {
+        // otro nivel de teselas o escala muy distinta: se repinta al parar el gesto
+        const bw = (st.x1 - st.x0) * s;
+        if (store.levelFor(s * bitmapDpr(bw, (st.y1 - st.y0) * s)) !== st.z || Math.abs(s / st.s - 1) > 0.25) settleBg();
+      }
     }
     const v = viewRef.current;
     const inside = v && v.level === level && vr.x0 >= v.rect.x0 && vr.y0 >= v.rect.y0 && vr.x1 <= v.rect.x1 && vr.y1 <= v.rect.y1;
@@ -640,41 +382,26 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
       viewRef.current = nv;
       setView(nv);
     }
-  }, [placeBg, scheduleLabels, flushBg, settleBg]);
+  }, [placeBg, flushBg, settleBg]);
 
+  // Al llegar el manifiesto se crea la caché de teselas; cada tesela cargada repinta el bitmap.
   useEffect(() => {
-    basePaths.current = base ? buildBasePaths(base) : null;
+    if (!manifest) return;
+    const store = new TileStore(manifest, () => {
+      clearTimeout(bgTimer.current);
+      bgTimer.current = window.setTimeout(flushBg, 40);
+    });
+    tileStore.current = store;
     bgState.current = null;
-    if (base) flushBg();
-  }, [base, flushBg]);
-  useEffect(() => {
-    detailPaths.current = detail ? buildDetailPaths(detail) : null;
-    if (detail) flushBg();
-  }, [detail, flushBg]);
-  // La interfaz flotante cambia sin que el mapa se mueva (sheets, panel del editor, filtros): se recalculan las zonas seguras de los rótulos.
-  useEffect(() => {
-    let late = 0;
-    // un segundo repaso tras ~0,5 s cubre sheets y paneles que terminan de animarse después del cambio de DOM
-    const onUi = (): void => {
-      scheduleLabels();
-      clearTimeout(late);
-      late = window.setTimeout(scheduleLabels, 500);
-    };
-    const mo = new MutationObserver(onUi);
-    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'aria-expanded'] });
-    document.addEventListener('transitionend', scheduleLabels, true);
-    document.addEventListener('animationend', scheduleLabels, true);
+    store.preloadCoarse();
+    flushBg();
     return () => {
-      mo.disconnect();
-      clearTimeout(late);
-      document.removeEventListener('transitionend', scheduleLabels, true);
-      document.removeEventListener('animationend', scheduleLabels, true);
+      tileStore.current = null;
     };
-  }, [scheduleLabels]);
+  }, [manifest, flushBg]);
   useEffect(
     () => () => {
       clearTimeout(bgTimer.current);
-      clearTimeout(lblTimer.current);
       cancelAnimationFrame(bgRaf.current);
     },
     [],
@@ -842,7 +569,6 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
       const t = fitTransform();
       fit.current = t.s;
       setFitState(t.s);
-      svgRef.current?.style.setProperty('--lf', size.current.w < 768 ? '0.82' : '1');
       if (!touched.current) cur.current = t;
       else clampT(cur.current);
       viewRef.current = null;
@@ -1021,10 +747,6 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
 
   // ---- Render de pines/clusters --------------------------------------------------------------------------------------------
   const items = useMemo(() => (view ? buildItems(pins, view, selectedId, fitState) : []), [pins, view, selectedId, fitState]);
-  itemsRef.current = items;
-  useEffect(() => {
-    scheduleLabels();
-  }, [items, base, scheduleLabels]);
 
   const zoomIntoCluster = (x: number, y: number) => {
     const c = cur.current;
@@ -1045,7 +767,6 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
         ref={svgRef}
         role="application"
         aria-label={ariaLabel}
-        data-lod="0"
         data-capture={captureClicks ? '1' : undefined}
         className="absolute inset-0 h-full w-full cursor-grab touch-none active:cursor-grabbing"
         onPointerDown={onPointerDown}
@@ -1063,7 +784,7 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
       >
         <style>{CSS}</style>
         <g ref={worldRef}>
-          <LabelsLayer shields={base?.shields ?? null} />
+          
           {refOverlay && <RefOverlay data={refOverlay} />}
           {tracer && <TracerOverlay tracer={tracer} />}
           {crosshair && (
@@ -1122,6 +843,11 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
           })}
         </g>
       </svg>
+      {manifest && (
+        <p className="pointer-events-none absolute bottom-[calc(96px+var(--safe-bottom))] left-3 z-10 max-w-[55%] rounded-md bg-black/45 px-2 py-0.5 text-[9px] leading-tight text-vice-text/75 md:bottom-3">
+          {manifest.attribution}
+        </p>
+      )}
     </div>
   );
 }

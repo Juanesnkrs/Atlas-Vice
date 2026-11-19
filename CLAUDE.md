@@ -22,7 +22,7 @@ Los documentos `AtlasVice-v2.md`, `AtlasViceArquitecturaDatosSQL.md`, `AtlasVice
 - PROHIBIDO instalar librerías de UI externas (Material UI, Chakra, Shadcn completo, Bootstrap, `lucide-react`, `react-router`). Todos los componentes se construyen en Tailwind sobre los tokens Vice NUI e iconos SVG inline.
 - PROHIBIDO crear carpetas o archivos fuera del árbol aprobado (`docs/LeonidApp-UI-NUI-DesignSpec.md` §6 + carpetas válidas listadas abajo).
 - PROHIBIDO inventar campos o colecciones no aprobados: todo modelo Mongoose debe tener su schema Zod equivalente y reflejar exactamente las colecciones de `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`.
-- PROHIBIDO copiar, traducir literalmente o parafrasear textos de wikis o sitios de terceros (ej. GTABase), así como alojar imágenes con prefijos de terceros en `public/assets/` (`complexmusic_*`, `rockstargames_*`, `theofficialselfridges_*`). Todo contenido editorial debe ser 100 % original en español neutro para cumplimiento de copyright y AdSense.
+- PROHIBIDO copiar, traducir literalmente o parafrasear textos de wikis o sitios de terceros (ej. GTABase), así como alojar imágenes con prefijos de terceros en `public/assets/` (`complexmusic_*`, `rockstargames_*`, `theofficialselfridges_*`). Todo contenido editorial debe ser 100 % original en español neutro para cumplimiento de copyright y AdSense. **Excepción autorizada por el propietario del proyecto (mapa):** la base cartográfica de `/mapa` es el mapa comunitario de Leonida (`public/ref Leonida map/The final version of Commnunity map.jpeg`) recoloreado a la paleta Vice Sunset y publicado como pirámide de teselas en `public/map-tiles/` (obra derivada, con crédito de atribución visible en el mapa). Es la única imagen de terceros permitida; el original en `public/ref Leonida map/` sigue ignorado por git y excluido de `dist/`.
 - PROHIBIDO añadir código nuevo a `supabase/`: está deprecado (ver sección 4).
 - PROHIBIDO avanzar de sprint o fase sin ejecutar `pnpm typecheck` y `pnpm build` sin errores (en `server/` también su propio `typecheck` y `build`).
 - PROHIBIDO guardar tokens de sesión en `localStorage`/`sessionStorage`: solo cookies `HttpOnly`.
@@ -96,7 +96,8 @@ También son válidos, fuera del árbol aprobado, y `04-qa-mobile` NO debe borra
 - `supabase/` (legado deprecado; no se borra, tampoco se amplía).
 - `android/` e `ios/` (proyectos nativos generados por Capacitor).
 - `src/data/seed.ts` (datos semilla de ejemplo y capa de acceso offline-first).
-- `public/map-data/` (geometría vectorial del mapa en JSON estático, `base-terrain.json` y `detail-layers.json`, cargada bajo demanda por `/mapa`; fuera del bundle JS).
+- `public/map-tiles/` (pirámide de teselas WebP del mapa recoloreado + `manifest.json`, cargada bajo demanda por `/mapa`; fuera del bundle JS).
+- `public/ref Leonida map/` (referencias locales del mapa: ignoradas por git y eliminadas de `dist/` en el build; solo sirven de calca en el Modo Editor y de fuente para generar las teselas).
 - `supabase/03_seed_data.sql` (datos de ejemplo generados desde `seed.ts`, mismos UUIDs; legado).
 
 ## Subagentes (`.claude/agents/`)

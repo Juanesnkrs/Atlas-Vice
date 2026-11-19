@@ -135,6 +135,8 @@ Mongoose: `monetization: { type: Schema.Types.Mixed, default: { ads_enabled: fal
 | `media_url` | String \| null | `.nullable().optional()` | |
 | `created_at` | Date | — | |
 
+**Δ Marco de coordenadas de `coord`:** el lienzo 0–1000 × 0–700 coincide con la pirámide de teselas recoloreadas de `public/map-tiles/` (`manifest.json` → `world`; ver DesignSpec §6.4). Los 10 `MapMarker` base están calibrados sobre esas teselas y cualquier alta o movimiento (Modo Editor) usa ese mismo marco. No hay cambios de esquema.
+
 El DTO aplana `coord` a `coord_x` / `coord_y` y expone `slug` (`null` si no existe). `GET /api/markers` admite `?region=` y `?bbox=x1,y1,x2,y2` (consulta `$geoWithin: { $box }` sobre `coord`) y responde con `ETag` y `Cache-Control: public, max-age=60, must-revalidate`.
 
 ### 2.6 `UserProgress` — `models/UserProgress.ts`

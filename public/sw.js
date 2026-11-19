@@ -3,9 +3,9 @@
  *   guardada solo si no hay conexion. Evita pantallas en blanco tras un despliegue nuevo.
  * - /api/*: Network-First y NUNCA se cachea (sin respuestas obsoletas); sin red responde 503.
  * - Assets estaticos (/assets/*, iconos y manifest): Cache-First (sus nombres llevan hash).
- * - Geometria del mapa (/map-data/*.json): stale-while-revalidate (sirve la copia y refresca en segundo plano).
+ * - Teselas del mapa (/map-tiles/*): stale-while-revalidate (sirve la copia y refresca en segundo plano).
  */
-const CACHE = 'leonidapp-static-v3';
+const CACHE = 'leonidapp-static-v4';
 const SHELL = ['/', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png'];
 const STATIC_PATHS = new Set(['/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png']);
 
@@ -59,8 +59,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Geometria del mapa: stale-while-revalidate (sin hash en el nombre, pero casi inmutable).
-  if (url.pathname.startsWith('/map-data/')) {
+  // Teselas del mapa: stale-while-revalidate (sin hash en el nombre, pero casi inmutables).
+  if (url.pathname.startsWith('/map-tiles/')) {
     event.respondWith(
       caches.open(CACHE).then((c) =>
         c.match(req).then((hit) => {
