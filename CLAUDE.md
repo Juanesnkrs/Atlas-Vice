@@ -5,7 +5,7 @@
 - Nombre de producto: **LeonidApp**.
 - Application ID (Capacitor, iOS/Android): `com.leonidapp.companion`.
 - Esquema de deep links: `leonidapp://`.
-- El nombre "ATLAS VICE" sigue vigente solo como wordmark visual heredado (sección 3) y en los nombres de los documentos legados `AtlasVice*.md` dentro de `/docs/`.
+- El nombre "ATLAS VICE" sigue vigente solo como wordmark visual heredado (sección 3) y en los nombres de los documentos legados `AtlasVice*.md`, archivados en `docs/legado/`.
 
 ## 1. Fuente de Verdad Única (`/docs/`)
 
@@ -15,7 +15,7 @@ Toda decisión de arquitectura, esquemas, rutas, SEO, monetización y diseño es
 - `docs/LeonidApp-Rutas-SEO-Monetizacion.md` — rutas limpias con History API, SSR-lite (meta + JSON-LD `HowTo`/`Article`/`SearchAction`) en Fastify, `sitemap.xml`, enlazado cruzado, comparador NUI y reglas de `<AdSlot/>` + consentimiento.
 - `docs/LeonidApp-UI-NUI-DesignSpec.md` — tokens Vice Sunset NUI, fidelidad a `docs/referencias-ui/design/` (`Mobile.dc.html`, `MobileHero.dc.html`, `Inspector.dc.html`, `Forum.dc.html`), Rediseño v2 (§7), `<RockstarFooter/>` y árbol exacto de carpetas (§6).
 
-Los documentos `AtlasVice-v2.md`, `AtlasViceArquitecturaDatosSQL.md`, `AtlasViceNavegacionWireframesNUI.md` y la carpeta `docs/legado/` son **[LEGADO HISTÓRICO - NO USAR]**: solo referencia histórica. Si este archivo y un documento `LeonidApp-*.md` difieren, manda el documento `LeonidApp-*.md` y este archivo debe corregirse.
+Los documentos `AtlasVice-v2.md`, `AtlasViceArquitecturaDatosSQL.md`, `AtlasViceNavegacionWireframesNUI.md` (archivados en `docs/legado/`) y el resto de la carpeta `docs/legado/` son **[LEGADO HISTÓRICO - NO USAR]**: solo referencia histórica. Si este archivo y un documento `LeonidApp-*.md` difieren, manda el documento `LeonidApp-*.md` y este archivo debe corregirse.
 
 ## 2. Reglas Prohibidas (Zero Bloat y Cumplimiento Editorial)
 
