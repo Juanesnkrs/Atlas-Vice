@@ -21,6 +21,8 @@ import { HttpError } from './services/validate.js';
 const allowedOrigins = new Set([
   env.CLIENT_ORIGIN,
   env.PUBLIC_SITE_URL,
+  // `vite preview` (PWA compilada) en local: evita errores CORS con VITE_API_URL absoluto.
+  ...(isProd ? [] : ['http://localhost:4173', 'http://127.0.0.1:4173']),
   'capacitor://localhost',
   'ionic://localhost',
   'http://localhost',
