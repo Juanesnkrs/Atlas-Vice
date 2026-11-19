@@ -7,3 +7,4 @@ graphify-out/
 
 # Datos crudos de terceros (extracción previa; no versionar)
 server/data/raw/
+server/data/gtabase-*.json
