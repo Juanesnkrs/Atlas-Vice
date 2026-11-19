@@ -336,7 +336,7 @@ function ForumSection({ authenticated }: { authenticated: boolean }) {
         </a>
       </div>
       {threads.length === 0 ? (
-        <p className="glass rounded-2xl p-5 text-sm">Aún no hay hilos. Sé el primero en abrir uno.</p>
+        <p className="glass rounded-2xl p-5 text-sm">Aún no hay hilos. Sé la primera persona en abrir uno.</p>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
           {threads.map((t) => (

@@ -481,14 +481,12 @@ async function fetchWorld(): Promise<WorldData> {
     // no-cache: revalida con el ETag del servidor, así las altas del editor se ven al instante.
     apiFetch<MapMarker[]>('/api/markers', { cache: 'no-cache' }),
   ]);
-  if (entities.length === 0 && markers.length === 0) return SEED_WORLD;
   return { modules, entities, markers, source: 'api' };
 }
 
 async function fetchForum(): Promise<ForumData> {
   if (!isApiConfigured) return SEED_FORUM;
   const f = await apiFetch<ForumApiResponse>('/api/forum');
-  if (f.threads.length === 0) return SEED_FORUM;
   if (f.preview) {
     return {
       source: 'api',

@@ -87,7 +87,7 @@ const BBOX_CX = (ISLAND_BBOX.x0 + ISLAND_BBOX.x1) / 2;
 const BBOX_CY = (ISLAND_BBOX.y0 + ISLAND_BBOX.y1) / 2;
 /** DPR máximo del bitmap: más bajo en táctil para evitar picos de rasterización. */
 const DPR_MAX_DESKTOP = 2;
-const DPR_MAX_TOUCH = 1.75;
+const DPR_MAX_TOUCH = 2.5;
 /** Margen de sobre-dibujo del bitmap (fracción del viewport por lado). */
 const BG_MARGIN_DESKTOP = 0.22;
 const BG_MARGIN_TOUCH = 0.15;
@@ -176,7 +176,7 @@ const CSS = `
 .lm-region{font-size:14px;letter-spacing:2.4px}
 .lm-county{font-size:11px;letter-spacing:2.2px;font-style:italic;font-weight:600;fill:#E8C9A0}
 .lm-city{font-size:11.5px;letter-spacing:.8px;fill:#FFE9D6}
-.lm-water{font-size:11px;letter-spacing:2.4px;font-style:italic;font-weight:600;fill:#B9C7F5}
+.lm-water{font-size:11px;letter-spacing:2.4px;font-style:italic;font-weight:700;fill:#D6E0FF}
 .lm-land{font-size:10.5px;letter-spacing:.8px;font-style:italic;font-weight:600;fill:#D8E9B0}
 .lm-poi{font-size:10.5px;letter-spacing:.5px;font-weight:600;fill:#E3D2FA}
 [data-h="1"]{visibility:hidden}

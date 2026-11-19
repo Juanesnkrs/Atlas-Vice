@@ -506,7 +506,9 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
   );
 
   const notice = error
-    ? 'No se pudo conectar con el servidor: se muestran datos de ejemplo.'
+    ? data.source === 'seed'
+      ? 'No se pudo conectar con el servidor: se muestran datos de ejemplo.'
+      : 'No se pudo actualizar desde el servidor.'
     : data.source === 'seed'
       ? SAMPLE_NOTICE
       : null;

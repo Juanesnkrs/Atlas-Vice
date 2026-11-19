@@ -963,7 +963,9 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
   );
 
   const notice = error
-    ? 'No se pudo conectar con el servidor: se muestran datos de ejemplo.'
+    ? data.source === 'seed'
+      ? 'No se pudo conectar con el servidor: se muestran datos de ejemplo.'
+      : 'No se pudo actualizar desde el servidor.'
     : data.source === 'seed'
       ? SAMPLE_NOTICE
       : null;
@@ -1157,20 +1159,20 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           <button type="button" aria-label="Alejar" onClick={() => canvas.current?.zoomBy(1 / 1.6)} className={ZOOM_BTN}>
             −
           </button>
+          <button type="button" aria-label="Restablecer vista" onClick={() => canvas.current?.reset()} className={ZOOM_BTN}>
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M4 12a8 8 0 108-8H8M8 4L4.5 7.5 8 11" />
+            </svg>
+          </button>
           <button type="button" aria-label="Información de la base cartográfica" aria-expanded={infoOpen} onClick={() => setInfoOpen((v) => !v)} className={ZOOM_BTN}>
             <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="12" cy="12" r="9" />
               <path d="M12 11v5M12 8h.01" strokeLinecap="round" />
             </svg>
           </button>
-          <button type="button" aria-label="Restablecer vista" onClick={() => canvas.current?.reset()} className={ZOOM_BTN}>
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M4 12a8 8 0 108-8H8M8 4L4.5 7.5 8 11" />
-            </svg>
-          </button>
         </div>
         {infoOpen && (
-          <p role="status" className="glass absolute right-14 top-0 z-20 w-56 rounded-xl p-3 text-xs leading-snug">
+          <p role="status" className="glass absolute right-14 top-[8.25rem] z-20 w-56 rounded-xl p-3 text-xs leading-snug">
             Base cartográfica: GTA VI Community Map (Yanis, v18), recoloreada.
           </p>
         )}
@@ -1194,7 +1196,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
             Modo editor
           </button>
         )}
-        <p role="status" className="glass hidden rounded-full px-3 py-1 text-xs md:block">
+        <p role="status" className="glass hidden whitespace-nowrap rounded-full px-3 py-1 text-xs md:absolute md:right-full md:top-0 md:mr-2 md:block">
           {doneCount}/{data.markers.length} completados
         </p>
       </div>
@@ -1209,7 +1211,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       {selected && isDesktop && (
         <aside
           aria-label="Ficha de marcador"
-          className="glass absolute bottom-3 right-3 top-[13rem] z-10 w-[340px] overflow-y-auto rounded-2xl p-4 max-md:hidden"
+          className="glass absolute bottom-3 right-3 top-[15rem] z-10 w-[340px] overflow-y-auto rounded-2xl p-4 max-md:hidden"
         >
           {card}
         </aside>

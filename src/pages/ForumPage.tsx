@@ -468,7 +468,11 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
 
           <div className="min-h-0 flex-1 overflow-y-auto px-0 pb-24 md:px-2.5 md:pb-2.5">
             {threads.length === 0 ? (
-              <p className="glass rounded-xl p-4 text-vice-text/80">No hay hilos con estos filtros.</p>
+              <p className="glass rounded-xl p-4 text-vice-text/80">
+                {forum.threads.length === 0 && forum.source === 'api'
+                  ? 'Aún no hay hilos. Sé la primera persona en abrir uno.'
+                  : 'No hay hilos con estos filtros.'}
+              </p>
             ) : (
               <ul className="flex flex-col gap-2.5 md:gap-1.5">
                 {threads.map((t) => {
