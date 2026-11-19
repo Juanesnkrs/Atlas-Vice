@@ -6,7 +6,7 @@
  * - Manifiesto de teselas (/map-tiles/manifest.json): siempre red (una copia vieja desencaja la piramide).
  * - Teselas del mapa (/map-tiles/*?v=N): stale-while-revalidate; la version del manifiesto va en la URL.
  */
-const CACHE = 'leonidapp-static-v6';
+const CACHE = 'leonidapp-static-v7';
 const SHELL = ['/', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png'];
 const STATIC_PATHS = new Set(['/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png']);
 
@@ -19,9 +19,31 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then(purgeStaleTiles)
       .then(() => self.clients.claim()),
   );
 });
+
+// Las teselas llevan ?v=<manifest.v>: al activarse (y en cada arranque del SW) se descartan las de otra version,
+// de modo que cambiar "v" en public/map-tiles/manifest.json invalida las teselas antiguas sin tocar el nombre de la cache.
+function purgeStaleTiles() {
+  return fetch('/map-tiles/manifest.json', { cache: 'no-store' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((m) => {
+      if (!m || m.v === undefined) return undefined;
+      return caches.open(CACHE).then((c) =>
+        c.keys().then((reqs) =>
+          Promise.all(
+            reqs.map((rq) => {
+              const u = new URL(rq.url);
+              return u.pathname.startsWith('/map-tiles/') && u.pathname !== '/map-tiles/manifest.json' && u.searchParams.get('v') !== String(m.v) ? c.delete(rq) : undefined;
+            }),
+          ),
+        ),
+      );
+    })
+    .catch(() => undefined);
+}
 
 const offlineApi = () =>
   new Response(JSON.stringify({ error: 'Sin conexion' }), {
