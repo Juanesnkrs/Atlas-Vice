@@ -103,12 +103,10 @@ function AportesTab() {
       setMsg({ ok: false, text: 'Indica un título (3+) y una descripción (10+ caracteres).' });
       return;
     }
-    const payload: Record<string, unknown> = { descripcion };
     const media = get('media_url');
-    if (media) {
-      if (!/^https?:\/\//i.test(media)) return setMsg({ ok: false, text: 'La imagen debe ser una URL http(s).' });
-      payload.media_url = media;
-    }
+    if (media && !/^https?:\/\//i.test(media)) return setMsg({ ok: false, text: 'La imagen debe ser una URL http(s).' });
+    // El payload debe cumplir los esquemas de promoción del servidor (marker, entity o correction).
+    let payload: Record<string, unknown>;
     let coords: { x: number; y: number } | null = null;
     if (tipo === 'marker') {
       const x = Number(get('coord_x'));
@@ -116,13 +114,25 @@ function AportesTab() {
       if (!get('region') || !Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 1000 || y < 0 || y > 700) {
         return setMsg({ ok: false, text: 'Indica región y coordenadas válidas (X 0-1000, Y 0-700).' });
       }
-      payload.region = get('region');
+      payload = { titulo: title, region: get('region'), descripcion, ...(media ? { media_url: media } : {}) };
       coords = { x, y };
     } else if (tipo === 'entity') {
       if (!get('categoria')) return setMsg({ ok: false, text: 'Indica una categoría.' });
-      payload.categoria = get('categoria');
+      payload = {
+        titulo: title,
+        categoria: get('categoria'),
+        metadata_json: { descripcion },
+        ...(media ? { imagen_url: media } : {}),
+      };
     } else {
-      payload.objetivo = get('objetivo');
+      const [kind, id] = get('objetivo').split(':');
+      if (!id) return setMsg({ ok: false, text: 'Elige el dato a corregir.' });
+      if (kind === 'entity') {
+        if (descripcion.length > 240) return setMsg({ ok: false, text: 'La corrección de una ficha admite hasta 240 caracteres.' });
+        payload = { target: 'Entity', id, patch: { subtitulo: descripcion, ...(media ? { imagen_url: media } : {}) } };
+      } else {
+        payload = { target: 'MapMarker', id, patch: { descripcion, ...(media ? { media_url: media } : {}) } };
+      }
     }
     try {
       await send.mutateAsync({ moduleSlug: get('moduleSlug') || 'mapa', type: tipo, title, payload, coords });
@@ -759,8 +769,9 @@ function ModulesPanel() {
     .sort((a, b) => a.orden - b.orden);
 
   const toggle = useMutation({
-    mutationFn: (v: { id: string; activo: boolean }) =>
-      apiFetch(`/api/modules/${v.id}`, { method: 'PATCH', json: { activo: v.activo } }),
+    // `orden` viaja siempre: el esquema parcial del servidor aplica su default (0) y reordenaría el módulo.
+    mutationFn: (v: { id: string; activo: boolean; orden: number }) =>
+      apiFetch(`/api/modules/${v.id}`, { method: 'PATCH', json: { activo: v.activo, orden: v.orden } }),
     onSuccess: (_d, v) => {
       setMsg({ ok: true, text: v.activo ? 'Módulo activado.' : 'Módulo desactivado: desaparece de la navegación.' });
       void qc.invalidateQueries({ queryKey: ['config'] });
@@ -784,7 +795,7 @@ function ModulesPanel() {
                 role="switch"
                 checked={m.isActive}
                 disabled={toggle.isPending || !isApiConfigured}
-                onChange={(e) => toggle.mutate({ id: m.id, activo: e.target.checked })}
+                onChange={(e) => toggle.mutate({ id: m.id, activo: e.target.checked, orden: m.orden })}
                 className="h-5 w-5 accent-[#E1307E]"
               />
               <span>

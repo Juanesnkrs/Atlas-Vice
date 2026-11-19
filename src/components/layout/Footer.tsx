@@ -600,7 +600,7 @@ function CookieSettings({ t, onDone }: { t: Dict; onDone: () => void }) {
 /* ------------------------------------------------------------------ */
 
 const LINK =
-  'inline-flex min-h-[44px] items-center text-sm text-white underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold md:min-h-[32px]';
+  'inline-flex min-h-[44px] min-w-[44px] items-center text-sm text-white underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold md:min-h-[32px]';
 
 function FooterBody({
   lang,

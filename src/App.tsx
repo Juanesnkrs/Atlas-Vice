@@ -17,24 +17,31 @@
 //   /aportes                         Redirige a /aportar
 // La guarda de UI es cosmética: el servidor decide (RBAC en hooks Fastify).
 // =============================================================================
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, type ReactNode } from 'react';
 import { BottomDock, DOCK_ITEMS } from './components/layout/BottomDock';
 import { ViceShell } from './components/layout/ViceShell';
 import { PalmButton } from './components/ui/PalmButton';
 import { useModuleGate, useProgressSummary } from './data/seed';
-import AdminSubmitPage from './pages/AdminSubmitPage';
-import CatalogPage from './pages/CatalogPage';
-import DashboardPage from './pages/DashboardPage';
-import ForumPage from './pages/ForumPage';
-import GuidesPage from './pages/GuidesPage';
 import HomePage from './pages/HomePage';
-import LandingAuthPage from './pages/LandingAuthPage';
-import MapPage from './pages/MapPage';
-import NewsPage from './pages/NewsPage';
 import { isApiConfigured, useAuthStore } from './store/useAuthStore';
 import { installRouter, matchRoute, navigate, useLocation, usePageMeta, type PageMeta } from './store/useRouteStore';
 
 installRouter();
+
+// Code-splitting por ruta: solo la portada (HomePage) va en el bundle inicial.
+const AdminSubmitPage = lazy(() => import('./pages/AdminSubmitPage'));
+const CatalogPage = lazy(() => import('./pages/CatalogPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const ForumPage = lazy(() => import('./pages/ForumPage'));
+const GuidesPage = lazy(() => import('./pages/GuidesPage'));
+const LandingAuthPage = lazy(() => import('./pages/LandingAuthPage'));
+const MapPage = lazy(() => import('./pages/MapPage'));
+const NewsPage = lazy(() => import('./pages/NewsPage'));
+
+/** Fallback de carga: bloque de altura fija y sin contenido (no reflota) para no provocar saltos (CLS = 0). */
+function PageFallback() {
+  return <div className="min-h-[100dvh] w-full" role="status" aria-label="Cargando" aria-busy="true" />;
+}
 
 type RouteId =
   | 'landing'
@@ -258,7 +265,13 @@ export default function App() {
   }, [route]);
 
   if (route === 'legacyContribute') return null;
-  if (route === 'login') return <LandingAuthPage next={params.get('next')} />;
+  if (route === 'login') {
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <LandingAuthPage next={params.get('next')} />
+      </Suspense>
+    );
+  }
 
   const modulo = match?.params.modulo ?? '';
   const slug = match?.params.slug ?? '';
@@ -337,7 +350,7 @@ export default function App() {
       headerEnd={<HeaderEnd />}
       dock={<BottomDock activeId={activeId} items={dock} />}
     >
-      {page}
+      <Suspense fallback={<PageFallback />}>{page}</Suspense>
     </ViceShell>
   );
 }

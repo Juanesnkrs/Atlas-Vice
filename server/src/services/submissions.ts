@@ -33,7 +33,8 @@ export const slugify = (input: string): string =>
     .replace(/^-+|-+$/g, '')
     .slice(0, 110);
 
-const NO_TXN = /replica set|Transaction numbers|transactions? (are|is) not supported/i;
+const NO_TXN =
+  /replica set|Transaction numbers|transactions? (are|is) not supported|does not support retryable writes/i;
 
 /** Transaccion Mongo; si el servidor es standalone (dev) degrada a escritura sin sesion. */
 async function runAtomic<T>(fn: (session: ClientSession | null) => Promise<T>): Promise<T> {

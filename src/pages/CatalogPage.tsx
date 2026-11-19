@@ -244,12 +244,14 @@ function DetailPanel({ entity, tab, done, onToggle, markers, doneMarkers, thread
                 <dd className="font-semibold">{fmtMeta(k, v)}</dd>
               </div>
             ))}
-          <div className="contents">
-            <dt className="text-vice-text/70">Puntos en el mapa</dt>
-            <dd className="font-semibold">
-              {doneMarkers}/{markers.length}
-            </dd>
-          </div>
+          {markers.length > 0 && (
+            <div className="contents">
+              <dt className="text-vice-text/70">Puntos en el mapa</dt>
+              <dd className="font-semibold">
+                {doneMarkers}/{markers.length}
+              </dd>
+            </div>
+          )}
         </dl>
 
         {threads.length > 0 && (

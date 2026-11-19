@@ -14,8 +14,17 @@ const MAX_ITEMS_PER_SOURCE = 30;
 
 export const officialNewsSchema = z.object({
   title: z.string().trim().min(3).max(300),
-  summary: z.string().trim().max(500).default(''),
-  sourceUrl: z.string().url().refine(isAllowedUrl, 'host fuera de la lista blanca'),
+  summary: z.string().trim().min(1, 'resumen oficial obligatorio').max(500),
+  sourceUrl: z
+    .string()
+    .url()
+    .refine(isAllowedUrl, 'host fuera de la lista blanca')
+    .transform((u) => {
+      const c = new URL(u);
+      c.hash = '';
+      c.search = '';
+      return c.toString();
+    }),
   source: z.enum(['rockstar-newswire', 'rockstar-youtube', 'take-two-ir']),
   imageUrl: z.string().url().optional(),
   publishedAt: z.date(),

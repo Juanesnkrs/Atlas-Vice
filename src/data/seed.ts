@@ -473,10 +473,14 @@ export const SEED_FORUM: ForumData = {
   source: 'seed',
 };
 
+/** Estado inicial con API: vacío, para no parpadear con el seed inventado mientras llega la respuesta. */
+const EMPTY_WORLD: WorldData = { modules: [], entities: [], markers: [], source: 'api' };
+const EMPTY_FORUM: ForumData = { threads: [], posts: [], profiles: [], source: 'api' };
+
 async function fetchWorld(): Promise<WorldData> {
   if (!isApiConfigured) return SEED_WORLD;
   const [modules, entities, markers] = await Promise.all([
-    apiFetch<Module[]>('/api/modules'),
+    apiFetch<Module[]>('/api/modules', { cache: 'no-cache' }),
     apiFetch<Entity[]>('/api/entities'),
     // no-cache: revalida con el ETag del servidor, así las altas del editor se ven al instante.
     apiFetch<MapMarker[]>('/api/markers', { cache: 'no-cache' }),
@@ -512,10 +516,12 @@ export function useWorldData(): DataResult<WorldData> {
     queryKey: ['world'],
     queryFn: fetchWorld,
     enabled: isApiConfigured,
-    initialData: SEED_WORLD,
+    initialData: isApiConfigured ? EMPTY_WORLD : SEED_WORLD,
     initialDataUpdatedAt: 0,
   });
-  return { data: q.data, loading: q.isFetching, error: q.error ? q.error.message : null };
+  // Con error y sin ninguna respuesta válida previa, se degrada al seed (el aviso va en `error`).
+  const data = q.isError && q.dataUpdatedAt === 0 ? SEED_WORLD : q.data;
+  return { data, loading: q.isFetching, error: q.error ? q.error.message : null };
 }
 
 export function useForumData(): DataResult<ForumData> & { isPreview: boolean } {
@@ -525,7 +531,7 @@ export function useForumData(): DataResult<ForumData> & { isPreview: boolean } {
     queryKey: ['forum'],
     queryFn: fetchForum,
     enabled: isApiConfigured,
-    initialData: SEED_FORUM,
+    initialData: isApiConfigured ? EMPTY_FORUM : SEED_FORUM,
     initialDataUpdatedAt: 0,
     refetchInterval: 20_000,
     refetchIntervalInBackground: false,
@@ -534,8 +540,9 @@ export function useForumData(): DataResult<ForumData> & { isPreview: boolean } {
   useEffect(() => {
     if (isApiConfigured) void qc.invalidateQueries({ queryKey: ['forum'] });
   }, [authenticated, qc]);
-  const isPreview = !authenticated || q.data.preview === true;
-  const data = useMemo(() => (isPreview ? toPreview(q.data) : q.data), [isPreview, q.data]);
+  const source = q.isError && q.dataUpdatedAt === 0 ? SEED_FORUM : q.data;
+  const isPreview = !authenticated || source.preview === true;
+  const data = useMemo(() => (isPreview ? toPreview(source) : source), [isPreview, source]);
   return { data, loading: q.isFetching, error: q.error ? q.error.message : null, isPreview };
 }
 
@@ -600,7 +607,7 @@ export function usePublicConfig(): PublicConfig {
     queryKey: ['config', 'public'],
     enabled: isApiConfigured,
     staleTime: 30_000,
-    queryFn: () => apiFetch<PublicConfig>('/api/config/public'),
+    queryFn: () => apiFetch<PublicConfig>('/api/config/public', { cache: 'no-cache' }),
   });
   return q.data ?? DEFAULT_PUBLIC_CONFIG;
 }
