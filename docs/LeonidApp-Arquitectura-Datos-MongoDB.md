@@ -70,7 +70,7 @@ Singleton con `key: 'global'` (unique). Lectura con `getGlobalConfig()` (upsert)
 Bloque **Δ** `monetization`:
 
 ```ts
-const AD_ROUTES = ['/catalogo/:modulo/:slug', '/guias', '/guias/:slug', '/noticias', '/noticias/:slug', '/foro'] as const;
+const AD_ROUTES = ['/catalogo/:categoria/:itemSlug', '/guias', '/guias/:slug', '/noticias', '/noticias/:slug', '/foro'] as const;
 const AD_POSITIONS = ['in-article', 'after-content', 'sidebar'] as const;
 
 export const monetizationSchema = z.object({
@@ -104,7 +104,7 @@ Mongoose: `monetization: { type: Schema.Types.Mixed, default: { ads_enabled: fal
 | `orden` | Number, default `0` | `z.number().int()` |
 | `created_at` | Date | — |
 
-`slug` es el segmento `:modulo` de `/catalogo/:modulo/:slug`. El módulo con `slug: 'guias'` aloja las guías (`/guias/:slug`).
+`slug` es el segmento `:modulo` de `/catalogo/:categoria/:itemSlug`. El módulo con `slug: 'guias'` aloja las guías (`/guias/:slug`).
 
 ### 2.4 `Entity` — `models/Entity.ts`
 

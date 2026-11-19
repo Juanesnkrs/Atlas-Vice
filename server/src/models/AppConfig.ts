@@ -2,7 +2,7 @@ import { model, Schema, type Model } from 'mongoose';
 import { z } from 'zod';
 
 export const AD_ROUTES = [
-  '/catalogo/:modulo/:slug',
+  '/catalogo/:categoria/:itemSlug',
   '/guias',
   '/guias/:slug',
   '/noticias',
@@ -21,7 +21,8 @@ export const monetizationSchema = z.object({
     .array(
       z.object({
         id: z.string().min(1).max(40),
-        route: z.enum(AD_ROUTES),
+        // Los valores guardados con el nombre anterior de la ruta se normalizan al leerlos.
+        route: z.preprocess((v) => (v === '/catalogo/:modulo/:slug' ? '/catalogo/:categoria/:itemSlug' : v), z.enum(AD_ROUTES)),
         position: z.enum(AD_POSITIONS),
         width: z.number().int().positive(), // reserva fija → CLS = 0
         height: z.number().int().positive(),

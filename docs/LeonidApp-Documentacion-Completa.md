@@ -374,7 +374,7 @@ Leyenda: ✅ implementado · 🟡 parcial · ⚠️ divergente · ❌ no impleme
 |---|---|---|---|---|
 | **RF-01** Acceso híbrido | El usuario explora sin cuenta (progreso en IndexedDB, nunca en `localStorage` ni con tokens en el cliente) o inicia sesión con **4 proveedores como máximo** (Google, Discord, Apple, Magic Link) por OAuth2 + PKCE y cookie HttpOnly, para sincronizar entre dispositivos | (a) Desde `/entrar`, "Continuar como invitado" lleva a `/hub` sin bloqueo; (b) hay 4 botones como máximo; (c) tras login el progreso local y el de la nube quedan fusionados; (d) ningún token en `localStorage`/`sessionStorage` | 🟡 | Invitado ✅ (`LandingAuthPage.tsx:288`), sin tokens en almacenamiento ✅ (`useAuthStore.ts:262-267`), fusión ✅ (`routes/progress.ts:12`). Brecha: tras login siempre se redirige a `/?auth=ok` y se pierde `?next` (`routes/auth.ts:46`); botones dependen de credenciales/SMTP no verificados (❓); regex rota en el diálogo de Magic Link (`LandingAuthPage.tsx:52`) |
 | **RF-02** Mapa interactivo | Mapa con zoom (rueda, pinch, botones), filtros por capas, búsqueda y marcado de puntos completados | (a) 7 capas conmutables con conteo; (b) búsqueda devuelve hasta 6 resultados; (c) tocar un pin abre ficha con "Marcar como completado" y el % global cambia; (d) `?marker=`, `?entity=`, `?region=` centran el mapa | 🟡 | Mecánica ✅ (`MapPage.tsx:262-404`). Brecha: **0 marcadores en BD**, no hay pines que probar; lienzo SVG vectorial, no mapa de alta resolución; capas/zoom no se reflejan en la URL |
-| **RF-03** Catálogo e Inspector | Rejilla de selección, barras de estadísticas, vista previa, filtro por categoría, comparador y ficha con URL propia | (a) pestañas por módulo activo; (b) `StatBar` por stat; (c) `?comparar=a,b,c` abre comparador; (d) `/catalogo/:modulo/:slug` indexable | ✅ | `CatalogPage.tsx:28-31,403-440`, `StatBar.tsx`. Menor: comparador en `BottomSheet` también en escritorio; coleccionables vacío; fidelidad visual a `Inspector.dc.html` ❓ |
+| **RF-03** Catálogo e Inspector | Rejilla de selección, barras de estadísticas, vista previa, filtro por categoría, comparador y ficha con URL propia | (a) pestañas por módulo activo; (b) `StatBar` por stat; (c) `?comparar=a,b,c` abre comparador; (d) `/catalogo/:categoria/:itemSlug` indexable | ✅ | `CatalogPage.tsx:28-31,403-440`, `StatBar.tsx`. Menor: comparador en `BottomSheet` también en escritorio; coleccionables vacío; fidelidad visual a `Inspector.dc.html` ❓ |
 | **RF-04** Tracker y retención | % global y por categoría, "Tip del día" rotativo, checklists y rutas sugeridas para incentivar el regreso | (a) anillo de % y barras en `/progreso`; (b) tip rotativo; (c) rutas con "Ir al siguiente punto"; (d) mecanismo de regreso diario | 🟡 | `DashboardPage.tsx:183-189`, `TipCard.tsx`. Brecha: sin racha ni notificaciones; checklists solo en guías; rutas vienen de `SEED_ROUTES` y con 0 marcadores quedan vacías (inferido); los 3 tips son de semilla |
 | **RF-05** Guías y aportes | Consultar guías paso a paso con checklist y enviar hallazgos (marcador, ficha, corrección) con estado `pending`/`approved`/`rejected` | (a) guía con barra "N/M pasos"; (b) el formulario valida y crea aporte `pending`; (c) "Mis aportes" lista estados | ✅ | `GuidesPage.tsx`, `AdminSubmitPage.tsx`, `routes/submissions.ts:14-58`. Brecha: 0 aportes reales; imagen solo por URL |
 | **RF-06** Módulos escalables | Activar/desactivar secciones por configuración sin tocar el núcleo | (a) alternar un módulo en el panel lo quita del dock y de las rutas; (b) la ruta de un módulo inactivo muestra "desactivado temporalmente" | ✅ | `routes/catalog.ts:114-164`, `App.tsx:286-297,457-478`. `radio` está inactivo |
@@ -711,7 +711,7 @@ Consecuencia: una "ficha de mapa" (lugar), una "guía" y un "arma" son el mismo 
 1. Crear el `Module` (`POST /api/modules`, rol ADMIN, o desde el panel de administración): `slug`, `nombre`, `icono`, `activo`, `orden`. ✅ (`routes/catalog.ts:50`)
 2. Crear las fichas: `POST /api/entities` (ADMIN), por aportes aprobados (`Submission` tipo `entity`, ver §13) o con el importador (`import:catalog`, ver §14). Basta con elegir `categoria` y las claves de `stats_json`/`metadata_json`. ✅
 3. El cliente muestra los módulos de `GET /api/config/public` (con `isActive`) y las fichas de `GET /api/entities`. ✅ (`routes/config.ts:40`, `routes/catalog.ts:76`)
-4. El sitemap (§17) incluye las entidades de módulos activos (`/catalogo/:modulo/:slug`; el módulo `guias` va en `/guias/:slug`). ✅ (`routes/seo.ts`)
+4. El sitemap (§17) incluye las entidades de módulos activos (`/catalogo/:categoria/:itemSlug`; el módulo `guias` va en `/guias/:slug`). ✅ (`routes/seo.ts`)
 
 No hay migraciones: Mongo no impone esquema y Mongoose solo valida los campos declarados.
 
@@ -2017,7 +2017,7 @@ No hay renderizado de React en servidor. El servidor Fastify lee una vez `dist/i
 | `/mapa`, `/catalogo`, `/guias`, `/noticias`, `/foro` | index | `CollectionPage` + `BreadcrumbList` |
 | `/noticias/:slug` | index (200) o 404 noindex | `NewsArticle` (`isBasedOn` = `sourceUrl`) + breadcrumb |
 | `/guias/:slug` | idem | `HowTo` con `HowToStep` si `metadata_json.steps` tiene pasos con título; si no, `Article`; + breadcrumb |
-| `/catalogo/:modulo/:slug` | idem | `CreativeWork` (`isPartOf` CollectionPage) + breadcrumb |
+| `/catalogo/:categoria/:itemSlug` | idem | `CreativeWork` (`isPartOf` CollectionPage) + breadcrumb |
 | `/hub`, `/progreso`, `/entrar`, `/aportar` | noindex,nofollow | — |
 | `/catalogo?comparar=…` | noindex | — |
 | Cualquier otra ruta | HTTP 404, noindex,nofollow | — |
@@ -2040,7 +2040,7 @@ El cliente actualiza `title` y canonical al navegar (`src/store/useRouteStore.ts
 
 ### 17.5 Sitemap
 
-`GET /sitemap.xml`: URLs estáticas (`/`, `/mapa`, `/catalogo`, `/guias`, `/noticias`, `/foro`), entidades de módulos activos (módulo `guias` → `/guias/:slug`; resto → `/catalogo/:modulo/:slug`) y noticias (`/noticias/:slug`). `lastmod`: entidades `created_at`; noticias `updatedAt`/`publishedAt`; estáticas = máximo de sus hijos; `/mapa` y `/foro` sin `lastmod`. Si hay más de 50 000 URLs devuelve `sitemapindex` con `/sitemap-N.xml`. Segmentos con `encodeURIComponent` y XML escapado; las consultas están envueltas en `safe()` (error de BD → lista vacía). `Cache-Control: public, max-age=3600`.
+`GET /sitemap.xml`: URLs estáticas (`/`, `/mapa`, `/catalogo`, `/guias`, `/noticias`, `/foro`), entidades de módulos activos (módulo `guias` → `/guias/:slug`; resto → `/catalogo/:categoria/:itemSlug`) y noticias (`/noticias/:slug`). `lastmod`: entidades `created_at`; noticias `updatedAt`/`publishedAt`; estáticas = máximo de sus hijos; `/mapa` y `/foro` sin `lastmod`. Si hay más de 50 000 URLs devuelve `sitemapindex` con `/sitemap-N.xml`. Segmentos con `encodeURIComponent` y XML escapado; las consultas están envueltas en `safe()` (error de BD → lista vacía). `Cache-Control: public, max-age=3600`.
 
 ### 17.6 robots.txt
 
@@ -2088,7 +2088,7 @@ Estado actual en BD: `ads_enabled:false`, `provider:'none'`, sin slots. Existe u
 | `/guias` | `after-content` |
 | `/guias/:slug` | `in-article` (tras el 2.º bloque, máx. 1), `after-content`, `sidebar` (solo ≥ 1280 px) |
 | `/noticias`, `/noticias/:slug` | `after-content` |
-| `/catalogo/:modulo/:slug` | `after-content` (nunca en el Inspector HUD) |
+| `/catalogo/:categoria/:itemSlug` | `after-content` (nunca en el Inspector HUD) |
 | `/foro` | `after-content` (tras la lista de hilos) |
 
 Máximo 2 AdSlot por página. Nunca en `/mapa`, Inspector HUD ni comparador, BottomDock/safe-area, `/`, `/entrar`, `/hub`, `/progreso`, `/aportar`, modales, Auth ni Footer; nunca como intersticial, sticky o vídeo con autoplay. Reglas técnicas: espacio fijo (CLS 0), consentimiento Marketing antes de cargar scripts de terceros, carga diferida (IntersectionObserver, margen 200 px), `ads_enabled=false` → `null` sin reservar espacio, etiqueta «Publicidad», desactivado en Capacitor nativo, no presentar como oficial.
@@ -2457,7 +2457,7 @@ LeonidApp
 ├─ P04 Mapa                            /mapa              (HUD 100vh)
 ├─ P05 Catálogo (Inspector)            /catalogo          (HUD 100vh)
 │   ├─ Comparador (hoja)               /catalogo?comparar=a,b[,c]
-│   └─ Ficha de entidad                /catalogo/:modulo/:slug   (con scroll y footer)
+│   └─ Ficha de entidad                /catalogo/:categoria/:itemSlug   (con scroll y footer)
 ├─ P06 Guías                           /guias
 │   └─ Guía                            /guias/:slug
 ├─ Noticias                            /noticias
@@ -2470,7 +2470,7 @@ LeonidApp
     └─ Control Total      (SUPER_ADMIN)
 ```
 
-Redirecciones: `/aportes` → `/aportar` (replace); `/noticias?item=slug` → `/noticias/slug`; `/catalogo?entity=<uuid>` → `/catalogo/:modulo/:slug`; `/catalogo/guias/:slug` → `/guias/:slug`; `#/ruta` heredado → `/ruta` (`useRouteStore.ts:396-401`); `/foro?hilo=` es alias de `thread` (`App.tsx:306-317`).
+Redirecciones: `/aportes` → `/aportar` (replace); `/noticias?item=slug` → `/noticias/slug`; `/catalogo?entity=<uuid>` → `/catalogo/:categoria/:itemSlug`; `/catalogo/guias/:slug` → `/guias/:slug`; `#/ruta` heredado → `/ruta` (`useRouteStore.ts:396-401`); `/foro?hilo=` es alias de `thread` (`App.tsx:306-317`).
 
 ### 24.3 Tabla completa de rutas reales
 
@@ -2484,7 +2484,7 @@ Fuente: `src/App.tsx:55-70` e inventario del cliente. "Indexable" = meta `robots
 | `/progreso` | `DashboardPage section=progress` | Invitado | No | Igual que Hub; hace scroll a `#progreso` | — |
 | `/mapa` | `MapPage` | Invitado | Sí (canonical = path) | mundo (marcadores, regiones, capas), progreso, foro (hilos relacionados) | `mapa` |
 | `/catalogo` | `CatalogPage` (Inspector) | Invitado | Sí; con `?comparar` pasa a `noindex` y canonical `/catalogo` | mundo, foro, progreso | alguno de armas/vehículos/coleccionables/guías |
-| `/catalogo/:modulo/:slug` | `CatalogPage detail` (`EntityDetail`) | Invitado | Sí (título y description por ficha; no encontrada → `noindex`) | `useEntityDetail` (caché del mundo, si no `GET /api/modules/:m/entities/:slug`), foro, guías | `:modulo` activo |
+| `/catalogo/:categoria/:itemSlug` | `CatalogPage detail` (`EntityDetail`) | Invitado | Sí (título y description por ficha; no encontrada → `noindex`) | `useEntityDetail` (caché del mundo, si no `GET /api/modules/:m/entities/:slug`), foro, guías | `:modulo` activo |
 | `/guias` | `GuidesPage` | Invitado | Sí | mundo (entidades de guías), `guideSteps` | `guias` |
 | `/guias/:slug` | `GuidesPage slug` | Invitado | Sí (no encontrada → `noindex`) | entidad de guía, hilos del foro, marcadores, config de anuncios | `guias` |
 | `/noticias` | `NewsPage` | Invitado | Sí | `GET /api/news?limit=&source=` | — |
@@ -2891,7 +2891,7 @@ Móvil: título, pestañas de módulo con scroll horizontal, chips de categoría
 
 Estados: "No hay elementos para mostrar." / "Sin elementos en esta categoría."; elementos sin imagen usan silueta SVG o banner sunset.
 
-### 27.6 Ficha de entidad `/catalogo/:modulo/:slug`
+### 27.6 Ficha de entidad `/catalogo/:categoria/:itemSlug`
 
 Escritorio:
 
@@ -3203,7 +3203,7 @@ Convención: "Invitado" = sin sesión; "USER+" = autenticado; ver §11 para el R
 | Offline | Semilla (23 entidades) o último mundo en memoria |
 | Defectos | Sin footer (`lockScroll`); coleccionables = 0 en la base; solo 12 armas y 20 vehículos reales; sin buscador; entidades de `mapa` no navegables aquí |
 
-### 29.6 Ficha de entidad `/catalogo/:modulo/:slug`
+### 29.6 Ficha de entidad `/catalogo/:categoria/:itemSlug`
 
 | Campo | Detalle |
 |---|---|

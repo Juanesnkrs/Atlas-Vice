@@ -123,7 +123,7 @@ interface MarkerCardProps {
   marker: MapMarker;
   entityTitle: string | null;
   entityId: string | null;
-  /** Ruta limpia de la ficha (/catalogo/:modulo/:slug o /guias/:slug) cuando existe. */
+  /** Ruta limpia de la ficha (/catalogo/:categoria/:itemSlug o /guias/:slug) cuando existe. */
   catalogHref: string | null;
   done: boolean;
   guest: boolean;

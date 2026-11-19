@@ -56,7 +56,7 @@ const ADSENSE_SRC = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle
 /** Traduce el pathname actual al patrón de ruta usado en `slots[].route`. */
 function routePattern(path: string): string | null {
   const seg = path.replace(/\/+$/, '').split('/').filter(Boolean);
-  if (seg[0] === 'catalogo' && seg.length === 3) return '/catalogo/:modulo/:slug';
+  if (seg[0] === 'catalogo' && seg.length === 3) return '/catalogo/:categoria/:itemSlug';
   if (seg[0] === 'guias') return seg.length === 1 ? '/guias' : seg.length === 2 ? '/guias/:slug' : null;
   if (seg[0] === 'noticias') return seg.length === 1 ? '/noticias' : seg.length === 2 ? '/noticias/:slug' : null;
   if (seg[0] === 'foro' && seg.length === 1) return '/foro';

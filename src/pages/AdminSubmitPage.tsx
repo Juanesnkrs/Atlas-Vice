@@ -827,7 +827,7 @@ const AD_ROUTE_OPTIONS: readonly AdRoute[] = [
   '/guias/:slug',
   '/noticias',
   '/noticias/:slug',
-  '/catalogo/:modulo/:slug',
+  '/catalogo/:categoria/:itemSlug',
   '/foro',
 ];
 // Posiciones permitidas por ruta (docs/LeonidApp-Rutas-SEO-Monetizacion.md §6.1).
@@ -836,7 +836,7 @@ const AD_ALLOWED: Record<AdRoute, readonly AdPosition[]> = {
   '/guias/:slug': ['in-article', 'after-content', 'sidebar'],
   '/noticias': ['after-content'],
   '/noticias/:slug': ['after-content'],
-  '/catalogo/:modulo/:slug': ['after-content'],
+  '/catalogo/:categoria/:itemSlug': ['after-content'],
   '/foro': ['after-content'],
 };
 const DEFAULT_MONETIZATION_CFG: MonetizationConfig = {

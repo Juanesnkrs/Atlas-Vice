@@ -9,6 +9,8 @@ import { baseUrl, clientDistDir, escHtml, injectHead, loadTemplate, resolveRoute
 
 const MAX_URLS = 50_000;
 const GUIDES_MODULE = 'guias';
+/** Módulos con fichas que no se indexan en el sitemap (el mapa ya tiene su propia ruta /mapa). */
+const SITEMAP_EXCLUDED_MODULES = new Set(['mapa']);
 // Rutas publicas indexables de docs §1.1 (sin /aportar, que es noindex).
 const STATIC_PATHS = ['/', '/mapa', '/guias', '/noticias', '/foro'];
 
@@ -55,7 +57,7 @@ export async function collectUrls(): Promise<UrlEntry[]> {
   const guides: UrlEntry[] = [];
   for (const e of entities) {
     const mod = slugById.get(String(e.module_id));
-    if (!mod || !e.slug) continue;
+    if (!mod || !e.slug || SITEMAP_EXCLUDED_MODULES.has(mod)) continue;
     const lastmod = validDate(e.created_at);
     if (mod === GUIDES_MODULE) guides.push({ loc: `/guias/${seg(e.slug)}`, lastmod });
     else catalog.push({ loc: `/catalogo/${seg(mod)}/${seg(e.slug)}`, lastmod });
@@ -68,7 +70,7 @@ export async function collectUrls(): Promise<UrlEntry[]> {
   const catLastmod = new Map<string, Date | undefined>();
   for (const e of entities) {
     const mod = slugById.get(String(e.module_id));
-    if (!mod || !e.slug || mod === GUIDES_MODULE) continue;
+    if (!mod || !e.slug || mod === GUIDES_MODULE || SITEMAP_EXCLUDED_MODULES.has(mod)) continue;
     catLastmod.set(mod, maxDate([catLastmod.get(mod), validDate(e.created_at)]));
   }
   const categories: UrlEntry[] = [...catLastmod].map(([mod, lastmod]) => ({ loc: `/catalogo/${seg(mod)}`, lastmod }));

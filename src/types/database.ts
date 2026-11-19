@@ -491,7 +491,7 @@ export interface OfficialNewsDTO {
   slug: string;
 }
 
-export type AdRoute = '/catalogo/:modulo/:slug' | '/guias' | '/guias/:slug' | '/noticias' | '/noticias/:slug' | '/foro';
+export type AdRoute = '/catalogo/:categoria/:itemSlug' | '/guias' | '/guias/:slug' | '/noticias' | '/noticias/:slug' | '/foro';
 export type AdPosition = 'in-article' | 'after-content' | 'sidebar';
 export interface MonetizationConfig {
   ads_enabled: boolean;
