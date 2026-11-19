@@ -1,21 +1,25 @@
 // =============================================================================
-// ATLAS VICE - Datos semilla + capa mínima de acceso a datos.
+// LeonidApp - Datos semilla + capa mínima de acceso a datos.
 // Excepción autorizada por el usuario a la regla de carpetas (src/data/seed.ts).
 // TODOS los datos de este archivo son DE EJEMPLO (metadata_json.sample = true):
 // no representan información oficial del juego. Solo usan columnas del esquema.
-// Lectura: Supabase solo si isSupabaseConfigured; si falla o está vacío -> seed.
+// Lectura: API Fastify solo si isApiConfigured; si falla o está vacía -> seed.
 // =============================================================================
-import { useQuery } from '@tanstack/react-query';
-import { isSupabaseConfigured, supabase } from '../store/useAuthStore';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useMemo } from 'react';
+import { apiFetch, isApiConfigured, useAuthStore } from '../store/useAuthStore';
 import { useProgressStore, type ProgressKey } from '../store/useProgressStore';
 import type {
   Entity,
+  ForumApiResponse,
   ForumCategoria,
   ForumPost,
   ForumThread,
   MapMarker,
   Module,
+  MonetizationConfig,
   Profile,
+  PublicConfigDTO,
 } from '../types/database';
 
 // ---- Utilidades -------------------------------------------------------------
@@ -24,15 +28,6 @@ const T0 = '2026-06-01T12:00:00.000Z';
 /** Fecha de ejemplo dentro de junio de 2026 (day 1..30). */
 const at = (day: number, hour = 12): string =>
   `2026-06-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:00:00.000Z`;
-
-const ART = {
-  a: '/assets/complexmusic_1794873298_4032011328293408607_12790857096.jpg',
-  c: '/assets/complexmusic_1794873298_4032011329073355805_12790857096.jpg',
-  e: '/assets/complexmusic_1794873298_4032011331254611421_12790857096.jpg',
-  g: '/assets/rockstargames_1782392540_3927315665585859597_184595688.jpg',
-  h: '/assets/rockstargames_1790262334_3993332294647284992_184595688.jpg',
-  i: '/assets/rockstargames_1791475498_4003509049827826360_184595688.jpg',
-} as const;
 
 export const HERO_IMAGE = '/assets/hero-gas-station.jpg';
 export const DISCORD_URL = 'https://discord.com/';
@@ -139,19 +134,19 @@ export const SEED_ENTITIES: Entity[] = [
     { velocidad: 78, aceleracion: 66, frenado: 40, manejo: 58 },
     { ubicacion: 'Leonida Keys', precio: 64000, plazas: 4, silueta: 'boat' }),
 
-  // Coleccionables (30-35) - artwork real de public/assets
+  // Coleccionables (30-35) - sin imagen: la UI muestra el banner Vice Sunset
   ent(30, MOD.coleccionables, 'Paquetes Ocultos', 'Cápsulas escondidas por toda la isla', 'Paquetes Ocultos',
-    { rareza: 40 }, { region: 'Varias', total: 3, ubicacion: 'Varias regiones' }, ART.a),
+    { rareza: 40 }, { region: 'Varias', total: 3, ubicacion: 'Varias regiones' }),
   ent(31, MOD.coleccionables, 'Reliquias de la Costa', 'Piezas antiguas halladas en el litoral', 'Reliquias',
-    { rareza: 70 }, { region: 'Vice Beach', total: 2, ubicacion: 'Vice Beach y Ocean Beach' }, ART.g),
+    { rareza: 70 }, { region: 'Vice Beach', total: 2, ubicacion: 'Vice Beach y Ocean Beach' }),
   ent(32, MOD.coleccionables, 'Graffitis de Downtown', 'Obras de arte urbano por descubrir', 'Graffitis',
-    { rareza: 35 }, { region: 'Downtown', total: 1, ubicacion: 'Downtown' }, ART.c),
+    { rareza: 35 }, { region: 'Downtown', total: 1, ubicacion: 'Downtown' }),
   ent(33, MOD.coleccionables, 'Placas de Matrícula Raras', 'Series limitadas de matrículas', 'Reliquias',
-    { rareza: 82 }, { region: 'Port Gellhorn', total: 1, ubicacion: 'Port Gellhorn' }, ART.h),
+    { rareza: 82 }, { region: 'Port Gellhorn', total: 1, ubicacion: 'Port Gellhorn' }),
   ent(34, MOD.coleccionables, 'Cápsulas del Pantano', 'Escondidas entre la vegetación', 'Paquetes Ocultos',
-    { rareza: 58 }, { region: 'Grassrivers', total: 1, ubicacion: 'Grassrivers' }, ART.e),
+    { rareza: 58 }, { region: 'Grassrivers', total: 1, ubicacion: 'Grassrivers' }),
   ent(35, MOD.coleccionables, 'Postales de los Cayos', 'Imágenes de colección del archipiélago', 'Graffitis',
-    { rareza: 46 }, { region: 'Leonida Keys', total: 1, ubicacion: 'Leonida Keys' }, ART.i),
+    { rareza: 46 }, { region: 'Leonida Keys', total: 1, ubicacion: 'Leonida Keys' }),
 
   // Guías (40-43)
   ent(40, MOD.guias, 'Primer día en Leonida', 'Cómo empezar sin perderse', 'Consejos', {}, {
@@ -195,14 +190,14 @@ const mk = (
 });
 
 export const SEED_MARKERS: MapMarker[] = [
-  mk(100, 30, 'Vice Beach', 'Paquete oculto junto al muelle', 'Cápsula escondida bajo el pasamanos del muelle.', 765.25, 318.5, ART.a),
+  mk(100, 30, 'Vice Beach', 'Paquete oculto junto al muelle', 'Cápsula escondida bajo el pasamanos del muelle.', 765.25, 318.5),
   mk(101, 30, 'Downtown', 'Paquete oculto en la azotea', 'Accesible desde la escalera de incendios.', 618, 352.75),
   mk(102, 30, 'Grassrivers', 'Paquete oculto en el embarcadero', 'Cerca del embarcadero de madera.', 262.5, 178),
-  mk(103, 31, 'Vice Beach', 'Reliquia de la costa', 'Pieza antigua semienterrada en la arena.', 800, 280.25, ART.g),
-  mk(104, 32, 'Downtown', 'Graffiti en el callejón', 'Mural visible desde el callejón trasero.', 590.5, 385, ART.c),
-  mk(105, 33, 'Port Gellhorn', 'Placa rara en el astillero', 'Sobre la baranda de un contenedor.', 520, 140.5, ART.h),
-  mk(106, 34, 'Grassrivers', 'Cápsula del pantano', 'Entre las raíces de un manglar.', 215.75, 225, ART.e),
-  mk(107, 35, 'Leonida Keys', 'Postal de los Cayos', 'En el faro del cayo más pequeño.', 330, 610, ART.i),
+  mk(103, 31, 'Vice Beach', 'Reliquia de la costa', 'Pieza antigua semienterrada en la arena.', 800, 280.25),
+  mk(104, 32, 'Downtown', 'Graffiti en el callejón', 'Mural visible desde el callejón trasero.', 590.5, 385),
+  mk(105, 33, 'Port Gellhorn', 'Placa rara en el astillero', 'Sobre la baranda de un contenedor.', 520, 140.5),
+  mk(106, 34, 'Grassrivers', 'Cápsula del pantano', 'Entre las raíces de un manglar.', 215.75, 225),
+  mk(107, 35, 'Leonida Keys', 'Postal de los Cayos', 'En el faro del cayo más pequeño.', 330, 610),
   mk(108, 31, 'Ocean Beach', 'Reliquia de Ocean Beach', 'Bajo el paseo marítimo.', 695.5, 480),
   mk(109, 10, 'Ocean Beach', 'Tienda de armas Ocean', 'Venta de la Pistola Compacta C9.', 705, 455.5),
   mk(110, 11, 'Vice Beach', 'Armería de Vice Beach', 'Venta del Revólver Magnum R44.', 745.25, 360),
@@ -253,7 +248,7 @@ const th = (
 });
 
 export const SEED_THREADS: ForumThread[] = [
-  th(500, 901, 'General', 'Bienvenida a la comunidad de ATLAS VICE (datos de ejemplo)',
+  th(500, 901, 'General', 'Bienvenida a la comunidad de LeonidApp (datos de ejemplo)',
     'Este hilo es contenido de ejemplo. Usa el foro para compartir rutas, dudas y hallazgos. Respeta las etiquetas de spoiler.',
     57, 1, { pinned: true }),
   th(501, 902, 'Guias/Ayuda', '¿Cuál es la mejor ruta para empezar a coleccionar?',
@@ -338,14 +333,26 @@ export const STAT_LABELS: Record<string, string> = {
   frenado: 'Frenado',
   manejo: 'Manejo',
   rareza: 'Rareza',
+  maniobrabilidad_asfalto: 'Maniobrabilidad en asfalto',
+  maniobrabilidad_todoterreno: 'Maniobrabilidad todoterreno',
+  fuerza: 'Fuerza',
 };
 
-export const statsOf = (e: Entity): Array<{ key: string; label: string; value: number }> => {
+/**
+ * Estadísticas para las barras (0-100). Si la entidad trae `metadata_json.stats_juego`
+ * (escala 0-10 del juego, fichas importadas de grabaciones), `display` muestra ese valor exacto.
+ */
+export const statsOf = (e: Entity): Array<{ key: string; label: string; value: number; display?: string }> => {
   const s = e.stats_json;
   if (!s || typeof s !== 'object' || Array.isArray(s)) return [];
+  const juego = metaOf(e).stats_juego;
+  const exact = juego && typeof juego === 'object' && !Array.isArray(juego) ? (juego as Record<string, unknown>) : {};
   return Object.entries(s)
     .filter((kv): kv is [string, number] => typeof kv[1] === 'number')
-    .map(([key, value]) => ({ key, label: STAT_LABELS[key] ?? key, value }));
+    .map(([key, value]) => {
+      const g = exact[key];
+      return { key, label: STAT_LABELS[key] ?? key, value, display: typeof g === 'number' ? g.toFixed(1) : undefined };
+    });
 };
 
 export const metaOf = (e: Entity): Record<string, unknown> => {
@@ -393,7 +400,7 @@ export function markerLayer(
 }
 
 // ---- Capa de acceso a datos -----------------------------------------------------------
-export type DataSource = 'seed' | 'supabase';
+export type DataSource = 'seed' | 'api';
 
 export interface WorldData {
   modules: Module[];
@@ -403,10 +410,32 @@ export interface WorldData {
 }
 
 export interface ForumData {
+  /** En modo preview `contenido` llega vacio y `posts` es []. */
   threads: ForumThread[];
   posts: ForumPost[];
   profiles: Profile[];
   source: DataSource;
+  /** true cuando la API respondio en formato preview (sin sesion). */
+  preview?: boolean;
+}
+
+/** Recorta un ForumData a formato preview: sin contenido ni respuestas, max 50, recientes primero. */
+function toPreview(f: ForumData): ForumData {
+  const replies = new Map<string, number>();
+  for (const p of f.posts) replies.set(p.thread_id, (replies.get(p.thread_id) ?? 0) + 1);
+  const threads = [...f.threads]
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    .slice(0, 50)
+    .map((t) => ({ ...t, contenido: '', replies_count: t.replies_count ?? replies.get(t.id) ?? 0 }));
+  return { ...f, threads, posts: [], preview: true };
+}
+
+/** Tiempo relativo corto: "hace 5 min", "hace 2 h", "hace 3 d" (o "5 min ago" en ingles). */
+export function relativeTime(iso: string, lang: 'es' | 'en' = 'es'): string {
+  const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60_000));
+  const [n, unit] = mins < 60 ? [mins, 'min'] : mins < 1440 ? [Math.floor(mins / 60), 'h'] : [Math.floor(mins / 1440), 'd'];
+  if (mins < 1) return lang === 'es' ? 'ahora' : 'now';
+  return lang === 'es' ? `hace ${n} ${unit}` : `${n} ${unit} ago`;
 }
 
 export const SEED_WORLD: WorldData = {
@@ -424,42 +453,37 @@ export const SEED_FORUM: ForumData = {
 };
 
 async function fetchWorld(): Promise<WorldData> {
-  if (!supabase) return SEED_WORLD;
-  const [m, e, k] = await Promise.all([
-    supabase.from('modules').select('*').order('orden'),
-    supabase.from('entities').select('*').order('created_at'),
-    supabase.from('map_markers').select('*').order('created_at'),
+  if (!isApiConfigured) return SEED_WORLD;
+  const [modules, entities, markers] = await Promise.all([
+    apiFetch<Module[]>('/api/modules'),
+    apiFetch<Entity[]>('/api/entities'),
+    apiFetch<MapMarker[]>('/api/markers'),
   ]);
-  const err = m.error ?? e.error ?? k.error;
-  if (err) throw new Error(err.message);
-  const entities = e.data ?? [];
-  const markers = (k.data ?? []).map((row) => ({
-    ...row,
-    coord_x: Number(row.coord_x),
-    coord_y: Number(row.coord_y),
-  }));
   if (entities.length === 0 && markers.length === 0) return SEED_WORLD;
-  return { modules: m.data ?? [], entities, markers, source: 'supabase' };
+  return { modules, entities, markers, source: 'api' };
 }
 
 async function fetchForum(): Promise<ForumData> {
-  if (!supabase) return SEED_FORUM;
-  const [t, p, pr] = await Promise.all([
-    supabase.from('forum_threads').select('*').order('created_at', { ascending: false }),
-    supabase.from('forum_posts').select('*').order('created_at'),
-    supabase.from('profiles').select('*'),
-  ]);
-  const err = t.error ?? p.error ?? pr.error;
-  if (err) throw new Error(err.message);
-  if ((t.data ?? []).length === 0) return SEED_FORUM;
-  return { threads: t.data ?? [], posts: p.data ?? [], profiles: pr.data ?? [], source: 'supabase' };
+  if (!isApiConfigured) return SEED_FORUM;
+  const f = await apiFetch<ForumApiResponse>('/api/forum');
+  if (f.threads.length === 0) return SEED_FORUM;
+  if (f.preview) {
+    return {
+      source: 'api',
+      preview: true,
+      posts: [],
+      threads: f.threads.map((t) => ({ ...t, contenido: '' })),
+      profiles: f.profiles.map((p) => ({ ...p, discord_id: null, rol: 'USER', created_at: '' })),
+    };
+  }
+  return { ...f, source: 'api' };
 }
 
 export interface DataResult<T> {
   data: T;
-  /** Cargando desde Supabase (mientras tanto se muestra el seed). */
+  /** Cargando desde la API (mientras tanto se muestra el seed). */
   loading: boolean;
-  /** Mensaje si Supabase falló: se mantiene el seed. */
+  /** Mensaje si la API falló: se mantiene el seed. */
   error: string | null;
 }
 
@@ -467,22 +491,98 @@ export function useWorldData(): DataResult<WorldData> {
   const q = useQuery({
     queryKey: ['world'],
     queryFn: fetchWorld,
-    enabled: isSupabaseConfigured,
+    enabled: isApiConfigured,
     initialData: SEED_WORLD,
     initialDataUpdatedAt: 0,
   });
   return { data: q.data, loading: q.isFetching, error: q.error ? q.error.message : null };
 }
 
-export function useForumData(): DataResult<ForumData> {
+export function useForumData(): DataResult<ForumData> & { isPreview: boolean } {
+  const qc = useQueryClient();
+  const authenticated = useAuthStore((s) => s.status === 'authenticated');
   const q = useQuery({
     queryKey: ['forum'],
     queryFn: fetchForum,
-    enabled: isSupabaseConfigured,
+    enabled: isApiConfigured,
     initialData: SEED_FORUM,
     initialDataUpdatedAt: 0,
+    refetchInterval: 20_000,
+    refetchIntervalInBackground: false,
   });
-  return { data: q.data, loading: q.isFetching, error: q.error ? q.error.message : null };
+  // Al iniciar/cerrar sesion la cache cambia de forma (preview <-> completa).
+  useEffect(() => {
+    if (isApiConfigured) void qc.invalidateQueries({ queryKey: ['forum'] });
+  }, [authenticated, qc]);
+  const isPreview = !authenticated || q.data.preview === true;
+  const data = useMemo(() => (isPreview ? toPreview(q.data) : q.data), [isPreview, q.data]);
+  return { data, loading: q.isFetching, error: q.error ? q.error.message : null, isPreview };
+}
+
+// ---- Noticias oficiales y configuración pública (API Fastify) -----------------------------
+export type NewsSource = 'rockstar-newswire' | 'rockstar-youtube' | 'take-two-ir';
+
+export const NEWS_SOURCES: ReadonlyArray<{ value: NewsSource | 'all'; label: string }> = [
+  { value: 'all', label: 'Todas' },
+  { value: 'rockstar-newswire', label: 'Rockstar Newswire' },
+  { value: 'rockstar-youtube', label: 'Rockstar YouTube' },
+  { value: 'take-two-ir', label: 'Take-Two IR' },
+];
+
+export interface OfficialNews {
+  id: string;
+  title: string;
+  summary: string;
+  sourceUrl: string;
+  source: NewsSource;
+  imageUrl: string | null;
+  publishedAt: string;
+  slug: string;
+}
+
+export interface PublicConfig {
+  maintenance_mode: boolean;
+  announcement: string | null;
+  feature_flags: Record<string, boolean>;
+  enabled_auth_providers: Array<'google' | 'discord' | 'apple' | 'magic-link'>;
+  social_links: Array<{ platform: string; url: string }>;
+  /** Solo presentes cuando la API responde (GET /api/config/public). */
+  monetization?: MonetizationConfig;
+  modules?: PublicConfigDTO['modules'];
+}
+
+export const DEFAULT_PUBLIC_CONFIG: PublicConfig = {
+  maintenance_mode: false,
+  announcement: null,
+  feature_flags: {},
+  enabled_auth_providers: ['google', 'discord', 'apple', 'magic-link'],
+  social_links: [],
+};
+
+/** Las noticias NUNCA se inventan: sin API el resultado es una lista vacía. */
+export function useOfficialNews(source: NewsSource | 'all' = 'all', limit = 12) {
+  const q = useQuery({
+    queryKey: ['news', source, limit],
+    enabled: isApiConfigured,
+    staleTime: 60_000,
+    queryFn: () =>
+      apiFetch<OfficialNews[]>(`/api/news?limit=${limit}${source === 'all' ? '' : `&source=${source}`}`),
+  });
+  return {
+    news: q.data ?? [],
+    loading: isApiConfigured && q.isLoading,
+    error: !isApiConfigured ? 'Sin API configurada.' : q.error ? q.error.message : null,
+  };
+}
+
+export function usePublicConfig(): PublicConfig {
+  const q = useQuery({
+    queryKey: ['config', 'public'],
+    enabled: isApiConfigured,
+    staleTime: 30_000,
+    queryFn: () => apiFetch<PublicConfig>('/api/config/public'),
+  });
+  return q.data ?? DEFAULT_PUBLIC_CONFIG;
 }
 
 // ---- Progreso agregado (Hub / header) ---------------------------------------------------
@@ -527,4 +627,111 @@ export function useProgressSummary(): ProgressSummary {
   const done = categories.reduce((a, c) => a + c.done, 0);
   const total = categories.reduce((a, c) => a + c.total, 0);
   return { done, total, percent: total === 0 ? 0 : Math.round((done / total) * 100), categories };
+}
+
+// ---- Slugs, módulos activos y enlazado cruzado (docs/LeonidApp-Rutas-SEO-Monetizacion.md §2, §5) ----
+/** Entidad con `slug` opcional: la API lo trae; el seed lo deriva del título. */
+export type EntityWithSlug = Entity & { slug?: string };
+
+export const slugify = (text: string): string =>
+  text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 120);
+
+export const entitySlug = (e: Entity): string => (e as EntityWithSlug).slug || slugify(e.titulo);
+
+/** Ruta limpia de la ficha de una entidad (o de la guía si el módulo es `guias`). */
+export const entityHref = (e: Entity, moduleSlug: string): string =>
+  moduleSlug === 'guias' ? `/guias/${entitySlug(e)}` : `/catalogo/${moduleSlug}/${entitySlug(e)}`;
+
+export interface GuideStep {
+  id: string;
+  title: string;
+  body: string;
+}
+
+/** Pasos de una guía: `metadata_json.steps` [{id,title,body}] (API) o `pasos` string[] (seed). */
+export function guideSteps(e: Entity): GuideStep[] {
+  const m = metaOf(e);
+  if (Array.isArray(m.steps)) {
+    return (m.steps as unknown[]).flatMap((raw, i): GuideStep[] => {
+      if (typeof raw === 'string') return [{ id: `s${i + 1}`, title: raw, body: '' }];
+      if (raw && typeof raw === 'object') {
+        const r = raw as { id?: unknown; title?: unknown; body?: unknown };
+        return [
+          {
+            id: typeof r.id === 'string' && r.id ? r.id : `s${i + 1}`,
+            title: typeof r.title === 'string' ? r.title : `Paso ${i + 1}`,
+            body: typeof r.body === 'string' ? r.body : '',
+          },
+        ];
+      }
+      return [];
+    });
+  }
+  if (Array.isArray(m.pasos)) {
+    return (m.pasos as unknown[])
+      .filter((p): p is string => typeof p === 'string')
+      .map((p, i) => ({ id: `s${i + 1}`, title: p, body: '' }));
+  }
+  return [];
+}
+
+/** UUID de Entity o MapMarker enlazados desde una guía (`metadata_json.lore_refs`). */
+export const loreRefs = (e: Entity): string[] => {
+  const r = metaOf(e).lore_refs;
+  return Array.isArray(r) ? (r as unknown[]).filter((x): x is string => typeof x === 'string') : [];
+};
+
+/** Módulos activos: GET /api/config/public incluye también los inactivos; sin API se usa el seed. */
+export function useModuleGate(): { isActive: (slug: string) => boolean; catalogActive: boolean } {
+  const cfg = usePublicConfig();
+  const { data } = useWorldData();
+  return useMemo(() => {
+    const list: Array<{ slug: string; active: boolean }> = cfg.modules
+      ? cfg.modules.map((m) => ({ slug: m.slug, active: m.isActive }))
+      : data.modules.map((m) => ({ slug: m.slug, active: m.activo }));
+    const map = new Map(list.map((m) => [m.slug, m.active]));
+    // Un módulo desconocido (aún sin sembrar) no se oculta; uno marcado inactivo sí.
+    const isActive = (slug: string): boolean => map.get(slug) !== false;
+    const catalogActive = ['armas', 'vehiculos', 'coleccionables', 'guias'].some(isActive);
+    return { isActive, catalogActive };
+  }, [cfg.modules, data.modules]);
+}
+
+/** Entidad por módulo + slug: caché del mundo primero (offline-first), luego la API por slug. */
+export function useEntityDetail(
+  moduleSlug: string,
+  slug: string,
+): { entity: Entity | null; loading: boolean } {
+  const { data } = useWorldData();
+  const mod = data.modules.find((m) => m.slug === moduleSlug);
+  const local = mod ? (data.entities.find((e) => e.module_id === mod.id && entitySlug(e) === slug) ?? null) : null;
+  const q = useQuery({
+    queryKey: ['entity', moduleSlug, slug],
+    enabled: isApiConfigured && local === null,
+    staleTime: 60_000,
+    queryFn: () =>
+      apiFetch<Entity>(`/api/modules/${encodeURIComponent(moduleSlug)}/entities/${encodeURIComponent(slug)}`),
+  });
+  return { entity: local ?? q.data ?? null, loading: local === null && q.isLoading };
+}
+
+/** Noticia oficial por slug (solo API; nunca se inventa contenido). */
+export function useOfficialNewsItem(slug: string) {
+  const q = useQuery({
+    queryKey: ['news', 'item', slug],
+    enabled: isApiConfigured,
+    staleTime: 60_000,
+    queryFn: () => apiFetch<OfficialNews>(`/api/news/${encodeURIComponent(slug)}`),
+  });
+  return {
+    item: q.data ?? null,
+    loading: isApiConfigured && q.isLoading,
+    error: !isApiConfigured ? 'Sin API configurada.' : q.error ? q.error.message : null,
+  };
 }

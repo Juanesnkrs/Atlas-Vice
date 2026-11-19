@@ -1,0 +1,272 @@
+[
+  {
+    "modulo": "mapa",
+    "slug": "vice-city",
+    "titulo": "Vice City",
+    "subtitulo": "Ciudad costera y principal escenario urbano de Leonida",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rockstar la presenta como la gran ciudad del estado y el corazón de la historia de Jason y Lucia. Concentra la vida nocturna, el litoral turístico y el puerto, y funciona como punto de partida natural para recorrer el resto de Leonida.",
+      "region_padre": "Leonida",
+      "tipo": "Ciudad",
+      "alias": [
+        "Vice City, USA"
+      ]
+    },
+    "marker": {
+      "region": "Vice-Dale County",
+      "coord_x": 780,
+      "coord_y": 470,
+      "descripcion": "Metrópoli costera del sureste del plano; hub urbano de Leonida."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Nombrada como región oficial en el material de Rockstar sobre Leonida",
+      "Posición relativa deducida del análisis de avances y mapeo de la comunidad"
+    ],
+    "notas": "Plano editorial 1000x700: coordenadas aproximadas de LeonidApp, no oficiales; Rockstar no ha publicado un mapa legible completo. Ubicación en el sureste: inferencia comunitaria."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "vice-dale-county",
+    "titulo": "Vice-Dale County",
+    "subtitulo": "Condado al que pertenece Vice City",
+    "categoria": "Regiones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Es la demarcación administrativa en la que Rockstar ubica a Vice City. Sirve como referencia para entender cómo se divide Leonida en condados, aunque la compañía aún no publica sus límites exactos.",
+      "region_padre": "Leonida",
+      "tipo": "Condado",
+      "alias": []
+    },
+    "marker": {
+      "region": "Vice-Dale County",
+      "coord_x": 800,
+      "coord_y": 430,
+      "descripcion": "Condado de Vice City; límites exactos sin confirmar."
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Rockstar sitúa Vice City dentro de este condado",
+      "Los límites y la posición en el plano son aproximaciones editoriales"
+    ],
+    "notas": "Plano editorial 1000x700: coordenadas aproximadas de LeonidApp, no oficiales; Rockstar no ha publicado un mapa legible completo. Límites del condado no publicados."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "leonida-keys",
+    "titulo": "Leonida Keys",
+    "subtitulo": "Archipiélago tropical al sur del estado",
+    "categoria": "Regiones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cadena de islas que Rockstar incluye entre las seis regiones oficiales. Su identidad es marítima: playas, aguas someras y pueblos isleños pensados para moverse entre tierra, barco y buceo.",
+      "region_padre": "Leonida",
+      "tipo": "Archipiélago",
+      "alias": [
+        "Los Cayos de Leonida",
+        "Keys"
+      ]
+    },
+    "marker": {
+      "region": "Leonida Keys",
+      "coord_x": 700,
+      "coord_y": 645,
+      "descripcion": "Cayos del extremo sur; se extienden hacia el este."
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Región oficial nombrada por Rockstar",
+      "Posición sur deducida del análisis de avances; la extensión exacta no está confirmada"
+    ],
+    "notas": "Plano editorial 1000x700: coordenadas aproximadas de LeonidApp, no oficiales; Rockstar no ha publicado un mapa legible completo. Ubicación exacta de la cadena sin confirmar."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "grassrivers",
+    "titulo": "Grassrivers",
+    "subtitulo": "Región de humedales y pantanos del interior",
+    "categoria": "Regiones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Zona de ríos lentos y vegetación densa que Rockstar enumera como región propia. Contrasta con el brillo de la costa y ofrece un ambiente rural y húmedo para misiones fuera de la ciudad.",
+      "region_padre": "Leonida",
+      "tipo": "Región",
+      "alias": [
+        "Grass Rivers"
+      ]
+    },
+    "marker": {
+      "region": "Grassrivers",
+      "coord_x": 300,
+      "coord_y": 500,
+      "descripcion": "Humedales del suroeste del plano; ubicación aproximada."
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Región oficial nombrada por Rockstar",
+      "Ubicación suroeste inferida por la comunidad; Rockstar no da orientación"
+    ],
+    "notas": "Plano editorial 1000x700: coordenadas aproximadas de LeonidApp, no oficiales; Rockstar no ha publicado un mapa legible completo. Posición muy incierta."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "port-gellhorn",
+    "titulo": "Port Gellhorn",
+    "subtitulo": "Costa olvidada de Leonida con ambiente portuario",
+    "categoria": "Regiones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rockstar la describe como la costa olvidada del estado, un tramo litoral con aire decadente y vida portuaria. Es la pieza que equilibra el lujo de Vice City con un Leonida más gastado.",
+      "region_padre": "Leonida",
+      "tipo": "Ciudad portuaria",
+      "alias": []
+    },
+    "marker": {
+      "region": "Port Gellhorn",
+      "coord_x": 130,
+      "coord_y": 330,
+      "descripcion": "Costa oeste del plano; litoral portuario."
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Región oficial con descripción de Rockstar",
+      "Posición en la costa oeste inferida por la comunidad"
+    ],
+    "notas": "Plano editorial 1000x700: coordenadas aproximadas de LeonidApp, no oficiales; Rockstar no ha publicado un mapa legible completo. Posición oeste: inferencia."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "ambrosia",
+    "titulo": "Ambrosia",
+    "subtitulo": "Población industrial en el centro del estado",
+    "categoria": "Regiones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rockstar la nombra como región oficial y la sitúa en el corazón de Leonida. Su carácter es de tierra adentro y trabajo, alejado de las playas, con la cercanía del lago como rasgo geográfico clave.",
+      "region_padre": "Leonida",
+      "tipo": "Población",
+      "alias": []
+    },
+    "marker": {
+      "region": "Ambrosia",
+      "coord_x": 470,
+      "coord_y": 340,
+      "descripcion": "Núcleo interior junto al Lake Leonida."
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Región oficial; el material de Rockstar la ubica en el centro del estado",
+      "Posición exacta dentro del plano es aproximada"
+    ],
+    "notas": "Plano editorial 1000x700: coordenadas aproximadas de LeonidApp, no oficiales; Rockstar no ha publicado un mapa legible completo. Posición central confirmada de forma general; coordenada exacta inferida."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "mount-kalaga-national-park",
+    "titulo": "Mount Kalaga National Park",
+    "subtitulo": "Parque nacional en la frontera norte",
+    "categoria": "Parques y Naturaleza",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Reserva natural de montaña que Rockstar incluye entre sus regiones oficiales. Se identifica como el extremo septentrional del estado y el principal espacio de naturaleza elevada.",
+      "region_padre": "Leonida",
+      "tipo": "Parque nacional",
+      "alias": [
+        "Mount Kalaga",
+        "Monte Kalaga"
+      ]
+    },
+    "marker": {
+      "region": "Mount Kalaga",
+      "coord_x": 500,
+      "coord_y": 80,
+      "descripcion": "Parque nacional del límite norte del plano."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Región oficial nombrada por Rockstar",
+      "Ubicación junto al borde norte indicada en el material oficial"
+    ],
+    "notas": "Plano editorial 1000x700: coordenadas aproximadas de LeonidApp, no oficiales; Rockstar no ha publicado un mapa legible completo. Coordenada exacta aproximada."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "lake-leonida",
+    "titulo": "Lake Leonida",
+    "subtitulo": "Gran lago interior entre Ambrosia y Mount Kalaga",
+    "categoria": "Parques y Naturaleza",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Masa de agua dulce que da nombre al estado y aparece en el material de Rockstar como accidente geográfico central. Actúa de divisoria visual entre el interior industrial y la zona montañosa del norte.",
+      "region_padre": "Leonida",
+      "tipo": "Lago",
+      "alias": []
+    },
+    "marker": {
+      "region": "Ambrosia",
+      "coord_x": 490,
+      "coord_y": 250,
+      "descripcion": "Lago interior entre Ambrosia y el parque nacional."
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Lugar nombrado en material de Rockstar",
+      "Posición relativa entre Ambrosia y Mount Kalaga inferida por análisis de comunidad"
+    ],
+    "notas": "Plano editorial 1000x700: coordenadas aproximadas de LeonidApp, no oficiales; Rockstar no ha publicado un mapa legible completo. Posición relativa inferida."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "ocean-beach",
+    "titulo": "Ocean Beach",
+    "subtitulo": "Franja de playa y ocio de Vice City",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Zona litoral de Vice City mostrada en el material promocional de Rockstar. Reúne arena, paseo y movimiento turístico, y es una de las postales más reconocibles de la ciudad.",
+      "region_padre": "Vice City",
+      "tipo": "Barrio costero",
+      "alias": []
+    },
+    "marker": {
+      "region": "Vice City",
+      "coord_x": 840,
+      "coord_y": 500,
+      "descripcion": "Playa urbana en el litoral este de Vice City."
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Nombre mostrado en material de Rockstar",
+      "Posición dentro de Vice City aproximada"
+    ],
+    "notas": "Plano editorial 1000x700: coordenadas aproximadas de LeonidApp, no oficiales; Rockstar no ha publicado un mapa legible completo. Posición dentro de la ciudad aproximada."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "starlet-motel",
+    "titulo": "Starlet Motel",
+    "subtitulo": "Motel de carretera en Port Gellhorn",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Alojamiento de paso visible en imágenes oficiales de Port Gellhorn. Su fachada de neón ayuda a identificar el tono desgastado de esa costa.",
+      "region_padre": "Port Gellhorn",
+      "tipo": "Motel",
+      "alias": []
+    },
+    "marker": {
+      "region": "Port Gellhorn",
+      "coord_x": 140,
+      "coord_y": 350,
+      "descripcion": "Motel en Port Gellhorn."
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Aparece rotulado en imágenes oficiales de Rockstar",
+      "Ubicación dentro de la región aproximada"
+    ],
+    "notas": "Plano editorial 1000x700: coordenadas aproximadas de LeonidApp, no oficiales; Rockstar no ha publicado un mapa legible completo. Dato confirmado solo por imagen."
+  }
+]

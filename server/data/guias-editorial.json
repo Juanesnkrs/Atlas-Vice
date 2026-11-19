@@ -1,0 +1,811 @@
+[
+  {
+    "modulo": "guias",
+    "slug": "guia-sistema-heat-y-busqueda-policial",
+    "titulo": "Cómo leer el sistema de Heat y la búsqueda policial",
+    "subtitulo": "Entiende qué sabe la policía de ti y cómo perder la persecución",
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "El nivel de búsqueda ya no depende solo de cometer un delito: importa quién lo vio y qué información acumula la policía. Esta guía te enseña a leer las estrellas y la zona de búsqueda para planificar la huida.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Comprueba si alguien te vio",
+          "body": "Antes de huir, identifica si hubo testigos, cámaras de vigilancia o alarmas. Según el material de Rockstar, el nivel de búsqueda se activa cuando el delito es detectado, no por el simple hecho de cometerlo."
+        },
+        {
+          "id": "paso-2",
+          "title": "Interpreta el color de las estrellas",
+          "body": "Observa el indicador: según lo descrito, las estrellas distinguen contacto visual, contacto perdido, sospechoso desconocido y huida dentro de la zona de búsqueda. Ajusta tu reacción a cada estado."
+        },
+        {
+          "id": "paso-3",
+          "title": "Revisa qué datos tiene la policía",
+          "body": "El Heat registra elementos como tu aspecto, el arma usada y el vehículo de huida. Anota mentalmente cuáles quedaron expuestos antes de moverte."
+        },
+        {
+          "id": "paso-4",
+          "title": "Sal de la zona de búsqueda",
+          "body": "La zona sigue activa aunque dejes de ser visible. Aléjate de ella antes de relajarte y busca un lugar discreto hasta que el estado se enfríe."
+        }
+      ],
+      "consejos": [
+        "Cambiar de apariencia o de vehículo reduce lo que la policía puede reconocer, según los avances.",
+        "Los efectos concretos de las estrellas más altas no están confirmados por Rockstar; compruébalos tú mismo en partida."
+      ],
+      "detalles": [
+        "Hay seis niveles de búsqueda"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-cambiar-entre-jason-y-lucia",
+    "titulo": "Cambiar entre Jason y Lucia durante la partida",
+    "subtitulo": "Aprovecha a los dos protagonistas fuera y dentro de las misiones",
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Jason Duval y Lucia Caminos son jugables y se puede alternar entre ambos. Aprende cuándo conviene cambiar y qué debes tener presente sobre sus historiales criminales separados.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Localiza el selector de personaje",
+          "body": "Consulta el menú de control o la rueda de personajes del juego para ver las opciones disponibles. Rockstar confirma que puedes alternar en el mundo abierto."
+        },
+        {
+          "id": "paso-2",
+          "title": "Cambia con un propósito",
+          "body": "Elige al protagonista según la situación: posición en el mapa, equipo cargado o el estado de búsqueda que arrastra cada uno."
+        },
+        {
+          "id": "paso-3",
+          "title": "Vigila los momentos bloqueados",
+          "body": "En ciertos tramos de la historia el cambio no está permitido. Si no puedes alternar, es una restricción narrativa, no un fallo."
+        },
+        {
+          "id": "paso-4",
+          "title": "Gestiona los dos perfiles criminales",
+          "body": "Cada protagonista tiene su propio perfil. Un delito de uno no necesariamente persigue al otro, así que úsalo para reiniciar una situación tensa."
+        }
+      ],
+      "consejos": [
+        "Separarte del otro protagonista puede reducir la presión policial en el activo, según los avances."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Coinciden los avances jugables sobre la libertad de alternar"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-robar-tiendas-en-leonida",
+    "titulo": "Robar tiendas en Leonida con cabeza fría",
+    "subtitulo": "Planifica atracos sigilosos o violentos sin atraer a la policía",
+    "categoria": "Economía",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Los avances indican que las tiendas del estado pueden asaltarse, con objetivos mayores como joyerías o bancos pequeños. Esta guía propone una rutina de preparación basada en lo mostrado.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Escoge un objetivo",
+          "body": "Elige un comercio según el riesgo que aceptes. Los avances mencionan desde tiendas pequeñas hasta joyerías y bancos menores."
+        },
+        {
+          "id": "paso-2",
+          "title": "Prepara la identidad y la huida",
+          "body": "Piensa en una máscara, en el arma que llevarás y en el vehículo de escape, porque el sistema de Heat registra esos datos."
+        },
+        {
+          "id": "paso-3",
+          "title": "Decide entre sigilo y fuerza",
+          "body": "Puedes intentar un golpe discreto o uno directo. Cada opción cambia el ruido y la rapidez con la que llega la ayuda."
+        },
+        {
+          "id": "paso-4",
+          "title": "Carga el botín según tu vehículo",
+          "body": "Los avances señalan que la capacidad de transporte depende del vehículo. Llévate solo lo que cabe y sal antes de que se cierre el cerco."
+        },
+        {
+          "id": "paso-5",
+          "title": "Cambia el botín por dinero",
+          "body": "Una vez a salvo, localiza un comprador de mercancía robada en lugar de quedarte con objetos que no puedes usar."
+        }
+      ],
+      "consejos": [
+        "Observa el comportamiento de los empleados antes de actuar."
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes",
+      "Contraste entre varias descripciones de las mismas sesiones de avance"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-dinero-efectivo-y-cuenta-conjunta",
+    "titulo": "Dinero en mano y cuenta conjunta: cómo no perderlo",
+    "subtitulo": "Deposita a tiempo y entiende el riesgo del efectivo",
+    "categoria": "Economía",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "En esta entrega el dinero que llevas encima puede perderse y los fondos se gestionan mediante un banco compartido. Aprende una rutina simple para proteger tus ganancias.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Reconoce el riesgo del efectivo",
+          "body": "Los avances apuntan a que el dinero que llevas puede perderse si te capturan o te abaten. Trátalo como algo temporal."
+        },
+        {
+          "id": "paso-2",
+          "title": "Busca un cajero tras cada golpe",
+          "body": "Deposita el efectivo en un cajero lo antes posible. Planifica la ruta de huida pensando en pasar cerca de uno."
+        },
+        {
+          "id": "paso-3",
+          "title": "Revisa el saldo en el móvil",
+          "body": "La aplicación bancaria del teléfono permite comprobar tus fondos, según lo mostrado. Consúltala antes de comprar o de iniciar misiones que pidan un mínimo."
+        },
+        {
+          "id": "paso-4",
+          "title": "Ahorra para las misiones",
+          "body": "Algunas misiones piden una cantidad mínima para empezar. Reserva fondos en la cuenta antes de aceptarlas."
+        }
+      ],
+      "detalles": [
+        "La cuenta es compartida entre los dos protagonistas según los avances"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-vender-botin-y-mercancia-robada",
+    "titulo": "Vender botín, dinero marcado y mercancía robada",
+    "subtitulo": "Convierte lo robado en dinero útil con los compradores adecuados",
+    "categoria": "Economía",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Objetos robados, dinero marcado y drogas no se convierten en efectivo por sí solos. Los avances señalan la figura de los compradores clandestinos, que además ofrecen pistas de robos valiosos.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Clasifica lo que llevas",
+          "body": "Separa botín general, efectivo marcado y mercancía ilegal. No todo se vende en el mismo sitio."
+        },
+        {
+          "id": "paso-2",
+          "title": "Encuentra a un comprador clandestino",
+          "body": "Los avances los describen como intermediarios que adquieren lo robado. Pregunta en el mundo abierto y revisa los contactos del teléfono."
+        },
+        {
+          "id": "paso-3",
+          "title": "Escucha sus pistas",
+          "body": "Además de comprar, ofrecen datos sobre golpes de más valor. Valora esas pistas antes de salir a por objetivos pequeños."
+        },
+        {
+          "id": "paso-4",
+          "title": "Cuida la ruta de entrega",
+          "body": "Haz la venta con el Heat bajo control. Llegar con la policía detrás pone en riesgo el botín."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-robar-coches-y-sistemas-de-seguridad",
+    "titulo": "Robar coches según su nivel de seguridad",
+    "subtitulo": "Distingue vehículos antiguos de modernos antes de forzarlos",
+    "categoria": "Vehículos",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Robar un coche ya no es igual para todos los modelos. Los avances muestran niveles de seguridad que condicionan las herramientas necesarias.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Evalúa el vehículo",
+          "body": "Mira el modelo: un coche antiguo y uno moderno no ofrecen la misma resistencia. Rockstar describe una aplicación de escaneo que informa del nivel de seguridad."
+        },
+        {
+          "id": "paso-2",
+          "title": "Elige la herramienta",
+          "body": "Los avances indican que los modelos antiguos se fuerzan con medios básicos y los modernos exigen clonación de llaves o herramientas electrónicas."
+        },
+        {
+          "id": "paso-3",
+          "title": "Comprueba si lleva rastreador",
+          "body": "Los modelos caros pueden incorporar uno. Un rastreador activado puede disparar la búsqueda policial, según Rockstar."
+        },
+        {
+          "id": "paso-4",
+          "title": "Decide si te compensa",
+          "body": "Valora el precio de reventa que muestra el escáner frente al riesgo de robar un coche protegido."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-registrar-vehiculos-robados",
+    "titulo": "Registrar un vehículo robado y quitarle el rastreador",
+    "subtitulo": "Dale una vida legal a un coche que no es tuyo",
+    "categoria": "Vehículos",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Un coche robado puede registrarse por una tarifa, según lo descrito. Aquí tienes un orden de acciones para dejarlo listo sin atraer atención.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Aléjate de la escena",
+          "body": "Sal del radio de búsqueda antes de hacer nada con el coche; registrar un vehículo caliente es inútil."
+        },
+        {
+          "id": "paso-2",
+          "title": "Busca un taller o servicio de registro",
+          "body": "Rockstar menciona el registro con una tarifa. Pregunta en el mapa por el servicio disponible y comprueba el precio."
+        },
+        {
+          "id": "paso-3",
+          "title": "Retira el rastreador si existe",
+          "body": "Los avances indican que los coches de gama alta pueden llevarlo y que hay que eliminarlo antes de considerarlo seguro."
+        },
+        {
+          "id": "paso-4",
+          "title": "Guárdalo en un garaje",
+          "body": "Un vehículo registrado puede guardarse y reclamarse después, lo que lo convierte en una inversión estable."
+        }
+      ],
+      "consejos": [
+        "Algunos modelos de lujo se desbloquean más adelante, según lo comunicado."
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-garajes-y-vehiculos-personales",
+    "titulo": "Garajes y vehículos personales: organiza tu flota",
+    "subtitulo": "Guarda, llama y personaliza tus coches",
+    "categoria": "Vehículos",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Puedes tener varios vehículos propios con maletero utilizable y servicios para recuperarlos. Una guía para montar una flota práctica.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Consigue un garaje",
+          "body": "Los avances indican que se pueden comprar garajes por Leonida para ampliar la capacidad. Revisa el mapa para localizar los que estén a la venta."
+        },
+        {
+          "id": "paso-2",
+          "title": "Guarda tus mejores vehículos",
+          "body": "Lleva allí los coches que quieras conservar antes de que los dañe una persecución."
+        },
+        {
+          "id": "paso-3",
+          "title": "Pide que te lo lleven",
+          "body": "El móvil incluye un servicio que entrega tu vehículo personal, según lo mostrado."
+        },
+        {
+          "id": "paso-4",
+          "title": "Usa el maletero",
+          "body": "Se puede dejar armas y ropa en el maletero. Organízalo para tener recambios a mano."
+        },
+        {
+          "id": "paso-5",
+          "title": "Repara y mejora",
+          "body": "Acude a un Pay 'n' Spray o a un taller para reparar y personalizar."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-modo-focus-y-punteria",
+    "titulo": "Modo Focus y puntería: combate con más control",
+    "subtitulo": "Domina la cámara lenta y la configuración de apuntado",
+    "categoria": "Combate",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Rockstar describe el Focus como una ralentización que ayuda a apuntar y a ver puntos débiles. Estas son las acciones que puedes practicar desde el primer tiroteo.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Revisa el apuntado automático",
+          "body": "Según Rockstar, viene desactivado por defecto y es configurable. Ajústalo en opciones a tu gusto antes de empezar."
+        },
+        {
+          "id": "paso-2",
+          "title": "Activa el Focus en momentos clave",
+          "body": "Úsalo para resolver un tiroteo difícil o para localizar rutas de huida."
+        },
+        {
+          "id": "paso-3",
+          "title": "Aprende el peso de cada arma",
+          "body": "Los avances apuntan a más peso y retroceso que en la entrega anterior. Prueba cada arma antes de una misión importante."
+        },
+        {
+          "id": "paso-4",
+          "title": "Busca puntos débiles",
+          "body": "El Focus resalta zonas vulnerables del enemigo. Practica con objetivos aislados."
+        }
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-inventario-de-armas-y-arsenal",
+    "titulo": "Inventario de armas y arsenal personal",
+    "subtitulo": "Qué puedes llevar y cómo recuperar lo perdido",
+    "categoria": "Combate",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "La capacidad de carga tiene límites: dos pistolas y dos armas largas, con restricciones en la espalda. Una guía para decidir tu equipamiento.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Conoce los espacios",
+          "body": "Los avances hablan de dos pistolas y dos armas largas. Rockstar aclara que solo una arma larga se lleva a la espalda."
+        },
+        {
+          "id": "paso-2",
+          "title": "Elige según la misión",
+          "body": "Combina un arma discreta con una potente según vayas a robar con sigilo o a enfrentarte a bandas."
+        },
+        {
+          "id": "paso-3",
+          "title": "Recupera armas soltadas",
+          "body": "Puedes retirarlas de taquillas de Ammu-Nation o de tu vehículo, según lo descrito."
+        },
+        {
+          "id": "paso-4",
+          "title": "Guarda el exceso en el maletero",
+          "body": "Deja las armas que no uses para no cargar peso y poder cambiarlas más tarde."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-combate-no-letal-y-cuerpo-a-cuerpo",
+    "titulo": "Combate no letal y cuerpo a cuerpo",
+    "subtitulo": "Resuelve conflictos sin dejar un rastro de cadáveres",
+    "categoria": "Combate",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Existen opciones para intimidar o desarmar y los dos protagonistas tienen estilos distintos. Esta guía te anima a probarlas para evitar escaladas.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Prueba la intimidación",
+          "body": "Apunta a un objetivo para que obedezca, según los avances, antes de recurrir a la violencia."
+        },
+        {
+          "id": "paso-2",
+          "title": "Desarma al enemigo",
+          "body": "Los avances mencionan la posibilidad de desarmar. Practícala en encuentros de poca presión."
+        },
+        {
+          "id": "paso-3",
+          "title": "Dispara a las extremidades",
+          "body": "Es una vía no letal descrita en las pruebas. Ideal cuando necesitas reducir y huir."
+        },
+        {
+          "id": "paso-4",
+          "title": "Escoge el protagonista adecuado",
+          "body": "Se describe a Lucia con artes marciales y a Jason con estilo callejero; elige según el cuerpo a cuerpo que prefieras."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-telefono-y-aplicaciones",
+    "titulo": "El teléfono como herramienta: aplicaciones y viaje rápido",
+    "subtitulo": "Taxis, entregas de vehículos y redes sociales a un toque",
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "El móvil sustituye al HUD en muchas funciones. Estas acciones te ayudarán a sacarle partido desde las primeras horas.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Abre el teléfono",
+          "body": "Los avances indican que la cámara se acerca a las manos del personaje en lugar de superponer una interfaz."
+        },
+        {
+          "id": "paso-2",
+          "title": "Revisa las aplicaciones clave",
+          "body": "Se mencionan mensajería, banca, redes sociales, actividad física y vídeo."
+        },
+        {
+          "id": "paso-3",
+          "title": "Pide un taxi para viajar",
+          "body": "El servicio Ryde Me funciona como viaje rápido, según lo mostrado."
+        },
+        {
+          "id": "paso-4",
+          "title": "Pide tu coche con la app de entrega",
+          "body": "Scooter Bros entrega vehículos personales."
+        },
+        {
+          "id": "paso-5",
+          "title": "Explora Snapmatic",
+          "body": "Las publicaciones y directos pueden revelar eventos y escondites. Revísalas con regularidad."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-relacion-entre-jason-y-lucia",
+    "titulo": "La relación entre Jason y Lucia",
+    "subtitulo": "Qué significa el indicador y cómo cuidarla",
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "El juego muestra un indicador del vínculo de la pareja. Rockstar ha precisado que no ofrece bonificaciones directas, así que sirve para ambientación y escenas.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Localiza el indicador",
+          "body": "Consulta el menú para ver el estado de la relación entre ambos."
+        },
+        {
+          "id": "paso-2",
+          "title": "Pasa tiempo juntos",
+          "body": "Las actividades compartidas influyen según los avances. Hazlas cuando te apetezca."
+        },
+        {
+          "id": "paso-3",
+          "title": "Atiende los mensajes",
+          "body": "Descuidar al otro puede deteriorar la relación. Responde al teléfono con regularidad."
+        },
+        {
+          "id": "paso-4",
+          "title": "No lo hagas por ventaja",
+          "body": "Rockstar aclara que no hay beneficio directo; es parte del tono de la historia."
+        }
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-regiones-de-leonida-y-mapa-gradual",
+    "titulo": "Regiones de Leonida y cómo se abre el mapa",
+    "subtitulo": "Vice City, los Cayos, Grassrivers y Mount Kalaga",
+    "categoria": "Exploración",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Leonida se descubre poco a poco. Esta guía resume las zonas nombradas por Rockstar y cómo organizar tu exploración.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Conoce las regiones",
+          "body": "Rockstar nombra Vice City, Leonida Keys, Grassrivers y el Parque Nacional Mount Kalaga."
+        },
+        {
+          "id": "paso-2",
+          "title": "Empieza por los Cayos",
+          "body": "Los avances indican que la historia arranca en el sur. Explora los alrededores antes de avanzar."
+        },
+        {
+          "id": "paso-3",
+          "title": "Consulta el mapa oficial",
+          "body": "Revisa la cartografía publicada por Rockstar para decidir hacia dónde ir."
+        },
+        {
+          "id": "paso-4",
+          "title": "Alterna ciudad y naturaleza",
+          "body": "Usa Vice City para actividad urbana y las zonas silvestres para caza, pesca o conducción todoterreno."
+        }
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-gimnasio-y-forma-fisica",
+    "titulo": "Gimnasio y forma física",
+    "subtitulo": "Entrena para mejorar tu personaje",
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Rockstar indica que los gimnasios afectan a atributos del personaje. Una pauta para integrarlos en tu rutina.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Localiza un gimnasio",
+          "body": "Busca gimnasios en el mapa de Vice City y alrededores."
+        },
+        {
+          "id": "paso-2",
+          "title": "Elige un entrenamiento",
+          "body": "Los avances mencionan sesiones de ejercicio; prueba las disponibles."
+        },
+        {
+          "id": "paso-3",
+          "title": "Observa los atributos",
+          "body": "Según Rockstar, afectan a salud, resistencia, concentración y físico. Comprueba el cambio en el menú."
+        },
+        {
+          "id": "paso-4",
+          "title": "Repite con constancia",
+          "body": "Haz entrenamientos entre misiones."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-caza-y-pesca",
+    "titulo": "Caza y pesca en las zonas silvestres",
+    "subtitulo": "Aprovecha la fauna de Leonida",
+    "categoria": "Exploración",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Las actividades de caza y pesca figuran entre las confirmadas. Esta guía propone cómo prepararte.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Elige una zona silvestre",
+          "body": "Mount Kalaga y Grassrivers aparecen como entornos naturales en el material oficial."
+        },
+        {
+          "id": "paso-2",
+          "title": "Prepara el equipo",
+          "body": "Consulta qué armas o aparejos puedes usar y llévalos."
+        },
+        {
+          "id": "paso-3",
+          "title": "Observa a los animales",
+          "body": "Estudia su comportamiento antes de actuar, como indican los avances."
+        },
+        {
+          "id": "paso-4",
+          "title": "Practica la pesca",
+          "body": "Prueba en costas y agua dulce."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-buceo-y-naufragios",
+    "titulo": "Buceo y exploración de naufragios",
+    "subtitulo": "Explora bajo el agua",
+    "categoria": "Coleccionables",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "El buceo está confirmado entre las actividades, y los avances hablan de naufragios con tesoro.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Consigue equipo",
+          "body": "Consulta en el juego qué equipo de buceo está disponible."
+        },
+        {
+          "id": "paso-2",
+          "title": "Elige un punto de inmersión",
+          "body": "Empieza por la costa de los Cayos, una zona tropical según Rockstar."
+        },
+        {
+          "id": "paso-3",
+          "title": "Busca restos hundidos",
+          "body": "Los avances mencionan naufragios para explorar."
+        },
+        {
+          "id": "paso-4",
+          "title": "Controla el aire",
+          "body": "Sube antes de que se agote."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-catalogar-animales",
+    "titulo": "Catalogar animales de Leonida",
+    "subtitulo": "Completa una lista de fauna",
+    "categoria": "Coleccionables",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Los avances señalan que los animales pueden estudiarse y añadirse a un listado, en el zoo o en libertad.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Visita el zoo",
+          "body": "Los avances sitúan allí una forma de añadir especies."
+        },
+        {
+          "id": "paso-2",
+          "title": "Sal al campo",
+          "body": "Busca fauna en las áreas silvestres."
+        },
+        {
+          "id": "paso-3",
+          "title": "Estudia al animal",
+          "body": "Observa al animal sin asustarlo para registrarlo."
+        },
+        {
+          "id": "paso-4",
+          "title": "Revisa tu lista",
+          "body": "Comprueba qué especies faltan y planifica expediciones."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-conduccion-y-combustible",
+    "titulo": "Conducción, física y combustible",
+    "subtitulo": "Adapta tu estilo al coche",
+    "categoria": "Vehículos",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Rockstar describe un manejo que varía con tracción, neumáticos, suspensión y dirección, y combustible que puede agotarse.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Prueba cada coche",
+          "body": "Haz una vuelta de reconocimiento antes de una persecución."
+        },
+        {
+          "id": "paso-2",
+          "title": "Observa la tracción",
+          "body": "La tracción cambia el comportamiento; adapta tus curvas."
+        },
+        {
+          "id": "paso-3",
+          "title": "Controla el combustible",
+          "body": "Puede agotarse, así que repostar es obligatorio."
+        },
+        {
+          "id": "paso-4",
+          "title": "Repara en gasolineras",
+          "body": "Según Rockstar, sirven para repostar y reparar."
+        }
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "guia-carreras-y-actividades-de-velocidad",
+    "titulo": "Carreras y actividades de velocidad",
+    "subtitulo": "Circuitos, todoterreno y más",
+    "categoria": "Vehículos",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "descripcion": "Las carreras figuran entre las actividades. Esta guía te ayuda a elegir y prepararte.",
+      "steps": [
+        {
+          "id": "paso-1",
+          "title": "Elige una modalidad",
+          "body": "Rockstar menciona carreras de circuito; los avances añaden todoterreno y camiones monstruo."
+        },
+        {
+          "id": "paso-2",
+          "title": "Escoge vehículo",
+          "body": "Selecciona el que encaje con el terreno."
+        },
+        {
+          "id": "paso-3",
+          "title": "Practica la ruta",
+          "body": "Recórrela sin presión."
+        },
+        {
+          "id": "paso-4",
+          "title": "Mejora tu coche",
+          "body": "Usa los talleres para personalizar."
+        }
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Descripción pública de Rockstar Games sobre el sistema, recogida en material oficial",
+      "Análisis editorial de los avances jugables previos al lanzamiento, contrastado entre varias fuentes"
+    ]
+  }
+]

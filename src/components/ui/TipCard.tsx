@@ -37,8 +37,8 @@ export function TipCard({
 
   return (
     <section
-      aria-label="Tip of the day"
-      className={`glass overflow-hidden rounded-2xl ${className}`}
+      aria-label="Tip del día"
+      className={`glass overflow-hidden rounded-[20px] ${className}`}
     >
       <div className="relative h-28 w-full">
         {showImage ? (
@@ -53,24 +53,22 @@ export function TipCard({
         )}
       </div>
 
-      <div className="p-5">
-        <h2 className="font-display text-sm font-bold tracking-[0.2em] text-vice-orange">
-          TIP OF THE DAY
+      <div className="relative px-7 pb-3.5 pt-6">
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-2 left-3 font-display text-[76px] font-bold leading-none text-[rgba(246,126,86,0.6)]"
+        >
+          &ldquo;
+        </span>
+        <h2 className="m-0 mb-2.5 font-display text-[22px] font-semibold tracking-[0.02em] text-white">
+          Tip del día
         </h2>
-        <div className="mt-2 flex gap-3">
-          <span
-            aria-hidden="true"
-            className="font-display text-5xl font-bold leading-none text-vice-magenta"
-          >
-            &ldquo;
-          </span>
-          <p aria-live="polite" className="min-h-[3.5rem] text-base leading-relaxed text-vice-text">
-            {tips[current] ?? ''}
-          </p>
-        </div>
+        <p aria-live="polite" className="m-0 min-h-[66px] text-[15px] leading-[1.55] text-vice-text">
+          {tips[current] ?? ''}
+        </p>
 
         {total > 1 && (
-          <div role="group" aria-label="Paginador de tips" className="mt-3 flex items-center">
+          <div role="group" aria-label="Paginador de tips" className="mt-0.5 flex items-center justify-end">
             {PAGES.slice(0, total).map((i) => (
               <button
                 key={i}
@@ -81,8 +79,8 @@ export function TipCard({
                 className="flex h-11 min-w-11 items-center justify-center focus-visible:outline-2 focus-visible:outline-vice-gold"
               >
                 <span
-                  className={`block h-1.5 rounded-full transition-all ${
-                    i === current ? 'w-8 bg-vice-accent' : 'w-5 bg-white/30'
+                  className={`block h-1 w-[30px] rounded-sm transition-colors ${
+                    i === current ? 'bg-vice-coral' : 'bg-white/60'
                   }`}
                 />
               </button>

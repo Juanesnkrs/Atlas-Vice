@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.atlasvice.app',
-  appName: 'ATLAS VICE',
+  appId: 'com.leonidapp.companion',
+  appName: 'LeonidApp',
   webDir: 'dist',
   backgroundColor: '#160B14',
   android: {

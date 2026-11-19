@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mapa de Leonida</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@600;700&amp;family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#2E1A47;font-family:'Poppins',system-ui,sans-serif}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+::placeholder{color:rgba(255,255,255,.64)}
+:focus-visible{outline:2px solid #FFC09A;outline-offset:2px}
+.hv:hover{filter:brightness(1.1)}
+.glass{background:rgba(20,14,36,.78);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(246,146,89,.25)}
+.pbtn{position:relative;overflow:hidden;background:linear-gradient(90deg,#E1307E,#F67E56);border:1px solid rgba(255,255,255,.28);color:#1A0A22;font-weight:700;text-decoration:none}
+.pbtn>span{position:relative}
+@keyframes pulse{0%{transform:scale(1);opacity:.7}100%{transform:scale(1.9);opacity:0}}
+</style>
+</helmet>
+<div style="position:relative;width:1440px;height:900px;overflow:hidden;background:#2E1A47;color:#FBF1F5;font-family:'Poppins',system-ui,sans-serif">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<linearGradient id="sunG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E1307E"></stop><stop offset="1" stop-color="#F69259"></stop></linearGradient>
+<linearGradient id="sunH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E1307E"></stop><stop offset="1" stop-color="#F67E56"></stop></linearGradient>
+<clipPath id="txtclip"><text x="210" y="92" text-anchor="middle" font-family="Jost,sans-serif" font-weight="700" font-size="74" textLength="404" lengthAdjust="spacingAndGlyphs">ATLAS VICE</text></clipPath>
+<symbol id="palm" viewBox="0 0 130 400">
+<path d="M60 400 C57 300 58 200 63 72 L67 72 C62 200 64 300 66 400 Z" fill="currentColor"></path>
+<g transform="translate(65 72)" fill="currentColor">
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="rotate(-45)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="rotate(-12)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="rotate(22)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="rotate(-80)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="scale(-1 1) rotate(-45)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="scale(-1 1) rotate(-12)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="scale(-1 1) rotate(22)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="scale(-1 1) rotate(-80)"></path>
+</g>
+</symbol>
+<symbol id="sky" viewBox="0 0 1000 80" preserveAspectRatio="none">
+<path fill="currentColor" d="M0 80 V52 H30 V36 H48 V52 H70 V22 H92 V52 H110 V40 H140 V14 H150 V6 H156 V14 H166 V44 H196 V30 H220 V50 H250 V26 H262 V18 H282 V50 H312 V38 H340 V54 H372 V30 H392 V10 H414 V30 H434 V46 H466 V34 H488 V52 H520 V20 H536 V12 H552 V20 H566 V48 H600 V36 H628 V52 H660 V28 H684 V50 H716 V40 H744 V18 H758 V8 H770 V18 H786 V46 H820 V32 H846 V52 H878 V38 H904 V54 H940 V42 H970 V56 H1000 V80 Z"></path>
+</symbol>
+<symbol id="logo" viewBox="0 0 420 150">
+<g clip-path="url(#txtclip)">
+<rect x="0" y="20" width="420" height="80" fill="url(#sunG)"></rect>
+<g fill="#2E1A47" opacity=".5">
+<use href="#palm" x="4" y="12" width="40" height="124"></use><use href="#palm" x="62" y="18" width="36" height="112"></use><use href="#palm" x="118" y="10" width="40" height="124"></use><use href="#palm" x="176" y="18" width="36" height="112"></use><use href="#palm" x="232" y="12" width="40" height="124"></use><use href="#palm" x="290" y="18" width="36" height="112"></use><use href="#palm" x="344" y="10" width="40" height="124"></use><use href="#palm" x="384" y="18" width="36" height="112"></use>
+</g>
+</g>
+<text x="210" y="92" text-anchor="middle" font-family="Jost,sans-serif" font-weight="700" font-size="74" textLength="404" lengthAdjust="spacingAndGlyphs" fill="none" stroke="#FFFFFF" stroke-opacity=".9" stroke-width="1.3">ATLAS VICE</text>
+<use href="#sky" x="14" y="104" width="392" height="34" style="color:#5A2A73"></use>
+<rect x="14" y="138" width="392" height="2.5" rx="1.2" fill="url(#sunH)"></rect>
+</symbol>
+</defs>
+</svg>
+
+<svg aria-hidden="true" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%">
+<defs>
+<linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2E1A47"></stop><stop offset=".55" stop-color="#5B2766"></stop><stop offset=".85" stop-color="#7B2C6F"></stop><stop offset="1" stop-color="#E14B7B" stop-opacity=".75"></stop></linearGradient>
+<pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0V60" fill="none" stroke="rgba(246,146,89,.07)" stroke-width="1"></path></pattern>
+<pattern id="grid2" width="240" height="240" patternUnits="userSpaceOnUse"><path d="M240 0H0V240" fill="none" stroke="rgba(246,146,89,.13)" stroke-width="1"></path></pattern>
+<pattern id="hatch" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="12" stroke="rgba(246,146,89,.18)" stroke-width="2"></line></pattern>
+</defs>
+<rect width="1440" height="900" fill="url(#skyg)"></rect>
+<rect width="1440" height="900" fill="url(#grid)"></rect>
+<rect width="1440" height="900" fill="url(#grid2)"></rect>
+<path d="M300 150 L620 128 L860 150 L980 230 L1010 330 L1000 450 L1050 560 L1100 680 L1140 790 L1080 830 L1030 760 L960 690 L900 620 L860 540 L790 500 L720 560 L660 640 L600 700 L540 640 L520 540 L470 480 L430 380 L350 310 Z" fill="rgba(246,146,89,.12)" stroke="#F69259" stroke-opacity=".85" stroke-width="2"></path>
+<path d="M300 150 L620 128 L860 150 L980 230 L1010 330 L1000 450 L1050 560 L1100 680 L1140 790 L1080 830 L1030 760 L960 690 L900 620 L860 540 L790 500 L720 560 L660 640 L600 700 L540 640 L520 540 L470 480 L430 380 L350 310 Z" fill="url(#hatch)"></path>
+<path d="M300 150 L620 128 L860 150 L980 230 L1010 330 L1000 450 L1050 560 L1100 680 L1140 790 L1080 830 L1030 760 L960 690 L900 620 L860 540 L790 500 L720 560 L660 640 L600 700 L540 640 L520 540 L470 480 L430 380 L350 310 Z" transform="translate(720 450) scale(.9) translate(-720 -450)" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.2" stroke-dasharray="6 6"></path>
+<ellipse cx="640" cy="330" rx="62" ry="34" fill="rgba(120,200,255,.1)" stroke="rgba(150,215,255,.5)"></ellipse>
+<ellipse cx="810" cy="430" rx="40" ry="22" fill="rgba(120,200,255,.1)" stroke="rgba(150,215,255,.5)"></ellipse>
+<ellipse cx="1190" cy="820" rx="30" ry="12" fill="rgba(246,146,89,.12)" stroke="#F69259" stroke-opacity=".6"></ellipse>
+<ellipse cx="1260" cy="780" rx="22" ry="9" fill="rgba(246,146,89,.12)" stroke="#F69259" stroke-opacity=".6"></ellipse>
+<ellipse cx="1320" cy="830" rx="16" ry="7" fill="rgba(246,146,89,.12)" stroke="#F69259" stroke-opacity=".6"></ellipse>
+<polyline points="360,320 470,290 640,250 760,330 880,260 980,240" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="3 7"></polyline>
+<polyline points="470,290 560,430 700,480 780,590 900,640 1000,560 980,330" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="2" stroke-dasharray="3 7"></polyline>
+<polyline points="640,620 780,590 860,540 940,400" fill="none" stroke="#F67E56" stroke-opacity=".6" stroke-width="2"></polyline>
+<g font-family="Poppins,sans-serif" font-size="11" font-weight="500" letter-spacing="3" fill="rgba(255,255,255,.65)">
+<text x="440" y="200">SECTOR A</text><text x="820" y="190">SECTOR B</text><text x="600" y="520">SECTOR C</text><text x="940" y="720">SECTOR D</text>
+</g>
+</svg>
+<svg aria-hidden="true" viewBox="0 0 1000 80" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0;width:1440px;height:170px;color:#2A1240;opacity:.6"><use href="#sky"></use></svg>
+<svg aria-hidden="true" style="position:absolute;left:30px;bottom:40px;width:110px;height:340px;color:#2A1240;opacity:.5"><use href="#palm"></use></svg>
+<svg aria-hidden="true" style="position:absolute;left:1290px;bottom:30px;width:120px;height:380px;color:#2A1240;opacity:.5"><use href="#palm"></use></svg>
+
+<div style="position:absolute;left:32px;top:24px;right:32px;display:flex;align-items:center;gap:20px">
+<svg viewBox="0 0 420 150" width="168" height="60" role="img" aria-label="ATLAS VICE" style="flex:none"><use href="#logo"></use></svg>
+<div class="glass" style="position:relative;width:460px;height:48px;box-sizing:border-box;border-radius:24px">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="2" style="position:absolute;left:18px;top:14px"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+<input type="text" aria-label="Buscar en el mapa" placeholder="Buscar coleccionables, armas, tiendas…" style="width:100%;height:100%;box-sizing:border-box;padding:0 18px 0 46px;border:0;border-radius:24px;background:transparent;color:#fff;font-size:14px">
+</div>
+<div style="flex:1"></div>
+<div class="glass" style="height:48px;box-sizing:border-box;border-radius:24px;padding:0 8px 0 20px;display:flex;align-items:center;gap:16px">
+<div style="display:flex;align-items:center;gap:10px"><span style="font-size:11px;font-weight:600;letter-spacing:.08em;color:rgba(251,241,245,.9)">PROGRESO</span>
+<span style="display:block;width:96px;height:6px;border-radius:3px;background:rgba(255,255,255,.16)"><span style="display:block;height:6px;border-radius:3px;background:linear-gradient(90deg,#E1307E,#F67E56);width:{{pct}}%"></span></span>
+<span style="font-size:14px;font-weight:600">{{pct}}%</span></div>
+<span style="display:flex;align-items:center;gap:8px;height:34px;padding:0 14px 0 6px;border-radius:17px;background:rgba(255,255,255,.09);font-size:13px;font-weight:500"><span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:13px;background:linear-gradient(135deg,#E1307E,#F67E56);color:#1A0A22;font-size:12px;font-weight:700">U</span>USER</span>
+</div>
+</div>
+
+<div class="glass" style="position:absolute;left:32px;top:116px;width:264px;box-sizing:border-box;padding:18px 18px 10px;border-radius:20px">
+<h2 style="margin:0 0 6px;font-size:12px;font-weight:600;letter-spacing:.1em;color:rgba(251,241,245,.9)">CAPAS DEL MAPA</h2>
+<sc-for list="{{layers}}" as="l" hint-placeholder-count="4">
+<label style="display:flex;align-items:center;gap:12px;min-height:44px;font-size:14px;cursor:pointer">
+<input type="checkbox" checked="{{l.on}}" onChange="{{l.toggle}}" style="width:18px;height:18px;margin:0;accent-color:#F67E56">
+<span style="display:block;width:10px;height:10px;border-radius:5px;background:{{l.color}}"></span>
+<span style="flex:1">{{l.name}}</span>
+<span style="font-size:12px;color:rgba(251,241,245,.75)">{{l.count}}</span>
+</label>
+</sc-for>
+</div>
+
+<sc-for list="{{pins}}" as="p" hint-placeholder-count="14">
+<sc-if value="{{p.visible}}" hint-placeholder-val="{{true}}">
+<button onClick="{{p.pick}}" aria-label="{{p.label}}" style="position:absolute;left:{{p.x}};top:{{p.y}};width:44px;height:44px;padding:0;border:0;background:none;display:flex;align-items:center;justify-content:center">
+<span style="position:absolute;width:26px;height:26px;border-radius:13px;background:{{p.color}};opacity:{{p.pulse}};animation:pulse 1.8s ease-out infinite"></span>
+<span style="position:relative;display:flex;align-items:center;justify-content:center;width:28px;height:28px;box-sizing:border-box;border-radius:14px;background:{{p.color}};border:2px solid {{p.border}};box-shadow:{{p.ring}};opacity:{{p.alpha}};color:#1A0A22;font-size:14px;font-weight:700">
+<sc-if value="{{p.done}}" hint-placeholder-val="{{false}}"><svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#1A0A22" stroke-width="3.2"><path d="M5 12l5 5 9-10"></path></svg></sc-if>
+<sc-if value="{{p.todo}}" hint-placeholder-val="{{true}}">{{p.glyph}}</sc-if>
+</span>
+</button>
+</sc-if>
+</sc-for>
+
+<div class="glass" style="position:absolute;left:50%;bottom:132px;transform:translateX(-50%);width:440px;box-sizing:border-box;padding:16px 20px;border-radius:20px;display:flex;align-items:center;gap:16px;border-style:dashed;border-color:rgba(246,146,89,.6)">
+<svg aria-hidden="true" viewBox="0 0 48 48" width="40" height="40" fill="none" stroke="#F69259" stroke-width="2" style="flex:none"><circle cx="24" cy="24" r="18" stroke-dasharray="4 5"></circle><path d="M24 10v6M24 32v6M10 24h6M32 24h6"></path><circle cx="24" cy="24" r="3" fill="#F69259"></circle></svg>
+<div>
+<div style="font-family:'Jost',sans-serif;font-weight:700;font-size:18px;line-height:1.2">Cartografía en actualización</div>
+<div style="margin-top:2px;font-size:12px;font-weight:600;letter-spacing:.12em;color:#FFC09A">LAUNCH READY</div>
+<div style="margin-top:4px;font-size:12px;color:rgba(251,241,245,.8)">Lienzo táctico vectorial. Se sustituye por el mapa oficial de Leonida.</div>
+</div>
+</div>
+
+<sc-if value="{{hasSel}}" hint-placeholder-val="{{true}}">
+<aside class="glass" style="position:absolute;right:32px;top:116px;width:340px;box-sizing:border-box;padding:14px;border-radius:20px">
+<div style="position:relative;height:172px;border-radius:14px;overflow:hidden;background:#2E1A47"><img src="{{sel.img}}" alt="{{sel.imgAlt}}" style="width:100%;height:100%;object-fit:cover;object-position:{{sel.pos}}">
+<span style="position:absolute;left:10px;top:10px;padding:4px 10px;border-radius:12px;background:rgba(20,14,36,.88);font-size:11px;font-weight:600;letter-spacing:.06em;color:#fff">{{sel.type}}</span></div>
+<h2 style="margin:14px 4px 0;font-family:'Jost',sans-serif;font-weight:700;font-size:22px;line-height:1.2">{{sel.title}}</h2>
+<p style="margin:6px 4px 0;font-size:13px;line-height:1.55;color:rgba(251,241,245,.85)">{{sel.text}}</p>
+<button onClick="{{toggleDone}}" aria-pressed="{{sel.done}}" style="margin-top:14px;width:100%;min-height:48px;display:flex;align-items:center;gap:12px;padding:0 14px;box-sizing:border-box;border-radius:14px;border:1px solid rgba(246,146,89,.3);background:rgba(255,255,255,.07);color:#fff;font-size:14px;font-weight:500;text-align:left">
+<span style="display:flex;align-items:center;justify-content:center;width:22px;height:22px;box-sizing:border-box;border-radius:6px;border:2px solid #F67E56;background:{{sel.checkBg}}"><svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#1A0A22" stroke-width="3.5" style="opacity:{{sel.checkOp}}"><path d="M5 12l5 5 9-10"></path></svg></span>
+<span style="flex:1">{{sel.doneLabel}}</span>
+<span style="font-size:12px;color:#FFC09A;font-weight:600">100%</span>
+</button>
+<a href="Forum.dc.html" class="pbtn hv" style="margin-top:10px;display:flex;align-items:center;justify-content:center;height:48px;border-radius:24px;font-size:16px">
+<svg aria-hidden="true" viewBox="0 0 312 48" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;color:#2E1A47;opacity:.28"><use href="#palm" x="-4" y="-22" width="40" height="130"></use><use href="#palm" x="90" y="-8" width="34" height="108"></use><use href="#palm" x="170" y="-24" width="42" height="136"></use><use href="#palm" x="250" y="-10" width="36" height="116"></use></svg>
+<span>Hilos (4)</span></a>
+<p style="margin:10px 4px 0;font-size:11px;color:rgba(251,241,245,.7)">Datos de ejemplo. Los reales llegan desde map_markers.</p>
+</aside>
+</sc-if>
+
+<nav aria-label="Navegación principal" class="glass" style="position:absolute;left:50%;bottom:28px;transform:translateX(-50%);height:72px;box-sizing:border-box;padding:0 12px;border-radius:36px;display:flex;align-items:center;gap:6px">
+<a href="Map.dc.html" aria-current="page" class="pbtn" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:108px;height:56px;border-radius:28px;font-size:11px">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1A0A22" stroke-width="2" style="position:relative"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"></path></svg><span>Mapa</span></a>
+<a href="Inspector.dc.html" class="hv" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:108px;height:56px;border-radius:28px;color:#FBF1F5;font-size:11px;font-weight:500;text-decoration:none">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FBF1F5" stroke-width="1.9"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"></rect></svg>Catálogo</a>
+<a href="Forum.dc.html" class="hv" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:108px;height:56px;border-radius:28px;color:#FBF1F5;font-size:11px;font-weight:500;text-decoration:none">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FBF1F5" stroke-width="1.9"><path d="M4 5h16v11H9l-5 4V5z"></path></svg>Foro</a>
+<button aria-disabled="true" title="P06 · Centro de aportes" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:108px;height:56px;border:0;border-radius:28px;background:none;color:rgba(251,241,245,.75);font-size:11px;font-weight:500">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="rgba(251,241,245,.75)" stroke-width="1.9"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 8v8M8 12h8"></path></svg>Aportar</button>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      sel: 'p2',
+      layers: { col: true, arm: true, tie: false, eve: true },
+      done: { p1: true, p3: true, p4: true, p6: true, p9: true, p10: true }
+    };
+  }
+  renderVals() {
+    const types = {
+      col: { name: 'Coleccionables', color: '#E1307E', glyph: 'C', label: 'Coleccionable' },
+      arm: { name: 'Armas ocultas', color: '#FFC857', glyph: 'A', label: 'Arma oculta' },
+      tie: { name: 'Tiendas', color: '#5ED6E0', glyph: 'T', label: 'Tienda' },
+      eve: { name: 'Eventos', color: '#B79CFF', glyph: 'E', label: 'Evento' }
+    };
+    const raw = [
+      { id: 'p1', t: 'col', x: 470, y: 290, img: 'assets/a2.jpg', pos: '12% 70%', n: '01' },
+      { id: 'p2', t: 'col', x: 640, y: 250, img: 'assets/a3.jpg', pos: '85% 8%', n: '02' },
+      { id: 'p3', t: 'arm', x: 760, y: 330, img: 'assets/a1.jpg', pos: '55% 95%', n: '01' },
+      { id: 'p4', t: 'tie', x: 880, y: 260, img: 'assets/a4.jpg', pos: '50% 20%', n: '01' },
+      { id: 'p5', t: 'eve', x: 940, y: 400, img: 'assets/a5.jpg', pos: '70% 50%', n: '01' },
+      { id: 'p6', t: 'col', x: 700, y: 480, img: 'assets/a2.jpg', pos: '70% 45%', n: '03' },
+      { id: 'p7', t: 'arm', x: 560, y: 430, img: 'assets/a1.jpg', pos: '50% 5%', n: '02' },
+      { id: 'p8', t: 'col', x: 780, y: 590, img: 'assets/a3.jpg', pos: '55% 70%', n: '04' },
+      { id: 'p9', t: 'tie', x: 640, y: 620, img: 'assets/a4.jpg', pos: '50% 80%', n: '02' },
+      { id: 'p10', t: 'eve', x: 900, y: 640, img: 'assets/a6.jpg', pos: '50% 50%', n: '02' },
+      { id: 'p11', t: 'col', x: 980, y: 330, img: 'assets/a7.jpg', pos: '50% 40%', n: '05' },
+      { id: 'p12', t: 'arm', x: 540, y: 560, img: 'assets/a1.jpg', pos: '97% 10%', n: '03' },
+      { id: 'p13', t: 'col', x: 1000, y: 560, img: 'assets/a2.jpg', pos: '100% 68%', n: '06' },
+      { id: 'p14', t: 'col', x: 820, y: 200, img: 'assets/a3.jpg', pos: '100% 4%', n: '07' }
+    ];
+    const done = this.state.done;
+    const selId = this.state.sel;
+    const layersOn = this.state.layers;
+    const pins = raw.map((r) => {
+      const ty = types[r.t];
+      const isDone = !!done[r.id];
+      const isSel = r.id === selId;
+      return {
+        visible: !!layersOn[r.t],
+        x: (r.x - 22) + 'px',
+        y: (r.y - 22) + 'px',
+        color: ty.color,
+        glyph: ty.glyph,
+        label: ty.label + ' ' + r.n + (isDone ? ', completado' : ''),
+        done: isDone,
+        todo: !isDone,
+        alpha: isDone ? 0.6 : 1,
+        border: isSel ? '#fff' : '#1A0A22',
+        ring: isSel ? '0 0 0 5px rgba(246,126,86,.45)' : 'none',
+        pulse: isSel ? 0.7 : 0,
+        pick: () => this.setState({ sel: r.id })
+      };
+    });
+    const layers = Object.keys(types).map((k) => ({
+      name: types[k].name,
+      color: types[k].color,
+      on: !!layersOn[k],
+      count: raw.filter((r) => r.t === k).length,
+      toggle: () => this.setState({ layers: Object.assign({}, layersOn, { [k]: !layersOn[k] }) })
+    }));
+    const found = raw.find((r) => r.id === selId);
+    let sel = null;
+    if (found) {
+      const ty = types[found.t];
+      const d = !!done[found.id];
+      sel = {
+        img: found.img,
+        pos: found.pos,
+        imgAlt: 'Ilustración de referencia para ' + ty.label.toLowerCase() + ' ' + found.n,
+        type: ty.label.toUpperCase(),
+        title: ty.label + ' ' + found.n,
+        text: 'Ubicación provisional en el lienzo táctico. La guía paso a paso se completa con el mapa oficial.',
+        done: d,
+        checkBg: d ? '#F67E56' : 'transparent',
+        checkOp: d ? 1 : 0,
+        doneLabel: d ? 'Completado' : 'Marcar como completado'
+      };
+    }
+    const doneCount = raw.filter((r) => done[r.id]).length;
+    return {
+      pins: pins,
+      layers: layers,
+      hasSel: !!sel,
+      sel: sel || {},
+      pct: Math.round((doneCount / raw.length) * 100),
+      toggleDone: () => this.setState({ done: Object.assign({}, done, { [selId]: !done[selId] }) })
+    };
+  }
+}
+</script>
+</body>
+</html>

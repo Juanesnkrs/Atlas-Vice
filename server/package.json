@@ -1,0 +1,36 @@
+{
+  "name": "leonidapp-server",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsc -p tsconfig.json && node --env-file-if-exists=.env --watch dist/index.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "seed": "tsc -p tsconfig.json && node dist/scripts/seed.js",
+    "demo:access": "tsc -p tsconfig.json && node --env-file-if-exists=.env dist/scripts/demoAccess.js",
+    "import:catalog": "tsc -p tsconfig.json && node --env-file-if-exists=.env dist/scripts/importCatalog.js"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.1.5",
+    "@fastify/cors": "^11.4.3",
+    "@fastify/formbody": "^9.0.2",
+    "@fastify/rate-limit": "^11.2.2",
+    "dotenv": "^18.0.10",
+    "fast-xml-parser": "^5.12.1",
+    "fastify": "^5.12.8",
+    "fastify-plugin": "^6.0.1",
+    "jose": "^6.2.17",
+    "mongoose": "^9.12.2",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^10.6.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/node-cron": "^3.0.11",
+    "@types/nodemailer": "^8.0.2",
+    "typescript": "^7.0.2"
+  }
+}
