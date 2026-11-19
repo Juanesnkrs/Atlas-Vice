@@ -3,9 +3,10 @@
  *   guardada solo si no hay conexion. Evita pantallas en blanco tras un despliegue nuevo.
  * - /api/*: Network-First y NUNCA se cachea (sin respuestas obsoletas); sin red responde 503.
  * - Assets estaticos (/assets/*, iconos y manifest): Cache-First (sus nombres llevan hash).
- * - Teselas del mapa (/map-tiles/*): stale-while-revalidate (sirve la copia y refresca en segundo plano).
+ * - Manifiesto de teselas (/map-tiles/manifest.json): siempre red (una copia vieja desencaja la piramide).
+ * - Teselas del mapa (/map-tiles/*?v=N): stale-while-revalidate; la version del manifiesto va en la URL.
  */
-const CACHE = 'leonidapp-static-v4';
+const CACHE = 'leonidapp-static-v6';
 const SHELL = ['/', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png'];
 const STATIC_PATHS = new Set(['/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png']);
 
@@ -41,7 +42,7 @@ self.addEventListener('fetch', (event) => {
 
   if (url.origin !== self.location.origin) return;
   // SEO dinamico y el propio SW: siempre red.
-  if (url.pathname === '/sitemap.xml' || url.pathname === '/robots.txt' || url.pathname === '/sw.js') return;
+  if (url.pathname === '/sitemap.xml' || url.pathname === '/robots.txt' || url.pathname === '/sw.js' || url.pathname === '/map-tiles/manifest.json') return;
 
   // Navegacion: Network-First. La copia de '/' (shell de la SPA) solo sirve sin conexion.
   if (req.mode === 'navigate') {

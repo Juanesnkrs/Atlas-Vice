@@ -23,10 +23,11 @@ export interface TileManifest {
 }
 
 let manifestPromise: Promise<TileManifest> | null = null;
-/** fetch + caché en memoria (una sola petición por sesión); un fallo no se queda cacheado. */
+/** fetch + caché en memoria (una sola petición por sesión); un fallo no se queda cacheado. `no-cache` revalida
+ * siempre: un manifiesto viejo de otra pirámide de teselas dejaría el mapa desencajado. */
 export function loadTileManifest(): Promise<TileManifest> {
   if (!manifestPromise) {
-    const p = fetch('/map-tiles/manifest.json').then((r) => {
+    const p = fetch('/map-tiles/manifest.json', { cache: 'no-cache' }).then((r) => {
       if (!r.ok) throw new Error(`manifest: ${r.status}`);
       return r.json() as Promise<TileManifest>;
     });
@@ -88,7 +89,7 @@ export class TileStore {
     entry.img.onerror = () => {
       this.cache.delete(key);
     };
-    entry.img.src = `/map-tiles/${z}/${x}/${y}.webp`;
+    entry.img.src = `/map-tiles/${z}/${x}/${y}.webp?v=${this.manifest.v}`;
     this.cache.set(key, entry);
     if (this.cache.size > MAX_CACHED_TILES) {
       const keep = this.manifest.minZoom + 1;
