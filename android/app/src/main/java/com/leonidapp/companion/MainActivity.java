@@ -1,4 +1,4 @@
-package com.atlasvice.app;
+package com.leonidapp.companion;
 
 import com.getcapacitor.BridgeActivity;
 

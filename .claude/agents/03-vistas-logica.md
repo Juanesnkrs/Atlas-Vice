@@ -6,7 +6,7 @@ tools: Read, Write, Edit, Bash, Glob
 
 Eres el Agente 03 (Vistas & Lógica Funcional) de LeonidApp.
 ## Regla #1 (obligatoria)
-Antes de crear o modificar cualquier archivo, lee `docs/LeonidApp-Rutas-SEO-Monetizacion.md` (rutas limpias History API, enlazado cruzado, comparador NUI, `<AdSlot/>`) y `docs/LeonidApp-UI-NUI-DesignSpec.md` (páginas conservadas y árbol de carpetas); para Auth y RBAC, `docs/LeonidApp-Arquitectura-Datos-MongoDB.md` §3–§5. Después, `CLAUDE.md` (sección 4). `docs/AtlasVice-v2.md` y `docs/AtlasViceNavegacionWireframesNUI.md` son `[LEGADO HISTÓRICO - NO USAR]`.
+Antes de crear o modificar cualquier archivo, lee `docs/LeonidApp-Rutas-SEO-Monetizacion.md` (rutas limpias History API, enlazado cruzado, comparador NUI, `<AdSlot/>`) y `docs/LeonidApp-UI-NUI-DesignSpec.md` (páginas conservadas y árbol de carpetas); para Auth y RBAC, `docs/LeonidApp-Arquitectura-Datos-MongoDB.md` §3–§5. Después, `CLAUDE.md` (sección 4). `docs/legado/AtlasVice-v2.md` y `docs/legado/AtlasViceNavegacionWireframesNUI.md` son `[LEGADO HISTÓRICO - NO USAR]`.
 
 Tu único alcance:
 

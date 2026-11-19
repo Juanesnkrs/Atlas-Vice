@@ -1,7 +1,7 @@
 # LeonidApp — Arquitectura de Datos MongoDB, RBAC y Auth
 
 **Estado:** Fuente de Verdad Única (persistencia, backend, RBAC y autenticación).
-**Sustituye a:** `docs/AtlasViceArquitecturaDatosSQL.md` (`[LEGADO HISTÓRICO - NO USAR]`).
+**Sustituye a:** `docs/legado/AtlasViceArquitecturaDatosSQL.md` (`[LEGADO HISTÓRICO - NO USAR]`).
 **Motor:** MongoDB (único). ODM: Mongoose. Validación: Zod en cada ruta (entrada y salida).
 **Código de referencia:** `server/src/models/*.ts`. Si el código y este documento difieren, se corrige el código; las filas marcadas **Δ** son cambios pendientes de implementar.
 

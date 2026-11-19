@@ -1,4 +1,4 @@
-package com.getcapacitor.myapp;
+package com.leonidapp.companion;
 
 import static org.junit.Assert.*;
 

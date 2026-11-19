@@ -1,7 +1,7 @@
 # LeonidApp — Rutas, SEO y Monetización
 
 **Estado:** Fuente de Verdad Única (enrutado, SEO técnico, enlazado cruzado y publicidad).
-**Sustituye a:** las secciones de navegación de `docs/AtlasVice-v2.md` y `docs/AtlasViceNavegacionWireframesNUI.md` (`[LEGADO HISTÓRICO - NO USAR]`).
+**Sustituye a:** las secciones de navegación de `docs/legado/AtlasVice-v2.md` y `docs/legado/AtlasViceNavegacionWireframesNUI.md` (`[LEGADO HISTÓRICO - NO USAR]`).
 **Datos:** ver `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`. **UI:** ver `docs/LeonidApp-UI-NUI-DesignSpec.md`.
 
 ---

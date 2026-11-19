@@ -6,19 +6,14 @@
 // Contiene también el cliente HTTP de la API (`apiFetch`): el árbol de carpetas
 // aprobado no define un `src/lib/`, por lo que vive junto a la capa de sesión.
 // =============================================================================
-import { Capacitor, registerPlugin } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { del, get as idbGet, set as idbSet } from 'idb-keyval';
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import type { Profile } from '../types/database';
 
 // ---- Deep link nativo `leonidapp://auth/callback?code=...` ---------------------
-interface AppUrlOpenEvent {
-  url: string;
-}
-interface AppPluginLike {
-  addListener: (event: 'appUrlOpen', cb: (e: AppUrlOpenEvent) => void) => Promise<{ remove: () => Promise<void> }>;
-}
 let deepLinkBound = false;
 
 /** Extrae el código efímero de `leonidapp://auth/callback?code=...`; `null` si no coincide. */
@@ -37,8 +32,7 @@ function bindNativeDeepLink(complete: (code: string) => Promise<unknown>): void 
   if (deepLinkBound || !Capacitor.isNativePlatform()) return;
   deepLinkBound = true;
   try {
-    const appPlugin = registerPlugin<AppPluginLike>('App');
-    appPlugin
+    CapacitorApp
       .addListener('appUrlOpen', (e) => {
         const code = parseAuthCallback(e.url);
         if (code !== null) void complete(code);

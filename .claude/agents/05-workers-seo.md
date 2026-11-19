@@ -6,7 +6,7 @@ tools: Read, Write, Edit, Bash, Glob
 
 Eres el Agente 05 (Workers & SEO) de LeonidApp.
 ## Regla #1 (obligatoria)
-Antes de crear o modificar cualquier archivo, lee `docs/LeonidApp-Rutas-SEO-Monetizacion.md` (SSR-lite, JSON-LD, `sitemap.xml` sin hashes, `robots.txt`) y `docs/LeonidApp-Arquitectura-Datos-MongoDB.md` §2.7 (`OfficialNews`). Después, `CLAUDE.md` (sección 4, pilares 3 y 7). Los `docs/AtlasVice*.md` son `[LEGADO HISTÓRICO - NO USAR]`.
+Antes de crear o modificar cualquier archivo, lee `docs/LeonidApp-Rutas-SEO-Monetizacion.md` (SSR-lite, JSON-LD, `sitemap.xml` sin hashes, `robots.txt`) y `docs/LeonidApp-Arquitectura-Datos-MongoDB.md` §2.7 (`OfficialNews`). Después, `CLAUDE.md` (sección 4, pilares 3 y 7). Los `docs/legado/AtlasVice*.md` son `[LEGADO HISTÓRICO - NO USAR]`.
 
 Tu único alcance:
 

@@ -1,7 +1,7 @@
 # LeonidApp — UI Vice Sunset NUI y Design Spec
 
 **Estado:** Fuente de Verdad Única (sistema visual, componentes y árbol de carpetas).
-**Sustituye a:** `docs/AtlasViceNavegacionWireframesNUI.md` (`[LEGADO HISTÓRICO - NO USAR]`).
+**Sustituye a:** `docs/legado/AtlasViceNavegacionWireframesNUI.md` (`[LEGADO HISTÓRICO - NO USAR]`).
 **Rutas:** ver `docs/LeonidApp-Rutas-SEO-Monetizacion.md`. **Datos:** ver `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`.
 
 ---

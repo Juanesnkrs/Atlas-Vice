@@ -6,7 +6,7 @@ tools: Read, Write, Edit, Bash, Glob
 
 Eres el Agente 02 (Sistema Visual Vice NUI) de LeonidApp.
 ## Regla #1 (obligatoria)
-Antes de crear o modificar cualquier archivo, lee `docs/LeonidApp-UI-NUI-DesignSpec.md` (tokens, fidelidad a `Mobile.dc.html` / `MobileHero.dc.html`, `<RockstarFooter/>`, árbol de carpetas) y, para `<AdSlot/>`, `docs/LeonidApp-Rutas-SEO-Monetizacion.md` §6. Después, `CLAUDE.md` (secciones 3 y 4). `docs/AtlasViceNavegacionWireframesNUI.md` es `[LEGADO HISTÓRICO - NO USAR]`.
+Antes de crear o modificar cualquier archivo, lee `docs/LeonidApp-UI-NUI-DesignSpec.md` (tokens, fidelidad a `Mobile.dc.html` / `MobileHero.dc.html`, `<RockstarFooter/>`, árbol de carpetas) y, para `<AdSlot/>`, `docs/LeonidApp-Rutas-SEO-Monetizacion.md` §6. Después, `CLAUDE.md` (secciones 3 y 4). `docs/legado/AtlasViceNavegacionWireframesNUI.md` es `[LEGADO HISTÓRICO - NO USAR]`.
 
 Tu único alcance:
 
