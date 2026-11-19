@@ -398,7 +398,24 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // Buscador por URL: /catalogo?q=texto (SearchAction de ssrLite). Filtra por titulo, subtitulo, categoria y alias.
-  const q = normalizeText(params.get('q') ?? '');
+  const qParam = params.get('q') ?? '';
+  const [search, setSearch] = useState(qParam);
+  const searchId = useId();
+  // URL -> caja (navegación externa); caja -> URL con replaceState (sin apilar historial ni recargar la ruta).
+  useEffect(() => setSearch(qParam), [qParam]);
+  const onSearch = (value: string) => {
+    setSearch(value);
+    setSelectedId(null);
+    try {
+      const url = new URL(window.location.href);
+      if (value.trim()) url.searchParams.set('q', value);
+      else url.searchParams.delete('q');
+      window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
+    } catch {
+      /* entorno sin History API: la caja sigue filtrando en memoria */
+    }
+  };
+  const q = normalizeText(search);
   const matchesQuery = (e: Entity): boolean => {
     if (!q) return true;
     const alias = metaOf(e).alias;
@@ -522,6 +539,21 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
             </button>
           ))}
         </div>
+      </div>
+
+      <div role="search" className="relative">
+        <label htmlFor={searchId} className="sr-only">
+          Buscar en el catálogo
+        </label>
+        <input
+          id={searchId}
+          type="search"
+          value={search}
+          onChange={(ev) => onSearch(ev.target.value)}
+          placeholder="Buscar por nombre, categoría o alias"
+          autoComplete="off"
+          className="h-11 w-full rounded-full border border-vice-orange/25 bg-[rgba(20,14,36,0.78)] px-4 text-sm text-vice-text backdrop-blur-[14px] placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold md:h-10 md:max-w-sm"
+        />
       </div>
 
       {categories.length > 2 && (

@@ -6,6 +6,7 @@ import { ForumThread, forumThreadSchema, toThreadDTO, type ForumThreadDoc } from
 import { ForumVote, forumVoteSchema } from '../models/ForumVote.js';
 import { toPublicUserDTO, User, type UserDoc } from '../models/User.js';
 import { writeAudit } from '../services/audit.js';
+import { clearSsrCache } from '../services/ssrLite.js';
 import { HttpError, idParamsSchema, parse } from '../services/validate.js';
 
 export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
@@ -65,6 +66,7 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
   app.post('/api/forum/threads', write, async (req, reply) => {
     const { id, ...body } = parse(forumThreadSchema, req.body);
     const doc = await ForumThread.create({ ...body, ...(id ? { _id: id } : {}), user_id: req.authUser?._id });
+    clearSsrCache();
     return reply.code(201).send(toThreadDTO(doc.toObject()));
   });
 
@@ -76,6 +78,7 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
       if (!parent) throw new HttpError(422, 'parent_post_id inexistente en este hilo');
     }
     const doc = await ForumPost.create({ ...body, ...(id ? { _id: id } : {}), user_id: req.authUser?._id });
+    clearSsrCache();
     return reply.code(201).send(toPostDTO(doc.toObject()));
   });
 
@@ -122,6 +125,7 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
       ForumPost.deleteMany({ thread_id: id }),
       ForumVote.deleteMany({ $or: [{ target_type: 'THREAD', target_id: id }, { target_type: 'POST', target_id: { $in: postIds } }] }),
     ]);
+    clearSsrCache();
     await writeAudit(req, 'forum.thread.delete', 'ForumThread', id, { titulo: t.titulo, author: t.user_id });
     return reply.code(204).send();
   });
@@ -131,6 +135,7 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
     const p = await ForumPost.findByIdAndDelete(id).lean<ForumPostDoc>();
     if (!p) throw new HttpError(404, 'Respuesta no encontrada');
     await ForumVote.deleteMany({ target_type: 'POST', target_id: id });
+    clearSsrCache();
     await writeAudit(req, 'forum.post.delete', 'ForumPost', id, { author: p.user_id });
     return reply.code(204).send();
   });

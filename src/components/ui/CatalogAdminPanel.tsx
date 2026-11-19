@@ -106,6 +106,12 @@ export function CatalogAdminPanel() {
     },
   });
 
+  // Entidades agrupadas por módulo; 'mapa' primero para vincular pines rápidamente.
+  const entityGroups = [...world.modules]
+    .sort((a, b) => Number(b.slug === 'mapa') - Number(a.slug === 'mapa') || a.orden - b.orden)
+    .map((m) => ({ id: m.id, nombre: m.nombre, items: world.entities.filter((en) => en.module_id === m.id) }))
+    .filter((g) => g.items.length > 0);
+
   const open = (e: Editing) => {
     setFormErr(null);
     setMsg(null);
@@ -380,10 +386,14 @@ export function CatalogAdminPanel() {
                 <Field id="k-ent" label="Entidad vinculada (opcional)">
                   <select id="k-ent" name="entity_id" defaultValue={e.item?.entity_id ?? ''} className={SELECT}>
                     <option value="">Ninguna</option>
-                    {world.entities.map((en) => (
-                      <option key={en.id} value={en.id}>
-                        {en.titulo}
-                      </option>
+                    {entityGroups.map((g) => (
+                      <optgroup key={g.id} label={g.nombre}>
+                        {g.items.map((en) => (
+                          <option key={en.id} value={en.id}>
+                            {en.titulo}
+                          </option>
+                        ))}
+                      </optgroup>
                     ))}
                   </select>
                 </Field>

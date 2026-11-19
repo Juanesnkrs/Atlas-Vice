@@ -17,6 +17,12 @@ import { usePublicConfig } from '../../data/seed';
  * - Con provider 'adsense' y publisher_id, el script de AdSense se inyecta una sola vez, de forma diferida
  *   (IntersectionObserver, rootMargin 200px), cuando el slot se acerca al viewport.
  */
+declare global {
+  interface Window {
+    adsbygoogle?: Array<Record<string, unknown>>;
+  }
+}
+
 export type AdPosition = 'in-article' | 'after-content' | 'sidebar';
 
 export interface AdSlotProps {
@@ -88,19 +94,25 @@ function release(path: string, id: symbol): void {
   if (set.size === 0) claimed.delete(path);
 }
 
-let adsenseLoaded = false;
-function loadAdsense(publisherId: string): void {
-  if (adsenseLoaded || document.querySelector('script[data-leonidapp-adsense]')) {
-    adsenseLoaded = true;
-    return;
-  }
-  adsenseLoaded = true;
-  const s = document.createElement('script');
-  s.async = true;
-  s.crossOrigin = 'anonymous';
-  s.dataset['leonidappAdsense'] = '1';
-  s.src = `${ADSENSE_SRC}?client=${encodeURIComponent(publisherId)}`;
-  document.head.appendChild(s);
+/** Inyecta el script una sola vez; la promesa resuelve cuando ya cargó (o rechaza si falla). */
+let adsensePromise: Promise<void> | null = null;
+function loadAdsense(publisherId: string): Promise<void> {
+  if (adsensePromise) return adsensePromise;
+  adsensePromise = new Promise<void>((resolve, reject) => {
+    const s = document.createElement('script');
+    s.async = true;
+    s.crossOrigin = 'anonymous';
+    s.dataset['leonidappAdsense'] = '1';
+    s.src = `${ADSENSE_SRC}?client=${encodeURIComponent(publisherId)}`;
+    s.onload = () => resolve();
+    s.onerror = () => {
+      adsensePromise = null;
+      s.remove();
+      reject(new Error('adsbygoogle no cargó'));
+    };
+    document.head.appendChild(s);
+  });
+  return adsensePromise;
 }
 
 export function AdSlot({ position, slotId, className = '' }: AdSlotProps) {
@@ -110,6 +122,7 @@ export function AdSlot({ position, slotId, className = '' }: AdSlotProps) {
   const idRef = useRef<symbol>(Symbol('adslot'));
   const [consent, setConsent] = useState<boolean>(() => typeof document !== 'undefined' && hasMarketingConsent());
   const [allowed, setAllowed] = useState(false);
+  const pushed = useRef(false); // un solo push() por slot
 
   const path = typeof window !== 'undefined' ? window.location.pathname : '';
   const pattern = routePattern(path);
@@ -157,8 +170,14 @@ export function AdSlot({ position, slotId, className = '' }: AdSlotProps) {
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
-          loadAdsense(publisherId);
           io.disconnect();
+          loadAdsense(publisherId)
+            .then(() => {
+              if (pushed.current || !hasMarketingConsent()) return;
+              pushed.current = true;
+              (window.adsbygoogle = window.adsbygoogle || []).push({});
+            })
+            .catch(() => undefined);
         }
       },
       { rootMargin: '200px' },
@@ -180,6 +199,16 @@ export function AdSlot({ position, slotId, className = '' }: AdSlotProps) {
       <p className="m-0 px-3 pt-2 text-[10px] font-semibold uppercase tracking-widest text-vice-text/70">
         Publicidad
       </p>
+      {adsense && slot.id && (
+        <ins
+          className="adsbygoogle"
+          style={{ display: 'block' }}
+          data-ad-client={publisherId}
+          data-ad-slot={slot.id}
+          data-ad-format="auto"
+          data-full-width-responsive="true"
+        />
+      )}
     </aside>
   );
 }

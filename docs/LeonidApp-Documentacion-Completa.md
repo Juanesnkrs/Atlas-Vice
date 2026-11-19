@@ -112,7 +112,7 @@
 
 | Conjunto | Origen | Naturaleza |
 |---|---|---|
-| 225 fichas importadas (armas 12, vehículos 20, mapa 138, guías 55) | `catalogo_grabaciones.json` (166 KB, **sin versionar**): análisis por fotogramas de grabaciones de stream, con evidencia `fecha_sesión: t_NNNN@cuadrante ~ hh:mm:ss` y confianza (alta 154, media 63, baja 8) | Dato **derivado de grabaciones**, no oficial. El proceso de extracción no está en el repositorio (❓ no verificado). Estadísticas 0-10 del juego guardadas exactas en `metadata_json.stats_juego` y escaladas a 0-100 en `stats_json` |
+| 225 fichas importadas (armas 12, vehículos 20, mapa 138, guías 55) | `catalogo_grabaciones.json` (166 KB, versionado en `server/data/`): análisis por fotogramas de grabaciones de stream, con evidencia `fecha_sesión: t_NNNN@cuadrante ~ hh:mm:ss` y confianza (alta 154, media 63, baja 8) | Dato **derivado de grabaciones**, no oficial. El proceso de extracción no está en el repositorio (❓ no verificado). Estadísticas 0-10 del juego guardadas exactas en `metadata_json.stats_juego` y escaladas a 0-100 en `stats_json` |
 | 2 guías "Basicos" | Semilla del servidor | Ejemplo |
 | 6 hilos de foro y 9 posts | Semilla | Ejemplo |
 | 5 usuarios (4 USER, 1 ADMIN) | Semilla/pruebas | Ejemplo |
@@ -401,7 +401,7 @@ Leyenda: ✅ implementado · 🟡 parcial · ⚠️ divergente · ❌ no impleme
 | **RF-13** Auditoría | Toda acción administrativa relevante deja un `AuditLog` (actor, rol, acción, objetivo) legible desde el panel | Tras editar la configuración o un rol aparece un registro en `/api/admin/audit-logs` | 🟡 | ✅ `services/audit.ts:15-24`, `AuditPanel`. Brechas: lectura permitida a ADMIN (el diseño dice SUPER_ADMIN, `routes/config.ts:76`); nombres de acción distintos (`config.update`, `user.role.update` frente a `config.updated`, `user.role_changed`); solo inserta |
 | **RF-14** Comparador NUI | Comparar 2-3 fichas del mismo módulo con mejor cifra resaltada y `—` para no comparables; `?comparar` es `noindex` | `?comparar=a,b` muestra columnas; descarta fichas de otro módulo con aviso | ✅ | `CatalogPage.tsx:151,412-425,607-622`, `ssrLite.ts:339` |
 | **RF-15** Panel de administración y Control Total | Por rol: aportes (USER+), moderación (MODERATOR+), catálogo y mapa con CRUD (ADMIN+), Control Total (SUPER_ADMIN): configuración, módulos, monetización, roles, auditoría | Cada pestaña solo aparece al rol correspondiente y el servidor responde 403 a quien no tiene rango | ✅ (con brechas) | `AdminSubmitPage.tsx:1067-1136`, `CatalogAdminPanel.tsx`, `routes/config.ts`. Brechas: ocultar hilos no existe; sin gestión de fuentes de noticias; sin bandeja de contacto/suscripción en el cliente (la API existe, `routes/submissions.ts:23-26`); slug duplicado en POST cae en 500 (`catalog.ts:176`) |
-| **RF-16** Importación de catálogo | Script que valida fichas JSON con Zod y hace *upsert* por `(module_id, slug)`; simula por defecto y escribe con `--apply`; marca origen `grabacion`, confianza y evidencia; no pisa fichas de otra fuente | `pnpm --dir server import:catalog <json>` informa sin escribir; con `--apply` crea o actualiza de forma idempotente | ✅ | `server/src/scripts/importCatalog.ts`; 225 fichas importadas. Brecha: `catalogo_grabaciones.json` sin versionar; la extracción previa no está en el repositorio (❓) |
+| **RF-16** Importación de catálogo | Script que valida fichas JSON con Zod y hace *upsert* por `(module_id, slug)`; simula por defecto y escribe con `--apply`; marca origen `grabacion`, confianza y evidencia; no pisa fichas de otra fuente | `pnpm --dir server import:catalog <json>` informa sin escribir; con `--apply` crea o actualiza de forma idempotente | ✅ | `server/src/scripts/importCatalog.ts`; 225 fichas importadas. Brecha: la extracción previa no está en el repositorio (❓) |
 | **RF-17** Acceso demo de desarrollo | Script que crea un SUPER_ADMIN temporal con sesión que caduca (120 min por defecto, máximo 480) y enlace local de un solo uso; se niega con `NODE_ENV=production` o con BD no local; al terminar borra al usuario | `pnpm --dir server demo:access` publica un enlace en 127.0.0.1 y, al cerrarlo, el acceso muere al instante | ✅ | `server/src/scripts/demoAccess.ts:1-40`. Riesgo: es una vía de acceso deliberada solo para local; debe excluirse de cualquier despliegue (ver §19, §23) |
 | **RF-18** Progreso y sincronización | PUT/GET `/api/progress` con fusión last-write-wins por `updated_at`; un solo envío en vuelo; reintento al volver la conexión | Dos dispositivos convergen al mismo estado tras sincronizar | ✅ (con brecha) | `routes/progress.ts:12-30`, `useProgressStore.ts:399-472`. Brecha: el PUT hace N consultas secuenciales; los pasos de guía solo suben como marca de guía completa |
 | **RNF-05** Seguridad | Cookies HttpOnly + SameSite; RBAC en servidor; validación Zod en cada ruta; límite de peticiones; chequeo de Origin | Una petición con Origin ajeno recibe 403; un USER recibe 403 en rutas ADMIN | 🟡 | ✅ `plugins/auth.ts`, `app.ts:52,56-61`. Brechas: sin cabeceras de seguridad (CSP/HSTS); CSRF permite peticiones sin Origin (`app.ts:343-348`); `Secure` solo en producción; sin revocación de sesión (ver §19) |
@@ -431,7 +431,7 @@ Prioridad MoSCoW: **M** debe, **S** debería, **C** podría, **W** no por ahora.
 | ID | Rol | Historia | Criterios de aceptación | Prior. | Estado | Brecha |
 |---|---|---|---|---|---|---|
 | HU-08 | Administrador de catálogo | Quiero crear, editar y borrar entidades, marcadores y módulos desde el panel, para mantener el catálogo sin tocar la base | Formularios con validación (slug `^[a-z0-9]+(-[a-z0-9]+)*$`, JSON de stats/metadata); borrado con confirmación; auditoría | M | ✅ | Slug duplicado cae en 500 (`catalog.ts:176`); cambiar slug rompe URLs sin 301; caché SSR no se invalida |
-| HU-09 | Administrador de catálogo | Quiero importar fichas desde un JSON validado, con simulación previa, para cargar contenido masivamente | `import:catalog` sin `--apply` informa; con `--apply` hace upsert idempotente sin pisar otras fuentes | S | ✅ | Extracción de fichas fuera del repositorio; JSON sin versionar |
+| HU-09 | Administrador de catálogo | Quiero importar fichas desde un JSON validado, con simulación previa, para cargar contenido masivamente | `import:catalog` sin `--apply` informa; con `--apply` hace upsert idempotente sin pisar otras fuentes | S | ✅ | Extracción de fichas fuera del repositorio (JSON versionado en `server/data/`) |
 | HU-10 | Moderador | Quiero revisar, aprobar o rechazar aportes y moderar el foro (fijar, borrar) | Filtro por estado; aprobar promueve al catálogo; fijar/borrar hilos con confirmación | M | 🟡 | No puede **ocultar** hilos ni atender **reportes** (no existen) |
 | HU-11 | Moderador | Quiero que mis propios aportes se publiquen directamente | Autor con rol MODERATOR o superior: aporte aprobado con `reviewedBy: 'system'` | C | ✅ | — |
 | HU-12 | Super administrador | Quiero gestionar roles, configuración global, módulos, monetización y consultar la auditoría | Cambiar rol de otro usuario; no degradar al único SUPER_ADMIN; cambios auditados | M | 🟡 | 0 SUPER_ADMIN persistidos; sin gestión de fuentes de noticias; la auditoría la ve también ADMIN |
@@ -519,7 +519,7 @@ flowchart LR
   P --> H
 ```
 
-**Explicación.** El contenido nace de dos fuentes: la importación masiva de fichas obtenidas de grabaciones (con nivel de confianza y evidencia por ficha; hoy 225 fichas) y los aportes de la comunidad. La importación valida con Zod y por defecto solo simula; con `--apply` hace *upsert* idempotente y no pisa fichas de otra fuente. Los aportes pasan por moderación y, al aprobarse (o al ser de un moderador o superior), el sistema los promueve solo a `MapMarker`/`Entity`/corrección dentro de una transacción (en MongoDB sin réplica degrada a escritura sin atomicidad), deja registro de auditoría e invalida la caché SSR. Los aportes de tipo `contact` y `newsletter` nunca se promueven. Brecha: la extracción previa a la importación no está documentada en el repositorio y el JSON no está versionado.
+**Explicación.** El contenido nace de dos fuentes: la importación masiva de fichas obtenidas de grabaciones (con nivel de confianza y evidencia por ficha; hoy 225 fichas) y los aportes de la comunidad. La importación valida con Zod y por defecto solo simula; con `--apply` hace *upsert* idempotente y no pisa fichas de otra fuente. Los aportes pasan por moderación y, al aprobarse (o al ser de un moderador o superior), el sistema los promueve solo a `MapMarker`/`Entity`/corrección dentro de una transacción (en MongoDB sin réplica degrada a escritura sin atomicidad), deja registro de auditoría e invalida la caché SSR. Los aportes de tipo `contact` y `newsletter` nunca se promueven. Brecha: la extracción previa a la importación no está documentada en el repositorio.
 
 ### 5.3 (c) Bucle de retención
 
@@ -1213,7 +1213,7 @@ Acciones emitidas: `module.create|update|delete`, `entity.create|update|delete`,
 
 ### 10.13 Contenido típico de `stats_json` y `metadata_json` por módulo
 
-Claves **reales** de `server/src/scripts/catalogo_grabaciones.json` (225 fichas; el importador convierte `stats_juego` 0-10 en `stats_json` 0-100 y deja el valor exacto en `metadata_json.stats_juego`, ver §14) y del seed. Entre paréntesis, el número de fichas que la traen.
+Claves **reales** de `server/data/catalogo_grabaciones.json` (225 fichas; el importador convierte `stats_juego` 0-10 en `stats_json` 0-100 y deja el valor exacto en `metadata_json.stats_juego`, ver §14) y del seed. Entre paréntesis, el número de fichas que la traen.
 
 #### Armas (12 fichas)
 
@@ -1621,7 +1621,7 @@ stateDiagram-v2
 
 El catálogo vivo **no proviene de una API oficial ni de una base de terceros**: sale de **grabaciones de un stream** (sesiones del 2026-11-18) analizadas **por fotogramas mediante agentes**, que extrajeron los datos visibles en pantalla (nombres, estadísticas, precios, rótulos del mapa). Cada ficha conserva **evidencia** (fotogramas y marca de tiempo) y una **confianza**.
 
-> ⚠️ **Brecha (trazabilidad):** el proceso de extracción por fotogramas **no está en el repositorio**; sí están el resultado (`server/src/scripts/catalogo_grabaciones.json`, 166 KB) y el importador. El JSON está **sin versionar** (`?? server/src/scripts/catalogo_grabaciones.json` en `git status`). Los datos son observación propia de vídeo, no datos oficiales ni contrastados con terceros (❓ no verificado contra fuente externa).
+> ⚠️ **Brecha (trazabilidad):** el proceso de extracción por fotogramas **no está en el repositorio**; sí están el resultado (`server/data/catalogo_grabaciones.json`, 166 KB) y el importador. El JSON está versionado en `server/data/` (commit `ecfcacf`). Los datos son observación propia de vídeo, no datos oficiales ni contrastados con terceros (❓ no verificado contra fuente externa).
 
 ### 14.2 Formato de ficha (entrada del importador)
 
@@ -1729,7 +1729,7 @@ Otros datos de hoy: 0 marcadores, 6 hilos de foro (semilla: General 2, Guías/Ay
 3. **Aplicar:** con `--apply`. Es idempotente: actualiza por (módulo, slug) y no toca fichas de otra fuente.
 4. **Refresco SEO:** esperar el TTL de la caché SSR (≤5 min) o reiniciar la API (el script no la limpia).
 5. **Edición puntual:** panel de administración (ADMIN+) o aportes aprobados (§13). Ojo: una edición manual de una ficha con `fuente:'grabacion'` se **sobrescribe** en la siguiente importación si el JSON conserva el mismo slug (el `$set` reemplaza los campos importados); ❓ no hay bloqueo de campos editados a mano.
-6. **Versionado:** subir el JSON al repositorio (hoy sin versionar) para que sea la fuente reproducible.
+6. **Versionado:** el JSON ya está versionado en `server/data/` (commit `ecfcacf`); mantenerlo como fuente reproducible.
 7. **Semilla:** `pnpm --dir server seed` repuebla los ejemplos (sobrescribe por `_id`) y no borra lo importado; el cliente sin API usa la semilla embebida (23 entidades y 20 marcadores ficticios).
 8. **Coordenadas del mapa:** pendiente. Hay que crear `MapMarker` (`coord_x`/`coord_y` en el plano del cliente, opcionalmente `entity_id` a la ficha) por el panel, por aportes o con un importador nuevo (❌ no existe importador de marcadores).
 
@@ -2215,7 +2215,7 @@ Atlas Vice/
 │     ├─ routes/                 auth, catalog, config, contact, forum, news, progress, seo, submissions
 │     ├─ services/               audit, mailer, oauth, session, ssrLite, submissions, users, validate
 │     ├─ workers/                officialNewsWorker.ts, sources.ts
-│     └─ scripts/                seed.ts, seedData.json, importCatalog.ts, demoAccess.ts, catalogo_grabaciones.json
+│     └─ scripts/                seed.ts, seedData.json, importCatalog.ts, demoAccess.ts
 ├─ android/  ios/                Proyectos nativos Capacitor generados
 ├─ docs/                         3 docs vigentes LeonidApp-*.md, 3 legados AtlasVice*.md, referencias-ui/
 ├─ PDF/                          3 PDF de documentos legados (versionados)
@@ -2232,7 +2232,7 @@ Atlas Vice/
 | `src/` subcarpetas | components/layout, components/ui, data, pages, store, styles, types + App.tsx, main.tsx | Coincide | ✅ |
 | `server/src/` subcarpetas | config, models, routes, plugins, services, workers, scripts + app.ts, index.ts | Coincide | ✅ |
 | `src/components/ui/CatalogAdminPanel.tsx` | No figura en DesignSpec §6.1 | Existe | ⚠️ Excepción |
-| `server/src/scripts/importCatalog.ts`, `demoAccess.ts`, `catalogo_grabaciones.json` | DesignSpec §6.2 lista solo `seed.ts` y `seedData.json` (CLAUDE.md permite la carpeta `scripts`) | Existen; el JSON NO está versionado (único cambio pendiente en git) | ⚠️ Excepción |
+| `server/src/scripts/importCatalog.ts`, `demoAccess.ts`, `catalogo_grabaciones.json` | DesignSpec §6.2 lista solo `seed.ts` y `seedData.json` (CLAUDE.md permite la carpeta `scripts`) | Existen (el JSON de datos vive en `server/data/`, versionado) | ⚠️ Excepción |
 | `PDF/` | No listada | 3 PDF legados versionados | ⚠️ Excepción |
 | `.tmp-mongo/` | No listada | Datos temporales de MongoDB (ignorada en git) | ⚠️ Excepción |
 | `supabase/` | Válida como legado, no se amplía | Presente | ✅ (deprecada) |
@@ -2251,7 +2251,7 @@ Atlas Vice/
 │  └─ legado/       <- aqui AtlasVice*.md y PDF/ (la raiz queda sin PDF/)
 ├─ server/
 │  ├─ src/scripts/  importCatalog.ts y demoAccess.ts aprobados como excepciones en DesignSpec 6.2
-│  └─ data/         catalogo_grabaciones.json (datos, no codigo), versionado o excluido
+│  └─ data/         catalogo_grabaciones.json (datos, no codigo), versionado (commit `ecfcacf`)
 ├─ public/robots.txt  opcional; o declarar en el documento que el robots es dinamico
 ├─ supabase/        archivar o eliminar cuando se cierre el legado
 └─ (.tmp-mongo/ fuera del repositorio: dbpath de MongoDB en una ruta del sistema)
@@ -2329,12 +2329,12 @@ No hay script `test` ni `lint` en ningún paquete.
 
 ```bash
 # Simulacion (no escribe)
-pnpm --dir server import:catalog server/src/scripts/catalogo_grabaciones.json
+pnpm --dir server import:catalog data/catalogo_grabaciones.json --source grabacion   # ruta relativa a server/ (= server/data/catalogo_grabaciones.json)
 # Aplicar
-pnpm --dir server import:catalog server/src/scripts/catalogo_grabaciones.json --apply
+pnpm --dir server import:catalog data/catalogo_grabaciones.json --source grabacion --apply
 ```
 
-Valida cada ficha con Zod (`modulo`, `slug`, `titulo`, `subtitulo?`, `categoria`, `stats_juego` 0-10, `metadata`, `confianza` alta/media/baja, `evidencia` ≤5). El módulo debe existir. Convierte `stats_juego × 10` a `stats_json` (0-100), guarda `stats_juego` exacto en `metadata_json`, marca `fuente:'grabacion'`, `confianza` y `evidencia`. Upsert por (módulo, slug); si ya hay una entidad de otra fuente la omite como conflicto. Resumen `{nuevas, actualizadas, conflictos, errores}`; código de salida 1 si hay errores. No invalida la caché SSR de un servidor en marcha (expira en ≤5 min). Sin guardas de entorno. Actualizar: regenerar el JSON y reimportar con `--apply` (idempotente). El archivo actual (166 KB, sin versionar) tiene 225 fichas (armas 12, vehículos 20, mapa 138, guías 55). El uso de ese archivo concreto con el script es una inferencia (❓ el JSON es la entrada prevista, no confirmado en código).
+Valida cada ficha con Zod (`modulo`, `slug`, `titulo`, `subtitulo?`, `categoria`, `stats_juego` 0-10, `metadata`, `confianza` alta/media/baja, `evidencia` ≤5). El módulo debe existir. Convierte `stats_juego × 10` a `stats_json` (0-100), guarda `stats_juego` exacto en `metadata_json`, marca `fuente` con el valor de `--source` (por defecto `editorial`; para este archivo usar `--source grabacion`), `confianza` y `evidencia`. Upsert por (módulo, slug); si ya hay una entidad de otra fuente la omite como conflicto. Resumen `{nuevas, actualizadas, conflictos, errores}`; código de salida 1 si hay errores. No invalida la caché SSR de un servidor en marcha (expira en ≤5 min). Sin guardas de entorno. Actualizar: regenerar el JSON y reimportar con `--apply` (idempotente). El archivo actual (`server/data/catalogo_grabaciones.json`, 166 KB, versionado) tiene 225 fichas (armas 12, vehículos 20, mapa 138, guías 55). El uso de ese archivo concreto con el script es una inferencia (❓ el JSON es la entrada prevista, no confirmado en código).
 
 ### 21.6 `demo:access`
 
@@ -2369,7 +2369,7 @@ Crea el usuario `demo-temporal` con rol SUPER_ADMIN, firma una sesión de N minu
 - **Gitflow:** ramas `main`, `develop`, `feature/herramientas-admin` (actual) y `feature/leonidapp-mongo-architecture`; remotos `origin/main` y `origin/develop`. Regla: sin commits directos en `main`/`develop`; PR desde `feature/*`.
 - **Conventional Commits en español:** prefijos `feat:`, `fix:`, `ui:`, `chore:`, `docs:` (con scope admitido).
 - **Historial:** 32 commits, un solo autor. Primer commit 2026-11-17 («chore(init) Pre-alfa Fases 1-4»); los otros 31 el 2026-11-18. Hitos: backend Fastify+Mongoose, worker de noticias, documentos maestros, SSR-lite y sitemap, Footer Rockstar, rutas con History API, rediseño v2, foro escaparate, catálogo y mapa según diseño, herramientas de administración, importador de grabaciones y acceso demo.
-- **Estado de git:** único cambio pendiente `server/src/scripts/catalogo_grabaciones.json` (sin versionar).
+- **Estado de git:** `server/data/catalogo_grabaciones.json` versionado (commit `ecfcacf`); los JSON crudos de terceros en `server/data/` permanecen sin versionar y sin uso.
 - **Puertas de calidad:** CLAUDE.md prohíbe avanzar de fase sin `typecheck` y `build` limpios (cliente y server).
 
 ### 22.3 Subagentes y herramientas
@@ -3366,7 +3366,7 @@ Notas de lectura:
 | 16 | D1 | Iconos «solo Lucide React» | `src/components/layout/BottomDock.tsx:20-60` | `lucide-react` no está instalado. Se usan SVG en línea. Coherente con Zero Bloat, contradice el documento. |
 | 17 | D3 | Contact con `userId` de sesión | `server/src/services/submissions.ts:234` | Siempre guarda `userId: null`. |
 | 18 | D4 | Sobra `CatalogAdminPanel.tsx` | `src/components/ui/` | No está en DesignSpec §6.1. |
-| 19 | D4 | Sobran `demoAccess.ts`, `importCatalog.ts` y `catalogo_grabaciones.json` | `server/src/scripts/` | DesignSpec §6.2 solo lista `seed.ts` y `seedData.json`. CLAUDE.md sí permite la carpeta `scripts`. El JSON no está versionado. |
+| 19 | D4 | Sobran `demoAccess.ts`, `importCatalog.ts` y `catalogo_grabaciones.json` | `server/src/scripts/` (JSON en `server/data/`) | DesignSpec §6.2 solo lista `seed.ts` y `seedData.json`. CLAUDE.md sí permite la carpeta `scripts`. El JSON ya está versionado en `server/data/`. |
 | 20 | D4 | Sobra `PDF/` en la raíz | `PDF/` | 3 PDF legados, fuera del árbol de DesignSpec §6.3. |
 | 21 | D4 | Falta `public/robots.txt` | `public/` | Ver fila 11. |
 | 22 | D4 | Identidad de Capacitor | `capacitor.config.ts:4-5`; `android/app/build.gradle:4,7`; `ios/.../project.pbxproj:312,333` | `appId com.atlasvice.app`, `appName ATLAS VICE`, fondo `#160B14`. CLAUDE.md §0 exige `com.leonidapp.companion` y `leonidapp://`. Ver §30. |
@@ -3462,7 +3462,7 @@ La hoja de ruta fija el **orden** y las **dependencias**. No contiene fechas ni 
 
 | Fase | Objetivo | Incluye | Criterio de salida |
 |---|---|---|---|
-| **0. Estabilizar** | Dejar el producto consistente antes de sumar contenido. | P1-2 (regex del correo), P0-2 (identidad nativa), P1-10 (higiene y `public/robots.txt`), P2-7, versionar `catalogo_grabaciones.json` o decidir su destino, cerrar los ⚠️ de bajo costo (fila 12 de §31.3: máximo 2 AdSlot; `slot.route`), primeros tests de las rutas críticas. | `pnpm typecheck` y `pnpm build` sin errores en cliente y servidor. Identidad `com.leonidapp.companion` en Android e iOS. |
+| **0. Estabilizar** | Dejar el producto consistente antes de sumar contenido. | P1-2 (regex del correo), P0-2 (identidad nativa), P1-10 (higiene y `public/robots.txt`), P2-7, cerrar los ⚠️ de bajo costo (fila 12 de §31.3: máximo 2 AdSlot; `slot.route`), primeros tests de las rutas críticas. | `pnpm typecheck` y `pnpm build` sin errores en cliente y servidor. Identidad `com.leonidapp.companion` en Android e iOS. |
 | **1. Contenido real y mapa** | Que el producto tenga datos verificables y un mapa usable. | P0-3 (coordenadas y pines reales, coleccionables, más vehículos y armas), P0-4 (retirar o licenciar imágenes de terceros), P1-3 (noticias oficiales), P1-9 (limpiar foro de ejemplo), P1-5 (almacén de imágenes). | Mapa con marcadores reales. Ninguna imagen de origen dudoso en `public/assets`. Más de una fuente oficial en noticias. |
 | **2. Producción** | Poner el sistema en línea de forma repetible y segura. | P1-1 (CI, hosting, MongoDB gestionado, backups, monitoreo, dominio y HTTPS), P0-5 (sesión, OAuth, SMTP, SUPER_ADMIN real), P1-6 (moderación), P1-7 (fuentes de noticias en Control Total). | URL pública con HTTPS. Login de los 4 proveedores operativo. Despliegue y restauración de copia ensayados. |
 | **3. Monetización** | Que la publicidad pueda generar ingresos con consentimiento. | P1-4 (consentimiento), P0-1 (carga del proveedor, lectura del consentimiento, `publisher_id`, slots). | Anuncios solo tras consentimiento, máximo 2 por página, sin presencia en mapa, hub ni entrar. |
