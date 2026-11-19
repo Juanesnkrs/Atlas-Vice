@@ -96,6 +96,7 @@ También son válidos, fuera del árbol aprobado, y `04-qa-mobile` NO debe borra
 - `supabase/` (legado deprecado; no se borra, tampoco se amplía).
 - `android/` e `ios/` (proyectos nativos generados por Capacitor).
 - `src/data/seed.ts` (datos semilla de ejemplo y capa de acceso offline-first).
+- `public/map-data/` (geometría vectorial del mapa en JSON estático, `base-terrain.json` y `detail-layers.json`, cargada bajo demanda por `/mapa`; fuera del bundle JS).
 - `supabase/03_seed_data.sql` (datos de ejemplo generados desde `seed.ts`, mismos UUIDs; legado).
 
 ## Subagentes (`.claude/agents/`)

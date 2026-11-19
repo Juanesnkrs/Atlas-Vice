@@ -6,7 +6,7 @@
 // - Trazos con vector-effect: non-scaling-stroke y rótulos/pines a tamaño constante en pantalla
 //   mediante la variable CSS --k (= 1 / escala).
 import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type Ref } from 'react';
-import { LEONIDA_MAP, MAP_H, MAP_W } from '../../data/leonidaMap';
+import { LEONIDA_MAP, MAP_H, MAP_W, loadBaseTerrain, loadDetailLayers, type TerrainBase, type TerrainDetail } from '../../data/leonidaMap';
 
 export interface MapPin {
   id: string;
@@ -160,6 +160,7 @@ const CSS = `
 .lm-region{font-size:calc(13px * var(--lf,1));letter-spacing:2px}
 .lm-city{font-size:calc(11px * var(--lf,1));letter-spacing:1px;fill:#FFD9C2}
 .lm-water{font-size:calc(11px * var(--lf,1));letter-spacing:3px;font-style:italic;font-weight:600;fill:#8FA8E0;stroke:#10234A}
+.lm-county{font-size:calc(10px * var(--lf,1));letter-spacing:2.5px;font-style:italic;font-weight:600;fill:#E8C9A0;stroke:#10234A}
 .lm-road{font-size:calc(9px * var(--lf,1));letter-spacing:.5px;font-weight:600;fill:#F6B58A}
 [data-lod="0"] .lm-t1,[data-lod="0"] .lm-t2,[data-lod="1"] .lm-t2{display:none}
 .lm-pin{cursor:pointer;outline:none}
@@ -175,65 +176,107 @@ const WATER = '#10234A';
 /** Paleta del mapa: una tierra, un acento (ámbar de la red vial); el resto, tono sobre tono. */
 const LAND = '#94649A';
 const SAND = '#E8C9A0';
+const JADE = '#43B58C';
+const OCRE = '#C9A56A';
+const RELIEF = '#5E3A72';
 const NS = { vectorEffect: 'non-scaling-stroke' } as const;
 
-const LeonidaBase = memo(function LeonidaBase() {
+interface BaseProps {
+  base: TerrainBase | null;
+  detail: TerrainDetail | null;
+}
+
+const LeonidaBase = memo(function LeonidaBase({ base, detail }: BaseProps) {
   const m = LEONIDA_MAP;
+  // Relieve en 6 niveles: 3 de la base (siempre) intercalados con 3 del detalle (al acercar el zoom).
+  const relief = useMemo(() => {
+    const out: { d: string; major: boolean }[] = [];
+    if (!base) return out;
+    for (let i = 0; i < base.relief.length; i++) {
+      out.push({ d: base.relief[i]!, major: true });
+      const d = detail?.relief[i];
+      if (d) out.push({ d, major: false });
+    }
+    return out;
+  }, [base, detail]);
   return (
     <g>
       <defs>
-        <clipPath id="lm-clip">
-          <path d={m.landD} clipRule="evenodd" />
-        </clipPath>
+        {base && (
+          <clipPath id="lm-clip">
+            <path d={base.land} clipRule="evenodd" />
+          </clipPath>
+        )}
         {/* Manzanas urbanas: retícula girada que solo se ve en LOD 2 sobre los núcleos urbanos */}
         <pattern id="lm-blocks" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-18)">
           <path d="M0 0H5M0 0V5" fill="none" stroke="rgba(60,30,90,0.42)" strokeWidth={0.3} />
+        </pattern>
+        {/* Cultivos: surcos finos */}
+        <pattern id="lm-farm" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(28)">
+          <path d="M0 0H2.6" fill="none" stroke="rgba(190,214,150,0.55)" strokeWidth={0.45} />
         </pattern>
       </defs>
       {/* Agua: un único tono azul oscuro para océano, bahías, lagos y ríos */}
       <rect x={-3000} y={-3000} width={7000} height={7000} fill={WATER} />
       <path d={m.gridD} fill="none" stroke="rgba(255,255,255,0.025)" strokeWidth={1} {...NS} />
-      {/* Borde costero nítido: halo cian suave + línea cálida */}
-      <path d={m.landD} fill="none" stroke="rgba(127,163,217,0.07)" strokeWidth={13} strokeLinejoin="round" />
-      <path d={m.landD} fill="none" stroke="rgba(127,163,217,0.14)" strokeWidth={6} strokeLinejoin="round" />
-      <path d={m.landD} fill={LAND} fillRule="evenodd" stroke={SAND} strokeOpacity={0.6} strokeWidth={1.5} strokeLinejoin="round" {...NS} />
-      <g clipPath="url(#lm-clip)">
-        {m.regions.map((r) => (
-          <path key={r.name} d={r.d} fill="rgba(244,238,246,0.04)" stroke="rgba(232,201,160,0.28)" strokeDasharray="6 5" strokeWidth={1} {...NS} />
-        ))}
-        {/* Arena cálida (playas y cayos) y humedales fragmentados */}
-        <path d={m.sandD} fill={SAND} fillOpacity={0.7} fillRule="evenodd" />
-        <path d={m.wetD} fill="#5E9AA0" fillOpacity={0.5} fillRule="evenodd" />
-        <path d={m.swampD} fill="none" stroke="#5E9AA0" strokeOpacity={0.6} strokeWidth={1} strokeLinecap="round" {...NS} />
-        {/* Relieve escalonado: cada nivel oscurece un poco más + curvas de nivel */}
-        <path d={m.contoursMinorD} fill="#7C4F86" fillOpacity={0.3} fillRule="evenodd" />
-        <path d={m.contoursMajorD} fill="#7C4F86" fillOpacity={0.4} fillRule="evenodd" />
-        <path className="lm-t1" d={m.contoursMinorD} fill="none" stroke="rgba(255,214,190,0.26)" strokeWidth={0.8} {...NS} />
-        <path d={m.contoursMajorD} fill="none" stroke="rgba(255,214,190,0.5)" strokeWidth={1.2} {...NS} />
-        {/* Huella urbana gris violácea (+ manzanas en LOD 2) y aeropuertos */}
-        <path d={m.urbanD} fill="#CBBFD9" fillOpacity={0.78} fillRule="evenodd" stroke="rgba(255,255,255,0.3)" strokeWidth={0.6} {...NS} />
-        <path className="lm-t2" d={m.urbanD} fill="url(#lm-blocks)" fillRule="evenodd" />
-        <path d={m.airportsD} fill="#B3A8C9" fillOpacity={0.88} stroke="rgba(255,255,255,0.4)" strokeWidth={0.8} {...NS} />
-        <path d={m.runwaysD} fill="none" stroke="#FFF1D6" strokeWidth={2.8} strokeLinecap="butt" />
-        {/* Ferrocarril: línea fina con traviesas sutiles (LOD 1) */}
-        <path className="lm-t1" d={m.railD} fill="none" stroke="rgba(251,241,245,0.55)" strokeWidth={1.1} strokeLinejoin="round" {...NS} />
-        <path className="lm-t1" d={m.railD} fill="none" stroke="rgba(251,241,245,0.42)" strokeWidth={5} strokeDasharray="1.2 4.4" {...NS} />
-      </g>
-      {/* Agua interior: lago, ríos y bahías */}
-      <path d={m.lakesD} fill={WATER} fillRule="evenodd" stroke="rgba(127,163,217,0.4)" strokeWidth={0.9} {...NS} />
-      {/* Red vial: secundarias (LOD 1), autopistas de doble trazo y autopista de los cayos */}
-      <path className="lm-t1" d={m.minorRoadsD} fill="none" stroke="#1A0A22" strokeOpacity={0.55} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-      <path className="lm-t1" d={m.minorRoadsD} fill="none" stroke="rgba(255,236,222,0.7)" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-      <path d={m.highwaysD} fill="none" stroke="#1A0F2A" strokeOpacity={0.85} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-      <path d={m.highwaysD} fill="none" stroke="#F2B35E" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-      <path className="lm-t2" d={m.highwaysD} fill="none" stroke="#E14B7B" strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-      <path d={m.keysRoadD} fill="none" stroke="#1A0F2A" strokeOpacity={0.85} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-      <path d={m.keysRoadD} fill="none" stroke="#F2B35E" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-      <path className="lm-t2" d={m.keysRoadD} fill="none" stroke="#E14B7B" strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-      {/* Viaductos y puentes sobre el agua: calzada elevada con borde claro */}
-      <path d={m.bridgesD} fill="none" stroke="#1A0F2A" strokeWidth={7} strokeLinecap="butt" strokeLinejoin="round" {...NS} />
-      <path d={m.bridgesD} fill="none" stroke="#FFF1D6" strokeWidth={4.6} strokeLinecap="butt" strokeLinejoin="round" {...NS} />
-      <path className="lm-t2" d={m.bridgesD} fill="none" stroke="#E14B7B" strokeWidth={0.9} strokeLinecap="butt" strokeLinejoin="round" {...NS} />
+      {base && (
+        <>
+          {/* Borde costero nítido: ondas del mismo azul + línea cálida */}
+          <path d={base.land} fill="none" stroke="rgba(127,163,217,0.07)" strokeWidth={13} strokeLinejoin="round" />
+          <path d={base.land} fill="none" stroke="rgba(127,163,217,0.14)" strokeWidth={6} strokeLinejoin="round" />
+          <path d={base.land} fill={LAND} fillRule="evenodd" stroke={SAND} strokeOpacity={0.6} strokeWidth={1.5} strokeLinejoin="round" {...NS} />
+          <g clipPath="url(#lm-clip)">
+            {/* Relieve: gradiente de hasta 6 niveles (cada uno oscurece un poco más) */}
+            {relief.map((r, i) => (
+              <path key={i} d={r.d} fill={RELIEF} fillOpacity={0.2} fillRule="evenodd" />
+            ))}
+            {/* Reservas y parques (jade apagado), cultivos, industrial, arena y humedales */}
+            <path d={base.parks} fill={JADE} fillOpacity={0.6} fillRule="evenodd" stroke={JADE} strokeOpacity={0.5} strokeWidth={0.8} {...NS} />
+            {detail && <path className="lm-t1" d={detail.farms} fill="#8DB27A" fillOpacity={0.2} fillRule="evenodd" />}
+            {detail && <path className="lm-t1" d={detail.farms} fill="url(#lm-farm)" fillRule="evenodd" />}
+            <path d={base.sand} fill={SAND} fillOpacity={0.7} fillRule="evenodd" />
+            <path d={base.industrial} fill={OCRE} fillOpacity={0.62} fillRule="evenodd" stroke={OCRE} strokeOpacity={0.7} strokeWidth={0.8} {...NS} />
+            <path d={base.wet} fill="#5E9AA0" fillOpacity={0.5} fillRule="evenodd" />
+            {relief.map((r, i) => (
+              <path
+                key={i}
+                className={r.major ? undefined : 'lm-t1'}
+                d={r.d}
+                fill="none"
+                stroke="rgba(255,214,190,0.34)"
+                strokeOpacity={r.major ? 1 : 0.7}
+                strokeWidth={r.major ? 1 : 0.7}
+                {...NS}
+              />
+            ))}
+            {/* Huella urbana gris violácea (+ manzanas en LOD 2) y aeropuertos */}
+            <path d={base.urban} fill="#CBBFD9" fillOpacity={0.78} fillRule="evenodd" stroke="rgba(255,255,255,0.3)" strokeWidth={0.6} {...NS} />
+            <path className="lm-t2" d={base.urban} fill="url(#lm-blocks)" fillRule="evenodd" />
+            <path d={base.airports} fill="#B3A8C9" fillOpacity={0.88} stroke="rgba(255,255,255,0.4)" strokeWidth={0.8} {...NS} />
+            <path d={base.runways} fill="none" stroke="#FFF1D6" strokeWidth={2.8} strokeLinecap="butt" />
+            {/* Límites de condado (aproximados): líneas discontinuas sutiles */}
+            <path d={base.counties} fill="none" stroke="rgba(232,201,160,0.55)" strokeWidth={1.1} strokeDasharray="7 5" {...NS} />
+            {/* Ferrocarril: línea fina con traviesas sutiles (LOD 1) */}
+            {detail && <path className="lm-t1" d={detail.rail} fill="none" stroke="rgba(251,241,245,0.55)" strokeWidth={1.1} strokeLinejoin="round" {...NS} />}
+            {detail && <path className="lm-t1" d={detail.rail} fill="none" stroke="rgba(251,241,245,0.42)" strokeWidth={5} strokeDasharray="1.2 4.4" {...NS} />}
+          </g>
+          {/* Agua interior: lago, ríos y bahías */}
+          <path d={base.lakes} fill={WATER} fillRule="evenodd" stroke="rgba(127,163,217,0.4)" strokeWidth={0.9} {...NS} />
+          {/* Red vial: secundarias (LOD 1), autopistas de doble trazo y autopista de los cayos */}
+          {detail && <path className="lm-t1" d={detail.minorRoads} fill="none" stroke="#1A0A22" strokeOpacity={0.55} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" {...NS} />}
+          {detail && <path className="lm-t1" d={detail.minorRoads} fill="none" stroke="rgba(255,236,222,0.7)" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" {...NS} />}
+          <path d={base.highways} fill="none" stroke="#1A0F2A" strokeOpacity={0.85} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+          <path d={base.highways} fill="none" stroke="#F2B35E" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+          <path className="lm-t2" d={base.highways} fill="none" stroke="#E14B7B" strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+          <path d={base.keysRoad} fill="none" stroke="#1A0F2A" strokeOpacity={0.85} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+          <path d={base.keysRoad} fill="none" stroke="#F2B35E" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+          <path className="lm-t2" d={base.keysRoad} fill="none" stroke="#E14B7B" strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+          {/* Viaductos y puentes sobre el agua: calzada elevada con borde claro */}
+          <path d={base.bridges} fill="none" stroke="#1A0F2A" strokeWidth={7} strokeLinecap="butt" strokeLinejoin="round" {...NS} />
+          <path d={base.bridges} fill="none" stroke="#FFF1D6" strokeWidth={4.6} strokeLinecap="butt" strokeLinejoin="round" {...NS} />
+          <path className="lm-t2" d={base.bridges} fill="none" stroke="#E14B7B" strokeWidth={0.9} strokeLinecap="butt" strokeLinejoin="round" {...NS} />
+        </>
+      )}
       {/* Rótulos: capa inferior (los pines y clusters se pintan después, siempre encima) */}
       <g style={{ pointerEvents: 'none' }}>
         {m.labels.map((l) => (
@@ -296,6 +339,37 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
   const viewRef = useRef<ViewState | null>(null);
   const [view, setView] = useState<ViewState | null>(null);
   const [fitState, setFitState] = useState(1);
+
+  // Geometría pesada fuera del bundle: la base (LOD 0) al entrar, el detalle (LOD 1/2) al acercar el zoom.
+  const [base, setBase] = useState<TerrainBase | null>(null);
+  const [detail, setDetail] = useState<TerrainDetail | null>(null);
+  const wantDetail = (view?.level ?? 0) >= 1;
+  useEffect(() => {
+    let live = true;
+    loadBaseTerrain()
+      .then((d) => {
+        if (!live) return;
+        setBase(d);
+        // calienta la caché del detalle en reposo (no lo pinta hasta que se acerque el zoom)
+        const warm = (): void => void loadDetailLayers().catch(() => undefined);
+        if ('requestIdleCallback' in window) window.requestIdleCallback(warm, { timeout: 4000 });
+        else setTimeout(warm, 2000);
+      })
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, []);
+  useEffect(() => {
+    if (!wantDetail || detail) return;
+    let live = true;
+    loadDetailLayers()
+      .then((d) => live && setDetail(d))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [wantDetail, detail]);
 
   // Props leídas desde el bucle de animación sin re-crear callbacks.
   const insetsRef = useRef<Required<MapInsets>>({ top: 0, right: 0, bottom: 0, left: 0 });
@@ -747,7 +821,7 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
       >
         <style>{CSS}</style>
         <g ref={worldRef}>
-          <LeonidaBase />
+          <LeonidaBase base={base} detail={detail} />
           {refOverlay && <RefOverlay data={refOverlay} />}
           {tracer && <TracerOverlay tracer={tracer} />}
           {crosshair && (
