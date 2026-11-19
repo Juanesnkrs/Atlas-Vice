@@ -6,7 +6,8 @@
 // - Trazos con vector-effect: non-scaling-stroke y rótulos/pines a tamaño constante en pantalla
 //   mediante la variable CSS --k (= 1 / escala).
 import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type Ref } from 'react';
-import { LEONIDA_MAP, MAP_H, MAP_W, loadBaseTerrain, loadDetailLayers, type TerrainBase, type TerrainDetail } from '../../data/leonidaMap';
+import { LEONIDA_MAP, MAP_H, MAP_W, loadBaseTerrain, loadDetailLayers, type RouteShield, type TerrainBase, type TerrainDetail } from '../../data/leonidaMap';
+import { buildBasePaths, buildDetailPaths, paintMap, WATER, type BasePaths, type DetailPaths } from './mapPaint';
 
 export interface MapPin {
   id: string;
@@ -162,6 +163,8 @@ const CSS = `
 .lm-water{font-size:calc(11px * var(--lf,1));letter-spacing:3px;font-style:italic;font-weight:600;fill:#8FA8E0;stroke:#10234A}
 .lm-county{font-size:calc(10px * var(--lf,1));letter-spacing:2.5px;font-style:italic;font-weight:600;fill:#E8C9A0;stroke:#10234A}
 .lm-road{font-size:calc(9px * var(--lf,1));letter-spacing:.5px;font-weight:600;fill:#F6B58A}
+[data-h="1"]{visibility:hidden}
+.lm-sh text{font-family:Jost,sans-serif;font-weight:700;font-size:9px;text-anchor:middle;dominant-baseline:central;fill:#1A0F2A;paint-order:normal;stroke:none}
 [data-lod="0"] .lm-t1,[data-lod="0"] .lm-t2,[data-lod="1"] .lm-t2{display:none}
 .lm-pin{cursor:pointer;outline:none}
 .lm-pin:focus-visible .lm-ring,[data-sel="1"] .lm-ring{stroke:#FFC857;opacity:1}
@@ -171,126 +174,53 @@ const CSS = `
 @media (prefers-reduced-motion:reduce){.lm-pulse{animation:none}}
 `;
 
-/** Único tono del agua en todo el mapa (azul oscuro). */
-const WATER = '#10234A';
-/** Paleta del mapa: una tierra, un acento (ámbar de la red vial); el resto, tono sobre tono. */
-const LAND = '#94649A';
-const SAND = '#E8C9A0';
-const JADE = '#43B58C';
-const OCRE = '#C9A56A';
-const RELIEF = '#5E3A72';
 const NS = { vectorEffect: 'non-scaling-stroke' } as const;
 
-interface BaseProps {
-  base: TerrainBase | null;
-  detail: TerrainDetail | null;
-}
-
-const LeonidaBase = memo(function LeonidaBase({ base, detail }: BaseProps) {
+/** Rótulos y escudos de ruta: capa de texto en SVG, siempre bajo los pines y clusters. La visibilidad por colisión la decide runLabels. */
+const LabelsLayer = memo(function LabelsLayer({ shields }: { shields: ReadonlyArray<RouteShield> | null }) {
   const m = LEONIDA_MAP;
-  // Relieve en 6 niveles: 3 de la base (siempre) intercalados con 3 del detalle (al acercar el zoom).
-  const relief = useMemo(() => {
-    const out: { d: string; major: boolean }[] = [];
-    if (!base) return out;
-    for (let i = 0; i < base.relief.length; i++) {
-      out.push({ d: base.relief[i]!, major: true });
-      const d = detail?.relief[i];
-      if (d) out.push({ d, major: false });
-    }
-    return out;
-  }, [base, detail]);
   return (
-    <g>
-      <defs>
-        {base && (
-          <clipPath id="lm-clip">
-            <path d={base.land} clipRule="evenodd" />
-          </clipPath>
-        )}
-        {/* Manzanas urbanas: retícula girada que solo se ve en LOD 2 sobre los núcleos urbanos */}
-        <pattern id="lm-blocks" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-18)">
-          <path d="M0 0H5M0 0V5" fill="none" stroke="rgba(60,30,90,0.42)" strokeWidth={0.3} />
-        </pattern>
-        {/* Cultivos: surcos finos */}
-        <pattern id="lm-farm" width="2.6" height="2.6" patternUnits="userSpaceOnUse" patternTransform="rotate(28)">
-          <path d="M0 0H2.6" fill="none" stroke="rgba(190,214,150,0.55)" strokeWidth={0.45} />
-        </pattern>
-      </defs>
-      {/* Agua: un único tono azul oscuro para océano, bahías, lagos y ríos */}
-      <rect x={-3000} y={-3000} width={7000} height={7000} fill={WATER} />
-      <path d={m.gridD} fill="none" stroke="rgba(255,255,255,0.025)" strokeWidth={1} {...NS} />
-      {base && (
-        <>
-          {/* Borde costero nítido: ondas del mismo azul + línea cálida */}
-          <path d={base.land} fill="none" stroke="rgba(127,163,217,0.07)" strokeWidth={13} strokeLinejoin="round" />
-          <path d={base.land} fill="none" stroke="rgba(127,163,217,0.14)" strokeWidth={6} strokeLinejoin="round" />
-          <path d={base.land} fill={LAND} fillRule="evenodd" stroke={SAND} strokeOpacity={0.6} strokeWidth={1.5} strokeLinejoin="round" {...NS} />
-          <g clipPath="url(#lm-clip)">
-            {/* Relieve: gradiente de hasta 6 niveles (cada uno oscurece un poco más) */}
-            {relief.map((r, i) => (
-              <path key={i} d={r.d} fill={RELIEF} fillOpacity={0.2} fillRule="evenodd" />
-            ))}
-            {/* Reservas y parques (jade apagado), cultivos, industrial, arena y humedales */}
-            <path d={base.parks} fill={JADE} fillOpacity={0.6} fillRule="evenodd" stroke={JADE} strokeOpacity={0.5} strokeWidth={0.8} {...NS} />
-            {detail && <path className="lm-t1" d={detail.farms} fill="#8DB27A" fillOpacity={0.2} fillRule="evenodd" />}
-            {detail && <path className="lm-t1" d={detail.farms} fill="url(#lm-farm)" fillRule="evenodd" />}
-            <path d={base.sand} fill={SAND} fillOpacity={0.7} fillRule="evenodd" />
-            <path d={base.industrial} fill={OCRE} fillOpacity={0.62} fillRule="evenodd" stroke={OCRE} strokeOpacity={0.7} strokeWidth={0.8} {...NS} />
-            <path d={base.wet} fill="#5E9AA0" fillOpacity={0.5} fillRule="evenodd" />
-            {relief.map((r, i) => (
-              <path
-                key={i}
-                className={r.major ? undefined : 'lm-t1'}
-                d={r.d}
-                fill="none"
-                stroke="rgba(255,214,190,0.34)"
-                strokeOpacity={r.major ? 1 : 0.7}
-                strokeWidth={r.major ? 1 : 0.7}
-                {...NS}
-              />
-            ))}
-            {/* Huella urbana gris violácea (+ manzanas en LOD 2) y aeropuertos */}
-            <path d={base.urban} fill="#CBBFD9" fillOpacity={0.78} fillRule="evenodd" stroke="rgba(255,255,255,0.3)" strokeWidth={0.6} {...NS} />
-            <path className="lm-t2" d={base.urban} fill="url(#lm-blocks)" fillRule="evenodd" />
-            <path d={base.airports} fill="#B3A8C9" fillOpacity={0.88} stroke="rgba(255,255,255,0.4)" strokeWidth={0.8} {...NS} />
-            <path d={base.runways} fill="none" stroke="#FFF1D6" strokeWidth={2.8} strokeLinecap="butt" />
-            {/* Límites de condado (aproximados): líneas discontinuas sutiles */}
-            <path d={base.counties} fill="none" stroke="rgba(232,201,160,0.55)" strokeWidth={1.1} strokeDasharray="7 5" {...NS} />
-            {/* Ferrocarril: línea fina con traviesas sutiles (LOD 1) */}
-            {detail && <path className="lm-t1" d={detail.rail} fill="none" stroke="rgba(251,241,245,0.55)" strokeWidth={1.1} strokeLinejoin="round" {...NS} />}
-            {detail && <path className="lm-t1" d={detail.rail} fill="none" stroke="rgba(251,241,245,0.42)" strokeWidth={5} strokeDasharray="1.2 4.4" {...NS} />}
-          </g>
-          {/* Agua interior: lago, ríos y bahías */}
-          <path d={base.lakes} fill={WATER} fillRule="evenodd" stroke="rgba(127,163,217,0.4)" strokeWidth={0.9} {...NS} />
-          {/* Red vial: secundarias (LOD 1), autopistas de doble trazo y autopista de los cayos */}
-          {detail && <path className="lm-t1" d={detail.minorRoads} fill="none" stroke="#1A0A22" strokeOpacity={0.55} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" {...NS} />}
-          {detail && <path className="lm-t1" d={detail.minorRoads} fill="none" stroke="rgba(255,236,222,0.7)" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" {...NS} />}
-          <path d={base.highways} fill="none" stroke="#1A0F2A" strokeOpacity={0.85} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-          <path d={base.highways} fill="none" stroke="#F2B35E" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-          <path className="lm-t2" d={base.highways} fill="none" stroke="#E14B7B" strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-          <path d={base.keysRoad} fill="none" stroke="#1A0F2A" strokeOpacity={0.85} strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-          <path d={base.keysRoad} fill="none" stroke="#F2B35E" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-          <path className="lm-t2" d={base.keysRoad} fill="none" stroke="#E14B7B" strokeWidth={0.9} strokeLinecap="round" strokeLinejoin="round" {...NS} />
-          {/* Viaductos y puentes sobre el agua: calzada elevada con borde claro */}
-          <path d={base.bridges} fill="none" stroke="#1A0F2A" strokeWidth={7} strokeLinecap="butt" strokeLinejoin="round" {...NS} />
-          <path d={base.bridges} fill="none" stroke="#FFF1D6" strokeWidth={4.6} strokeLinecap="butt" strokeLinejoin="round" {...NS} />
-          <path className="lm-t2" d={base.bridges} fill="none" stroke="#E14B7B" strokeWidth={0.9} strokeLinecap="butt" strokeLinejoin="round" {...NS} />
-        </>
-      )}
-      {/* Rótulos: capa inferior (los pines y clusters se pintan después, siempre encima) */}
-      <g style={{ pointerEvents: 'none' }}>
-        {m.labels.map((l) => (
-          <g
-            key={l.text}
-            className={l.tier === 0 ? undefined : `lm-t${l.tier}`}
-            style={{ transform: `${pxPos(l.x, l.y)}${l.rot ? ` rotate(${l.rot}deg)` : ''}` }}
-          >
-            <text className={`lm-l lm-${l.kind}`} y={l.dy ?? 0}>
-              {l.kind === 'region' ? l.text.toUpperCase() : l.text}
-            </text>
-          </g>
-        ))}
-      </g>
+    <g style={{ pointerEvents: 'none' }}>
+      {m.labels.map((l, i) => (
+        <g
+          key={l.text}
+          data-lbl={i}
+          data-x={l.x}
+          data-y={l.y}
+          data-dy={l.dy ?? 0}
+          data-tier={l.tier}
+          data-kind={l.kind}
+          data-rot={l.rot ?? 0}
+          className={l.tier === 0 ? undefined : `lm-t${l.tier}`}
+          style={{ transform: `${pxPos(l.x, l.y)}${l.rot ? ` rotate(${l.rot}deg)` : ''}` }}
+        >
+          <text className={`lm-l lm-${l.kind}`} y={l.dy ?? 0}>
+            {l.kind === 'region' ? l.text.toUpperCase() : l.text}
+          </text>
+        </g>
+      ))}
+      {shields?.map((s, i) => (
+        <g
+          key={`sh${i}`}
+          data-lbl={`s${i}`}
+          data-x={s[2]}
+          data-y={s[3]}
+          data-dy={0}
+          data-tier={1}
+          data-kind="shield"
+          className="lm-t1 lm-sh"
+          style={{ transform: pxPos(s[2], s[3]) }}
+        >
+          {s[1] === 'i' ? (
+            <path d="M-9-9H9V3L0 11L-9 3Z" fill="#F4EEF6" stroke="#1A0F2A" strokeWidth={1.4} strokeLinejoin="round" />
+          ) : s[1] === 'u' ? (
+            <circle r={9} fill="#F4EEF6" stroke="#1A0F2A" strokeWidth={1.4} />
+          ) : (
+            <rect x={-9} y={-7} width={18} height={14} rx={4} fill="#F4EEF6" stroke="#1A0F2A" strokeWidth={1.4} />
+          )}
+          <text fontSize={s[0].length > 2 ? 7.5 : 9}>{s[0]}</text>
+        </g>
+      ))}
     </g>
   );
 });
@@ -325,6 +255,39 @@ const TracerOverlay = memo(function TracerOverlay({ tracer }: { tracer: MapTrace
     </g>
   );
 });
+
+// ---- Colisión de rótulos -------------------------------------------------------------------------------------------
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+const LABEL_FONT: Record<string, { font: string; ls: number }> = {
+  region: { font: '700 13px Jost, sans-serif', ls: 2 },
+  county: { font: 'italic 600 10px Jost, sans-serif', ls: 2.5 },
+  city: { font: '700 11px Jost, sans-serif', ls: 1 },
+  water: { font: 'italic 600 11px Jost, sans-serif', ls: 3 },
+  road: { font: '600 9px Jost, sans-serif', ls: 0.5 },
+};
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+const widthCache = new Map<string, number>();
+function textWidth(text: string, kind: string, lf: number): number {
+  const key = `${kind}|${text}|${lf}`;
+  const hit = widthCache.get(key);
+  if (hit !== undefined) return hit;
+  if (measureCtx === undefined) measureCtx = document.createElement('canvas').getContext('2d');
+  const spec = LABEL_FONT[kind] ?? LABEL_FONT.city!;
+  let w = text.length * 7 * lf;
+  if (measureCtx) {
+    measureCtx.font = spec.font;
+    const shown = kind === 'region' ? text.toUpperCase() : text;
+    w = (measureCtx.measureText(shown).width + spec.ls * shown.length) * lf;
+  }
+  widthCache.set(key, w);
+  return w;
+}
+const overlaps = (a: Box, b: Box, pad = 3): boolean => a.x0 < b.x1 + pad && a.x1 > b.x0 - pad && a.y0 < b.y1 + pad && a.y1 > b.y0 - pad;
 
 // ---- Componente ---------------------------------------------------------------------------------------------------
 export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect, onBackgroundClick, crosshair, editable, insets, ariaLabel, className = '' }: MapCanvasProps) {
@@ -419,6 +382,122 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
     [bounds],
   );
 
+  // ---- Capa estática en <canvas>: bitmap en caché movido por CSS; se repinta solo si hace falta ----------------------------------
+  const bgRef = useRef<HTMLCanvasElement>(null);
+  const basePaths = useRef<BasePaths | null>(null);
+  const detailPaths = useRef<DetailPaths | null>(null);
+  const bgState = useRef<{ x0: number; y0: number; x1: number; y1: number; s: number; lod: 0 | 1 | 2 } | null>(null);
+  const bgTimer = useRef(0);
+  const bgRaf = useRef(0);
+  const lblTimer = useRef(0);
+  const itemsRef = useRef<Item[]>([]);
+
+  const placeBg = useCallback(() => {
+    const cv = bgRef.current;
+    const st = bgState.current;
+    if (!cv || !st) return;
+    const { x, y, s } = cur.current;
+    cv.style.transform = `translate3d(${x + st.x0 * s}px, ${y + st.y0 * s}px, 0) scale(${s / st.s})`;
+  }, []);
+
+  const renderBg = useCallback(() => {
+    const cv = bgRef.current;
+    if (!cv || size.current.w === 0) return;
+    const { x, y, s } = cur.current;
+    const { w, h } = size.current;
+    const rel = s / fit.current;
+    const lod: 0 | 1 | 2 = rel < 1.7 ? 0 : rel < 3.4 ? 1 : 2;
+    const mx = (w * 0.3) / s;
+    const my = (h * 0.3) / s;
+    const R = { x0: -x / s - mx, y0: -y / s - my, x1: (w - x) / s + mx, y1: (h - y) / s + my };
+    const cssW = (R.x1 - R.x0) * s;
+    const cssH = (R.y1 - R.y0) * s;
+    const dpr = Math.min(2, window.devicePixelRatio || 1, 6144 / cssW, 6144 / cssH);
+    const pw = Math.max(1, Math.round(cssW * dpr));
+    const ph = Math.max(1, Math.round(cssH * dpr));
+    if (cv.width !== pw) cv.width = pw;
+    if (cv.height !== ph) cv.height = ph;
+    cv.style.width = `${cssW}px`;
+    cv.style.height = `${cssH}px`;
+    const ctx = cv.getContext('2d');
+    if (!ctx) return;
+    paintMap(ctx, basePaths.current, detailPaths.current, { ...R, s, sx: pw / (R.x1 - R.x0), sy: ph / (R.y1 - R.y0), lod });
+    bgState.current = { ...R, s, lod };
+    placeBg();
+  }, [placeBg]);
+
+  const flushBg = useCallback(() => {
+    clearTimeout(bgTimer.current);
+    if (bgRaf.current) return;
+    bgRaf.current = requestAnimationFrame(() => {
+      bgRaf.current = 0;
+      renderBg();
+    });
+  }, [renderBg]);
+  const settleBg = useCallback(() => {
+    clearTimeout(bgTimer.current);
+    bgTimer.current = window.setTimeout(flushBg, 160);
+  }, [flushBg]);
+
+  /** Colisión de rótulos por cajas: P0 > P1 > P2 > escudos; se ocultan los que chocan con otro de mayor prioridad o con pines/clusters. */
+  const runLabels = useCallback(() => {
+    const svg = svgRef.current;
+    if (!svg || size.current.w === 0) return;
+    const { x, y, s } = cur.current;
+    const { w, h } = size.current;
+    const rel = s / fit.current;
+    const lod = rel < 1.7 ? 0 : rel < 3.4 ? 1 : 2;
+    const lf = w < 768 ? 0.82 : 1;
+    const obstacles = itemsRef.current.map((it) => {
+      const wx = it.kind === 'pin' ? it.pin.x : it.x;
+      const wy = it.kind === 'pin' ? it.pin.y : it.y;
+      const cx = wx * s + x;
+      const cy = wy * s + y;
+      const r = it.kind === 'pin' ? 15 : 22;
+      return { cx, cy, box: { x0: cx - r, y0: cy - r, x1: cx + r, y1: cy + r } as Box };
+    });
+    const cands: { el: SVGElement; box: Box; prio: number; ax: number; ay: number }[] = [];
+    const setHidden = (el: SVGElement, hide: boolean): void => {
+      if ((el.dataset.h === '1') === hide) return;
+      if (hide) el.dataset.h = '1';
+      else delete el.dataset.h;
+    };
+    svg.querySelectorAll<SVGElement>('[data-lbl]').forEach((el) => {
+      const tier = Number(el.dataset.tier);
+      if (tier > lod) return; // ya oculto por LOD
+      const sx = Number(el.dataset.x) * s + x;
+      const sy = Number(el.dataset.y) * s + y;
+      if (sx < -140 || sx > w + 140 || sy < -80 || sy > h + 80) {
+        setHidden(el, true);
+        return;
+      }
+      const kind = el.dataset.kind ?? 'city';
+      let bw = 24;
+      let bh = 22;
+      if (kind !== 'shield') {
+        bw = textWidth(el.textContent ?? '', kind, lf) + 6;
+        bh = 14 * lf + 6;
+        if (Math.abs(Number(el.dataset.rot)) === 90) [bw, bh] = [bh, bw];
+      }
+      const cy = sy + Number(el.dataset.dy);
+      cands.push({ el, box: { x0: sx - bw / 2, y0: cy - bh / 2, x1: sx + bw / 2, y1: cy + bh / 2 }, prio: kind === 'shield' ? 3 : tier, ax: sx, ay: sy });
+    });
+    cands.sort((a, b) => a.prio - b.prio);
+    const placed: Box[] = [];
+    for (const c of cands) {
+      let hit = false;
+      // el pin al que está anclado el propio rótulo no cuenta como obstáculo
+      for (const o of obstacles) if (Math.hypot(o.cx - c.ax, o.cy - c.ay) >= 10 && overlaps(c.box, o.box)) { hit = true; break; }
+      if (!hit) for (const p of placed) if (overlaps(c.box, p)) { hit = true; break; }
+      setHidden(c.el, hit);
+      if (!hit) placed.push(c.box);
+    }
+  }, []);
+  const scheduleLabels = useCallback(() => {
+    clearTimeout(lblTimer.current);
+    lblTimer.current = window.setTimeout(runLabels, 80);
+  }, [runLabels]);
+
   /** Escribe la transformación en el DOM y, solo si cambia el nivel/rect, avisa a React. */
   const apply = useCallback(() => {
     const g = worldRef.current;
@@ -430,10 +509,19 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
     const rel = s / fit.current;
     const lod = rel < 1.7 ? '0' : rel < 3.4 ? '1' : '2';
     if (svg.dataset.lod !== lod) svg.dataset.lod = lod;
+    placeBg();
+    scheduleLabels();
 
     const level = Math.floor(Math.log2(Math.max(rel, 0.01)) * 2);
     const { w, h } = size.current;
     const vr: Rect = { x0: -x / s, y0: -y / s, x1: (w - x) / s, y1: (h - y) / s };
+    if (basePaths.current) {
+      const st = bgState.current;
+      const lodN = Number(lod);
+      if (!st) flushBg();
+      else if (vr.x0 < st.x0 || vr.y0 < st.y0 || vr.x1 > st.x1 || vr.y1 > st.y1 || st.lod !== lodN) flushBg();
+      else if (Math.abs(s / st.s - 1) > 0.04) settleBg();
+    }
     const v = viewRef.current;
     const inside = v && v.level === level && vr.x0 >= v.rect.x0 && vr.y0 >= v.rect.y0 && vr.x1 <= v.rect.x1 && vr.y1 <= v.rect.y1;
     if (!inside) {
@@ -443,7 +531,25 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
       viewRef.current = nv;
       setView(nv);
     }
-  }, []);
+  }, [placeBg, scheduleLabels, flushBg, settleBg]);
+
+  useEffect(() => {
+    basePaths.current = base ? buildBasePaths(base) : null;
+    bgState.current = null;
+    if (base) flushBg();
+  }, [base, flushBg]);
+  useEffect(() => {
+    detailPaths.current = detail ? buildDetailPaths(detail) : null;
+    if (detail) flushBg();
+  }, [detail, flushBg]);
+  useEffect(
+    () => () => {
+      clearTimeout(bgTimer.current);
+      clearTimeout(lblTimer.current);
+      cancelAnimationFrame(bgRaf.current);
+    },
+    [],
+  );
 
   const frame = useCallback(
     (now: number) => {
@@ -611,6 +717,7 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
       if (!touched.current) cur.current = t;
       else clampT(cur.current);
       viewRef.current = null;
+      bgState.current = null;
       apply();
     };
     const ro = new ResizeObserver(measure);
@@ -785,6 +892,10 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
 
   // ---- Render de pines/clusters --------------------------------------------------------------------------------------------
   const items = useMemo(() => (view ? buildItems(pins, view, selectedId, fitState) : []), [pins, view, selectedId, fitState]);
+  itemsRef.current = items;
+  useEffect(() => {
+    scheduleLabels();
+  }, [items, base, scheduleLabels]);
 
   const zoomIntoCluster = (x: number, y: number) => {
     const c = cur.current;
@@ -799,7 +910,8 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
   };
 
   return (
-    <div ref={wrapRef} className={`absolute inset-0 touch-none select-none overflow-hidden ${className}`}>
+    <div ref={wrapRef} className={`absolute inset-0 touch-none select-none overflow-hidden ${className}`} style={{ background: WATER }}>
+      <canvas ref={bgRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0" style={{ transformOrigin: '0 0', willChange: 'transform' }} />
       <svg
         ref={svgRef}
         role="application"
@@ -821,7 +933,7 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
       >
         <style>{CSS}</style>
         <g ref={worldRef}>
-          <LeonidaBase base={base} detail={detail} />
+          <LabelsLayer shields={base?.shields ?? null} />
           {refOverlay && <RefOverlay data={refOverlay} />}
           {tracer && <TracerOverlay tracer={tracer} />}
           {crosshair && (

@@ -14,12 +14,17 @@ export const MAP_H = 700;
 //  - detail-layers.json: LOD 1/2 (relieve fino, cultivos, carreteras secundarias y ferrocarril).
 // Todas las rutas son `d` de paths en coordenadas del lienzo (0-1000 x 0-700).
 
+/** Escudo de ruta: [número, tipo (i = interestatal, u = US, s = estatal), x, y]. */
+export type RouteShield = readonly [string, 'i' | 'u' | 's', number, number];
+
+/** Las rutas son cadenas codificadas (décimas de unidad, primer punto absoluto + incrementos, `|` separa anillos). */
 export interface TerrainBase {
   v: number;
   land: string;
   lakes: string;
   sand: string;
   industrial: string;
+  /** Reservas y parques (Mount Kalaga). */
   parks: string;
   wet: string;
   urban: string;
@@ -27,18 +32,29 @@ export interface TerrainBase {
   relief: string[];
   airports: string;
   runways: string;
-  highways: string;
-  keysRoad: string;
-  bridges: string;
+  /** Límites de condado (aproximados). */
   counties: string;
+  /** Autopistas troncales y puentes sobre el agua. */
+  highways: string;
+  bridges: string;
+  shields: RouteShield[];
 }
 export interface TerrainDetail {
   v: number;
   /** Los otros 3 niveles de relieve, intercalados con los de la base. */
   relief: string[];
   farms: string;
-  minorRoads: string;
+  /** Carreteras secundarias, calles urbanas, callejones/muelles y sendas o caminos de tierra. */
+  roads: string;
+  streets: string;
+  alleys: string;
+  dirt: string;
   rail: string;
+  /** Metrorail y Metromover elevados, con sus estaciones (aproximadas). */
+  metro: string;
+  mover: string;
+  stationsMetro: [number, number][];
+  stationsMover: [number, number][];
 }
 
 const jsonCache = new Map<string, Promise<unknown>>();
@@ -57,14 +73,6 @@ function loadJson<T>(url: string): Promise<T> {
 }
 export const loadBaseTerrain = (): Promise<TerrainBase> => loadJson<TerrainBase>('/map-data/base-terrain.json');
 export const loadDetailLayers = (): Promise<TerrainDetail> => loadJson<TerrainDetail>('/map-data/detail-layers.json');
-
-/** Cuadrícula de referencia cada 100 unidades. */
-export const GRID_D = (() => {
-  let d = '';
-  for (let x = 0; x <= MAP_W; x += 100) d += `M${x} 0V${MAP_H}`;
-  for (let y = 0; y <= MAP_H; y += 100) d += `M0 ${y}H${MAP_W}`;
-  return d;
-})();
 
 // ---- Posiciones de los marcadores reales (slug -> lienzo) ---------------------------------------------------------
 /** Coordenadas definitivas de los 10 `MapMarker` base sobre esta cartografía. */
@@ -87,7 +95,7 @@ export interface MapLabel {
   text: string;
   x: number;
   y: number;
-  /** 0 = siempre; 1 = a partir del primer nivel de zoom; 2 = a partir del segundo. */
+  /** Prioridad: P0 (0) regiones, siempre; P1 (1) ciudades y barrios mayores, desde LOD 1; P2 (2) sub-barrios, cayos y accidentes menores, desde LOD 2. */
   tier: 0 | 1 | 2;
   kind: MapLabelKind;
   /** Giro en grados alrededor de (x, y): rotula las costas laterales sin salirse del lienzo. */
@@ -97,19 +105,44 @@ export interface MapLabel {
 }
 const at = (slug: string): { x: number; y: number } => MARKER_SPOTS[slug]!;
 export const MAP_LABELS: ReadonlyArray<MapLabel> = [
+  // P0 · regiones (siempre visibles, ancladas junto a su marcador)
   { text: 'Mount Kalaga', ...at('mount-kalaga-national-park'), tier: 0, kind: 'region', dy: -26 },
   { text: 'Port Gellhorn', ...at('port-gellhorn'), tier: 0, kind: 'region', dy: -26 },
   { text: 'Ambrosia', ...at('ambrosia'), tier: 0, kind: 'region', dy: 28 },
   { text: 'Grassrivers', ...at('grassrivers'), tier: 0, kind: 'region', dy: -26 },
-  { text: 'Vice-Dale County', ...at('vice-dale-county'), tier: 1, kind: 'region', dy: -24 },
   { text: 'Leonida Keys', ...at('leonida-keys'), tier: 0, kind: 'region', dy: 28 },
+  { text: 'Golfo Occidental', x: 239.8, y: 375.8, tier: 0, kind: 'water', rot: -90 },
+  { text: 'Océano Atlántico', x: 766.3, y: 375.8, tier: 0, kind: 'water', rot: 90 },
+  // P1 · condados, ciudades y barrios mayores
+  { text: 'Vice-Dale County', ...at('vice-dale-county'), tier: 1, kind: 'region', dy: -24 },
   { text: 'Gellhorn County', x: 384.3, y: 318, tier: 1, kind: 'county' },
   { text: 'Kelly County', x: 442.1, y: 429.5, tier: 1, kind: 'county' },
   { text: 'Leonard County', x: 575, y: 478, tier: 1, kind: 'county' },
   { text: 'Vice City', ...at('vice-city'), tier: 1, kind: 'city', dy: 26 },
   { text: 'Ocean Beach', ...at('ocean-beach'), tier: 1, kind: 'city', dy: 26 },
-  { text: 'Golfo Occidental', x: 239.8, y: 375.8, tier: 0, kind: 'water', rot: -90 },
-  { text: 'Océano Atlántico', x: 766.3, y: 375.8, tier: 0, kind: 'water', rot: 90 },
+  { text: 'Vice Beach', x: 733.5, y: 337.3, tier: 1, kind: 'city' },
+  { text: 'North Beaches', x: 662.7, y: 222.8, tier: 1, kind: 'city' },
+  { text: 'Grayson', x: 434.6, y: 127.9, tier: 1, kind: 'city' },
+  { text: 'Watson Bay', x: 422.2, y: 526.2, tier: 1, kind: 'city' },
+  { text: 'Key Lento', x: 555.5, y: 623.1, tier: 1, kind: 'city' },
+  { text: 'Southwind', x: 389, y: 638.6, tier: 1, kind: 'city' },
+  { text: 'Belville', x: 584.4, y: 277.5, tier: 1, kind: 'city' },
+  { text: 'Waning Sands', x: 637.3, y: 241.3, tier: 1, kind: 'city' },
+  // P2 · sub-barrios, cayos, aeropuertos y accidentes menores
+  { text: 'Vice Decor District', x: 627.4, y: 305.8, tier: 2, kind: 'city' },
+  { text: 'Stockyard', x: 627.8, y: 321.7, tier: 2, kind: 'city' },
+  { text: 'La Perle', x: 602.3, y: 331.4, tier: 2, kind: 'city' },
+  { text: 'Bayside', x: 623.5, y: 338.7, tier: 2, kind: 'city' },
+  { text: 'Crosstown', x: 611.5, y: 346.9, tier: 2, kind: 'city' },
+  { text: 'Downtown', x: 609.2, y: 372.4, tier: 2, kind: 'city' },
+  { text: 'Picnic Islands', x: 637.3, y: 327.9, tier: 2, kind: 'water' },
+  { text: 'Rialto Islands', x: 658, y: 338.7, tier: 2, kind: 'water' },
+  { text: 'Watson Island', x: 646.8, y: 371.3, tier: 2, kind: 'water' },
+  { text: 'Gloriosa Key', x: 663.5, y: 452.2, tier: 2, kind: 'water' },
+  { text: 'Barracuda Keys', x: 325, y: 595.6, tier: 2, kind: 'water' },
+  { text: 'Woman Key', x: 342.7, y: 605.5, tier: 2, kind: 'water' },
+  { text: 'Boca Grande Key', x: 347.4, y: 616.6, tier: 2, kind: 'water' },
+  { text: 'Goose Key', x: 368.3, y: 673.3, tier: 2, kind: 'water' },
   { text: 'Lago Leonida', ...at('lake-leonida'), tier: 2, kind: 'water', dy: 24 },
   { text: 'Canal de los Cayos', x: 499.9, y: 664.8, tier: 2, kind: 'water' },
   { text: 'Autopista de los Cayos', x: 466.9, y: 651.6, tier: 2, kind: 'road' },
@@ -155,6 +188,5 @@ export const REF_IMAGES: ReadonlyArray<MapRefImage> = [
 
 // ---- Paquete de capas ligeras para el render ----------------------------------------------------------------
 export const LEONIDA_MAP = {
-  gridD: GRID_D,
   labels: MAP_LABELS,
 } as const;
