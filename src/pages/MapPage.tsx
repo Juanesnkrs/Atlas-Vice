@@ -264,6 +264,7 @@ interface RefState {
   dx: number;
   dy: number;
 }
+/** La calca ya viene alineada 1:1 con la isla vectorial: REF_IMAGES (leonidaMap.ts) fija x, y, ancho, alto y recorte (el mapa ocupa ~68 % izquierdo de la imagen comunitaria), por lo que el ajuste fino parte de escala ×1 y desplazamiento (0, 0). */
 const REF_DEFAULT: RefState = { on: false, id: REF_IMAGES[0]!.id, opacity: 45, scale: 1, dx: 0, dy: 0 };
 
 type TraceMode = 'poly' | 'route';
