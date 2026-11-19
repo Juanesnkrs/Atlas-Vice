@@ -74,6 +74,7 @@ Definidos como variables CSS en `src/styles/vice-nui.css` y expuestos en `tailwi
 | `TipCard` | `src/components/ui/TipCard.tsx` | Tarjeta HUD |
 | `StatBar` | `src/components/ui/StatBar.tsx` | Barra de estadística (catálogo y comparador) |
 | `BottomSheet` | `src/components/ui/BottomSheet.tsx` | Hoja deslizable con foco atrapado y cierre por gesto/Esc |
+| `EntityDetailPanel` | `src/components/ui/EntityDetailPanel.tsx` | Detalle único de un ítem del catálogo (badge, nombre, descripción, marcar, ubicación en el mapa, Ver ficha / Comparar / Discutir); lo usan el panel derecho de tablet/escritorio y el `BottomSheet` móvil de `/catalogo/:categoria/:itemSlug` |
 | `AdSlot` | `src/components/ui/AdSlot.tsx` | Reglas en `LeonidApp-Rutas-SEO-Monetizacion.md` §6 |
 | `Modal` | `src/components/ui/Modal.tsx` | Diálogo único de la app: `createPortal` a `document.body`, capa `.z-dialog` (por encima del dock y de las hojas), `role="dialog"`, `aria-modal`, `aria-labelledby`, foco atrapado, Esc y clic en el fondo para cerrar, foco devuelto al disparador. En móvil (< 768px) se presenta como `BottomSheet`. Toda ventana modal (muro de registro, Magic Link, modales del Footer) usa este componente; prohibidos los `fixed inset-0` propios en páginas. |
 
@@ -132,7 +133,7 @@ src/
 ├── main.tsx
 ├── components/
 │   ├── layout/        ViceShell.tsx · BottomDock.tsx · Footer.tsx (RockstarFooter)
-│   └── ui/            PalmButton.tsx · TipCard.tsx · StatBar.tsx · BottomSheet.tsx · AdSlot.tsx · Modal.tsx
+│   └── ui/            PalmButton.tsx · TipCard.tsx · StatBar.tsx · BottomSheet.tsx · EntityDetailPanel.tsx · AdSlot.tsx · Modal.tsx
 │                      MapCanvas.tsx (motor del mapa: pan/zoom/inercia/clustering sobre SVG + rAF) · mapPaint.ts (pintor <canvas> de la pirámide de teselas del referente)
 ├── data/              seed.ts (capa offline-first y fallback) · leonidaMap.ts (marco de coordenadas, `MARKER_SPOTS` y metadatos de las teselas)
 ├── pages/             HomePage.tsx · LandingAuthPage.tsx · DashboardPage.tsx · MapPage.tsx · CatalogPage.tsx

@@ -671,7 +671,7 @@ export const slugify = (text: string): string =>
 
 export const entitySlug = (e: Entity): string => (e as EntityWithSlug).slug || slugify(e.titulo);
 
-/** Ruta limpia de la ficha de una entidad (o de la guía si el módulo es `guias`). */
+/** Ruta limpia de una entidad: Inspector con el ítem preseleccionado (o la guía si el módulo es `guias`). */
 export const entityHref = (e: Entity, moduleSlug: string): string =>
   moduleSlug === 'guias' ? `/guias/${entitySlug(e)}` : `/catalogo/${moduleSlug}/${entitySlug(e)}`;
 
@@ -734,13 +734,14 @@ export function useModuleGate(): { isActive: (slug: string) => boolean; catalogA
 export function useEntityDetail(
   moduleSlug: string,
   slug: string,
+  enabled = true,
 ): { entity: Entity | null; loading: boolean } {
   const { data } = useWorldData();
   const mod = data.modules.find((m) => m.slug === moduleSlug);
   const local = mod ? (data.entities.find((e) => e.module_id === mod.id && entitySlug(e) === slug) ?? null) : null;
   const q = useQuery({
     queryKey: ['entity', moduleSlug, slug],
-    enabled: isApiConfigured && local === null,
+    enabled: enabled && isApiConfigured && local === null,
     staleTime: 60_000,
     queryFn: () =>
       apiFetch<Entity>(`/api/modules/${encodeURIComponent(moduleSlug)}/entities/${encodeURIComponent(slug)}`),

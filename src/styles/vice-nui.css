@@ -151,6 +151,18 @@ h3 {
   border-radius: 8px;
 }
 
+/* Utilidad scrollbar-none: carruseles táctiles de píldoras sin barra visible (el scroll sigue activo).
+   Va fuera de las capas de Tailwind a propósito: las reglas sin capa de scrollbars (arriba) ganarían a una utility en capa. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* Animaciones */
 @keyframes slideUp {
   from {

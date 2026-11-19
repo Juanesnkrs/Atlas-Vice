@@ -376,9 +376,9 @@ export default function HomePage() {
 
   const candidates: Array<ExploreCard | false> = [
     isActive('mapa') && { href: '/mapa', title: 'Mapa interactivo', count: plural(world.markers.length, 'marcador', 'marcadores'), crop: CROPS.mapa },
-    catalogActive && isActive('armas') && { href: '/catalogo?modulo=armas', title: 'Armas', count: plural(countOf('armas'), 'ficha', 'fichas'), crop: CROPS.armas },
-    catalogActive && isActive('vehiculos') && { href: '/catalogo?modulo=vehiculos', title: 'Vehículos', count: plural(countOf('vehiculos'), 'ficha', 'fichas'), crop: CROPS.vehiculos },
-    catalogActive && isActive('coleccionables') && { href: '/catalogo?modulo=coleccionables', title: 'Coleccionables', count: plural(countOf('coleccionables'), 'ficha', 'fichas'), crop: CROPS.coleccionables },
+    catalogActive && isActive('armas') && { href: '/catalogo/armas', title: 'Armas', count: plural(countOf('armas'), 'ficha', 'fichas'), crop: CROPS.armas },
+    catalogActive && isActive('vehiculos') && { href: '/catalogo/vehiculos', title: 'Vehículos', count: plural(countOf('vehiculos'), 'ficha', 'fichas'), crop: CROPS.vehiculos },
+    catalogActive && isActive('coleccionables') && { href: '/catalogo/coleccionables', title: 'Coleccionables', count: plural(countOf('coleccionables'), 'ficha', 'fichas'), crop: CROPS.coleccionables },
     isActive('guias') && { href: '/guias', title: 'Guías', count: plural(guides.length, 'guía', 'guías'), crop: CROPS.guias },
     { href: '/noticias', title: 'Noticias oficiales', count: newsLoading || newsError ? null : plural(news.length, 'noticia', 'noticias'), crop: CROPS.noticias },
   ];

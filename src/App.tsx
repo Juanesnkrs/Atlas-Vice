@@ -8,8 +8,9 @@
 //   /entrar                 P01+P02  Acceso: OAuth2 PKCE + Magic Link (noindex)
 //   /hub, /progreso         P03      Dashboard (noindex)
 //   /mapa                   P04      Mapa de Leonida (?region= &marker=)
-//   /catalogo               P05      Inspector NUI (?comparar=a,b[,c] abre el comparador)
-//   /catalogo/:modulo/:slug P05      Ficha de entidad
+//   /catalogo               P05      Entrada: replaceState a /catalogo/armas (?q= ?comparar= ?modulo= ?entity= heredados)
+//   /catalogo/:categoria    P05      Inspector NUI de una categoría (Module.slug activo)
+//   /catalogo/:categoria/:itemSlug   Inspector con el ítem preseleccionado (?vista=ficha = ficha completa)
 //   /guias, /guias/:slug             Guías (editorial)
 //   /noticias, /noticias/:slug       Noticias oficiales
 //   /foro                   P07      Foro (?hilo= &entity= &marker=)
@@ -50,7 +51,6 @@ type RouteId =
   | 'progress'
   | 'map'
   | 'catalog'
-  | 'entity'
   | 'guides'
   | 'guide'
   | 'news'
@@ -65,8 +65,10 @@ const ROUTES: ReadonlyArray<readonly [string, RouteId]> = [
   ['/hub', 'hub'],
   ['/progreso', 'progress'],
   ['/mapa', 'map'],
+  // Las 3 formas comparten RouteId: la vista no se desmonta al cambiar de categoría o de ítem.
   ['/catalogo', 'catalog'],
-  ['/catalogo/:modulo/:slug', 'entity'],
+  ['/catalogo/:categoria', 'catalog'],
+  ['/catalogo/:categoria/:itemSlug', 'catalog'],
   ['/guias', 'guides'],
   ['/guias/:slug', 'guide'],
   ['/noticias', 'news'],
@@ -94,10 +96,6 @@ const STATIC_META: Partial<Record<RouteId, PageMeta>> = {
     title: 'Mapa de Leonida',
     description: 'Mapa táctico de Leonida con capas, filtros y pines de coleccionables, armas, vehículos y puntos de interés.',
   },
-  catalog: {
-    title: 'Catálogo de Leonida',
-    description: 'Inspector del catálogo: armas, vehículos, coleccionables y guías de Leonida con estadísticas y comparador.',
-  },
   forum: {
     title: 'Foro de la comunidad',
     description: 'Foro de LeonidApp: hilos, guías y ayuda, secretos y crews de la comunidad de Leonida.',
@@ -110,7 +108,6 @@ const DOCK_ACTIVE: Partial<Record<RouteId, string>> = {
   hub: 'hub',
   map: 'map',
   catalog: 'catalog',
-  entity: 'catalog',
   forum: 'forum',
   contribute: 'contribute',
 };
@@ -252,11 +249,8 @@ export default function App() {
   const match = matchRoute(ROUTES, path);
   const route: RouteId | 'notfound' = match?.id ?? 'notfound';
 
-  // Metadatos por ruta (guías, noticias y fichas los gestionan ellas mismas).
-  const comparing = route === 'catalog' && params.has('comparar');
-  const baseMeta = route === 'notfound' ? null : (STATIC_META[route] ?? null);
-  const meta: PageMeta | null =
-    comparing && baseMeta ? { ...baseMeta, robots: NOINDEX, canonicalPath: '/catalogo' } : baseMeta;
+  // Metadatos por ruta (guías, noticias y catálogo los gestionan ellas mismas).
+  const meta: PageMeta | null = route === 'notfound' ? null : (STATIC_META[route] ?? null);
   usePageMeta(meta);
 
   // Redirección de cliente (replaceState): /aportes -> /aportar.
@@ -273,7 +267,8 @@ export default function App() {
     );
   }
 
-  const modulo = match?.params.modulo ?? '';
+  const categoria = match?.params.categoria;
+  const itemSlug = match?.params.itemSlug;
   const slug = match?.params.slug ?? '';
 
   let page: ReactNode;
@@ -297,17 +292,12 @@ export default function App() {
       page = isActive('mapa') ? <MapPage params={params} /> : <Unavailable title="Mapa no disponible" text={MODULE_OFF} />;
       break;
     case 'catalog':
-      page = catalogActive ? (
-        <CatalogPage params={params} />
-      ) : (
+      page = !catalogActive ? (
         <Unavailable title="Catálogo no disponible" text={MODULE_OFF} />
-      );
-      break;
-    case 'entity':
-      page = isActive(modulo) ? (
-        <CatalogPage params={params} detail={{ modulo, slug }} />
-      ) : (
+      ) : categoria && !isActive(categoria) ? (
         <Unavailable title="Módulo no disponible" text={MODULE_OFF} />
+      ) : (
+        <CatalogPage params={params} categoria={categoria} itemSlug={itemSlug} />
       );
       break;
     case 'guides':
@@ -340,7 +330,9 @@ export default function App() {
   }
 
   const activeId = route === 'notfound' ? undefined : DOCK_ACTIVE[route];
-  const locked = route !== 'notfound' && LOCKED.has(route);
+  // La ficha completa (?vista=ficha) es una página con scroll; el Inspector es un HUD de altura fija.
+  const fichaView = route === 'catalog' && itemSlug !== undefined && params.get('vista') === 'ficha';
+  const locked = route !== 'notfound' && LOCKED.has(route) && !fichaView;
 
   return (
     <ViceShell

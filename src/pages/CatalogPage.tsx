@@ -1,14 +1,28 @@
-// P05 - Inspector NUI: Armas / Vehículos / Coleccionables (las guías viven en /guias)
-import { useEffect, useId, useMemo, useState } from 'react';
+// P05 - Inspector NUI: Armas / Vehículos / Coleccionables (las guías viven en /guias).
+// Rutas (sincronizadas con la URL; sin estado local de navegación):
+//   /catalogo                        -> replaceState a /catalogo/armas (primera pestaña activa si no existe)
+//   /catalogo/:categoria             -> Inspector con esa categoría (Module.slug activo)
+//   /catalogo/:categoria/:itemSlug   -> Inspector con el ítem preseleccionado (sheet móvil abierto)
+//   ...?vista=ficha                  -> ficha completa del ítem (misma URL canónica)
+//   ?comparar=a,b[,c]  comparador sobre la URL vigente · ?q= búsqueda · ?modulo= / ?entity= heredados
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { SunsetBanner } from '../components/layout/ViceShell';
 import { AdSlot } from '../components/ui/AdSlot';
 import { BottomSheet } from '../components/ui/BottomSheet';
+import {
+  EntityDetailPanel,
+  META_LABELS,
+  MapPinIcon,
+  STAT_ACCENTS,
+  compareSlugs,
+  fmtMeta,
+  forumHref,
+} from '../components/ui/EntityDetailPanel';
 import { PalmButton } from '../components/ui/PalmButton';
-import { StatBar, type StatAccent } from '../components/ui/StatBar';
+import { StatBar } from '../components/ui/StatBar';
 import {
   SAMPLE_NOTICE,
   STAT_LABELS,
-  entityHref,
   entitySlug,
   forumCategoryLabel,
   loreRefs,
@@ -20,8 +34,15 @@ import {
 } from '../data/seed';
 import { useAuthStore } from '../store/useAuthStore';
 import { useProgressStore } from '../store/useProgressStore';
-import { navigate, usePageMeta } from '../store/useRouteStore';
-import type { Entity, ForumThread, MapMarker } from '../types/database';
+import {
+  OVERLAY_STATE_KEY,
+  closeOverlay,
+  navigate,
+  useLocation,
+  usePageMeta,
+  type PageMeta,
+} from '../store/useRouteStore';
+import type { Entity } from '../types/database';
 
 type TabSlug = 'armas' | 'vehiculos' | 'coleccionables';
 
@@ -38,7 +59,17 @@ const normalizeText = (t: string): string =>
     .toLowerCase()
     .trim();
 
-const ACCENTS: StatAccent[] = ['magenta', 'gold', 'cyan', 'lilac'];
+/** Query string con valores codificados pero comas literales (contrato `?comparar=a,b`). */
+const buildQuery = (parts: Record<string, string | undefined>): string => {
+  const q = Object.entries(parts)
+    .filter((e): e is [string, string] => e[1] !== undefined && e[1] !== '')
+    .map(([k, v]) => `${k}=${encodeURIComponent(v).replace(/%2C/gi, ',')}`)
+    .join('&');
+  return q ? `?${q}` : '';
+};
+
+const truncate = (t: string, n: number): string => (t.length > n ? `${t.slice(0, n - 3)}...` : t);
+const absoluteUrl = (u: string): string => new URL(u, window.location.origin).href;
 
 // ---- Siluetas SVG de armas y vehículos -----------------------------------------
 const WEAPON_PATHS: Record<string, string> = {
@@ -142,22 +173,7 @@ function ItemVisual({ entity, className = '' }: { entity: Entity; className?: st
   return <SunsetBanner className={className} />;
 }
 
-const fmtMeta = (key: string, v: unknown): string => {
-  if (key === 'precio' && typeof v === 'number') return `$${v.toLocaleString('es')}`;
-  return String(v);
-};
-
-const META_LABELS: Record<string, string> = {
-  ubicacion: 'Ubicación',
-  precio: 'Precio',
-  municion: 'Munición',
-  plazas: 'Plazas',
-  region: 'Región',
-};
-
 const MAX_COMPARE = 3;
-
-const forumHref = (guest: boolean, path: string): string => (guest ? '/foro' : path);
 
 function useIsDesktop(): boolean {
   const query = '(min-width: 768px)';
@@ -169,158 +185,6 @@ function useIsDesktop(): boolean {
     return () => mq.removeEventListener('change', on);
   }, []);
   return match;
-}
-
-function MapPinIcon({ off = false }: { off?: boolean }) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      width="18"
-      height="18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="shrink-0"
-    >
-      <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0113 0c0 5.4-6.5 11-6.5 11z" />
-      <circle cx="12" cy="10" r="2.3" />
-      {off && <path d="M4 4l16 16" />}
-    </svg>
-  );
-}
-
-const ACTION =
-  'flex min-h-11 min-w-0 items-center justify-center whitespace-nowrap rounded-xl border border-white/20 px-2 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold';
-
-interface DetailPanelProps {
-  entity: Entity;
-  tab: (typeof TABS)[number];
-  done: boolean;
-  onToggle: () => void;
-  markers: MapMarker[];
-  doneMarkers: number;
-  threads: ForumThread[];
-  compareTarget: Entity | undefined;
-  guest: boolean;
-  /** Muestra el título (se omite en el BottomSheet, que ya lo lleva en su cabecera). */
-  heading: boolean;
-  /** Escritorio: el cuerpo hace scroll interno y las acciones quedan siempre visibles. */
-  pinned: boolean;
-}
-
-/** Ficha resumida del elemento seleccionado: aside en escritorio, BottomSheet en móvil. */
-function DetailPanel({ entity, tab, done, onToggle, markers, doneMarkers, threads, compareTarget, guest, heading, pinned }: DetailPanelProps) {
-  const meta = metaOf(entity);
-  const stats = statsOf(entity);
-  return (
-    <div className={`flex flex-col gap-3 ${pinned ? "h-full min-h-0" : ""}`}>
-      <div className={`flex flex-col gap-3 ${pinned ? "min-h-0 flex-1 overflow-y-auto pr-1" : ""}`}>
-        <div>
-          <span className="inline-block rounded-xl border border-vice-orange/50 bg-vice-orange/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-vice-gold">
-            {entity.categoria}
-          </span>
-          {heading && <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{entity.titulo}</h2>}
-          {entity.subtitulo && <p className={`${heading ? '' : 'mt-2 '}text-sm text-vice-text/80`}>{entity.subtitulo}</p>}
-        </div>
-
-        {stats.length > 0 && (
-          <div className="flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-widest text-vice-text/90">Estadísticas</h3>
-            {stats.map((s, i) => (
-              <StatBar key={s.key} label={s.label} value={s.value} valueLabel={s.display} accent={ACCENTS[i % ACCENTS.length]} />
-            ))}
-          </div>
-        )}
-
-        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-xl bg-white/5 p-3 text-sm">
-          {Object.entries(meta)
-            .filter(([k]) => k in META_LABELS)
-            .map(([k, v]) => (
-              <div key={k} className="contents">
-                <dt className="text-vice-text/70">{META_LABELS[k]}</dt>
-                <dd className="font-semibold">{fmtMeta(k, v)}</dd>
-              </div>
-            ))}
-          {markers.length > 0 && (
-            <div className="contents">
-              <dt className="text-vice-text/70">Puntos en el mapa</dt>
-              <dd className="font-semibold">
-                {doneMarkers}/{markers.length}
-              </dd>
-            </div>
-          )}
-        </dl>
-
-        {threads.length > 0 && (
-          <ul aria-label="Hilos relacionados" className="flex flex-col text-sm">
-            {threads.slice(0, 2).map((t) => (
-              <li key={t.id}>
-                <a
-                  href={forumHref(guest, `/foro?hilo=${t.id}`)}
-                  className="block min-h-11 rounded-lg px-2 py-1 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-                >
-                  <span className="text-xs text-vice-orange">
-                    {forumCategoryLabel(t.categoria)} · ▲ {t.upvotes_count}
-                  </span>
-                  <span className="block font-semibold">{t.titulo}</span>
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className="flex shrink-0 flex-col gap-3">
-        <button
-          type="button"
-          aria-pressed={done}
-          onClick={onToggle}
-          className={`min-h-11 whitespace-nowrap rounded-xl px-4 font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-            done ? 'bg-vice-gold text-vice-ink' : 'bg-white/10 hover:bg-white/20'
-          }`}
-        >
-          {done ? `${tab.doneLabel} al 100% (quitar)` : `Marcar como ${tab.doneLabel.toLowerCase()}`}
-        </button>
-
-        {markers[0] ? (
-          <PalmButton as="a" href={`/mapa?marker=${markers[0].id}`} fullWidth className="min-h-12! whitespace-nowrap text-base!">
-            Ver en el mapa
-          </PalmButton>
-        ) : (
-          <p className="flex items-center gap-2 text-sm text-vice-text/70">
-            <MapPinIcon off />
-            Sin ubicación en el mapa
-          </p>
-        )}
-
-        <div className={`grid gap-2 ${compareTarget ? 'grid-cols-3' : 'grid-cols-2'}`}>
-          <a href={entityHref(entity, tab.slug)} aria-label={`Ver ficha completa de ${entity.titulo}`} className={ACTION}>
-            Ver ficha
-          </a>
-          {compareTarget && (
-            <a
-              href={`/catalogo?comparar=${entitySlug(entity)},${entitySlug(compareTarget)}`}
-              aria-label={`Comparar ${entity.titulo} con ${compareTarget.titulo}`}
-              title={`Comparar con ${compareTarget.titulo}`}
-              className={ACTION}
-            >
-              Comparar
-            </a>
-          )}
-          <a
-            href={forumHref(guest, `/foro?entity=${entity.id}`)}
-            aria-label={`Discutir ${entity.titulo} en el foro (${threads.length} hilos)`}
-            className={ACTION}
-          >
-            Discutir ({threads.length})
-          </a>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 const ZOOM_BTN =
@@ -379,7 +243,35 @@ function Viewer({ entity }: { entity: Entity }) {
   );
 }
 
-function CatalogInspector({ params }: { params: URLSearchParams }) {
+/** Estado vacío de página completa (categoría inexistente). */
+function CatalogNotFound({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="flex min-h-[60dvh] items-center justify-center p-6">
+      <section className="glass max-w-md rounded-2xl p-8 text-center" aria-labelledby="cat-nf-title" role="status">
+        <h1 id="cat-nf-title" className="font-display text-2xl font-bold">
+          {title}
+        </h1>
+        <p className="mt-3 text-vice-text/85">{text}</p>
+        <div className="mt-6 flex justify-center">
+          <PalmButton as="a" href="/catalogo">
+            Ir al catálogo
+          </PalmButton>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+interface CatalogInspectorProps {
+  params: URLSearchParams;
+  /** `Module.slug` de la URL (`/catalogo/:categoria`); undefined en `/catalogo`. */
+  categoria: string | undefined;
+  /** `Entity.slug` de la URL (`/catalogo/:categoria/:itemSlug`). */
+  itemSlug: string | undefined;
+}
+
+function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps) {
+  const { path } = useLocation();
   const { data, error } = useWorldData();
   const { data: forum } = useForumData();
   const items = useProgressStore((s) => s.items);
@@ -393,13 +285,12 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
     [data.modules],
   );
   const tabs = TABS.filter((t) => activeSlugs.has(t.slug));
+  const loaded = data.modules.length > 0;
+  const defaultTab = tabs.find((t) => t.slug === 'armas') ?? tabs[0];
 
-  const [tab, setTab] = useState<TabSlug>('armas');
   const [cat, setCat] = useState<string>('Todas');
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Buscador por URL: /catalogo?q=texto (SearchAction de ssrLite). Filtra por titulo, subtitulo, categoria y alias.
+  // Buscador por URL: ?q=texto (SearchAction de ssrLite). Filtra por titulo, subtitulo, categoria y alias.
   const qParam = params.get('q') ?? '';
   const [search, setSearch] = useState(qParam);
   const searchId = useId();
@@ -407,7 +298,6 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
   useEffect(() => setSearch(qParam), [qParam]);
   const onSearch = (value: string) => {
     setSearch(value);
-    setSelectedId(null);
     try {
       const url = new URL(window.location.href);
       if (value.trim()) url.searchParams.set('q', value);
@@ -418,39 +308,15 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
     }
   };
   const q = normalizeText(search);
+  const qValue = search.trim() ? search : undefined;
   const matchesQuery = (e: Entity): boolean => {
     if (!q) return true;
     const alias = metaOf(e).alias;
     const aliases = Array.isArray(alias) ? alias.map(String) : alias ? [String(alias)] : [];
     return [e.titulo, e.subtitulo ?? '', e.categoria, ...aliases].some((f) => normalizeText(f).includes(q));
   };
-  const inTab = (slug: string) => data.entities.filter((e) => modulesById.get(e.module_id)?.slug === slug && matchesQuery(e));
-  const tabEntities = inTab(tab);
-  const categories = ['Todas', ...Array.from(new Set(tabEntities.map((e) => e.categoria)))];
-  const list = cat === 'Todas' ? tabEntities : tabEntities.filter((e) => e.categoria === cat);
-  const qTab = q && tabEntities.length === 0 ? tabs.find((t) => inTab(t.slug).length > 0)?.slug : undefined;
-  useEffect(() => {
-    if (qTab) {
-      setTab(qTab);
-      setCat('Todas');
-    }
-  }, [qTab]);
-  const selected = list.find((e) => e.id === selectedId) ?? list[0] ?? null;
-  const tabDef = TABS.find((t) => t.slug === tab) ?? TABS[0]!;
-  const compareTarget = selected
-    ? data.entities.find((e) => e.module_id === selected.module_id && e.id !== selected.id)
-    : undefined;
 
-  // Redirección heredada: /catalogo?entity=<uuid> -> /catalogo/:modulo/:slug (replaceState).
-  const entityParam = params.get('entity');
-  useEffect(() => {
-    if (!entityParam) return;
-    const e = data.entities.find((x) => x.id === entityParam);
-    const modSlug = e ? modulesById.get(e.module_id)?.slug : undefined;
-    if (e && modSlug) navigate(entityHref(e, modSlug), { replace: true });
-  }, [entityParam, data.entities, modulesById]);
-
-  // Comparador por URL: /catalogo?comparar=slugA,slugB[,slugC] (2-3 entidades del mismo módulo).
+  // Comparador por URL: ?comparar=slugA,slugB[,slugC] (2-3 entidades del mismo módulo), sobre la URL vigente.
   const compareParam = params.get('comparar');
   const compare = useMemo(() => {
     if (compareParam === null) return null;
@@ -462,26 +328,112 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
     const entities = found.filter((e) => e.module_id === moduleId).slice(0, MAX_COMPARE);
     return { entities, discarded: slugs.length - entities.length, moduleId };
   }, [compareParam, data.entities]);
-  const setCompareSlugs = (slugs: string[]) =>
-    navigate(`/catalogo?comparar=${slugs.join(',')}`, { replace: true, keepScroll: true });
-  const closeCompare = () => navigate('/catalogo', { replace: true, keepScroll: true });
 
-  // /catalogo?modulo=<Module.slug> abre esa pestaña; slug desconocido, inactivo o 'guias' -> primera disponible.
+  // Categoría activa: la de la URL; en /catalogo (p. ej. ?comparar=) la del módulo comparado o la primera pestaña.
+  const compareTab = compare?.moduleId ? modulesById.get(compare.moduleId)?.slug : undefined;
+  const tab: TabSlug | null = categoria
+    ? (tabs.find((t) => t.slug === categoria)?.slug ?? null)
+    : (tabs.find((t) => t.slug === compareTab)?.slug ?? defaultTab?.slug ?? null);
+  const categoryMissing = loaded && categoria !== undefined && categoria !== 'guias' && tab === null;
+  const tabDef = TABS.find((t) => t.slug === (tab ?? categoria)) ?? TABS[0]!;
+  const moduleDef = tab ? data.modules.find((m) => m.slug === tab) : undefined;
+  const catPath = `/catalogo/${tab ?? categoria ?? ''}`;
+
+  const inTab = (slug: string) => data.entities.filter((e) => modulesById.get(e.module_id)?.slug === slug && matchesQuery(e));
+  const tabEntities = tab ? inTab(tab) : [];
+  const categories = ['Todas', ...Array.from(new Set(tabEntities.map((e) => e.categoria)))];
+  const list = cat === 'Todas' ? tabEntities : tabEntities.filter((e) => e.categoria === cat);
+  // Un cambio de categoría (pestaña) restablece el filtro de subcategoría.
+  useEffect(() => setCat('Todas'), [tab]);
+
+  // Búsqueda sin resultados en la pestaña activa: salta a la primera con coincidencias (replaceState).
+  const qTab =
+    q && tab && tabEntities.length === 0 && !itemSlug ? tabs.find((t) => inTab(t.slug).length > 0)?.slug : undefined;
+  useEffect(() => {
+    if (qTab) navigate(`/catalogo/${qTab}${buildQuery({ q: qValue })}`, { replace: true, keepScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qTab]);
+
+  // Ítem de la URL (caché del mundo primero, luego API por slug).
+  const urlItem = useEntityDetail(tab ?? '', itemSlug ?? '', Boolean(itemSlug && tab));
+  const itemEntity = itemSlug && tab ? urlItem.entity : null;
+  const itemMissing = loaded && itemSlug !== undefined && tab !== null && !urlItem.loading && itemEntity === null;
+  const ficha = params.get('vista') === 'ficha' && itemEntity !== null;
+  // Sin ítem en la URL, escritorio/tablet muestran el primero de la lista (la URL no cambia).
+  const selected = itemSlug ? itemEntity : isDesktop ? (list[0] ?? null) : null;
+  const itemHref = (e: Entity) => `/catalogo/${tab ?? ''}/${entitySlug(e)}`;
+  const compareTarget = selected
+    ? data.entities.find((e) => e.module_id === selected.module_id && e.id !== selected.id)
+    : undefined;
+
+  // /catalogo sin categoría: replaceState a la categoría por defecto (o la de ?modulo=). Con ?comparar= / ?entity= no.
+  const entityParam = params.get('entity');
   const moduloParam = params.get('modulo');
   useEffect(() => {
-    if (moduloParam === null) return;
-    const wanted = TABS.find((t) => t.slug === moduloParam && activeSlugs.has(t.slug)) ?? TABS.find((t) => activeSlugs.has(t.slug));
-    if (!wanted) return;
-    setTab(wanted.slug);
-    setCat('Todas');
-    setSelectedId(null);
-  }, [moduloParam, activeSlugs]);
+    if (categoria || !loaded || entityParam || compareParam !== null) return;
+    const wanted = tabs.find((t) => t.slug === moduloParam) ?? defaultTab;
+    if (wanted) navigate(`/catalogo/${wanted.slug}${buildQuery({ q: qValue })}`, { replace: true, keepScroll: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoria, loaded, entityParam, compareParam, moduloParam, defaultTab?.slug]);
 
-  // Si el módulo activo se desactiva, saltar al primer tab disponible.
+  // Las guías viven en /guias.
   useEffect(() => {
-    const first = tabs[0];
-    if (first && !tabs.some((t) => t.slug === tab)) setTab(first.slug);
-  }, [tabs, tab]);
+    if (categoria === 'guias') navigate(itemSlug ? `/guias/${itemSlug}` : '/guias', { replace: true });
+  }, [categoria, itemSlug]);
+
+  // Redirección heredada: ?entity=<uuid> -> URL limpia del ítem (replaceState).
+  useEffect(() => {
+    if (!entityParam || !loaded) return;
+    const e = data.entities.find((x) => x.id === entityParam);
+    const modSlug = e ? modulesById.get(e.module_id)?.slug : undefined;
+    if (e && modSlug) {
+      navigate(modSlug === 'guias' ? `/guias/${entitySlug(e)}` : `/catalogo/${modSlug}/${entitySlug(e)}`, {
+        replace: true,
+        keepScroll: true,
+      });
+    } else navigate('/catalogo', { replace: true, keepScroll: true });
+  }, [entityParam, loaded, data.entities, modulesById]);
+
+  // Memoria de scroll del grid por (categoría, subcategoría): cambiar de ítem no lo mueve y volver a una categoría lo restaura.
+  const gridRef = useRef<HTMLUListElement>(null);
+  const scrollMemo = useRef(new Map<string, number>());
+  const gridKey = `${tab ?? ''}|${cat}`;
+  const gridKeyRef = useRef(gridKey);
+  gridKeyRef.current = gridKey;
+  const hasGrid = list.length > 0 && !ficha;
+  useLayoutEffect(() => {
+    if (gridRef.current) gridRef.current.scrollTop = scrollMemo.current.get(gridKey) ?? 0;
+  }, [gridKey, hasGrid]);
+  // Deep link: deja visible la tarjeta del ítem (block: nearest no mueve nada si ya se ve).
+  const itemId = itemEntity?.id;
+  useEffect(() => {
+    if (!itemId) return;
+    gridRef.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: 'nearest' });
+  }, [itemId, hasGrid]);
+
+  // ---- Navegación (todo pasa por la URL) -----------------------------------------------------
+  const selectItem = (e: Entity) => {
+    // Desde la lista (sin ítem en la URL) la entrada queda marcada: cerrar el sheet hace history.back().
+    navigate(`${itemHref(e)}${buildQuery({ q: qValue })}`, {
+      keepScroll: true,
+      state: itemSlug ? undefined : { [OVERLAY_STATE_KEY]: true },
+    });
+  };
+  const selectTab = (slug: string) => navigate(`/catalogo/${slug}${buildQuery({ q: qValue })}`, { keepScroll: true });
+  const selectSub = (c: string) => {
+    setCat(c);
+    if (itemSlug) navigate(`${catPath}${buildQuery({ q: qValue })}`, { replace: true, keepScroll: true });
+  };
+  const closeSheet = () => closeOverlay(`${catPath}${buildQuery({ q: qValue })}`);
+
+  const viewQuery = (extra: Record<string, string | undefined> = {}) =>
+    buildQuery({ q: qValue, vista: ficha ? 'ficha' : undefined, ...extra });
+  const comparePath = categoria ? path : catPath;
+  const compareHrefFor = (a: Entity, b: Entity) => `${path}${viewQuery({ comparar: compareSlugs(a, b) })}`;
+  const openCompare = (href: string) => navigate(href, { keepScroll: true, state: { [OVERLAY_STATE_KEY]: true } });
+  const setCompareSlugs = (slugs: string[]) =>
+    navigate(`${path}${viewQuery({ comparar: slugs.join(',') })}`, { replace: true, keepScroll: true });
+  const closeCompare = () => closeOverlay(`${comparePath}${viewQuery()}`);
 
   const linkedMarkers = selected ? data.markers.filter((m) => m.entity_id === selected.id) : [];
   const threads = selected
@@ -491,16 +443,96 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
     : [];
   const done = (e: Entity): boolean => items[`entity:${e.id}`]?.completado === true;
 
+  // ---- Metadatos dinámicos (title, description, canonical, og:*, JSON-LD, robots) ---------------
+  const meta = useMemo<PageMeta>(() => {
+    const noindex = 'noindex,nofollow' as const;
+    if (categoryMissing) return { title: 'Categoría no encontrada', robots: noindex };
+    if (itemMissing) return { title: 'Elemento no encontrado', robots: noindex };
+    if (!moduleDef || !tab) {
+      return {
+        title: 'Catálogo de Leonida',
+        description: 'Inspector del catálogo: armas, vehículos, coleccionables y guías de Leonida con estadísticas y comparador.',
+      };
+    }
+    const origin = window.location.origin;
+    const robots = compare !== null ? noindex : undefined;
+    const crumbList = (rest: Array<[string, string]>) => ({
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: ([['Inicio', '/'], ['Catalogo', '/catalogo'], ...rest] as Array<[string, string]>).map(
+        ([name, p], i) => ({ '@type': 'ListItem', position: i + 1, name, item: origin + p }),
+      ),
+    });
+    if (itemEntity) {
+      const itemPath = `/catalogo/${tab}/${entitySlug(itemEntity)}`;
+      const description = truncate(
+        itemEntity.subtitulo || `${itemEntity.titulo}: ${itemEntity.categoria} de ${moduleDef.nombre} en el catalogo de LeonidApp.`,
+        160,
+      );
+      const image = itemEntity.imagen_url ? absoluteUrl(itemEntity.imagen_url) : undefined;
+      return {
+        title: itemEntity.titulo,
+        description,
+        robots,
+        canonicalPath: itemPath,
+        image,
+        jsonLd: [
+          {
+            '@context': 'https://schema.org',
+            '@type': 'CreativeWork',
+            name: itemEntity.titulo,
+            description,
+            ...(image ? { image: [image] } : {}),
+            genre: itemEntity.categoria,
+            url: origin + itemPath,
+            isPartOf: { '@type': 'CollectionPage', name: moduleDef.nombre, url: `${origin}/catalogo/${tab}` },
+          },
+          crumbList([
+            [moduleDef.nombre, `/catalogo/${tab}`],
+            [itemEntity.titulo, itemPath],
+          ]),
+        ],
+      };
+    }
+    const count = data.entities.filter((e) => e.module_id === moduleDef.id).length;
+    const description = truncate(
+      `${moduleDef.nombre} de Leonida: ${count} ${count === 1 ? 'ficha' : 'fichas'} con estadisticas y detalles en el catalogo de LeonidApp.`,
+      160,
+    );
+    return {
+      title: `${moduleDef.nombre} de Leonida`,
+      description,
+      robots,
+      canonicalPath: `/catalogo/${tab}`,
+      jsonLd: [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: moduleDef.nombre,
+          description,
+          url: `${origin}/catalogo/${tab}`,
+          numberOfItems: count,
+          isPartOf: { '@type': 'WebSite', name: 'LeonidApp', url: `${origin}/` },
+        },
+        crumbList([[moduleDef.nombre, `/catalogo/${tab}`]]),
+      ],
+    };
+  }, [categoryMissing, itemMissing, moduleDef, tab, itemEntity, compare, data.entities]);
+  usePageMeta(meta);
+
   const detail = selected && (
-    <DetailPanel
+    <EntityDetailPanel
       entity={selected}
-      tab={tabDef}
+      doneLabel={tabDef.doneLabel}
       done={done(selected)}
       onToggle={() => toggle({ entityId: selected.id })}
       markers={linkedMarkers}
       doneMarkers={linkedMarkers.filter((m) => items[`marker:${m.id}`]?.completado).length}
       threads={threads}
       compareTarget={compareTarget}
+      compareHref={compareTarget ? compareHrefFor(selected, compareTarget) : ''}
+      onCompare={() => compareTarget && openCompare(compareHrefFor(selected, compareTarget))}
+      fichaHref={`${itemHref(selected)}?vista=ficha`}
       guest={guest}
       heading={isDesktop}
       pinned={isDesktop}
@@ -515,6 +547,49 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
       ? SAMPLE_NOTICE
       : null;
 
+  const compareSheet = (
+    <BottomSheet
+      open={compare !== null}
+      onClose={closeCompare}
+      title="Comparador"
+      closeLabel="Cerrar comparador"
+      className="md:w-[min(92vw,760px)]!"
+    >
+      {compare && (
+        <ComparePanel
+          entities={compare.entities}
+          discarded={compare.discarded}
+          candidates={data.entities.filter((e) => e.module_id === compare.moduleId)}
+          onChange={setCompareSlugs}
+        />
+      )}
+    </BottomSheet>
+  );
+
+  if (categoryMissing) {
+    return (
+      <CatalogNotFound
+        title="No encontramos esta categoría"
+        text="La categoría que buscas no existe en el catálogo o está desactivada."
+      />
+    );
+  }
+
+  if (ficha && itemEntity && tab) {
+    return (
+      <>
+        <EntityDetail
+          entity={itemEntity}
+          modulo={tab}
+          itemPath={itemHref(itemEntity)}
+          compareHrefFor={compareHrefFor}
+          onCompare={openCompare}
+        />
+        {compareSheet}
+      </>
+    );
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 px-3 pt-1 md:px-8">
       {/* Cabecera y pestañas */}
@@ -523,18 +598,14 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
           {tabDef.heading}
           {cat !== 'Todas' && <span className="text-vice-orange"> // {cat}</span>}
         </h1>
-        <div role="tablist" aria-label="Categorías del catálogo" className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div role="tablist" aria-label="Categorías del catálogo" className="scrollbar-none flex max-w-full gap-2 overflow-x-auto">
           {tabs.map((t) => (
             <button
               key={t.slug}
               type="button"
               role="tab"
               aria-selected={tab === t.slug}
-              onClick={() => {
-                setTab(t.slug);
-                setCat('Todas');
-                setSelectedId(null);
-              }}
+              onClick={() => selectTab(t.slug)}
               className={`min-h-11 whitespace-nowrap rounded-full border border-vice-orange/30 px-5 text-sm font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
                 tab === t.slug ? 'bg-vice-accent text-vice-ink' : 'bg-white/10 hover:bg-white/15'
               }`}
@@ -561,16 +632,13 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
       </div>
 
       {categories.length > 2 && (
-        <div role="group" aria-label="Filtrar por categoría" className="flex gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div role="group" aria-label="Filtrar por categoría" className="scrollbar-none flex gap-1 overflow-x-auto">
           {categories.map((c) => (
             <button
               key={c}
               type="button"
               aria-pressed={cat === c}
-              onClick={() => {
-                setCat(c);
-                setSelectedId(null);
-              }}
+              onClick={() => selectSub(c)}
               className={`min-h-11 whitespace-nowrap rounded-full border px-4 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold md:min-h-9 ${
                 cat === c ? 'border-vice-orange bg-white/15' : 'border-white/15 hover:bg-white/10'
               }`}
@@ -579,6 +647,15 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
             </button>
           ))}
         </div>
+      )}
+
+      {itemMissing && !isDesktop && (
+        <p role="status" className="glass rounded-xl p-3 text-center text-sm">
+          No encontramos este elemento.{' '}
+          <a href={catPath} className="font-semibold text-vice-orange underline">
+            Ver {tabDef.label.toLowerCase()}
+          </a>
+        </p>
       )}
 
       <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[minmax(260px,360px)_minmax(0,1fr)_minmax(300px,360px)] md:grid-rows-[minmax(0,1fr)] md:gap-5">
@@ -591,7 +668,11 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
           {list.length === 0 ? (
             <p className="p-4 text-vice-text/70">No hay elementos para mostrar.</p>
           ) : (
-            <ul className="grid min-h-0 flex-1 grid-cols-3 content-start gap-x-2.5 gap-y-3 overflow-y-auto pb-1">
+            <ul
+              ref={gridRef}
+              onScroll={(ev) => scrollMemo.current.set(gridKeyRef.current, ev.currentTarget.scrollTop)}
+              className="grid min-h-0 flex-1 grid-cols-3 content-start gap-x-2.5 gap-y-3 overflow-y-auto pb-1"
+            >
               {list.map((e) => {
                 const sel = selected?.id === e.id;
                 return (
@@ -601,10 +682,7 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
                       aria-pressed={sel}
                       aria-label={`${e.titulo}${done(e) ? ', completado' : ''}`}
                       title={e.titulo}
-                      onClick={() => {
-                        setSelectedId(e.id);
-                        setSheetOpen(true);
-                      }}
+                      onClick={() => selectItem(e)}
                       className="flex w-full flex-col gap-1.5 rounded-xl text-left focus-visible:outline-2 focus-visible:outline-vice-gold"
                     >
                       <span
@@ -645,7 +723,18 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
               </aside>
             </>
           ) : (
-            <p className="col-span-2 self-center text-center text-vice-text/70">Sin elementos en esta categoría.</p>
+            <p role={itemMissing ? 'status' : undefined} className="col-span-2 self-center text-center text-vice-text/70">
+              {itemMissing ? (
+                <>
+                  No encontramos este elemento.{' '}
+                  <a href={catPath} className="font-semibold text-vice-orange underline">
+                    Ver {tabDef.label.toLowerCase()}
+                  </a>
+                </>
+              ) : (
+                'Sin elementos en esta categoría.'
+              )}
+            </p>
           ))}
       </div>
 
@@ -655,30 +744,12 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
         </p>
       )}
 
-      <BottomSheet
-        open={sheetOpen && !isDesktop && selected !== null && compare === null}
-        onClose={() => setSheetOpen(false)}
-        title={selected?.titulo}
-      >
+      {/* Móvil: el sheet se abre solo con un ítem en la URL (selección desde el grid o deep link). */}
+      <BottomSheet open={!isDesktop && itemEntity !== null && compare === null} onClose={closeSheet} title={itemEntity?.titulo}>
         {detail}
       </BottomSheet>
 
-      <BottomSheet
-        open={compare !== null}
-        onClose={closeCompare}
-        title="Comparador"
-        closeLabel="Cerrar comparador"
-        className="md:w-[min(92vw,760px)]!"
-      >
-        {compare && (
-          <ComparePanel
-            entities={compare.entities}
-            discarded={compare.discarded}
-            candidates={data.entities.filter((e) => e.module_id === compare.moduleId)}
-            onChange={setCompareSlugs}
-          />
-        )}
-      </BottomSheet>
+      {compareSheet}
     </div>
   );
 }
@@ -814,14 +885,20 @@ function ComparePanel({
   );
 }
 
-// ---- Ficha de entidad: /catalogo/:modulo/:slug (página editorial con scroll) --------------------
-const metaDescription = (e: Entity): string => {
-  const base = `${e.titulo}${e.subtitulo ? `: ${e.subtitulo}` : ''}. Estadísticas, ubicación en el mapa y hilos de la comunidad en LeonidApp.`;
-  return base.length > 160 ? `${base.slice(0, 157)}...` : base;
-};
+// ---- Ficha completa: /catalogo/:categoria/:itemSlug?vista=ficha (página editorial con scroll) --------
+// La URL canónica del ítem es el Inspector; la ficha es su vista ampliada (stats, guías, relacionados y
+// publicidad "after-content") y conserva la misma URL canónica.
+interface EntityFichaProps {
+  entity: Entity;
+  modulo: string;
+  /** Ruta canónica del ítem (Inspector). */
+  itemPath: string;
+  /** URL del comparador sobre la ficha vigente. */
+  compareHrefFor: (a: Entity, b: Entity) => string;
+  onCompare: (href: string) => void;
+}
 
-function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
-  const { entity, loading } = useEntityDetail(modulo, slug);
+function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: EntityFichaProps) {
   const { data } = useWorldData();
   const { data: forum } = useForumData();
   const guest = useAuthStore((s) => s.status !== 'authenticated');
@@ -831,33 +908,9 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
   const moduleDef = data.modules.find((m) => m.slug === modulo);
   const tabDef = TABS.find((t) => t.slug === modulo);
 
-  usePageMeta(
-    entity
-      ? { title: entity.titulo, description: metaDescription(entity), canonicalPath: `/catalogo/${modulo}/${slug}` }
-      : { title: loading ? 'Cargando ficha' : 'Ficha no encontrada', robots: 'noindex,nofollow' },
-  );
-
-  // Las guías viven en /guias/:slug.
-  useEffect(() => {
-    if (modulo === 'guias') navigate(`/guias/${slug}`, { replace: true });
-  }, [modulo, slug]);
-
-  if (!entity) {
-    return (
-      <div className="mx-auto w-full max-w-3xl px-4 pb-8 pt-4">
-        <p role="status" className="glass rounded-2xl p-6 text-center">
-          {loading ? 'Cargando ficha…' : 'No encontramos esta ficha.'}{' '}
-          <a href="/catalogo" className="font-semibold text-vice-orange underline">
-            Volver al catálogo
-          </a>
-        </p>
-      </div>
-    );
-  }
-
   const meta = metaOf(entity);
   const stats = statsOf(entity);
-  const trackable = modulo !== 'guias';
+  const trackable = tabDef !== undefined;
   const done = items[`entity:${entity.id}`]?.completado === true;
   const markers = data.markers.filter((m) => m.entity_id === entity.id);
   const threads = forum.threads
@@ -887,7 +940,11 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
             </a>
           </li>
           <li aria-hidden="true">›</li>
-          <li>{moduleDef?.nombre ?? tabDef?.label ?? modulo}</li>
+          <li>
+            <a href={`/catalogo/${modulo}`} className="inline-flex min-h-11 items-center underline">
+              {moduleDef?.nombre ?? tabDef?.label ?? modulo}
+            </a>
+          </li>
           <li aria-hidden="true">›</li>
           <li aria-current="page">{entity.titulo}</li>
         </ol>
@@ -897,6 +954,9 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
         <p className="text-xs font-semibold uppercase tracking-widest text-vice-orange">{entity.categoria}</p>
         <h1 className="font-display text-3xl font-bold">{entity.titulo}</h1>
         {entity.subtitulo && <p className="text-vice-text/85">{entity.subtitulo}</p>}
+        <a href={itemPath} className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-vice-orange underline">
+          Volver al Inspector
+        </a>
       </header>
 
       <div className="mt-4 grid gap-5 md:grid-cols-2">
@@ -909,7 +969,7 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
 
         <section aria-label="Estadísticas" className="glass flex flex-col gap-3 rounded-2xl p-5">
           {stats.length > 0 ? (
-            stats.map((s, i) => <StatBar key={s.key} label={s.label} value={s.value} valueLabel={s.display} accent={ACCENTS[i % ACCENTS.length]} />)
+            stats.map((s, i) => <StatBar key={s.key} label={s.label} value={s.value} valueLabel={s.display} accent={STAT_ACCENTS[i % STAT_ACCENTS.length]} />)
           ) : (
             <p className="text-sm text-vice-text/70">Sin estadísticas numéricas.</p>
           )}
@@ -994,7 +1054,12 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
               {similar.map((s) => (
                 <li key={s.id}>
                   <a
-                    href={`/catalogo?comparar=${entitySlug(entity)},${entitySlug(s)}`}
+                    href={compareHrefFor(entity, s)}
+                    onClick={(ev) => {
+                      if (ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+                      ev.preventDefault();
+                      onCompare(compareHrefFor(entity, s));
+                    }}
                     className="inline-flex min-h-11 items-center rounded-full border border-white/15 px-4 hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
                   >
                     Comparar con {s.titulo}
@@ -1014,11 +1079,14 @@ function EntityDetail({ modulo, slug }: { modulo: string; slug: string }) {
 
 export default function CatalogPage({
   params,
-  detail,
+  categoria,
+  itemSlug,
 }: {
   params: URLSearchParams;
-  /** Si se define, muestra la ficha /catalogo/:modulo/:slug en vez del Inspector. */
-  detail?: { modulo: string; slug: string };
+  /** `:categoria` de /catalogo/:categoria[/:itemSlug]. */
+  categoria?: string;
+  /** `:itemSlug` de /catalogo/:categoria/:itemSlug. */
+  itemSlug?: string;
 }) {
-  return detail ? <EntityDetail modulo={detail.modulo} slug={detail.slug} /> : <CatalogInspector params={params} />;
+  return <CatalogInspector params={params} categoria={categoria} itemSlug={itemSlug} />;
 }

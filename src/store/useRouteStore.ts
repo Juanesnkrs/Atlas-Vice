@@ -37,7 +37,12 @@ export interface NavigateOptions {
   replace?: boolean;
   /** Mantener la posición de scroll (por defecto se vuelve arriba). */
   keepScroll?: boolean;
+  /** Estado de History de la entrada nueva. En `replace` se conserva el de la entrada actual si se omite. */
+  state?: Record<string, unknown>;
 }
+
+/** Marca de una entrada de historial apilada por una superposición (sheet/comparador) abierta desde la propia app. */
+export const OVERLAY_STATE_KEY = 'leonidOverlay';
 
 /** Navega a una ruta interna (o ruta + query). Rutas externas hacen carga completa. */
 export function navigate(to: string, opts: NavigateOptions = {}): void {
@@ -49,11 +54,21 @@ export function navigate(to: string, opts: NavigateOptions = {}): void {
   const target = `${normalizePath(url.pathname)}${url.search}${url.hash}`;
   const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
   if (target !== here) {
-    if (opts.replace) window.history.replaceState(null, '', target);
-    else window.history.pushState(null, '', target);
+    if (opts.replace) window.history.replaceState(opts.state ?? window.history.state, '', target);
+    else window.history.pushState(opts.state ?? null, '', target);
   }
   useLocationStore.setState({ path: normalizePath(url.pathname), search: url.search });
   if (!opts.keepScroll) window.scrollTo(0, 0);
+}
+
+/**
+ * Cierra una superposición ligada a la URL: si se abrió con un push de esta sesión vuelve atrás
+ * (history.back, sin entradas basura); si fue deep link, sustituye la URL por `fallback`.
+ */
+export function closeOverlay(fallback: string): void {
+  const st = window.history.state as Record<string, unknown> | null;
+  if (st?.[OVERLAY_STATE_KEY] === true) window.history.back();
+  else navigate(fallback, { replace: true, keepScroll: true });
 }
 
 const NON_CLIENT = /^\/(api|assets)(\/|$)|^\/(sitemap\.xml|robots\.txt)$/;
@@ -136,6 +151,12 @@ export interface PageMeta {
   robots?: 'index,follow' | 'noindex,nofollow';
   /** Ruta canónica (sin query ni hash); por defecto la ruta actual. */
   canonicalPath?: string;
+  /** Imagen Open Graph (URL absoluta o ruta del sitio). */
+  image?: string;
+  /** og:type (por defecto 'website'). */
+  ogType?: 'website' | 'article';
+  /** Datos estructurados schema.org de la ruta; sustituyen a los inyectados por el servidor. */
+  jsonLd?: ReadonlyArray<Record<string, unknown>>;
 }
 
 const SITE = 'LeonidApp';
@@ -150,13 +171,45 @@ function setHeadMeta(name: string, content: string): void {
   el.setAttribute('content', content);
 }
 
-/** Actualiza document.title, description, robots y canonical (no toca JSON-LD: lo inyecta el servidor). */
+function setHeadProperty(property: string, content: string): void {
+  let el = document.head.querySelector<HTMLMetaElement>(`meta[property="${property}"]`);
+  if (!el) {
+    el = document.createElement('meta');
+    el.setAttribute('property', property);
+    document.head.appendChild(el);
+  }
+  el.setAttribute('content', content);
+}
+
+const LD_ATTR = 'data-leonid-ld';
+
+/** JSON seguro dentro de <script>: escapa < para que ningún texto cierre la etiqueta. */
+const safeJson = (v: unknown): string => JSON.stringify(v).replace(/</g, '\\u003c');
+
+function syncJsonLd(jsonLd: string | undefined): void {
+  document.head.querySelectorAll(`script[${LD_ATTR}]`).forEach((n) => n.remove());
+  if (!jsonLd) return;
+  // Al fijar datos propios se retiran los del servidor (describían la URL con la que cargó el documento).
+  document.head.querySelectorAll('script[type="application/ld+json"]').forEach((n) => n.remove());
+  (JSON.parse(jsonLd) as unknown[]).forEach((ld) => {
+    const el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.setAttribute(LD_ATTR, '');
+    el.textContent = safeJson(ld);
+    document.head.appendChild(el);
+  });
+}
+
+/** Actualiza document.title, description, robots, canonical, og:* y JSON-LD (si la vista lo aporta). */
 export function usePageMeta(meta: PageMeta | null): void {
   const { path } = useLocation();
   const title = meta?.title;
   const description = meta?.description;
   const robots = meta?.robots;
   const canonicalPath = meta?.canonicalPath;
+  const image = meta?.image;
+  const ogType = meta?.ogType;
+  const jsonLd = meta?.jsonLd ? JSON.stringify(meta.jsonLd) : undefined;
   useEffect(() => {
     if (title === undefined) return;
     // title '' = no tocar el título (lo gestiona la propia vista, p. ej. la landing).
@@ -169,6 +222,13 @@ export function usePageMeta(meta: PageMeta | null): void {
       link.rel = 'canonical';
       document.head.appendChild(link);
     }
-    link.href = `${window.location.origin}${canonicalPath ?? path}`;
-  }, [title, description, robots, canonicalPath, path]);
+    const canonical = `${window.location.origin}${canonicalPath ?? path}`;
+    link.href = canonical;
+    if (title) setHeadProperty('og:title', document.title);
+    if (description) setHeadProperty('og:description', description);
+    setHeadProperty('og:url', canonical);
+    setHeadProperty('og:type', ogType ?? 'website');
+    if (image) setHeadProperty('og:image', new URL(image, window.location.origin).href);
+    syncJsonLd(jsonLd);
+  }, [title, description, robots, canonicalPath, path, image, ogType, jsonLd]);
 }
