@@ -196,10 +196,10 @@ const LeonidaBase = memo(function LeonidaBase() {
       {/* Océano profundo, halo de batimetría violeta (somero) y cian (muy somero) */}
       <rect x={-3000} y={-3000} width={7000} height={7000} fill="url(#lm-water)" />
       <path d={m.gridD} fill="none" stroke="rgba(255,255,255,0.045)" strokeWidth={1} {...NS} />
-      <path d={m.shallowD} fill="rgba(120,74,190,0.5)" fillRule="evenodd" />
-      <path d={m.vshallowD} fill="rgba(96,206,230,0.3)" fillRule="evenodd" stroke="rgba(130,230,240,0.38)" strokeWidth={0.8} {...NS} />
+      <path d={m.shallowD} fill="rgba(52,96,196,0.30)" fillRule="evenodd" />
+      <path d={m.vshallowD} fill="rgba(70,205,235,0.30)" fillRule="evenodd" stroke="rgba(140,240,250,0.55)" strokeWidth={0.8} {...NS} />
       {/* Borde costero nítido: halo cian suave + línea cálida */}
-      <path d={m.landD} fill="none" stroke="rgba(150,235,245,0.22)" strokeWidth={5} strokeLinejoin="round" />
+      <path d={m.landD} fill="none" stroke="rgba(150,235,245,0.3)" strokeWidth={4} strokeLinejoin="round" />
       <path d={m.landD} fill="url(#lm-land)" fillRule="evenodd" stroke="#FFC48A" strokeOpacity={0.85} strokeWidth={1.3} strokeLinejoin="round" {...NS} />
       <g clipPath="url(#lm-clip)">
         {m.regions.map((r) => (
@@ -215,7 +215,7 @@ const LeonidaBase = memo(function LeonidaBase() {
         <path className="lm-t1" d={m.contoursMinorD} fill="none" stroke="rgba(255,214,190,0.26)" strokeWidth={0.8} {...NS} />
         <path d={m.contoursMajorD} fill="none" stroke="rgba(255,214,190,0.5)" strokeWidth={1.2} {...NS} />
         {/* Huella urbana gris violácea (+ manzanas en LOD 2) y aeropuertos */}
-        <path d={m.urbanD} fill="rgba(206,184,232,0.55)" fillRule="evenodd" stroke="rgba(244,228,252,0.4)" strokeWidth={0.6} {...NS} />
+        <path d={m.urbanD} fill="rgba(238,226,248,0.62)" fillRule="evenodd" stroke="rgba(255,240,255,0.55)" strokeWidth={0.6} {...NS} />
         <path className="lm-t2" d={m.urbanD} fill="url(#lm-blocks)" fillRule="evenodd" />
         <path d={m.airportsD} fill="rgba(160,150,200,0.82)" stroke="rgba(255,236,250,0.65)" strokeWidth={0.8} {...NS} />
         <path d={m.runwaysD} fill="none" stroke="#FFF4F8" strokeWidth={2.8} strokeLinecap="butt" />
@@ -224,7 +224,7 @@ const LeonidaBase = memo(function LeonidaBase() {
         <path className="lm-t1" d={m.railD} fill="none" stroke="rgba(251,241,245,0.42)" strokeWidth={5} strokeDasharray="1.2 4.4" {...NS} />
       </g>
       {/* Agua interior: lago, ríos y bahías */}
-      <path d={m.lakesD} fill="#33206B" fillRule="evenodd" stroke="rgba(110,225,235,0.75)" strokeWidth={0.9} {...NS} />
+      <path d={m.lakesD} fill="rgba(48,172,220,0.8)" fillRule="evenodd" stroke="#A6F3F8" strokeWidth={0.9} {...NS} />
       {/* Red vial: secundarias (LOD 1), autopistas de doble trazo y autopista de los cayos */}
       <path className="lm-t1" d={m.minorRoadsD} fill="none" stroke="#1A0A22" strokeOpacity={0.55} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" {...NS} />
       <path className="lm-t1" d={m.minorRoadsD} fill="none" stroke="rgba(255,236,222,0.7)" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" {...NS} />
