@@ -84,6 +84,7 @@ export interface BasePaths {
   airports: Path2D;
   runways: Path2D;
   counties: Path2D;
+  highwayAreas: Path2D;
   highways: Path2D;
   bridges: Path2D;
 }
@@ -113,7 +114,8 @@ export function buildBasePaths(b: TerrainBase): BasePaths {
     relief: b.relief.map(poly),
     airports: poly(b.airports),
     runways: line(b.runways),
-    counties: poly(b.counties),
+    counties: line(b.counties),
+    highwayAreas: poly(b.highwayAreas),
     highways: line(b.highways),
     bridges: line(b.bridges),
   };
@@ -255,8 +257,8 @@ export function paintMap(ctx: CanvasRenderingContext2D, base: BasePaths | null, 
   ctx.strokeStyle = OCRE;
   ctx.lineWidth = px(0.8);
   ctx.stroke(base.industrial);
-  ctx.globalAlpha = 0.5;
-  ctx.fillStyle = '#5E9AA0';
+  ctx.globalAlpha = 0.78;
+  ctx.fillStyle = '#4FA394';
   ctx.fill(base.wet, 'evenodd');
   ctx.globalAlpha = 1;
   // Curvas de nivel: las de la base siempre, las del detalle a partir de LOD 1.
@@ -295,12 +297,6 @@ export function paintMap(ctx: CanvasRenderingContext2D, base: BasePaths | null, 
   ctx.lineCap = 'butt';
   ctx.stroke(base.runways);
   ctx.lineCap = 'round';
-  // Límites de condado (aproximados): discontinuos y sutiles.
-  ctx.strokeStyle = 'rgba(232,201,160,0.55)';
-  ctx.lineWidth = px(1.1);
-  ctx.setLineDash([px(7), px(5)]);
-  ctx.stroke(base.counties);
-  ctx.setLineDash([]);
   // Ferrocarril con traviesas sutiles (LOD 1).
   if (detail && o.lod >= 1) {
     ctx.strokeStyle = 'rgba(251,241,245,0.55)';
@@ -316,6 +312,15 @@ export function paintMap(ctx: CanvasRenderingContext2D, base: BasePaths | null, 
   }
   ctx.restore();
 
+  // Límites de condado medidos sobre la referencia: discontinuos, cruzan tierra y mar.
+  ctx.strokeStyle = 'rgba(255,226,230,0.95)';
+  ctx.lineWidth = px(1.7);
+  ctx.lineCap = 'butt';
+  ctx.setLineDash([px(8), px(5)]);
+  ctx.stroke(base.counties);
+  ctx.setLineDash([]);
+  ctx.lineCap = 'round';
+
   // Agua interior: lagos, ríos, canales y bahías.
   ctx.fillStyle = WATER;
   ctx.fill(base.lakes, 'evenodd');
@@ -324,16 +329,17 @@ export function paintMap(ctx: CanvasRenderingContext2D, base: BasePaths | null, 
   ctx.stroke(base.lakes);
 
   // ---- Red vial en 5 niveles: sendas, callejones, calles, carreteras y autopistas ----
-  const strokeRoad = (p: Path2D, casing: number, fill: number, fillColor: string, casingAlpha = 0.55): void => {
+  // `cu`/`fu`: anchos mínimos en unidades del mundo (la vía gana cuerpo al acercar el zoom, como en la referencia).
+  const strokeRoad = (p: Path2D, casing: number, fill: number, fillColor: string, casingAlpha = 0.55, cu = 0, fu = 0): void => {
     if (casing > 0) {
       ctx.globalAlpha = casingAlpha;
       ctx.strokeStyle = CASING;
-      ctx.lineWidth = px(casing);
+      ctx.lineWidth = Math.max(px(casing), cu);
       ctx.stroke(p);
       ctx.globalAlpha = 1;
     }
     ctx.strokeStyle = fillColor;
-    ctx.lineWidth = px(fill);
+    ctx.lineWidth = Math.max(px(fill), fu);
     ctx.stroke(p);
   };
   if (detail) {
@@ -343,14 +349,25 @@ export function paintMap(ctx: CanvasRenderingContext2D, base: BasePaths | null, 
       ctx.lineWidth = px(1);
       ctx.stroke(detail.dirt);
       ctx.setLineDash([]);
-      strokeRoad(detail.roads, 2.8, 1.2, 'rgba(255,236,222,0.72)');
+      strokeRoad(detail.roads, 2.8, 1.2, 'rgba(255,236,222,0.78)', 0.55, 0.34, 0.24);
     }
     if (o.lod >= 2) {
-      strokeRoad(detail.streets, 0, 0.9, 'rgba(255,236,222,0.6)');
+      strokeRoad(detail.streets, 0, 0.9, 'rgba(255,236,222,0.7)', 0, 0, 0.16);
       strokeRoad(detail.alleys, 0, 0.7, 'rgba(244,238,246,0.5)');
     }
   }
-  strokeRoad(base.highways, 5, 2.6, AMBER, 0.85);
+  // Cintas de autopista (polígonos de la referencia): borde oscuro + relleno ámbar; en LOD 0 se engrosan para que se lean.
+  ctx.globalAlpha = 0.85;
+  ctx.strokeStyle = CASING;
+  ctx.lineWidth = px(o.lod === 0 ? 3 : 2);
+  ctx.stroke(base.highwayAreas);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = AMBER;
+  ctx.fill(base.highwayAreas, 'evenodd');
+  ctx.strokeStyle = AMBER;
+  ctx.lineWidth = px(o.lod === 0 ? 1.3 : 0.6);
+  ctx.stroke(base.highwayAreas);
+  strokeRoad(base.highways, 5, 2.6, AMBER, 0.85, 0.62, 0.42);
   if (o.lod >= 2) {
     ctx.strokeStyle = CORAL;
     ctx.lineWidth = px(0.9);

@@ -176,7 +176,9 @@ const CSS = `
 .lm-city{font-size:calc(11px * var(--lf,1));letter-spacing:1px;fill:#FFD9C2}
 .lm-water{font-size:calc(11px * var(--lf,1));letter-spacing:3px;font-style:italic;font-weight:600;fill:#8FA8E0;stroke:#10234A}
 .lm-county{font-size:calc(10px * var(--lf,1));letter-spacing:2.5px;font-style:italic;font-weight:600;fill:#E8C9A0;stroke:#10234A}
-.lm-road{font-size:calc(9px * var(--lf,1));letter-spacing:.5px;font-weight:600;fill:#F6B58A}
+.lm-land{font-size:calc(10px * var(--lf,1));letter-spacing:1px;font-style:italic;font-weight:600;fill:#D8E9B0;stroke:#1F3A1E}
+.lm-poi{font-size:calc(10px * var(--lf,1));letter-spacing:.6px;font-weight:600;fill:#D9C7F2;stroke:#2A1B47}
+.lm-border{font-size:calc(8px * var(--lf,1));letter-spacing:.8px;font-style:italic;font-weight:600;fill:#F1DDBF;stroke:#10234A;stroke-width:3px}
 [data-h="1"]{visibility:hidden}
 [data-capture="1"] .lm-pin{pointer-events:none}
 .lm-sh text{font-family:Jost,sans-serif;font-weight:700;font-size:9px;text-anchor:middle;dominant-baseline:central;fill:#1A0F2A;paint-order:normal;stroke:none}
@@ -196,31 +198,40 @@ const LabelsLayer = memo(function LabelsLayer({ shields }: { shields: ReadonlyAr
   const m = LEONIDA_MAP;
   return (
     <g style={{ pointerEvents: 'none' }}>
-      {m.labels.map((l, i) => (
-        <g
-          key={l.text}
-          data-lbl={i}
-          data-x={l.x}
-          data-y={l.y}
-          data-dy={l.dy ?? 0}
-          data-tier={l.tier}
-          data-kind={l.kind}
-          data-rot={l.rot ?? 0}
-          className={l.tier === 0 ? undefined : `lm-t${l.tier}`}
-          style={{ transform: `${pxPos(l.x, l.y)}${l.rot ? ` rotate(${l.rot}deg)` : ''}` }}
-        >
-          <text className={`lm-l lm-${l.kind}`} y={l.dy ?? 0}>
-            {l.kind === 'region' ? l.text.toUpperCase() : l.text}
-          </text>
-        </g>
-      ))}
+      {m.labels.map((l, i) => {
+        const shown = (t: string): string => (l.kind === 'region' ? t.toUpperCase() : t);
+        const cls = `lm-l lm-${l.kind}`;
+        return (
+          <g
+            key={i}
+            data-lbl={i}
+            data-x={l.x}
+            data-y={l.y}
+            data-tier={l.tier}
+            data-kind={l.kind}
+            data-rot={l.rot ?? 0}
+            data-lines={l.sub ? 2 : 1}
+            data-wt={l.sub && l.sub.length > l.text.length ? l.sub : l.text}
+            className={l.tier === 0 ? undefined : `lm-t${l.tier}`}
+            style={{ transform: `${pxPos(l.x, l.y)}${l.rot ? ` rotate(${l.rot}deg)` : ''}` }}
+          >
+            <text className={cls} y={l.sub ? -4.5 : 0}>
+              {shown(l.text)}
+            </text>
+            {l.sub && (
+              <text className={cls} y={4.5}>
+                {l.sub}
+              </text>
+            )}
+          </g>
+        );
+      })}
       {shields?.map((s, i) => (
         <g
           key={`sh${i}`}
           data-lbl={`s${i}`}
           data-x={s[2]}
           data-y={s[3]}
-          data-dy={0}
           data-tier={1}
           data-kind="shield"
           className="lm-t1 lm-sh"
@@ -283,7 +294,9 @@ const LABEL_FONT: Record<string, { font: string; ls: number }> = {
   county: { font: 'italic 600 10px Jost, sans-serif', ls: 2.5 },
   city: { font: '700 11px Jost, sans-serif', ls: 1 },
   water: { font: 'italic 600 11px Jost, sans-serif', ls: 3 },
-  road: { font: '600 9px Jost, sans-serif', ls: 0.5 },
+  land: { font: 'italic 600 10px Jost, sans-serif', ls: 1 },
+  poi: { font: '600 10px Jost, sans-serif', ls: 0.6 },
+  border: { font: 'italic 600 8px Jost, sans-serif', ls: 0.8 },
 };
 let measureCtx: CanvasRenderingContext2D | null | undefined;
 const widthCache = new Map<string, number>();
@@ -302,6 +315,10 @@ function textWidth(text: string, kind: string, lf: number): number {
   widthCache.set(key, w);
   return w;
 }
+/** Margen mínimo (px) entre un rótulo y el borde de la zona útil del viewport. */
+const LABEL_EDGE_PX = 6;
+/** Interfaz flotante que ningún rótulo puede tapar: controles, HUD (glass), cabecera, dock y sheets/diálogos. */
+const UI_SELECTOR = 'button, input, select, header, nav, aside, fieldset, .glass, [role="dialog"], [role="status"]';
 const overlaps = (a: Box, b: Box, pad = 3): boolean => a.x0 < b.x1 + pad && a.x1 > b.x0 - pad && a.y0 < b.y1 + pad && a.y1 > b.y0 - pad;
 
 // ---- Componente ---------------------------------------------------------------------------------------------------
@@ -457,15 +474,22 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
     bgTimer.current = window.setTimeout(flushBg, 160);
   }, [flushBg]);
 
-  /** Colisión de rótulos por cajas: P0 > P1 > P2 > escudos; se ocultan los que chocan con otro de mayor prioridad o con pines/clusters. */
+  /**
+   * Colisión de rótulos por cajas (P0 > P1 > P2 > escudos). Un rótulo se oculta si choca con otro de mayor prioridad, con un pin/cluster
+   * o con la interfaz flotante (botones, paneles, cabecera, dock, sheets); los P0/P1 prueban antes posiciones desplazadas arriba/abajo.
+   * Los rótulos horizontales que se salen del viewport se desplazan hacia dentro (si su ancla está dentro) y los girados se ocultan.
+   */
   const runLabels = useCallback(() => {
     const svg = svgRef.current;
-    if (!svg || size.current.w === 0) return;
+    const wrap = wrapRef.current;
+    if (!svg || !wrap || size.current.w === 0) return;
     const { x, y, s } = cur.current;
     const { w, h } = size.current;
     const rel = s / fit.current;
     const lod = rel < 1.7 ? 0 : rel < 3.4 ? 1 : 2;
     const lf = w < 768 ? 0.82 : 1;
+    const ins = insetsRef.current;
+    const safe: Box = { x0: ins.left + LABEL_EDGE_PX, y0: ins.top + LABEL_EDGE_PX, x1: w - ins.right - LABEL_EDGE_PX, y1: h - ins.bottom - LABEL_EDGE_PX };
     const obstacles = itemsRef.current.map((it) => {
       const wx = it.kind === 'pin' ? it.pin.x : it.x;
       const wy = it.kind === 'pin' ? it.pin.y : it.y;
@@ -474,7 +498,29 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
       const r = it.kind === 'pin' ? 15 : 22;
       return { cx, cy, box: { x0: cx - r, y0: cy - r, x1: cx + r, y1: cy + r } as Box };
     });
-    const cands: { el: SVGElement; box: Box; prio: number; ax: number; ay: number }[] = [];
+    // interfaz flotante fuera del lienzo (botones de zoom y Modo editor, HUD, cabecera, dock, sheets): zonas seguras de pantalla
+    const wr = wrap.getBoundingClientRect();
+    const ui: Box[] = [];
+    document.querySelectorAll<HTMLElement>(UI_SELECTOR).forEach((el) => {
+      if (wrap.contains(el)) return;
+      const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8) return;
+      const b: Box = { x0: r.left - wr.left - 3, y0: r.top - wr.top - 3, x1: r.right - wr.left + 3, y1: r.bottom - wr.top + 3 };
+      if (b.x1 > 0 && b.y1 > 0 && b.x0 < w && b.y0 < h) ui.push(b);
+    });
+    interface Cand {
+      el: SVGElement;
+      text: SVGTextElement | null;
+      bw: number;
+      bh: number;
+      sx: number;
+      sy: number;
+      prio: number;
+      rot: number;
+      shift: boolean;
+      step: number;
+    }
+    const cands: Cand[] = [];
     const setHidden = (el: SVGElement, hide: boolean): void => {
       if ((el.dataset.h === '1') === hide) return;
       if (hide) el.dataset.h = '1';
@@ -485,30 +531,75 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
       if (tier > lod) return; // ya oculto por LOD
       const sx = Number(el.dataset.x) * s + x;
       const sy = Number(el.dataset.y) * s + y;
-      if (sx < -140 || sx > w + 140 || sy < -80 || sy > h + 80) {
+      if (sx < -140 || sx > w + 140 || sy < -140 || sy > h + 140) {
         setHidden(el, true);
         return;
       }
       const kind = el.dataset.kind ?? 'city';
+      const rot = Number(el.dataset.rot ?? 0);
       let bw = 24;
       let bh = 22;
       if (kind !== 'shield') {
-        bw = textWidth(el.textContent ?? '', kind, lf) + 6;
-        bh = 14 * lf + 6;
-        if (Math.abs(Number(el.dataset.rot)) === 90) [bw, bh] = [bh, bw];
+        const lines = Number(el.dataset.lines ?? 1);
+        bw = textWidth(el.dataset.wt ?? el.textContent ?? '', kind, lf) + 6;
+        bh = (kind === 'border' ? 9 : 14) * lf * lines + 6;
+        if (rot !== 0) {
+          const a = (rot * Math.PI) / 180;
+          [bw, bh] = [Math.abs(bw * Math.cos(a)) + Math.abs(bh * Math.sin(a)), Math.abs(bw * Math.sin(a)) + Math.abs(bh * Math.cos(a))];
+        }
       }
-      const cy = sy + Number(el.dataset.dy);
-      cands.push({ el, box: { x0: sx - bw / 2, y0: cy - bh / 2, x1: sx + bw / 2, y1: cy + bh / 2 }, prio: kind === 'shield' ? 3 : tier, ax: sx, ay: sy });
+      cands.push({
+        el,
+        text: kind === 'shield' ? null : el.querySelector('text'),
+        bw,
+        bh,
+        sx,
+        sy,
+        prio: kind === 'shield' ? 3 : tier,
+        rot,
+        shift: kind !== 'shield' && rot === 0,
+        step: bh + 4,
+      });
     });
     cands.sort((a, b) => a.prio - b.prio);
     const placed: Box[] = [];
     for (const c of cands) {
-      let hit = false;
-      // el pin al que está anclado el propio rótulo no cuenta como obstáculo
-      for (const o of obstacles) if ((c.prio === 3 || Math.hypot(o.cx - c.ax, o.cy - c.ay) >= 10) && overlaps(c.box, o.box)) { hit = true; break; }
-      if (!hit) for (const p of placed) if (overlaps(c.box, p)) { hit = true; break; }
-      setHidden(c.el, hit);
-      if (!hit) placed.push(c.box);
+      const tries = c.shift && c.prio <= 1 ? [0, -c.step, c.step, -2 * c.step, 2 * c.step] : [0];
+      let ok: { box: Box; dx: number; dy: number } | null = null;
+      // el ancla debe estar dentro de la zona útil; si no, el rótulo sale del viewport y se oculta
+      const anchorIn = c.sx >= safe.x0 && c.sx <= safe.x1 && c.sy >= safe.y0 && c.sy <= safe.y1;
+      if (anchorIn || !c.shift) {
+        for (const off of tries) {
+          let dx = 0;
+          let dy = off;
+          let box: Box = { x0: c.sx - c.bw / 2, y0: c.sy + dy - c.bh / 2, x1: c.sx + c.bw / 2, y1: c.sy + dy + c.bh / 2 };
+          if (c.shift) {
+            if (c.bw > safe.x1 - safe.x0 || c.bh > safe.y1 - safe.y0) break;
+            dx = Math.max(0, safe.x0 - box.x0) - Math.max(0, box.x1 - safe.x1);
+            const ddy = Math.max(0, safe.y0 - box.y0) - Math.max(0, box.y1 - safe.y1);
+            dy += ddy;
+            box = { x0: box.x0 + dx, y0: box.y0 + ddy, x1: box.x1 + dx, y1: box.y1 + ddy };
+          } else if (box.x0 < safe.x0 || box.y0 < safe.y0 || box.x1 > safe.x1 || box.y1 > safe.y1) continue;
+          let hit = false;
+          for (const o of obstacles) if (overlaps(box, o.box)) { hit = true; break; }
+          if (!hit) for (const u of ui) if (overlaps(box, u, 0)) { hit = true; break; }
+          if (!hit) for (const p of placed) if (overlaps(box, p)) { hit = true; break; }
+          if (!hit) {
+            ok = { box, dx, dy };
+            break;
+          }
+        }
+      }
+      setHidden(c.el, ok === null);
+      if (ok) {
+        placed.push(ok.box);
+        if (c.text && c.shift) {
+          const nx = String(Math.round(ok.dx));
+          const ny = String(Math.round(ok.dy));
+          if (c.text.getAttribute('x') !== nx) c.text.setAttribute('x', nx);
+          if (c.text.getAttribute('y') !== ny) c.text.setAttribute('y', ny);
+        }
+      }
     }
   }, []);
   const scheduleLabels = useCallback(() => {
@@ -560,6 +651,26 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
     detailPaths.current = detail ? buildDetailPaths(detail) : null;
     if (detail) flushBg();
   }, [detail, flushBg]);
+  // La interfaz flotante cambia sin que el mapa se mueva (sheets, panel del editor, filtros): se recalculan las zonas seguras de los rótulos.
+  useEffect(() => {
+    let late = 0;
+    // un segundo repaso tras ~0,5 s cubre sheets y paneles que terminan de animarse después del cambio de DOM
+    const onUi = (): void => {
+      scheduleLabels();
+      clearTimeout(late);
+      late = window.setTimeout(scheduleLabels, 500);
+    };
+    const mo = new MutationObserver(onUi);
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'aria-expanded'] });
+    document.addEventListener('transitionend', scheduleLabels, true);
+    document.addEventListener('animationend', scheduleLabels, true);
+    return () => {
+      mo.disconnect();
+      clearTimeout(late);
+      document.removeEventListener('transitionend', scheduleLabels, true);
+      document.removeEventListener('animationend', scheduleLabels, true);
+    };
+  }, [scheduleLabels]);
   useEffect(
     () => () => {
       clearTimeout(bgTimer.current);
