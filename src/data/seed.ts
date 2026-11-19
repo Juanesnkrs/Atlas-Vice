@@ -168,6 +168,26 @@ export const SEED_ENTITIES: Entity[] = [
 ];
 
 // ---- Marcadores del lienzo táctico (coordenadas del lienzo 1000 x 700) -----------
+const markerSlug = (s: string): string =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+/** Los datos de ejemplo se escribieron para un lienzo anterior: se reubican sobre la cartografía de src/data/leonidaMap.ts. */
+const SEED_REGION_RENAME: Record<string, string> = { 'Vice Beach': 'Vice-Dale County', Downtown: 'Vice City' };
+const SEED_REGION_ANCHOR: Record<string, { from: [number, number]; to: [number, number] }> = {
+  'Vice Beach': { from: [765, 330], to: [800, 430] },
+  Downtown: { from: [610, 375], to: [770, 470] },
+  Grassrivers: { from: [250, 215], to: [300, 500] },
+  'Port Gellhorn': { from: [520, 175], to: [130, 330] },
+  Ambrosia: { from: [800, 205], to: [470, 340] },
+  'Ocean Beach': { from: [700, 520], to: [840, 500] },
+  'Leonida Keys': { from: [370, 650], to: [700, 645] },
+};
+const seedCoord = (region: string, x: number, y: number): { coord_x: number; coord_y: number } => {
+  const a = SEED_REGION_ANCHOR[region];
+  if (!a) return { coord_x: x, coord_y: y };
+  const r2 = (v: number): number => Math.round(v * 100) / 100;
+  return { coord_x: r2(a.to[0] + (x - a.from[0]) * 0.35), coord_y: r2(a.to[1] + (y - a.from[1]) * 0.35) };
+};
 const mk = (
   n: number,
   entity: number | null,
@@ -180,11 +200,11 @@ const mk = (
 ): MapMarker => ({
   id: uid(n),
   entity_id: entity === null ? null : uid(entity),
-  region,
+  region: SEED_REGION_RENAME[region] ?? region,
+  slug: markerSlug(titulo),
   titulo,
   descripcion,
-  coord_x: x,
-  coord_y: y,
+  ...seedCoord(region, x, y),
   media_url,
   created_at: T0,
 });
@@ -210,17 +230,6 @@ export const SEED_MARKERS: MapMarker[] = [
   mk(117, 42, 'Grassrivers', 'Evento de carretera', 'Zona donde puede aparecer el evento de ejemplo.', 330, 210),
   mk(118, 40, 'Vice Beach', 'Punto de partida de ejemplo', 'Primer paso de la guía de inicio.', 735, 300),
   mk(119, null, 'Downtown', 'Mirador del centro', 'Punto de interés sin entidad asociada.', 640.25, 330),
-];
-
-/** Etiquetas de región del lienzo (cosmético; no es una columna del esquema). */
-export const MAP_REGIONS: ReadonlyArray<{ name: string; x: number; y: number }> = [
-  { name: 'Grassrivers', x: 250, y: 215 },
-  { name: 'Port Gellhorn', x: 520, y: 175 },
-  { name: 'Ambrosia', x: 800, y: 205 },
-  { name: 'Vice Beach', x: 765, y: 330 },
-  { name: 'Downtown', x: 610, y: 375 },
-  { name: 'Ocean Beach', x: 700, y: 520 },
-  { name: 'Leonida Keys', x: 370, y: 650 },
 ];
 
 // ---- Foro --------------------------------------------------------------------------
@@ -368,6 +377,9 @@ export type MapLayerId =
   | 'tiendas'
   | 'eventos'
   | 'misiones'
+  | 'regiones'
+  | 'ciudades'
+  | 'naturaleza'
   | 'poi';
 
 export const MAP_LAYERS: ReadonlyArray<{ id: MapLayerId; label: string; color: string }> = [
@@ -377,6 +389,9 @@ export const MAP_LAYERS: ReadonlyArray<{ id: MapLayerId; label: string; color: s
   { id: 'tiendas', label: 'Tiendas', color: '#F69259' },
   { id: 'eventos', label: 'Eventos', color: '#B79CFF' },
   { id: 'misiones', label: 'Misiones y guías', color: '#E14B7B' },
+  { id: 'regiones', label: 'Regiones', color: '#9AA8FF' },
+  { id: 'ciudades', label: 'Ciudades y barrios', color: '#FF8AD0' },
+  { id: 'naturaleza', label: 'Parques y naturaleza', color: '#7BE0A4' },
   { id: 'poi', label: 'Puntos de interés', color: '#FBF1F5' },
 ];
 
@@ -391,6 +406,12 @@ export function markerLayer(
   if (slug === 'coleccionables') return 'coleccionables';
   if (slug === 'armas') return 'armas';
   if (slug === 'vehiculos') return 'vehiculos';
+  if (slug === 'mapa') {
+    if (entity.categoria === 'Regiones') return 'regiones';
+    if (entity.categoria === 'Ciudades y Barrios') return 'ciudades';
+    if (entity.categoria === 'Parques y Naturaleza') return 'naturaleza';
+    return 'poi';
+  }
   if (slug === 'guias') {
     if (entity.categoria === 'Tiendas') return 'tiendas';
     if (entity.categoria === 'Eventos') return 'eventos';
@@ -457,7 +478,8 @@ async function fetchWorld(): Promise<WorldData> {
   const [modules, entities, markers] = await Promise.all([
     apiFetch<Module[]>('/api/modules'),
     apiFetch<Entity[]>('/api/entities'),
-    apiFetch<MapMarker[]>('/api/markers'),
+    // no-cache: revalida con el ETag del servidor, así las altas del editor se ven al instante.
+    apiFetch<MapMarker[]>('/api/markers', { cache: 'no-cache' }),
   ]);
   if (entities.length === 0 && markers.length === 0) return SEED_WORLD;
   return { modules, entities, markers, source: 'api' };

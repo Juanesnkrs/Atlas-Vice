@@ -127,6 +127,8 @@ export type Database = {
         Row: {
           id: string;
           entity_id: string | null;
+          /** Identificador legible para /mapa?pin=<slug> (único; puede faltar). */
+          slug?: string | null;
           region: string;
           titulo: string;
           descripcion: string | null;
@@ -140,6 +142,7 @@ export type Database = {
         Insert: {
           id?: string;
           entity_id?: string | null;
+          slug?: string | null;
           region: string;
           titulo: string;
           descripcion?: string | null;
@@ -151,6 +154,7 @@ export type Database = {
         Update: {
           id?: string;
           entity_id?: string | null;
+          slug?: string | null;
           region?: string;
           titulo?: string;
           descripcion?: string | null;

@@ -1,13 +1,17 @@
-// P04 - Mapa interactivo de Leonida: lienzo táctico vectorial (SVG) con capas,
-// pines, ficha de marcador con check 100% (P04.3) y drawer de hilos (P07.3).
+// P04 - Mapa interactivo de Leonida: motor SVG propio (MapCanvas) sobre cartografía vectorial original,
+// filtros combinados sincronizados con la URL, buscador instantáneo, ficha de marcador con check 100%
+// (P04.3), drawer de hilos (P07.3) y Modo Editor de coordenadas para ADMIN+.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { SunsetBanner } from '../components/layout/ViceShell';
 import { BottomSheet } from '../components/ui/BottomSheet';
+import { MapCanvas, type MapCanvasHandle, type MapPin } from '../components/ui/MapCanvas';
 import { PalmButton } from '../components/ui/PalmButton';
 import {
   entityHref,
+  entitySlug,
+  slugify,
   MAP_LAYERS,
-  MAP_REGIONS,
   SAMPLE_NOTICE,
   forumCategoryLabel,
   markerLayer,
@@ -15,47 +19,23 @@ import {
   useWorldData,
   type MapLayerId,
 } from '../data/seed';
-import { useAuthStore } from '../store/useAuthStore';
+import { apiFetch, ApiError, useAuthStore } from '../store/useAuthStore';
+import { navigate } from '../store/useRouteStore';
 import { useProgressStore } from '../store/useProgressStore';
-import type { MapMarker } from '../types/database';
+import type { Entity, MapMarker } from '../types/database';
 
-/** Vista del lienzo: centro y ancho en unidades de lienzo; el alto sale del contenedor. */
-interface View {
-  cx: number;
-  cy: number;
-  w: number;
-}
-
-const MIN_W = 160;
-const MAX_W = 1700;
-const LAND_CENTER = { x: 520, y: 380 };
-
-const clamp = (v: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, v));
-
+const LAYER_IDS: ReadonlySet<string> = new Set(MAP_LAYERS.map((l) => l.id));
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Alto aproximado (px) que ocupan buscador y fila de capas en móvil. */
 const MOBILE_CONTROLS_PX = 124;
-/** Ancho de lienzo que cubre la isla con sus etiquetas de región, y centro vertical del conjunto. */
-const FIT_SPAN = 790;
-const FIT_MARGIN_PX = 12;
-const ISLAND_CENTER_Y = 392;
+const MAX_RESULTS = 8;
 
-/**
- * Encuadre inicial. Escritorio: la isla completa ocupa el contenedor. Móvil (vertical): la isla entera,
- * con todas sus etiquetas y un margen lateral, centrada en el espacio libre bajo los controles.
- */
-function fitView(size: { w: number; h: number }): View {
-  const aspect = size.h / size.w;
-  if (aspect > 1) {
-    const w = clamp((FIT_SPAN * size.w) / (size.w - 2 * FIT_MARGIN_PX), MIN_W, MAX_W);
-    const offsetPx = MOBILE_CONTROLS_PX / 2; // el centro libre queda por debajo del centro del contenedor
-    return { w, cx: LAND_CENTER.x, cy: ISLAND_CENTER_Y - (offsetPx * w) / size.w };
-  }
-  return { cx: LAND_CENTER.x, cy: LAND_CENTER.y, w: clamp(Math.max(840, 700 / aspect), MIN_W, MAX_W) };
-}
-
-function normalize(v: View): View {
-  return { w: clamp(v.w, MIN_W, MAX_W), cx: clamp(v.cx, 100, 950), cy: clamp(v.cy, -150, 750) };
-}
+const norm = (s: string): string =>
+  s
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
 
 function useIsDesktop(): boolean {
   const query = '(min-width: 768px)';
@@ -69,56 +49,74 @@ function useIsDesktop(): boolean {
   return match;
 }
 
+/** Puntuación de un campo para una palabra: exacto > empieza por > inicio de palabra > contiene. */
+function fieldScore(text: string, token: string, weight: number): number {
+  if (!text) return 0;
+  if (text === token) return weight;
+  if (text.startsWith(token)) return weight * 0.85;
+  if (text.includes(` ${token}`)) return weight * 0.7;
+  if (text.includes(token)) return weight * 0.5;
+  return 0;
+}
+
+interface SearchDoc {
+  marker: MapMarker;
+  t: string;
+  e: string;
+  r: string;
+  c: string;
+  entityTitle: string | null;
+}
+
+/** Ranking por título > entidad > región > categoría; todas las palabras deben coincidir en algún campo. */
+function rank(docs: ReadonlyArray<SearchDoc>, query: string): SearchDoc[] {
+  const tokens = norm(query).split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return [];
+  return docs
+    .map((d) => {
+      let total = 0;
+      for (const tk of tokens) {
+        const best = Math.max(fieldScore(d.t, tk, 100), fieldScore(d.e, tk, 70), fieldScore(d.r, tk, 40), fieldScore(d.c, tk, 20));
+        if (best === 0) return { d, score: 0 };
+        total += best;
+      }
+      return { d, score: total };
+    })
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score || a.d.marker.titulo.localeCompare(b.d.marker.titulo, 'es'))
+    .slice(0, MAX_RESULTS)
+    .map((x) => x.d);
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try {
+      ok = document.execCommand('copy');
+    } catch {
+      ok = false;
+    }
+    ta.remove();
+    return ok;
+  }
+}
+
 function Artwork({ src, alt, className }: { src: string | null; alt: string; className?: string }) {
   const [failed, setFailed] = useState<string | null>(null);
   if (!src || failed === src) return <SunsetBanner className={className} />;
   return <img src={src} alt={alt} className={className} onError={() => setFailed(src)} />;
 }
 
-const LAND =
-  'M150 200 C160 120 300 90 420 100 C520 70 700 90 800 140 C880 190 900 300 870 400 C850 480 800 540 720 560 C640 580 560 540 480 560 C380 580 300 520 240 470 C170 410 140 300 150 200 Z';
-
-function MapArt() {
-  return (
-    <g>
-      <defs>
-        <linearGradient id="waterG" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#1B1033" />
-          <stop offset="1" stopColor="#2E1A47" />
-        </linearGradient>
-        <linearGradient id="landG" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#5B2A6E" />
-          <stop offset="1" stopColor="#8A3566" />
-        </linearGradient>
-        <pattern id="mapGrid" width="100" height="70" patternUnits="userSpaceOnUse">
-          <path d="M100 0H0V70" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="1" />
-        </pattern>
-      </defs>
-      <rect x="-3000" y="-3000" width="7000" height="7000" fill="url(#waterG)" />
-      <rect x="-3000" y="-3000" width="7000" height="7000" fill="url(#mapGrid)" />
-      <path d={LAND} fill="url(#landG)" stroke="#F69259" strokeOpacity="0.55" strokeWidth="3" />
-      <g fill="url(#landG)" stroke="#F69259" strokeOpacity="0.45" strokeWidth="2">
-        <ellipse cx="330" cy="610" rx="46" ry="18" />
-        <ellipse cx="412" cy="578" rx="40" ry="15" />
-        <ellipse cx="372" cy="652" rx="56" ry="16" />
-        <ellipse cx="470" cy="620" rx="22" ry="9" />
-      </g>
-      <g fill="rgba(225,75,123,0.12)" stroke="rgba(246,146,89,0.25)" strokeDasharray="6 6">
-        <ellipse cx="260" cy="225" rx="100" ry="70" />
-        <ellipse cx="520" cy="160" rx="110" ry="50" />
-        <ellipse cx="800" cy="205" rx="70" ry="50" />
-        <ellipse cx="765" cy="330" rx="70" ry="60" />
-        <ellipse cx="615" cy="365" rx="75" ry="60" />
-        <ellipse cx="700" cy="500" rx="75" ry="55" />
-      </g>
-      <g fill="none" stroke="rgba(251,241,245,0.22)" strokeWidth="2" strokeDasharray="10 8">
-        <path d="M200 260 C320 240 460 220 560 290 C640 340 700 360 760 340" />
-        <path d="M560 290 C600 400 650 470 700 520" />
-        <path d="M520 160 C560 200 560 250 560 290" />
-      </g>
-    </g>
-  );
-}
 
 interface MarkerCardProps {
   marker: MapMarker;
@@ -245,39 +243,251 @@ function MarkerCard({ marker, entityTitle, entityId, catalogHref, done, guest, c
   );
 }
 
+
+// ---- Modo Editor (ADMIN+): el servidor aplica RBAC; esto es solo la interfaz --------------------------------------------
+interface CreatePayload {
+  entity_id: string | null;
+  slug?: string;
+  region: string;
+  titulo: string;
+}
+
+interface EditorPanelProps {
+  cross: { x: number; y: number } | null;
+  selected: MapMarker | null;
+  entities: ReadonlyArray<Entity>;
+  moduleSlug: (moduleId: string) => string;
+  regions: ReadonlyArray<string>;
+  nearestRegion: (x: number, y: number) => string;
+  busy: boolean;
+  status: { ok: boolean; text: string } | null;
+  onCreate: (p: CreatePayload) => void;
+  onMoveHere: () => void;
+  onCopy: () => void;
+  onClose: () => void;
+}
+
+const FIELD =
+  'glass min-h-11 w-full rounded-xl px-3 text-sm text-vice-text placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold';
+
+function EditorPanel({ cross, selected, entities, moduleSlug, regions, nearestRegion, busy, status, onCreate, onMoveHere, onCopy, onClose }: EditorPanelProps) {
+  const [entityQuery, setEntityQuery] = useState('');
+  const [picked, setPicked] = useState<Entity | null>(null);
+  const [region, setRegion] = useState('');
+  const [titulo, setTitulo] = useState('');
+  const [slug, setSlug] = useState('');
+  const [regionTouched, setRegionTouched] = useState(false);
+
+  // Sugiere la región más cercana al punto fijado mientras el admin no la haya escrito.
+  useEffect(() => {
+    if (cross && !regionTouched) setRegion(nearestRegion(cross.x, cross.y));
+  }, [cross, regionTouched, nearestRegion]);
+
+  const matches = useMemo(() => {
+    const tokens = norm(entityQuery).split(/\s+/).filter(Boolean);
+    if (picked || tokens.length === 0) return [];
+    return entities
+      .filter((e) => {
+        const hay = norm(`${e.titulo} ${entitySlug(e)} ${e.categoria}`);
+        return tokens.every((t) => hay.includes(t));
+      })
+      .slice(0, 6);
+  }, [entities, entityQuery, picked]);
+
+  const pick = (e: Entity | null) => {
+    setPicked(e);
+    setEntityQuery('');
+    if (e) {
+      setTitulo(e.titulo);
+      setSlug(entitySlug(e));
+    }
+  };
+
+  const slugOk = slug === '' || SLUG_RE.test(slug);
+  const canCreate = cross !== null && region.trim() !== '' && titulo.trim() !== '' && slugOk && !busy;
+
+  return (
+    <div className="flex flex-col gap-3 text-sm">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-vice-orange">Modo editor</p>
+          <p className="text-vice-text/80">Toca el mapa para fijar la mira. Arrastra el pin seleccionado para moverlo.</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="min-h-11 shrink-0 rounded-xl px-3 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+        >
+          Salir
+        </button>
+      </div>
+
+      <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+        <p className="text-xs text-vice-text/70">Coordenadas (lienzo 0–1000 × 0–700)</p>
+        <p role="status" className="font-display text-lg font-bold tabular-nums">
+          {cross ? `x ${cross.x.toFixed(2)} · y ${cross.y.toFixed(2)}` : 'Sin mira fijada'}
+        </p>
+        <button
+          type="button"
+          disabled={!cross}
+          onClick={onCopy}
+          className="mt-2 min-h-11 w-full rounded-xl border border-white/15 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold disabled:opacity-40"
+        >
+          Copiar coordenadas
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <label className="font-semibold" htmlFor="ed-entity">
+          Entidad del catálogo
+        </label>
+        {picked ? (
+          <div className="glass flex min-h-11 items-center justify-between gap-2 rounded-xl px-3">
+            <span className="min-w-0 truncate">
+              {picked.titulo} <span className="text-xs text-vice-orange">· {moduleSlug(picked.module_id)}</span>
+            </span>
+            <button type="button" onClick={() => pick(null)} className="min-h-11 shrink-0 px-2 text-xs font-semibold underline">
+              Quitar
+            </button>
+          </div>
+        ) : (
+          <>
+            <input
+              id="ed-entity"
+              type="search"
+              value={entityQuery}
+              onChange={(e) => setEntityQuery(e.target.value)}
+              placeholder="Buscar en el catálogo… (opcional)"
+              autoComplete="off"
+              className={FIELD}
+            />
+            {matches.length > 0 && (
+              <ul className="glass overflow-hidden rounded-xl" aria-label="Entidades">
+                {matches.map((e) => (
+                  <li key={e.id}>
+                    <button
+                      type="button"
+                      onClick={() => pick(e)}
+                      className="flex min-h-11 w-full flex-col px-3 py-1.5 text-left hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+                    >
+                      <span className="font-semibold">{e.titulo}</span>
+                      <span className="text-xs text-vice-orange">
+                        {moduleSlug(e.module_id)} · {e.categoria}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-2">
+        <label className="font-semibold" htmlFor="ed-titulo">
+          Título
+        </label>
+        <input id="ed-titulo" value={titulo} maxLength={160} onChange={(e) => setTitulo(e.target.value)} className={FIELD} />
+        <label className="font-semibold" htmlFor="ed-region">
+          Región
+        </label>
+        <input
+          id="ed-region"
+          list="ed-regions"
+          value={region}
+          maxLength={80}
+          onChange={(e) => {
+            setRegionTouched(true);
+            setRegion(e.target.value);
+          }}
+          className={FIELD}
+        />
+        <datalist id="ed-regions">
+          {regions.map((r) => (
+            <option key={r} value={r} />
+          ))}
+        </datalist>
+        <label className="font-semibold" htmlFor="ed-slug">
+          Slug (<code>?pin=</code>)
+        </label>
+        <input
+          id="ed-slug"
+          value={slug}
+          onChange={(e) => setSlug(e.target.value.toLowerCase())}
+          onBlur={() => titulo && slug === '' && setSlug(slugify(titulo))}
+          aria-invalid={!slugOk}
+          className={FIELD}
+        />
+        {!slugOk && <p className="text-xs text-vice-accent">Solo minúsculas, números y guiones.</p>}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <PalmButton
+          type="button"
+          fullWidth
+          disabled={!canCreate}
+          onClick={() =>
+            onCreate({ entity_id: picked?.id ?? null, ...(slug ? { slug } : {}), region: region.trim(), titulo: titulo.trim() })
+          }
+          className="min-h-12! text-base!"
+        >
+          {busy ? 'Guardando…' : 'Crear marcador aquí'}
+        </PalmButton>
+        {selected && (
+          <button
+            type="button"
+            disabled={!cross || busy}
+            onClick={onMoveHere}
+            className="min-h-12 rounded-xl border border-white/15 px-3 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold disabled:opacity-40"
+          >
+            Mover «{selected.titulo}» aquí
+          </button>
+        )}
+      </div>
+
+      {status && (
+        <p
+          role="status"
+          className={`rounded-xl px-3 py-2 font-semibold ${status.ok ? 'bg-vice-gold/20 text-vice-gold' : 'bg-vice-accent/20 text-vice-text'}`}
+        >
+          {status.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
 const ZOOM_BTN =
   'flex h-11 w-11 items-center justify-center text-xl hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold';
 
+const keyOf = (p: URLSearchParams): string => `${p.get('pin')}|${p.get('marker')}|${p.get('entity')}`;
+const errText = (e: unknown): string => (e instanceof ApiError ? e.message : 'No se pudo completar la acción.');
+
 export default function MapPage({ params }: { params: URLSearchParams }) {
   const { data, error } = useWorldData();
+  const qc = useQueryClient();
   const items = useProgressStore((s) => s.items);
   const toggle = useProgressStore((s) => s.toggle);
   const guest = useAuthStore((s) => s.status !== 'authenticated');
+  const isAdmin = useAuthStore((s) => s.hasRole('ADMIN'));
   const isDesktop = useIsDesktop();
 
-  const [view, setView] = useState<View | null>(null);
-  const [active, setActive] = useState<Set<MapLayerId>>(() => new Set(MAP_LAYERS.map((l) => l.id)));
+  const canvas = useRef<MapCanvasHandle>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const handledKey = useRef<string | null>(null);
+
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [layersOpen, setLayersOpen] = useState(false);
-  const [size, setSize] = useState({ w: 1000, h: 700 });
-
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const dragRef = useRef({ moved: false, sx: 0, sy: 0, captured: false });
-  const pinchRef = useRef(0);
-
-  // El alto del lienzo sale del contenedor: el mapa llena todo el alto disponible.
-  const aspect = size.h / size.w;
-  const cur = view ?? fitView(size);
-  const vbW = cur.w;
-  const vbH = cur.w * aspect;
-  const vbX = cur.cx - vbW / 2;
-  const vbY = cur.cy - vbH / 2;
+  const [editor, setEditor] = useState(false);
+  const [cross, setCross] = useState<{ x: number; y: number } | null>(null);
+  const [overrides, setOverrides] = useState<ReadonlyMap<string, { x: number; y: number }>>(new Map());
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
 
   const entitiesById = useMemo(() => new Map(data.entities.map((e) => [e.id, e])), [data.entities]);
   const modulesById = useMemo(() => new Map(data.modules.map((m) => [m.id, m])), [data.modules]);
+  const markersById = useMemo(() => new Map(data.markers.map((m) => [m.id, m])), [data.markers]);
 
   const layered = useMemo(
     () => data.markers.map((m) => ({ marker: m, layer: markerLayer(m, entitiesById, modulesById) })),
@@ -288,164 +498,259 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
     for (const l of layered) c.set(l.layer, (c.get(l.layer) ?? 0) + 1);
     return c;
   }, [layered]);
-  const visible = layered.filter((l) => active.has(l.layer));
-  const colorOf = (id: MapLayerId): string => MAP_LAYERS.find((l) => l.id === id)?.color ?? '#fff';
+  const regions = useMemo(
+    () => [...new Set(data.markers.map((m) => m.region))].sort((a, b) => a.localeCompare(b, 'es')),
+    [data.markers],
+  );
 
-  const isDone = (id: string): boolean => items[`marker:${id}`]?.completado === true;
+  // ---- Filtros: la URL es la fuente de verdad (?capas= ?region= ?ocultar=1) ---------------------------------------
+  const paramKey = params.toString();
+  const capasParam = params.get('capas');
+  const region = params.get('region');
+  const hideDone = params.get('ocultar') === '1';
+  const active = useMemo(
+    () => (capasParam === null ? new Set<MapLayerId>(MAP_LAYERS.map((l) => l.id)) : new Set(capasParam.split(',').filter((id): id is MapLayerId => LAYER_IDS.has(id)))),
+    [capasParam],
+  );
+
+  const updateUrl = useCallback(
+    (mut: (p: URLSearchParams) => void) => {
+      const p = new URLSearchParams(params);
+      mut(p);
+      handledKey.current = keyOf(p);
+      const s = p.toString();
+      navigate(`/mapa${s ? `?${s}` : ''}`, { replace: true, keepScroll: true });
+    },
+    [params],
+  );
+
+  const toggleLayer = (id: MapLayerId) => {
+    const next = new Set(active);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    updateUrl((p) => {
+      if (next.size === MAP_LAYERS.length) p.delete('capas');
+      else p.set('capas', MAP_LAYERS.filter((l) => next.has(l.id)).map((l) => l.id).join(','));
+    });
+  };
+  const setRegionFilter = (v: string) => updateUrl((p) => (v ? p.set('region', v) : p.delete('region')));
+  const setHideDone = (v: boolean) => updateUrl((p) => (v ? p.set('ocultar', '1') : p.delete('ocultar')));
+  const filtersActive = capasParam !== null || region !== null || hideDone;
+  const resetFilters = () =>
+    updateUrl((p) => {
+      p.delete('capas');
+      p.delete('region');
+      p.delete('ocultar');
+    });
+
+  const isDone = useCallback((id: string): boolean => items[`marker:${id}`]?.completado === true, [items]);
   const doneCount = data.markers.filter((m) => isDone(m.id)).length;
 
-  const selected = data.markers.find((m) => m.id === selectedId) ?? null;
+  const visible = useMemo(
+    () =>
+      layered.filter(
+        (l) => active.has(l.layer) && (!region || l.marker.region === region) && !(hideDone && isDone(l.marker.id)),
+      ),
+    [layered, active, region, hideDone, isDone],
+  );
+
+  const selected = (selectedId && markersById.get(selectedId)) || null;
   const selectedEntity = selected?.entity_id ? (entitiesById.get(selected.entity_id) ?? null) : null;
   const selectedModule = selectedEntity ? modulesById.get(selectedEntity.module_id) : undefined;
   const catalogHref = selectedEntity && selectedModule ? entityHref(selectedEntity, selectedModule.slug) : null;
 
-  // ---- Utilidades de vista ---------------------------------------------------
-  const toSvg = useCallback((cx: number, cy: number): { x: number; y: number } | null => {
-    const svg = svgRef.current;
-    const ctm = svg?.getScreenCTM();
-    if (!svg || !ctm) return null;
-    const p = new DOMPoint(cx, cy).matrixTransform(ctm.inverse());
-    return { x: p.x, y: p.y };
-  }, []);
+  const pins = useMemo<MapPin[]>(() => {
+    const toPin = (m: MapMarker, layer: MapLayerId): MapPin => {
+      const o = overrides.get(m.id);
+      const done = isDone(m.id);
+      return {
+        id: m.id,
+        x: o?.x ?? m.coord_x,
+        y: o?.y ?? m.coord_y,
+        color: MAP_LAYERS.find((l) => l.id === layer)?.color ?? '#fff',
+        done,
+        label: `${m.titulo}, ${m.region}${done ? ', completado' : ''}`,
+      };
+    };
+    const list = visible.map((l) => toPin(l.marker, l.layer));
+    // La ficha abierta siempre conserva su pin, aunque un filtro lo excluya.
+    if (selected && !list.some((p) => p.id === selected.id)) {
+      list.push(toPin(selected, markerLayer(selected, entitiesById, modulesById)));
+    }
+    return list;
+  }, [visible, overrides, isDone, selected, entitiesById, modulesById]);
 
-  const zoomAt = useCallback(
-    (factor: number, px: number, py: number) => {
-      setView((prev) => {
-        const v = prev ?? fitView(size);
-        const w = clamp(v.w * factor, MIN_W, MAX_W);
-        const ratio = w / v.w;
-        const x = px - (px - (v.cx - v.w / 2)) * ratio;
-        const y = py - (py - (v.cy - (v.w * aspect) / 2)) * ratio;
-        return normalize({ w, cx: x + w / 2, cy: y + (w * aspect) / 2 });
-      });
-    },
-    [aspect, size],
+  // ---- Enfoque y selección ------------------------------------------------------------------------------------------------
+  const lift = useCallback(
+    (): number => (isDesktop ? 0 : (wrapRef.current?.clientHeight ?? 700) * 0.18),
+    [isDesktop],
+  );
+  const focusMarker = useCallback(
+    (m: MapMarker) => canvas.current?.flyTo(m.coord_x, m.coord_y, { zoom: 3.4, lift: lift() }),
+    [lift],
   );
 
-  const zoomCenter = (factor: number) => zoomAt(factor, cur.cx, cur.cy);
-
-  // En móvil la ficha ocupa la mitad inferior: el punto se centra en la mitad visible.
-  const centerOn = useCallback(
-    (px: number, py: number, w: number) => {
-      const lift = isDesktop ? 0 : 0.15;
-      setView(normalize({ w, cx: px, cy: py + w * aspect * lift }));
-    },
-    [aspect, isDesktop],
-  );
-
-  const select = useCallback(
+  const selectMarker = useCallback(
     (m: MapMarker) => {
       setSelectedId(m.id);
-      centerOn(m.coord_x, m.coord_y, Math.min(vbW, 420));
+      focusMarker(m);
+      if (editor) setCross({ x: m.coord_x, y: m.coord_y });
+      updateUrl((p) => {
+        p.delete('pin');
+        p.delete('marker');
+        p.delete('entity');
+        if (m.slug) p.set('pin', m.slug);
+        else p.set('marker', m.id);
+      });
     },
-    [centerOn, vbW],
+    [focusMarker, editor, updateUrl],
   );
 
-  // Rueda: zoom (listener no pasivo para poder evitar el scroll de la página).
-  useEffect(() => {
-    const svg = svgRef.current;
-    if (!svg) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const p = toSvg(e.clientX, e.clientY);
-      if (p) zoomAt(e.deltaY > 0 ? 1.15 : 1 / 1.15, p.x, p.y);
-    };
-    svg.addEventListener('wheel', onWheel, { passive: false });
-    return () => svg.removeEventListener('wheel', onWheel);
-  }, [toSvg, zoomAt]);
+  const deselect = useCallback(() => {
+    setSelectedId(null);
+    updateUrl((p) => {
+      p.delete('pin');
+      p.delete('marker');
+      p.delete('entity');
+    });
+  }, [updateUrl]);
 
-  // Tamaño del contenedor: los pines mantienen tamaño táctil constante en pantalla.
+  // Deep-link: ?pin=<slug> (y compatibilidad con ?marker=<uuid> y ?entity=<uuid>).
   useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const measure = () => setSize({ w: el.clientWidth || 1000, h: el.clientHeight || 700 });
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    measure();
-    return () => ro.disconnect();
-  }, []);
-
-  // Parámetros de URL: marker / entity / region.
-  const paramKey = params.toString();
-  useEffect(() => {
+    const k = keyOf(params);
+    if (handledKey.current === k) return;
+    const pin = params.get('pin');
     const markerId = params.get('marker');
     const entityId = params.get('entity');
-    const region = params.get('region');
-    let target: MapMarker | undefined;
-    if (markerId) target = data.markers.find((m) => m.id === markerId);
-    else if (entityId) target = data.markers.find((m) => m.entity_id === entityId);
-    else if (region) target = data.markers.find((m) => m.region === region);
-    if (target) {
-      setSelectedId(target.id);
-      centerOn(target.coord_x, target.coord_y, 380);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paramKey, data.markers.length]);
-
-  // ---- Interacción por puntero ---------------------------------------------------
-  const onPointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    dragRef.current = { moved: false, sx: e.clientX, sy: e.clientY, captured: false };
-    if (pointers.current.size === 2) {
-      const [a, b] = [...pointers.current.values()] as [{ x: number; y: number }, { x: number; y: number }];
-      pinchRef.current = Math.hypot(a.x - b.x, a.y - b.y);
-    }
-  };
-
-  const onPointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const prev = pointers.current.get(e.pointerId);
-    if (!prev) return;
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 2) {
-      const [a, b] = [...pointers.current.values()] as [{ x: number; y: number }, { x: number; y: number }];
-      const d = Math.hypot(a.x - b.x, a.y - b.y);
-      const mid = toSvg((a.x + b.x) / 2, (a.y + b.y) / 2);
-      if (pinchRef.current > 0 && mid && d > 0) zoomAt(pinchRef.current / d, mid.x, mid.y);
-      pinchRef.current = d;
-      dragRef.current.moved = true;
+    if (!pin && !markerId && !entityId) {
+      handledKey.current = k;
       return;
     }
-    const drag = dragRef.current;
-    if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) < 5) return;
-    drag.moved = true;
-    if (!drag.captured) {
-      svgRef.current?.setPointerCapture(e.pointerId);
-      drag.captured = true;
+    const target = pin
+      ? data.markers.find((m) => m.slug === pin)
+      : markerId
+        ? markersById.get(markerId)
+        : data.markers.find((m) => m.entity_id === entityId);
+    if (target) {
+      handledKey.current = k;
+      setSelectedId(target.id);
+      focusMarker(target);
     }
-    const ctm = svgRef.current?.getScreenCTM();
-    if (!ctm) return;
-    const dx = (e.clientX - prev.x) / ctm.a;
-    const dy = (e.clientY - prev.y) / ctm.d;
-    setView((p) => {
-      const v = p ?? fitView(size);
-      return normalize({ ...v, cx: v.cx - dx, cy: v.cy - dy });
-    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramKey, data.markers]);
+
+  // ?region=: además de filtrar, encuadra el centro de los marcadores de esa región.
+  useEffect(() => {
+    if (!region || params.get('pin') || params.get('marker') || params.get('entity')) return;
+    const ms = data.markers.filter((m) => m.region === region);
+    if (ms.length === 0) return;
+    const cx = ms.reduce((a, m) => a + m.coord_x, 0) / ms.length;
+    const cy = ms.reduce((a, m) => a + m.coord_y, 0) / ms.length;
+    canvas.current?.flyTo(cx, cy, { zoom: ms.length > 1 ? 2.2 : 3.2 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [region, data.markers.length]);
+
+  // ---- Buscador instantáneo (NFD, ranking título > entidad > región) ------------------------------------------------
+  const searchDocs = useMemo<SearchDoc[]>(
+    () =>
+      data.markers.map((m) => {
+        const e = m.entity_id ? entitiesById.get(m.entity_id) : undefined;
+        return { marker: m, t: norm(m.titulo), e: norm(e?.titulo ?? ''), r: norm(m.region), c: norm(e?.categoria ?? ''), entityTitle: e?.titulo ?? null };
+      }),
+    [data.markers, entitiesById],
+  );
+  const results = useMemo(() => rank(searchDocs, query), [searchDocs, query]);
+
+  // ---- Modo editor -----------------------------------------------------------------------------------------------------------------
+  useEffect(() => {
+    if (!status) return;
+    const t = window.setTimeout(() => setStatus(null), 5000);
+    return () => window.clearTimeout(t);
+  }, [status]);
+
+  const nearestRegion = useCallback(
+    (x: number, y: number): string => {
+      let best = '';
+      let bd = Infinity;
+      for (const m of data.markers) {
+        const d = Math.hypot(m.coord_x - x, m.coord_y - y);
+        if (d < bd) {
+          bd = d;
+          best = m.region;
+        }
+      }
+      return best;
+    },
+    [data.markers],
+  );
+
+  const moveMarker = useCallback(
+    async (id: string, x: number, y: number): Promise<boolean> => {
+      setOverrides((prev) => new Map(prev).set(id, { x, y }));
+      setCross({ x, y });
+      const clear = () =>
+        setOverrides((prev) => {
+          const n = new Map(prev);
+          n.delete(id);
+          return n;
+        });
+      try {
+        await apiFetch(`/api/markers/${id}`, { method: 'PATCH', json: { coord_x: x, coord_y: y } });
+        await qc.invalidateQueries({ queryKey: ['world'] });
+        clear();
+        setStatus({ ok: true, text: `Posición guardada ✓ (${x.toFixed(2)}, ${y.toFixed(2)})` });
+        return true;
+      } catch (e) {
+        clear();
+        setStatus({ ok: false, text: errText(e) });
+        return false;
+      }
+    },
+    [qc],
+  );
+
+  const createMarker = async (p: CreatePayload) => {
+    if (!cross) return;
+    setBusy(true);
+    try {
+      const created = await apiFetch<MapMarker>('/api/markers', { method: 'POST', json: { ...p, coord_x: cross.x, coord_y: cross.y } });
+      await qc.invalidateQueries({ queryKey: ['world'] });
+      setStatus({ ok: true, text: `Marcador «${created.titulo}» creado ✓` });
+      selectMarker(created);
+    } catch (e) {
+      setStatus({ ok: false, text: errText(e) });
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const onPointerUp = (e: React.PointerEvent<SVGSVGElement>) => {
-    pointers.current.delete(e.pointerId);
-    pinchRef.current = 0;
+  const copyCoords = async () => {
+    if (!cross) return;
+    const ok = await copyText(`${cross.x.toFixed(2)}, ${cross.y.toFixed(2)}`);
+    setStatus({ ok, text: ok ? `Copiado: ${cross.x.toFixed(2)}, ${cross.y.toFixed(2)}` : 'No se pudo copiar al portapapeles.' });
   };
 
-  const toggleLayer = (id: MapLayerId) =>
-    setActive((s) => {
-      const n = new Set(s);
-      if (n.has(id)) n.delete(id);
-      else n.add(id);
-      return n;
-    });
+  const moduleSlug = useCallback((moduleId: string): string => modulesById.get(moduleId)?.slug ?? 'catálogo', [modulesById]);
 
-  const q = query.trim().toLowerCase();
-  const results = q
-    ? data.markers
-        .filter((m) => `${m.titulo} ${m.region}`.toLowerCase().includes(q))
-        .slice(0, 6)
-    : [];
-
-  const upp = Math.max(vbW / size.w, vbH / size.h); // unidades de lienzo por píxel
-  const pinR = 11 * upp;
-  const hitR = 22 * upp;
-  const labelPx = isDesktop ? 13 : 10;
+  const editorPanel = (
+    <EditorPanel
+      cross={cross}
+      selected={selected}
+      entities={data.entities}
+      moduleSlug={moduleSlug}
+      regions={regions}
+      nearestRegion={nearestRegion}
+      busy={busy}
+      status={status}
+      onCreate={(p) => void createMarker(p)}
+      onMoveHere={() => selected && cross && void moveMarker(selected.id, cross.x, cross.y)}
+      onCopy={() => void copyCoords()}
+      onClose={() => {
+        setEditor(false);
+        setCross(null);
+      }}
+    />
+  );
 
   const notice = error
     ? 'No se pudo conectar con el servidor: se muestran datos de ejemplo.'
@@ -463,100 +768,43 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       guest={guest}
       compact={!isDesktop}
       onToggle={() => toggle({ markerId: selected.id })}
-      onClose={() => setSelectedId(null)}
+      onClose={deselect}
     />
+  );
+
+  const insets = useMemo(() => ({ top: isDesktop ? 0 : MOBILE_CONTROLS_PX }), [isDesktop]);
+  const editable = useMemo(
+    () => (editor && selected ? { pinId: selected.id, onMove: moveMarker } : undefined),
+    [editor, selected, moveMarker],
   );
 
   return (
     <div ref={wrapRef} className="relative h-full w-full touch-none select-none overflow-hidden">
-      <svg
-        ref={svgRef}
-        role="application"
-        aria-label="Mapa táctico de Leonida. Arrastra para mover, rueda o botones para acercar."
-        viewBox={`${vbX} ${vbY} ${vbW} ${vbH}`}
-        preserveAspectRatio="xMidYMid meet"
-        className="absolute inset-0 h-full w-full cursor-grab touch-none active:cursor-grabbing"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) setSelectedId(null);
+      <MapCanvas
+        ref={canvas}
+        pins={pins}
+        selectedId={selectedId}
+        insets={insets}
+        crosshair={editor ? cross : null}
+        editable={editable}
+        ariaLabel="Mapa de Leonida. Arrastra para mover, rueda, pellizco o botones para acercar."
+        onSelect={(id) => {
+          const m = markersById.get(id);
+          if (m) selectMarker(m);
         }}
-      >
-        <MapArt />
-        {[...visible]
-          .sort((a, b) => Number(a.marker.id === selectedId) - Number(b.marker.id === selectedId))
-          .map(({ marker, layer }) => {
-            const done = isDone(marker.id);
-            const sel = marker.id === selectedId;
-            const color = colorOf(layer);
-            return (
-              <g
-                key={marker.id}
-                role="button"
-                tabIndex={0}
-                aria-label={`${marker.titulo}, ${marker.region}${done ? ', completado' : ''}`}
-                aria-pressed={sel}
-                transform={`translate(${marker.coord_x} ${marker.coord_y})`}
-                className="cursor-pointer outline-none focus-visible:[&>circle:first-child]:stroke-[#FFC857]"
-                onClick={() => select(marker)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    select(marker);
-                  }
-                }}
-              >
-                <circle r={hitR} fill="transparent" stroke="transparent" strokeWidth={2 * upp} />
-                {sel && <circle r={pinR * 1.9} fill="none" stroke="#FFC857" strokeWidth={2.5 * upp} />}
-                <circle
-                  r={pinR}
-                  fill={done ? '#FFC857' : color}
-                  fillOpacity={done ? 0.95 : 0.9}
-                  stroke="#1A0A22"
-                  strokeWidth={2 * upp}
-                />
-                {done && (
-                  <path
-                    d={`M${-pinR * 0.5} 0 L${-pinR * 0.1} ${pinR * 0.4} L${pinR * 0.55} ${-pinR * 0.4}`}
-                    fill="none"
-                    stroke="#1A0A22"
-                    strokeWidth={2 * upp}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                )}
-              </g>
-            );
-          })}
-        {/* Nombres de región por encima de los pines, con halo oscuro para leerse sobre cualquier fondo. */}
-        <g
-          pointerEvents="none"
-          textAnchor="middle"
-          fontFamily="Jost, sans-serif"
-          fontWeight="700"
-          fontSize={labelPx * upp}
-          letterSpacing={`${0.14 * labelPx * upp}`}
-          fill="#FBF1F5"
-          stroke="#1B1033"
-          strokeWidth={4 * upp}
-          strokeLinejoin="round"
-          paintOrder="stroke"
-        >
-          {MAP_REGIONS.map((r) => (
-            <text key={r.name} x={r.x} y={r.y}>
-              {r.name.toUpperCase()}
-            </text>
-          ))}
-        </g>
-      </svg>
+        onBackgroundClick={(w) => {
+          if (editor) {
+            setCross(w);
+            setStatus(null);
+          } else if (selectedId) deselect();
+        }}
+      />
 
-      {/* HUD superior izquierdo: buscador + capas */}
-      <div className="pointer-events-none absolute left-3 right-3 top-2 z-10 flex flex-col gap-2 md:right-auto md:w-80">
+      {/* HUD superior izquierdo: buscador + filtros (+ editor en escritorio) */}
+      <div className="pointer-events-none absolute left-3 right-3 top-2 z-10 flex max-h-[calc(100%-1rem)] flex-col gap-2 md:right-auto md:w-80 md:overflow-y-auto">
         <div className="pointer-events-auto relative">
           <label htmlFor="map-search" className="sr-only">
-            Buscar marcador o región
+            Buscar marcador, entidad o región
           </label>
           <input
             id="map-search"
@@ -567,21 +815,24 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
             autoComplete="off"
             className="glass min-h-12 w-full rounded-full px-5 text-base text-vice-text placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold"
           />
-          {q && (
+          {query.trim() && (
             <ul className="glass absolute inset-x-0 top-14 z-20 overflow-hidden rounded-xl" aria-label="Resultados">
               {results.length === 0 && <li className="px-4 py-3 text-sm text-vice-text/70">Sin resultados.</li>}
-              {results.map((m) => (
+              {results.map(({ marker: m, entityTitle }) => (
                 <li key={m.id}>
                   <button
                     type="button"
                     className="flex min-h-11 w-full flex-col px-4 py-2 text-left text-sm hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
                     onClick={() => {
                       setQuery('');
-                      select(m);
+                      selectMarker(m);
                     }}
                   >
                     <span className="font-semibold">{m.titulo}</span>
-                    <span className="text-xs text-vice-orange">{m.region}</span>
+                    <span className="text-xs text-vice-orange">
+                      {m.region}
+                      {entityTitle && entityTitle !== m.titulo ? ` · ${entityTitle}` : ''}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -589,7 +840,6 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           )}
         </div>
 
-        {/* Capas */}
         <div className="pointer-events-auto flex items-center gap-2 md:hidden">
           <button
             type="button"
@@ -597,53 +847,99 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
             onClick={() => setLayersOpen((v) => !v)}
             className="glass min-h-11 whitespace-nowrap rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold"
           >
-            Capas del mapa
+            Capas y filtros{filtersActive ? ' •' : ''}
           </button>
           <p role="status" className="glass whitespace-nowrap rounded-full px-3 py-2 text-xs">
             {doneCount}/{data.markers.length} completados
           </p>
         </div>
+
         <fieldset
-          className={`glass pointer-events-auto max-h-[46vh] overflow-y-auto rounded-2xl p-3 ${
+          className={`glass pointer-events-auto max-h-[46vh] shrink-0 overflow-y-auto rounded-2xl p-3 ${
             layersOpen ? 'block' : 'hidden md:block'
           }`}
         >
-          <legend className="sr-only">Capas del mapa</legend>
+          <legend className="sr-only">Capas y filtros del mapa</legend>
           <p className="mb-1 px-1 text-xs font-semibold tracking-widest text-vice-text/90">CAPAS DEL MAPA</p>
           {MAP_LAYERS.map((l) => (
-            <label
-              key={l.id}
-              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-2 text-sm hover:bg-white/10"
-            >
-              <input
-                type="checkbox"
-                checked={active.has(l.id)}
-                onChange={() => toggleLayer(l.id)}
-                className="h-5 w-5 accent-[#E1307E]"
-              />
+            <label key={l.id} className="flex min-h-10 cursor-pointer items-center gap-3 rounded-lg px-2 text-sm hover:bg-white/10">
+              <input type="checkbox" checked={active.has(l.id)} onChange={() => toggleLayer(l.id)} className="h-5 w-5 accent-[#E1307E]" />
               <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: l.color }} />
               <span className="flex-1">{l.label}</span>
               <span className="text-xs text-vice-text/70">{layerCount.get(l.id) ?? 0}</span>
             </label>
           ))}
+          <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-2">
+            <label htmlFor="map-region" className="px-1 text-xs font-semibold tracking-widest text-vice-text/90">
+              REGIÓN
+            </label>
+            <select
+              id="map-region"
+              value={region ?? ''}
+              onChange={(e) => setRegionFilter(e.target.value)}
+              className="glass min-h-11 w-full rounded-xl px-3 text-sm text-vice-text focus-visible:outline-2 focus-visible:outline-vice-gold"
+            >
+              <option value="">Todas las regiones</option>
+              {regions.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            <label className="flex min-h-10 cursor-pointer items-center gap-3 rounded-lg px-2 text-sm hover:bg-white/10">
+              <input type="checkbox" checked={hideDone} onChange={(e) => setHideDone(e.target.checked)} className="h-5 w-5 accent-[#E1307E]" />
+              <span className="flex-1">Ocultar encontrados</span>
+            </label>
+            {filtersActive && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="min-h-10 rounded-lg text-sm font-semibold text-vice-orange hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+              >
+                Restablecer filtros
+              </button>
+            )}
+          </div>
         </fieldset>
+
+        {editor && isDesktop && <div className="glass pointer-events-auto shrink-0 rounded-2xl p-3">{editorPanel}</div>}
       </div>
 
-      {/* Zoom (+ progreso en escritorio) */}
+      {/* Zoom, progreso y Modo Editor (ADMIN+) */}
       <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2 md:bottom-auto md:top-2">
         <div className="glass flex flex-col overflow-hidden rounded-2xl">
-          <button type="button" aria-label="Acercar" onClick={() => zoomCenter(1 / 1.4)} className={ZOOM_BTN}>
+          <button type="button" aria-label="Acercar" onClick={() => canvas.current?.zoomBy(1.6)} className={ZOOM_BTN}>
             +
           </button>
-          <button type="button" aria-label="Alejar" onClick={() => zoomCenter(1.4)} className={ZOOM_BTN}>
+          <button type="button" aria-label="Alejar" onClick={() => canvas.current?.zoomBy(1 / 1.6)} className={ZOOM_BTN}>
             −
           </button>
-          <button type="button" aria-label="Restablecer vista" onClick={() => setView(null)} className={ZOOM_BTN}>
+          <button type="button" aria-label="Restablecer vista" onClick={() => canvas.current?.reset()} className={ZOOM_BTN}>
             <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 12a8 8 0 108-8H8M8 4L4.5 7.5 8 11" />
             </svg>
           </button>
         </div>
+        {isAdmin && (
+          <button
+            type="button"
+            aria-pressed={editor}
+            onClick={() => {
+              setEditor((v) => !v);
+              setCross(null);
+              setStatus(null);
+            }}
+            className={`flex min-h-11 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
+              editor ? 'bg-vice-gold text-vice-ink' : 'glass'
+            }`}
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+            </svg>
+            Modo editor
+          </button>
+        )}
         <p role="status" className="glass hidden rounded-full px-3 py-1 text-xs md:block">
           {doneCount}/{data.markers.length} completados
         </p>
@@ -655,7 +951,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
         </p>
       )}
 
-      {/* Ficha P04.3: panel flotante (escritorio) / Bottom Sheet (móvil) */}
+      {/* Ficha P04.3: panel flotante (escritorio) / Bottom Sheet (móvil; en modo editor muestra el editor) */}
       {selected && isDesktop && (
         <aside
           aria-label="Ficha de marcador"
@@ -665,13 +961,13 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
         </aside>
       )}
       <BottomSheet
-        open={selected !== null && !isDesktop}
-        onClose={() => setSelectedId(null)}
-        title={selected?.titulo}
+        open={(editor || selected !== null) && !isDesktop}
+        onClose={() => (editor ? undefined : deselect())}
+        title={editor ? 'Modo editor' : selected?.titulo}
         modal={false}
         className="md:hidden"
       >
-        {card}
+        {editor ? editorPanel : card}
       </BottomSheet>
     </div>
   );
