@@ -99,6 +99,7 @@ const MIME: Record<string, string> = {
   '.woff2': 'font/woff2',
   '.txt': 'text/plain; charset=utf-8',
   '.xml': 'application/xml; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
   '.webm': 'video/webm',
   '.mp4': 'video/mp4',
 };
@@ -121,7 +122,14 @@ async function sendStatic(pathname: string, headOnly: boolean, reply: FastifyRep
   if (!info?.isFile()) return notFound();
 
   reply
-    .header('Cache-Control', rel.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'public, max-age=3600')
+    .header(
+      'Cache-Control',
+      rel === '/sw.js'
+        ? 'no-cache'
+        : rel.startsWith('/assets/')
+          ? 'public, max-age=31536000, immutable'
+          : 'public, max-age=3600',
+    )
     .header('Content-Length', info.size)
     .type(MIME[extname(file).toLowerCase()] ?? 'application/octet-stream');
   return headOnly ? reply.send() : reply.send(createReadStream(file));
@@ -164,7 +172,7 @@ export async function registerSeoRoutes(app: FastifyInstance): Promise<void> {
     const readOnly = req.method === 'GET' || req.method === 'HEAD';
     if (!readOnly || p.startsWith('/api/')) return reply.code(404).send({ error: 'No encontrado' });
 
-    if (/\.[a-z0-9]{1,8}$/i.test(p)) {
+    if (/\.[a-z0-9]{1,12}$/i.test(p)) {
       if (p === '/sitemap.xml' || p === '/robots.txt') return reply.code(404).send({ error: 'No encontrado' });
       return sendStatic(p, req.method === 'HEAD', reply);
     }
