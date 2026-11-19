@@ -1,5 +1,5 @@
 // Marco de coordenadas del mapa de Leonida (lienzo 0-1000 x 0-700, origen arriba a la izquierda, Y hacia abajo).
-// La base cartográfica es el mapa comunitario recoloreado y publicado como pirámide de teselas en
+// La base cartográfica es el mapa comunitario con sus colores originales, publicado como pirámide de teselas en
 // `public/map-tiles/` (ver `mapPaint.ts` y DesignSpec §6.4). Los marcadores reales de MongoDB están
 // calibrados sobre esas teselas con la transformación lineal del referente (px, py en píxeles del original):
 //   x = (px - 500) * 0.2 * K + 249.5966      y = (py - 650) * 0.2 * K + 13.1738      K = 0.387112

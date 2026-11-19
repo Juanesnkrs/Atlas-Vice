@@ -1,12 +1,12 @@
 // Pintor 2D del mapa de Leonida. Dibuja en un <canvas> la pirámide de teselas WebP de
-// `public/map-tiles/` (el mapa comunitario recoloreado a la paleta Vice Sunset, ver DesignSpec §6.4).
+// `public/map-tiles/` (el área cartográfica del mapa comunitario con sus colores originales, ver DesignSpec §6.4).
 // Solo se pintan las teselas visibles del nivel `z` adecuado a la escala; mientras una tesela carga se
 // dibuja el recorte de su ancestro ya cargado, así no hay huecos al hacer zoom. MapCanvas mueve el bitmap
 // con una transformación CSS en cada frame y solo repinta al cargar teselas, cambiar de nivel o alejarse
 // del bitmap en caché.
 
 /** Agua: el mismo azul oscuro de las teselas (fondo mientras llegan). */
-export const WATER = '#10234A';
+export const WATER = '#2C68A6';
 
 export interface TileManifest {
   v: number;

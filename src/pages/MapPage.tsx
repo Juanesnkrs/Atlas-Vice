@@ -1173,7 +1173,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
         </div>
         {infoOpen && (
           <p role="status" className="glass absolute right-14 top-[8.25rem] z-20 w-56 rounded-xl p-3 text-xs leading-snug">
-            Base cartográfica: GTA VI Community Map (Yanis, v18), recoloreada.
+            Base cartográfica: GTA VI Community Map (Yanis, v18).
           </p>
         )}
         {isAdmin && (
