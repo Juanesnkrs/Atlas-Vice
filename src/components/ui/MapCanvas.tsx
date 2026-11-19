@@ -389,7 +389,7 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
     if (!manifest) return;
     const store = new TileStore(manifest, () => {
       clearTimeout(bgTimer.current);
-      bgTimer.current = window.setTimeout(flushBg, 40);
+      bgTimer.current = window.setTimeout(flushBg, 120);
     });
     tileStore.current = store;
     bgState.current = null;

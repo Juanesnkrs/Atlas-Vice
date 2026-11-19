@@ -623,6 +623,13 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
   const isAdmin = useAuthStore((s) => s.hasRole('ADMIN'));
   const isDesktop = useIsDesktop();
 
+  // Con el mapa en pantalla, el cristal (backdrop-filter) se vuelve opaco en móvil: desenfocar el fondo en cada
+  // frame mientras el bitmap se mueve es lo que más frena el pan/zoom táctil (ver .map-active en vice-nui.css).
+  useEffect(() => {
+    document.body.classList.add('map-active');
+    return () => document.body.classList.remove('map-active');
+  }, []);
+
   const canvas = useRef<MapCanvasHandle>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const handledKey = useRef<string | null>(null);

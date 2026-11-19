@@ -39,10 +39,12 @@ export function loadTileManifest(): Promise<TileManifest> {
   return manifestPromise;
 }
 
-const MAX_CACHED_TILES = 220;
+const MAX_CACHED_TILES = 140;
 
 interface TileEntry {
   img: HTMLImageElement;
+  /** Mapa de bits ya descodificado (fuera del hilo principal); si el navegador no lo soporta se usa la imagen. */
+  bmp: ImageBitmap | null;
   ready: boolean;
 }
 
@@ -69,22 +71,35 @@ export class TileStore {
   }
 
   /** Devuelve la tesela si ya está lista; si no, la pide (una sola vez) y devuelve null. */
-  get(z: number, x: number, y: number, request = true): HTMLImageElement | null {
+  get(z: number, x: number, y: number, request = true): CanvasImageSource | null {
     const key = `${z}/${x}/${y}`;
     const hit = this.cache.get(key);
     if (hit) {
       this.cache.delete(key);
       this.cache.set(key, hit);
-      return hit.ready ? hit.img : null;
+      return hit.ready ? (hit.bmp ?? hit.img) : null;
     }
     if (!request) return null;
     const lv = this.manifest.levels.find((l) => l.z === z);
     if (!lv || x < 0 || y < 0 || x >= lv.cols || y >= lv.rows) return null;
-    const entry: TileEntry = { img: new Image(), ready: false };
+    const entry: TileEntry = { img: new Image(), bmp: null, ready: false };
     entry.img.decoding = 'async';
-    entry.img.onload = () => {
+    // createImageBitmap descodifica el WebP fuera del hilo principal. Sin él, drawImage lo descodifica de forma
+    // síncrona durante el repintado y provoca tirones de 100-300 ms en móvil.
+    const done = () => {
       entry.ready = true;
       this.onLoad();
+    };
+    entry.img.onload = () => {
+      if (typeof createImageBitmap !== 'function') return done();
+      createImageBitmap(entry.img).then(
+        (b) => {
+          if (this.cache.get(key) === entry) entry.bmp = b;
+          else b.close();
+          done();
+        },
+        done,
+      );
     };
     entry.img.onerror = () => {
       this.cache.delete(key);
@@ -95,7 +110,10 @@ export class TileStore {
       const keep = this.manifest.minZoom + 1;
       for (const [k, e] of this.cache) {
         if (this.cache.size <= MAX_CACHED_TILES) break;
-        if (e.ready && Number(k.split('/')[0]) > keep) this.cache.delete(k);
+        if (e.ready && Number(k.split('/')[0]) > keep) {
+          e.bmp?.close();
+          this.cache.delete(k);
+        }
       }
     }
     return null;
@@ -133,7 +151,7 @@ export function paintTiles(ctx: CanvasRenderingContext2D, store: TileStore | nul
   const m = store.manifest;
   const T = m.tileSize;
   ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
+  ctx.imageSmoothingQuality = 'low';
   const lv = m.levels.find((l) => l.z === o.z);
   if (!lv) return;
   // unidades del mundo por tesela en este nivel

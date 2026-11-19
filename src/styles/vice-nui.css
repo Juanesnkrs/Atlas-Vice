@@ -72,6 +72,15 @@ h3 {
   box-shadow: 0 10px 40px rgba(26, 10, 34, 0.45);
 }
 
+/* Rendimiento táctil en /mapa: sin backdrop-filter sobre el bitmap en movimiento; mismo tono, algo más opaco. */
+@media (max-width: 767px), (pointer: coarse) {
+  body.map-active .glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(20, 14, 36, 0.93);
+  }
+}
+
 /* Capas: ver --z-* en :root. Las hojas se pintan en un portal en <body> para quedar sobre el dock. */
 .z-dock {
   z-index: var(--z-dock);
