@@ -133,7 +133,8 @@ src/
 ├── components/
 │   ├── layout/        ViceShell.tsx · BottomDock.tsx · Footer.tsx (RockstarFooter)
 │   └── ui/            PalmButton.tsx · TipCard.tsx · StatBar.tsx · BottomSheet.tsx · AdSlot.tsx · Modal.tsx
-├── data/              seed.ts (capa offline-first y fallback)
+│                      MapCanvas.tsx (motor del mapa: pan/zoom/inercia/clustering sobre SVG + rAF)
+├── data/              seed.ts (capa offline-first y fallback) · leonidaMap.ts (cartografía vectorial original de Leonida)
 ├── pages/             HomePage.tsx · LandingAuthPage.tsx · DashboardPage.tsx · MapPage.tsx · CatalogPage.tsx
 │                      ForumPage.tsx · AdminSubmitPage.tsx · GuidesPage.tsx · NewsPage.tsx
 ├── store/             useAuthStore.ts · useProgressStore.ts · useRouteStore.ts (router History API)
@@ -248,3 +249,9 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
   - `GET /api/forum` sin sesión devuelve únicamente `threads` en formato *preview*: `id`, `titulo`, `categoria`, `is_pinned`, `is_spoiler`, `upvotes_count`, `replies_count`, autor público y `created_at`. Sin `contenido` ni `posts`, máximo 50 hilos, más recientes primero, e ignorando parámetros de filtro o búsqueda.
   - Con sesión devuelve la respuesta completa actual.
 - **SSR-lite de `/foro`:** sin contenido de hilos en meta ni JSON-LD.
+
+### 6.4 Mapa interactivo (P04) — motor y cartografía
+
+- `src/data/leonidaMap.ts`: cartografía **original** en el lienzo 0–1000 × 700, por capas (batimetría, masas de tierra e islas, regiones, curvas de nivel, red vial y puentes, etiquetas con nivel de zoom). Exporta datos SVG (`d` de paths) y metadatos; sin dependencias.
+- `src/components/ui/MapCanvas.tsx`: transformación `{ x, y, scale }` en una `ref` aplicada con `requestAnimationFrame` (cero re-renders al arrastrar o hacer zoom); zoom anclado al cursor, pinch de 2 dedos, inercia, límites dinámicos, `vector-effect: non-scaling-stroke`, clustering por rejilla y *culling* por viewport.
+- `MapPage.tsx`: filtros AND (capas, región, ocultar completados), buscador con normalización NFD, deep-link `?pin=` y **Modo Editor** (solo `hasRole('ADMIN')`; el servidor aplica RBAC): clic para fijar la mira y copiar `(x, y)` con 2 decimales, selector de entidad y alta/movimiento de marcadores vía `POST`/`PATCH /api/markers`.

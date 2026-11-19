@@ -42,7 +42,7 @@
 
 Solo estado de vista; la URL canónica nunca los incluye:
 
-- `/mapa?region=<Region>&marker=<uuid>` — centra/resalta.
+- `/mapa?pin=<slug>&region=<Region>&capas=<id,id>&ocultar=1` — estado de vista del mapa. `pin` centra y abre la ficha del marcador con ese `MapMarker.slug` (se mantienen `marker=<uuid>` y `entity=<uuid>` por compatibilidad); `region` filtra por `MapMarker.region`; `capas` lista las capas visibles (ids de `MAP_LAYERS`, separados por coma; ausente = todas); `ocultar=1` oculta los marcadores ya completados del usuario. Los filtros se combinan con AND y se sincronizan con la URL sin añadir entradas al historial.
 - `/foro?categoria=<Categoria>&hilo=<uuid>&entity=<uuid>&marker=<uuid>` — filtra por categoría, abre hilo, o muestra los hilos de una entidad / un marcador (enlazado cruzado §5). `ForumPage.tsx` usa internamente `thread`; `App.tsx` traduce `hilo → thread`.
 - `/catalogo?comparar=<slugA>,<slugB>[,<slugC>]` — abre el comparador NUI (§5).
 - `/catalogo?modulo=<Module.slug>` — abre el Inspector en la pestaña de ese módulo (accesos de la portada). Canonical `/catalogo`. Un slug inexistente o inactivo abre la primera pestaña disponible.

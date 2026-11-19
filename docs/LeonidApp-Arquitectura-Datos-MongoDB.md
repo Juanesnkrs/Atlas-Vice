@@ -127,14 +127,15 @@ Mongoose: `monetization: { type: Schema.Types.Mixed, default: { ads_enabled: fal
 | --- | --- | --- | --- |
 | `_id` | UUID | `z.uuid().optional()` | |
 | `entity_id` | String ref `Entity` \| null | `z.uuid().nullable().optional()` | Enlace Mapa ↔ Catálogo. |
+| `slug` | String (opcional, sin valor por defecto) | `slugSchema.optional()` | **Δ** Identificador legible para el deep-link `/mapa?pin=<slug>`. Índice **único *sparse*** `{ slug: 1 }`: los marcadores sin `slug` no entran en el índice. Se rellena con el `slug` de su `Entity` o con el título normalizado. |
 | `region` | String | `z.string().min(1).max(80)` | Índice `{ region: 1 }`. |
 | `titulo` | String | `.min(1).max(160)` | |
 | `descripcion` | String \| null | `.max(2000).nullable().optional()` | |
-| `coord` | `{ x: Number, y: Number }` (sin `_id`) | entrada: `coord_x`, `coord_y` (`z.number().finite()`) | **Índice `2d`**: `s.index({ coord: '2d' }, { min: -100000, max: 100000 })`. Plano Leaflet `CRS.Simple`. |
+| `coord` | `{ x: Number, y: Number }` (sin `_id`) | entrada: `coord_x` (`z.number().min(0).max(1000)`), `coord_y` (`z.number().min(0).max(700)`) | **Índice `2d`**: `s.index({ coord: '2d' }, { min: 0, max: 1000 })`. Plano cartesiano propio del lienzo del mapa (**0–1000 × 0–700**, origen arriba a la izquierda, eje Y hacia abajo), renderizado con SVG propio, sin Leaflet. |
 | `media_url` | String \| null | `.nullable().optional()` | |
 | `created_at` | Date | — | |
 
-El DTO aplana `coord` a `coord_x` / `coord_y`. Consultas espaciales con `$near` / `$geoWithin: { $box }` sobre `coord`.
+El DTO aplana `coord` a `coord_x` / `coord_y` y expone `slug` (`null` si no existe). `GET /api/markers` admite `?region=` y `?bbox=x1,y1,x2,y2` (consulta `$geoWithin: { $box }` sobre `coord`) y responde con `ETag` y `Cache-Control: public, max-age=60, must-revalidate`.
 
 ### 2.6 `UserProgress` — `models/UserProgress.ts`
 
@@ -305,7 +306,7 @@ Reglas:
 | `AppConfig` | `key` único |
 | `Module` | `slug` único |
 | `Entity` | `{ module_id, categoria }` · **Δ** `{ module_id, slug }` único |
-| `MapMarker` | `{ coord: '2d' }` (min −100000, max 100000) · `{ region }` |
+| `MapMarker` | `{ coord: '2d' }` (min 0, max 1000) · `{ region }` · **Δ** `{ slug }` único *sparse* |
 | `UserProgress` | `{ user_id, target_type, target_id }` único |
 | `OfficialNews` | `sourceUrl` único · `publishedAt: -1` · **Δ** `slug` único |
 | `Submission` | `userId` · `{ status, createdAt: -1 }` |
