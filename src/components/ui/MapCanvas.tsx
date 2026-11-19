@@ -32,8 +32,29 @@ export interface MapCanvasHandle {
   toWorld(clientX: number, clientY: number): { x: number; y: number } | null;
 }
 
+/** Calca de referencia: imagen colocada en unidades del mapa. */
+export interface MapRefOverlay {
+  src: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  cropW: number;
+  opacity: number;
+  onError?: () => void;
+}
+/** Trazador SVG: puntos en coordenadas del mapa. */
+export interface MapTracer {
+  points: ReadonlyArray<readonly [number, number]>;
+  closed: boolean;
+}
+
 export interface MapCanvasProps {
   ref?: Ref<MapCanvasHandle>;
+  /** Calca de referencia bajo los pines (solo Modo Editor). */
+  refOverlay?: MapRefOverlay | null;
+  /** Vista previa en vivo del trazador SVG. */
+  tracer?: MapTracer | null;
   pins: ReadonlyArray<MapPin>;
   selectedId: string | null;
   onSelect: (id: string) => void;
@@ -165,42 +186,45 @@ const LeonidaBase = memo(function LeonidaBase() {
           <stop offset="1" stopColor="#8A3566" />
         </linearGradient>
         <clipPath id="lm-clip">
-          <path d={m.landAllD} />
+          <path d={m.landD} clipRule="evenodd" />
         </clipPath>
+        {/* Manzanas urbanas: retícula girada que solo se ve en LOD 2 sobre los núcleos urbanos */}
+        <pattern id="lm-blocks" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(-18)">
+          <path d="M0 0H5M0 0V5" fill="none" stroke="rgba(251,241,245,0.34)" strokeWidth={0.28} />
+        </pattern>
       </defs>
-      {/* Océano y batimetría: halos concéntricos de aguas someras alrededor de toda la tierra */}
+      {/* Océano y batimetría: aguas profundas, someras y muy someras */}
       <rect x={-3000} y={-3000} width={7000} height={7000} fill="url(#lm-water)" />
       <path d={m.gridD} fill="none" stroke="rgba(255,255,255,0.045)" strokeWidth={1} {...NS} />
-      {[
-        [130, 'rgba(94,60,150,0.10)'],
-        [84, 'rgba(110,70,170,0.14)'],
-        [48, 'rgba(140,90,190,0.18)'],
-        [22, 'rgba(190,120,200,0.22)'],
-      ].map(([w, c]) => (
-        <path key={String(w)} d={m.landAllD} fill="none" stroke={String(c)} strokeWidth={Number(w)} strokeLinejoin="round" />
-      ))}
+      <path d={m.shallowD} fill="rgba(98,62,160,0.55)" fillRule="evenodd" />
+      <path d={m.vshallowD} fill="rgba(150,98,196,0.5)" fillRule="evenodd" />
+      <path d={m.landD} fill="none" stroke="rgba(206,130,206,0.26)" strokeWidth={7} strokeLinejoin="round" />
       {/* Tierra firme e islas */}
-      <path d={m.landAllD} fill="url(#lm-land)" stroke="#F69259" strokeOpacity={0.6} strokeWidth={1.6} strokeLinejoin="round" {...NS} />
+      <path d={m.landD} fill="url(#lm-land)" fillRule="evenodd" stroke="#F69259" strokeOpacity={0.6} strokeWidth={1.4} strokeLinejoin="round" {...NS} />
       <g clipPath="url(#lm-clip)">
         {m.regions.map((r) => (
           <path key={r.name} d={r.d} fill={r.fill} stroke="rgba(246,146,89,0.28)" strokeDasharray="6 5" strokeWidth={1} {...NS} />
         ))}
+        <path d={m.sandD} fill="rgba(246,176,112,0.5)" fillRule="evenodd" />
+        <path d={m.wetD} fill="rgba(94,214,224,0.3)" fillRule="evenodd" />
         <path d={m.swampD} fill="none" stroke="rgba(94,214,224,0.4)" strokeWidth={1} strokeLinecap="round" {...NS} />
-        <path className="lm-t1" d={m.contoursMinorD} fill="none" stroke="rgba(255,200,180,0.16)" strokeWidth={0.8} {...NS} />
-        <path d={m.contoursMajorD} fill="none" stroke="rgba(255,200,180,0.32)" strokeWidth={1.1} {...NS} />
-        <path className="lm-t1" d={m.streetsD} fill="none" stroke="rgba(251,241,245,0.2)" strokeWidth={0.8} {...NS} />
+        <path className="lm-t1" d={m.contoursMinorD} fill="none" stroke="rgba(255,200,180,0.17)" strokeWidth={0.8} {...NS} />
+        <path d={m.contoursMajorD} fill="none" stroke="rgba(255,200,180,0.34)" strokeWidth={1.1} {...NS} />
+        <path d={m.urbanD} fill="rgba(226,168,214,0.34)" fillRule="evenodd" />
+        <path className="lm-t2" d={m.urbanD} fill="url(#lm-blocks)" fillRule="evenodd" />
+        <path className="lm-t1" d={m.railD} fill="none" stroke="rgba(251,241,245,0.5)" strokeWidth={1.2} strokeDasharray="5 3" {...NS} />
       </g>
-      {/* Agua interior */}
-      <path d={m.lakeD} fill="#2B1A55" stroke="#F69259" strokeOpacity={0.4} strokeWidth={1.2} {...NS} />
-      <path d={m.riversD} fill="none" stroke="rgba(94,214,224,0.55)" strokeWidth={1.6} strokeLinecap="round" {...NS} />
-      {/* Red vial: carreteras secundarias, autopistas y puentes (con borde oscuro para leerse) */}
-      <path className="lm-t1" d={m.roadsD} fill="none" stroke="rgba(251,241,245,0.38)" strokeWidth={1.3} strokeLinecap="round" {...NS} />
-      <path d={m.highwaysD} fill="none" stroke="#1A0A22" strokeOpacity={0.7} strokeWidth={4.2} strokeLinecap="round" {...NS} />
-      <path d={m.highwaysD} fill="none" stroke="#F6B58A" strokeWidth={2} strokeLinecap="round" {...NS} />
-      <path d={m.keysRoadD} fill="none" stroke="#1A0A22" strokeOpacity={0.7} strokeWidth={4.2} strokeLinecap="round" {...NS} />
-      <path d={m.keysRoadD} fill="none" stroke="#F6B58A" strokeWidth={2} strokeLinecap="round" {...NS} />
-      <path d={m.bridgesD} fill="none" stroke="#1A0A22" strokeWidth={6} strokeLinecap="butt" {...NS} />
-      <path d={m.bridgesD} fill="none" stroke="#FFC857" strokeWidth={2.6} strokeLinecap="butt" {...NS} />
+      {/* Agua interior: lago y ríos */}
+      <path d={m.lakesD} fill="#2B1A55" fillRule="evenodd" stroke="rgba(94,214,224,0.55)" strokeWidth={0.9} {...NS} />
+      {/* Red vial: secundarias (LOD 1), autopistas de doble trazo, autopista de los cayos y puentes */}
+      <path className="lm-t1" d={m.minorRoadsD} fill="none" stroke="rgba(251,241,245,0.38)" strokeWidth={1} strokeLinecap="round" {...NS} />
+      <path d={m.highwaysD} fill="none" stroke="#1A0A22" strokeOpacity={0.75} strokeWidth={4.4} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+      <path d={m.highwaysD} fill="none" stroke="#F6B58A" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+      <path className="lm-t2" d={m.highwaysD} fill="none" stroke="#E14B7B" strokeWidth={0.7} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+      <path d={m.keysRoadD} fill="none" stroke="#1A0A22" strokeOpacity={0.75} strokeWidth={4.4} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+      <path d={m.keysRoadD} fill="none" stroke="#F6B58A" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" {...NS} />
+      <path d={m.bridgesD} fill="none" stroke="#1A0A22" strokeWidth={6.4} strokeLinecap="butt" {...NS} />
+      <path d={m.bridgesD} fill="none" stroke="#FFC857" strokeWidth={2.8} strokeLinecap="butt" {...NS} />
       {/* Rótulos con nivel de detalle (tamaño constante en pantalla) */}
       <g>
         {m.labels.map((l) => (
@@ -219,8 +243,39 @@ const LeonidaBase = memo(function LeonidaBase() {
   );
 });
 
+/** Calca de referencia (Modo Editor): imagen local alineada al lienzo, bajo los pines. */
+const RefOverlay = memo(function RefOverlay({ data: r }: { data: MapRefOverlay }) {
+  const cw = r.w * r.cropW;
+  return (
+    <g style={{ pointerEvents: 'none' }} opacity={r.opacity}>
+      <svg x={r.x} y={r.y} width={cw} height={r.h} viewBox={`0 0 ${r.cropW} 1`} preserveAspectRatio="none" overflow="hidden">
+        <image href={r.src} x={0} y={0} width={1} height={1} preserveAspectRatio="none" onError={r.onError} />
+      </svg>
+    </g>
+  );
+});
+
+/** Trazo en curso del trazador SVG: puntos, línea de vista previa y cierre opcional. */
+const TracerOverlay = memo(function TracerOverlay({ tracer }: { tracer: MapTracer }) {
+  const { points, closed } = tracer;
+  if (points.length === 0) return null;
+  const d = `M${points.map((p) => `${p[0]} ${p[1]}`).join('L')}${closed && points.length > 2 ? 'Z' : ''}`;
+  return (
+    <g style={{ pointerEvents: 'none' }}>
+      {closed && points.length > 2 && <path d={d} fill="rgba(94,214,224,0.18)" stroke="none" />}
+      <path d={d} fill="none" stroke="#1A0A22" strokeOpacity={0.8} strokeWidth={4} strokeLinejoin="round" {...NS} />
+      <path d={d} fill="none" stroke="#5ED6E0" strokeWidth={1.8} strokeLinejoin="round" {...NS} />
+      {points.map((p, i) => (
+        <g key={i} style={{ transform: pxPos(p[0], p[1]) }}>
+          <circle r={3.6} fill={i === 0 ? '#FFC857' : '#5ED6E0'} stroke="#1A0A22" strokeWidth={1.2} />
+        </g>
+      ))}
+    </g>
+  );
+});
+
 // ---- Componente ---------------------------------------------------------------------------------------------------
-export function MapCanvas({ ref, pins, selectedId, onSelect, onBackgroundClick, crosshair, editable, insets, ariaLabel, className = '' }: MapCanvasProps) {
+export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect, onBackgroundClick, crosshair, editable, insets, ariaLabel, className = '' }: MapCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const worldRef = useRef<SVGGElement>(null);
@@ -684,6 +739,8 @@ export function MapCanvas({ ref, pins, selectedId, onSelect, onBackgroundClick, 
         <style>{CSS}</style>
         <g ref={worldRef}>
           <LeonidaBase />
+          {refOverlay && <RefOverlay data={refOverlay} />}
+          {tracer && <TracerOverlay tracer={tracer} />}
           {crosshair && (
             <g data-cross style={{ transform: pxPos(crosshair.x, crosshair.y), pointerEvents: 'none' }}>
               <circle className="lm-pulse" r={14} fill="none" stroke="#FFC857" strokeWidth={2} />

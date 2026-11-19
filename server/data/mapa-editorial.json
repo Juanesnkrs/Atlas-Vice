@@ -16,8 +16,8 @@
     },
     "marker": {
       "region": "Vice-Dale County",
-      "coord_x": 780,
-      "coord_y": 470,
+      "coord_x": 617.6,
+      "coord_y": 388.2,
       "descripcion": "Metrópoli costera del sureste del plano; hub urbano de Leonida."
     },
     "confianza": "alta",
@@ -42,8 +42,8 @@
     },
     "marker": {
       "region": "Vice-Dale County",
-      "coord_x": 800,
-      "coord_y": 430,
+      "coord_x": 627.9,
+      "coord_y": 311.8,
       "descripcion": "Condado de Vice City; límites exactos sin confirmar."
     },
     "confianza": "media",
@@ -71,8 +71,8 @@
     },
     "marker": {
       "region": "Leonida Keys",
-      "coord_x": 700,
-      "coord_y": 645,
+      "coord_x": 532.5,
+      "coord_y": 619.4,
       "descripcion": "Cayos del extremo sur; se extienden hacia el este."
     },
     "confianza": "media",
@@ -99,8 +99,8 @@
     },
     "marker": {
       "region": "Grassrivers",
-      "coord_x": 300,
-      "coord_y": 500,
+      "coord_x": 499.3,
+      "coord_y": 541.3,
       "descripcion": "Humedales del suroeste del plano; ubicación aproximada."
     },
     "confianza": "media",
@@ -125,8 +125,8 @@
     },
     "marker": {
       "region": "Port Gellhorn",
-      "coord_x": 130,
-      "coord_y": 330,
+      "coord_x": 343.8,
+      "coord_y": 196.2,
       "descripcion": "Costa oeste del plano; litoral portuario."
     },
     "confianza": "media",
@@ -151,8 +151,8 @@
     },
     "marker": {
       "region": "Ambrosia",
-      "coord_x": 470,
-      "coord_y": 340,
+      "coord_x": 518.5,
+      "coord_y": 227.1,
       "descripcion": "Núcleo interior junto al Lake Leonida."
     },
     "confianza": "media",
@@ -180,8 +180,8 @@
     },
     "marker": {
       "region": "Mount Kalaga",
-      "coord_x": 500,
-      "coord_y": 80,
+      "coord_x": 487.6,
+      "coord_y": 156.9,
       "descripcion": "Parque nacional del límite norte del plano."
     },
     "confianza": "alta",
@@ -206,8 +206,8 @@
     },
     "marker": {
       "region": "Ambrosia",
-      "coord_x": 490,
-      "coord_y": 250,
+      "coord_x": 561.1,
+      "coord_y": 200.3,
       "descripcion": "Lago interior entre Ambrosia y el parque nacional."
     },
     "confianza": "media",
@@ -232,8 +232,8 @@
     },
     "marker": {
       "region": "Vice City",
-      "coord_x": 840,
-      "coord_y": 500,
+      "coord_x": 708.5,
+      "coord_y": 359.3,
       "descripcion": "Playa urbana en el litoral este de Vice City."
     },
     "confianza": "media",
@@ -258,8 +258,8 @@
     },
     "marker": {
       "region": "Port Gellhorn",
-      "coord_x": 140,
-      "coord_y": 350,
+      "coord_x": 391.7,
+      "coord_y": 266.4,
       "descripcion": "Motel en Port Gellhorn."
     },
     "confianza": "media",

@@ -174,19 +174,19 @@ const markerSlug = (s: string): string =>
 /** Los datos de ejemplo se escribieron para un lienzo anterior: se reubican sobre la cartografía de src/data/leonidaMap.ts. */
 const SEED_REGION_RENAME: Record<string, string> = { 'Vice Beach': 'Vice-Dale County', Downtown: 'Vice City' };
 const SEED_REGION_ANCHOR: Record<string, { from: [number, number]; to: [number, number] }> = {
-  'Vice Beach': { from: [765, 330], to: [800, 430] },
-  Downtown: { from: [610, 375], to: [770, 470] },
-  Grassrivers: { from: [250, 215], to: [300, 500] },
-  'Port Gellhorn': { from: [520, 175], to: [130, 330] },
-  Ambrosia: { from: [800, 205], to: [470, 340] },
-  'Ocean Beach': { from: [700, 520], to: [840, 500] },
-  'Leonida Keys': { from: [370, 650], to: [700, 645] },
+  'Vice Beach': { from: [765, 330], to: [627.9, 311.8] },
+  Downtown: { from: [610, 375], to: [617.6, 388.2] },
+  Grassrivers: { from: [250, 215], to: [499.3, 541.3] },
+  'Port Gellhorn': { from: [520, 175], to: [343.8, 196.2] },
+  Ambrosia: { from: [800, 205], to: [518.5, 227.1] },
+  'Ocean Beach': { from: [700, 520], to: [708.5, 359.3] },
+  'Leonida Keys': { from: [370, 650], to: [532.5, 619.4] },
 };
 const seedCoord = (region: string, x: number, y: number): { coord_x: number; coord_y: number } => {
   const a = SEED_REGION_ANCHOR[region];
   if (!a) return { coord_x: x, coord_y: y };
   const r2 = (v: number): number => Math.round(v * 100) / 100;
-  return { coord_x: r2(a.to[0] + (x - a.from[0]) * 0.35), coord_y: r2(a.to[1] + (y - a.from[1]) * 0.35) };
+  return { coord_x: r2(a.to[0] + (x - a.from[0]) * 0.2), coord_y: r2(a.to[1] + (y - a.from[1]) * 0.2) };
 };
 const mk = (
   n: number,

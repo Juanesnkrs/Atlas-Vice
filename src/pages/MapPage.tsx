@@ -1,12 +1,13 @@
 // P04 - Mapa interactivo de Leonida: motor SVG propio (MapCanvas) sobre cartografía vectorial original,
 // filtros combinados sincronizados con la URL, buscador instantáneo, ficha de marcador con check 100%
 // (P04.3), drawer de hilos (P07.3) y Modo Editor de coordenadas para ADMIN+.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { SunsetBanner } from '../components/layout/ViceShell';
 import { BottomSheet } from '../components/ui/BottomSheet';
-import { MapCanvas, type MapCanvasHandle, type MapPin } from '../components/ui/MapCanvas';
+import { MapCanvas, type MapCanvasHandle, type MapPin, type MapRefOverlay, type MapTracer } from '../components/ui/MapCanvas';
 import { PalmButton } from '../components/ui/PalmButton';
+import { REF_IMAGES } from '../data/leonidaMap';
 import {
   entityHref,
   entitySlug,
@@ -252,7 +253,154 @@ interface CreatePayload {
   titulo: string;
 }
 
+// ---- Herramientas del Modo Editor: calca de referencia y trazador SVG ------------------------------------------
+interface RefState {
+  on: boolean;
+  id: string;
+  /** 0-80 (%). */
+  opacity: number;
+  /** Multiplicador sobre el encuadre base de la imagen (centrado en ella). */
+  scale: number;
+  dx: number;
+  dy: number;
+}
+const REF_DEFAULT: RefState = { on: false, id: REF_IMAGES[0]!.id, opacity: 45, scale: 1, dx: 0, dy: 0 };
+
+type TraceMode = 'poly' | 'route';
+interface TraceState {
+  on: boolean;
+  mode: TraceMode;
+  pts: ReadonlyArray<readonly [number, number]>;
+}
+const TRACE_DEFAULT: TraceState = { on: false, mode: 'poly', pts: [] };
+
+/** Atributo `d` exacto del trazo: polígono cerrado (Z) o ruta abierta. */
+function traceD(t: TraceState): string {
+  if (t.pts.length === 0) return '';
+  const body = t.pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0]} ${p[1]}`).join(' ');
+  return t.mode === 'poly' && t.pts.length > 2 ? `${body} Z` : body;
+}
+
+const RANGE = 'h-11 w-full accent-[#F67E56]';
+const SMALL_BTN =
+  'min-h-11 rounded-xl border border-white/15 px-3 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold disabled:opacity-40';
+
+interface EditorToolsProps {
+  refState: RefState;
+  refFailed: boolean;
+  onRef: (next: RefState) => void;
+  trace: TraceState;
+  onTrace: (next: TraceState) => void;
+  onCopyD: () => void;
+}
+
+function EditorTools({ refState, refFailed, onRef, trace, onTrace, onCopyD }: EditorToolsProps) {
+  const set = (patch: Partial<RefState>) => onRef({ ...refState, ...patch });
+  const d = traceD(trace);
+  return (
+    <>
+      <fieldset className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-3">
+        <legend className="px-1 text-xs font-semibold uppercase tracking-widest text-vice-orange">Calca de referencia</legend>
+        <label className="flex min-h-11 items-center gap-2 font-semibold">
+          <input type="checkbox" checked={refState.on} onChange={(e) => set({ on: e.target.checked })} className="h-5 w-5 accent-[#F67E56]" />
+          Mostrar calca
+        </label>
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Imagen de referencia">
+          {REF_IMAGES.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              aria-pressed={refState.id === r.id}
+              onClick={() => set({ id: r.id, scale: 1, dx: 0, dy: 0 })}
+              className={`${SMALL_BTN} ${refState.id === r.id ? 'bg-vice-gold/20 text-vice-gold' : ''}`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+        <label className="flex flex-col text-xs">
+          Opacidad: {refState.opacity}%
+          <input type="range" min={0} max={80} step={1} value={refState.opacity} onChange={(e) => set({ opacity: Number(e.target.value) })} className={RANGE} />
+        </label>
+        <label className="flex flex-col text-xs">
+          Escala: ×{refState.scale.toFixed(3)}
+          <input type="range" min={0.5} max={1.6} step={0.005} value={refState.scale} onChange={(e) => set({ scale: Number(e.target.value) })} className={RANGE} />
+        </label>
+        <label className="flex flex-col text-xs">
+          Desplazamiento X: {refState.dx.toFixed(1)}
+          <input type="range" min={-250} max={250} step={0.5} value={refState.dx} onChange={(e) => set({ dx: Number(e.target.value) })} className={RANGE} />
+        </label>
+        <label className="flex flex-col text-xs">
+          Desplazamiento Y: {refState.dy.toFixed(1)}
+          <input type="range" min={-250} max={250} step={0.5} value={refState.dy} onChange={(e) => set({ dy: Number(e.target.value) })} className={RANGE} />
+        </label>
+        <button type="button" onClick={() => set({ scale: 1, dx: 0, dy: 0 })} className={SMALL_BTN}>
+          Restablecer alineación
+        </button>
+        {refState.on && refFailed && (
+          <p role="status" className="rounded-xl bg-vice-accent/20 px-3 py-2 text-xs font-semibold">
+            No se encontró la imagen. La carpeta <code>public/ref Leonida map/</code> solo existe en local (no se sube a git ni al build).
+          </p>
+        )}
+      </fieldset>
+
+      <fieldset className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-3">
+        <legend className="px-1 text-xs font-semibold uppercase tracking-widest text-vice-orange">Trazar SVG</legend>
+        <button
+          type="button"
+          aria-pressed={trace.on}
+          onClick={() => onTrace({ ...trace, on: !trace.on })}
+          className={`${SMALL_BTN} ${trace.on ? 'bg-vice-gold/20 text-vice-gold' : ''}`}
+        >
+          {trace.on ? 'Trazando: toca el mapa para añadir puntos' : 'Activar trazador'}
+        </button>
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Tipo de trazo">
+          <button
+            type="button"
+            aria-pressed={trace.mode === 'poly'}
+            onClick={() => onTrace({ ...trace, mode: 'poly' })}
+            className={`${SMALL_BTN} ${trace.mode === 'poly' ? 'bg-vice-gold/20 text-vice-gold' : ''}`}
+          >
+            Polígono cerrado
+          </button>
+          <button
+            type="button"
+            aria-pressed={trace.mode === 'route'}
+            onClick={() => onTrace({ ...trace, mode: 'route' })}
+            className={`${SMALL_BTN} ${trace.mode === 'route' ? 'bg-vice-gold/20 text-vice-gold' : ''}`}
+          >
+            Ruta abierta
+          </button>
+        </div>
+        <p className="text-xs text-vice-text/70">
+          {trace.pts.length} {trace.pts.length === 1 ? 'punto' : 'puntos'} · {trace.mode === 'poly' ? 'isla, bioma o zona' : 'carretera o río'}
+        </p>
+        <textarea
+          readOnly
+          rows={3}
+          value={d ? `d="${d}"` : ''}
+          placeholder='d="M …"'
+          aria-label="Atributo d del trazo"
+          className="glass w-full resize-none rounded-xl p-2 font-mono text-xs text-vice-text placeholder:text-vice-text/60"
+        />
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" disabled={trace.pts.length === 0} onClick={() => onTrace({ ...trace, pts: trace.pts.slice(0, -1) })} className={SMALL_BTN}>
+            Deshacer punto
+          </button>
+          <button type="button" disabled={trace.pts.length === 0} onClick={() => onTrace({ ...trace, pts: [] })} className={SMALL_BTN}>
+            Limpiar
+          </button>
+        </div>
+        <button type="button" disabled={trace.pts.length < 2} onClick={onCopyD} className={SMALL_BTN}>
+          Copiar d="M …"
+        </button>
+      </fieldset>
+    </>
+  );
+}
+
 interface EditorPanelProps {
+  extra: ReactNode;
   cross: { x: number; y: number } | null;
   selected: MapMarker | null;
   entities: ReadonlyArray<Entity>;
@@ -270,7 +418,7 @@ interface EditorPanelProps {
 const FIELD =
   'glass min-h-11 w-full rounded-xl px-3 text-sm text-vice-text placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold';
 
-function EditorPanel({ cross, selected, entities, moduleSlug, regions, nearestRegion, busy, status, onCreate, onMoveHere, onCopy, onClose }: EditorPanelProps) {
+function EditorPanel({ extra, cross, selected, entities, moduleSlug, regions, nearestRegion, busy, status, onCreate, onMoveHere, onCopy, onClose }: EditorPanelProps) {
   const [entityQuery, setEntityQuery] = useState('');
   const [picked, setPicked] = useState<Entity | null>(null);
   const [region, setRegion] = useState('');
@@ -336,6 +484,8 @@ function EditorPanel({ cross, selected, entities, moduleSlug, regions, nearestRe
           Copiar coordenadas
         </button>
       </div>
+
+      {extra}
 
       <div className="flex flex-col gap-2">
         <label className="font-semibold" htmlFor="ed-entity">
@@ -484,6 +634,9 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
   const [overrides, setOverrides] = useState<ReadonlyMap<string, { x: number; y: number }>>(new Map());
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
+  const [refState, setRefState] = useState<RefState>(REF_DEFAULT);
+  const [refFailed, setRefFailed] = useState(false);
+  const [trace, setTrace] = useState<TraceState>(TRACE_DEFAULT);
 
   const entitiesById = useMemo(() => new Map(data.entities.map((e) => [e.id, e])), [data.entities]);
   const modulesById = useMemo(() => new Map(data.modules.map((m) => [m.id, m])), [data.modules]);
@@ -730,10 +883,51 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
     setStatus({ ok, text: ok ? `Copiado: ${cross.x.toFixed(2)}, ${cross.y.toFixed(2)}` : 'No se pudo copiar al portapapeles.' });
   };
 
+  const copyTraceD = async () => {
+    const d = traceD(trace);
+    if (!d) return;
+    const ok = await copyText(`d="${d}"`);
+    setStatus({ ok, text: ok ? `Copiado d="…" con ${trace.pts.length} puntos` : 'No se pudo copiar al portapapeles.' });
+  };
+
+  const refOverlay = useMemo<MapRefOverlay | null>(() => {
+    if (!editor || !refState.on) return null;
+    const base = REF_IMAGES.find((r) => r.id === refState.id) ?? REF_IMAGES[0]!;
+    const w = base.w * refState.scale;
+    const h = base.h * refState.scale;
+    return {
+      src: base.src,
+      x: base.x + (base.w - w) / 2 + refState.dx,
+      y: base.y + (base.h - h) / 2 + refState.dy,
+      w,
+      h,
+      cropW: base.cropW,
+      opacity: refState.opacity / 100,
+      onError: () => setRefFailed(true),
+    };
+  }, [editor, refState]);
+  const tracer = useMemo<MapTracer | null>(
+    () => (editor && trace.pts.length > 0 ? { points: trace.pts, closed: trace.mode === 'poly' } : null),
+    [editor, trace],
+  );
+
   const moduleSlug = useCallback((moduleId: string): string => modulesById.get(moduleId)?.slug ?? 'catálogo', [modulesById]);
 
   const editorPanel = (
     <EditorPanel
+      extra={
+        <EditorTools
+          refState={refState}
+          refFailed={refFailed}
+          onRef={(next) => {
+            if (next.id !== refState.id) setRefFailed(false);
+            setRefState(next);
+          }}
+          trace={trace}
+          onTrace={setTrace}
+          onCopyD={() => void copyTraceD()}
+        />
+      }
       cross={cross}
       selected={selected}
       entities={data.entities}
@@ -748,6 +942,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       onClose={() => {
         setEditor(false);
         setCross(null);
+        setTrace((tr) => ({ ...tr, on: false }));
       }}
     />
   );
@@ -774,8 +969,8 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
 
   const insets = useMemo(() => ({ top: isDesktop ? 0 : MOBILE_CONTROLS_PX }), [isDesktop]);
   const editable = useMemo(
-    () => (editor && selected ? { pinId: selected.id, onMove: moveMarker } : undefined),
-    [editor, selected, moveMarker],
+    () => (editor && !trace.on && selected ? { pinId: selected.id, onMove: moveMarker } : undefined),
+    [editor, trace.on, selected, moveMarker],
   );
 
   return (
@@ -785,7 +980,9 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
         pins={pins}
         selectedId={selectedId}
         insets={insets}
-        crosshair={editor ? cross : null}
+        crosshair={editor && !trace.on ? cross : null}
+        refOverlay={refOverlay}
+        tracer={tracer}
         editable={editable}
         ariaLabel="Mapa de Leonida. Arrastra para mover, rueda, pellizco o botones para acercar."
         onSelect={(id) => {
@@ -793,7 +990,10 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           if (m) selectMarker(m);
         }}
         onBackgroundClick={(w) => {
-          if (editor) {
+          if (editor && trace.on) {
+            setTrace((tr) => ({ ...tr, pts: [...tr.pts, [Math.round(w.x * 10) / 10, Math.round(w.y * 10) / 10] as const] }));
+            setStatus(null);
+          } else if (editor) {
             setCross(w);
             setStatus(null);
           } else if (selectedId) deselect();
