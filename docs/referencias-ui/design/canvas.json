@@ -1,0 +1,93 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Forum.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "P07 · Foro",
+      "w": 1440,
+      "x": 1520,
+      "y": 1020
+    },
+    "Inspector.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "P05 · Inspector NUI",
+      "w": 1440,
+      "x": 0,
+      "y": 1020
+    },
+    "Main.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "P01/P02 · Split-Hero",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Map.dc.html": {
+      "h": 900,
+      "is_interactive": true,
+      "title": "P04 · Mapa de Leonida",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Mobile.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Móvil · Bottom Dock",
+      "w": 390,
+      "x": 470,
+      "y": 2040
+    },
+    "MobileHero.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Móvil · Acceso",
+      "w": 390,
+      "x": 0,
+      "y": 2040
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-17T00:40:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "noteOrder": [
+    "t1",
+    "n1"
+  ],
+  "notes": {
+    "n1": {
+      "fill": "pink",
+      "text": "Los datos de armas, vehículos, hilos y marcadores son ejemplos. Los artworks vienen de public/assets/. El mapa es un lienzo vectorial provisional.",
+      "w": 420,
+      "x": 900,
+      "y": 2060
+    },
+    "t1": {
+      "kind": "title1",
+      "maxW": 2960,
+      "text": "ATLAS VICE · Vice NUI",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Map.dc.html",
+    "Inspector.dc.html",
+    "Forum.dc.html",
+    "MobileHero.dc.html",
+    "Mobile.dc.html"
+  ],
+  "pages": [],
+  "title": "Atlas Vice NUI"
+}

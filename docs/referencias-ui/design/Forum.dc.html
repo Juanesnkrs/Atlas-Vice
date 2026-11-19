@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Foro Atlas Vice</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@600;700&amp;family=Poppins:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#2E1A47;font-family:'Poppins',system-ui,sans-serif}
+button{font-family:inherit;cursor:pointer}
+textarea{font-family:inherit}
+::placeholder{color:rgba(255,255,255,.64)}
+:focus-visible{outline:2px solid #FFC09A;outline-offset:2px}
+.hv:hover{filter:brightness(1.1)}
+.glass{background:rgba(20,14,36,.78);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid rgba(246,146,89,.25)}
+.pbtn{position:relative;overflow:hidden;background:linear-gradient(90deg,#E1307E,#F67E56);border:1px solid rgba(255,255,255,.28);color:#1A0A22;font-weight:700;text-decoration:none}
+.pbtn>span{position:relative}
+*{scrollbar-width:thin;scrollbar-color:#B8386F rgba(20,14,36,.7)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:rgba(20,14,36,.7);border-radius:5px}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#E1307E,#F67E56);border-radius:5px;border:2px solid rgba(20,14,36,.7)}
+</style>
+</helmet>
+<div style="position:relative;width:1440px;height:900px;overflow:hidden;background:linear-gradient(180deg,#2E1A47 0%,#7B2C6F 55%,#E14B7B 100%);color:#FBF1F5;font-family:'Poppins',system-ui,sans-serif">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<linearGradient id="sunG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#E1307E"></stop><stop offset="1" stop-color="#F69259"></stop></linearGradient>
+<linearGradient id="sunH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#E1307E"></stop><stop offset="1" stop-color="#F67E56"></stop></linearGradient>
+<clipPath id="txtclip"><text x="210" y="92" text-anchor="middle" font-family="Jost,sans-serif" font-weight="700" font-size="74" textLength="404" lengthAdjust="spacingAndGlyphs">ATLAS VICE</text></clipPath>
+<symbol id="palm" viewBox="0 0 130 400">
+<path d="M60 400 C57 300 58 200 63 72 L67 72 C62 200 64 300 66 400 Z" fill="currentColor"></path>
+<g transform="translate(65 72)" fill="currentColor">
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="rotate(-45)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="rotate(-12)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="rotate(22)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="rotate(-80)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="scale(-1 1) rotate(-45)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="scale(-1 1) rotate(-12)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="scale(-1 1) rotate(22)"></path>
+<path d="M0 0 C16 -14 42 -15 60 6 C42 -3 20 -4 0 0 Z" transform="scale(-1 1) rotate(-80)"></path>
+</g>
+</symbol>
+<symbol id="sky" viewBox="0 0 1000 80" preserveAspectRatio="none">
+<path fill="currentColor" d="M0 80 V52 H30 V36 H48 V52 H70 V22 H92 V52 H110 V40 H140 V14 H150 V6 H156 V14 H166 V44 H196 V30 H220 V50 H250 V26 H262 V18 H282 V50 H312 V38 H340 V54 H372 V30 H392 V10 H414 V30 H434 V46 H466 V34 H488 V52 H520 V20 H536 V12 H552 V20 H566 V48 H600 V36 H628 V52 H660 V28 H684 V50 H716 V40 H744 V18 H758 V8 H770 V18 H786 V46 H820 V32 H846 V52 H878 V38 H904 V54 H940 V42 H970 V56 H1000 V80 Z"></path>
+</symbol>
+<symbol id="logo" viewBox="0 0 420 150">
+<g clip-path="url(#txtclip)">
+<rect x="0" y="20" width="420" height="80" fill="url(#sunG)"></rect>
+<g fill="#2E1A47" opacity=".5">
+<use href="#palm" x="4" y="12" width="40" height="124"></use><use href="#palm" x="62" y="18" width="36" height="112"></use><use href="#palm" x="118" y="10" width="40" height="124"></use><use href="#palm" x="176" y="18" width="36" height="112"></use><use href="#palm" x="232" y="12" width="40" height="124"></use><use href="#palm" x="290" y="18" width="36" height="112"></use><use href="#palm" x="344" y="10" width="40" height="124"></use><use href="#palm" x="384" y="18" width="36" height="112"></use>
+</g>
+</g>
+<text x="210" y="92" text-anchor="middle" font-family="Jost,sans-serif" font-weight="700" font-size="74" textLength="404" lengthAdjust="spacingAndGlyphs" fill="none" stroke="#FFFFFF" stroke-opacity=".9" stroke-width="1.3">ATLAS VICE</text>
+<use href="#sky" x="14" y="104" width="392" height="34" style="color:#5A2A73"></use>
+<rect x="14" y="138" width="392" height="2.5" rx="1.2" fill="url(#sunH)"></rect>
+</symbol>
+</defs>
+</svg>
+<svg aria-hidden="true" viewBox="0 0 1000 80" preserveAspectRatio="none" style="position:absolute;left:0;bottom:0;width:1440px;height:190px;color:#2A1240;opacity:.55"><use href="#sky"></use></svg>
+<svg aria-hidden="true" style="position:absolute;left:10px;bottom:20px;width:120px;height:420px;color:#2A1240;opacity:.45"><use href="#palm"></use></svg>
+<svg aria-hidden="true" style="position:absolute;left:1320px;bottom:20px;width:120px;height:420px;color:#2A1240;opacity:.45"><use href="#palm"></use></svg>
+<svg aria-hidden="true" viewBox="0 0 1440 900" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><polygon points="1040,0 1200,0 760,900 600,900" fill="rgba(246,146,89,.09)"></polygon><line x1="1040" y1="0" x2="600" y2="900" stroke="#F67E56" stroke-opacity=".3" stroke-width="1.5"></line></svg>
+
+<header style="position:absolute;left:32px;right:32px;top:24px;display:flex;align-items:center;gap:24px;height:60px">
+<svg viewBox="0 0 420 150" width="168" height="60" role="img" aria-label="ATLAS VICE" style="flex:none"><use href="#logo"></use></svg>
+<h1 style="margin:0;font-family:'Jost',sans-serif;font-weight:700;font-size:26px;letter-spacing:.04em;color:#FFC09A;white-space:nowrap">COMUNIDAD</h1>
+<div role="tablist" aria-label="Categorías del foro" style="display:flex;gap:8px">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<button role="tab" aria-selected="{{t.sel}}" onClick="{{t.pick}}" style="height:44px;padding:0 20px;border-radius:22px;border:1px solid rgba(246,146,89,.3);background:{{t.bg}};color:{{t.fg}};font-size:14px;font-weight:700">{{t.name}}</button>
+</sc-for>
+</div>
+<div style="flex:1"></div>
+<button class="pbtn hv" style="height:48px;padding:0 26px;border-radius:24px;font-size:16px">
+<svg aria-hidden="true" viewBox="0 0 140 48" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;color:#2E1A47;opacity:.28"><use href="#palm" x="-6" y="-20" width="36" height="120"></use><use href="#palm" x="52" y="-8" width="30" height="96"></use><use href="#palm" x="100" y="-22" width="38" height="124"></use></svg>
+<span>+ HILO</span></button>
+</header>
+
+<section class="glass" aria-label="Lista de hilos" style="position:absolute;left:32px;top:108px;width:500px;height:668px;box-sizing:border-box;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:16px 20px 10px;font-size:12px;font-weight:600;letter-spacing:.1em;color:rgba(251,241,245,.9)">HILOS · {{count}}</div>
+<div style="flex:1;overflow-y:auto;padding:0 10px 10px;display:flex;flex-direction:column;gap:6px">
+<sc-for list="{{threads}}" as="th" hint-placeholder-count="5">
+<button onClick="{{th.pick}}" aria-current="{{th.sel}}" style="text-align:left;width:100%;box-sizing:border-box;padding:14px 14px;border-radius:14px;border:1px solid {{th.border}};background:{{th.bg}};color:#fff">
+<span style="display:inline-block;padding:2px 10px;border-radius:10px;background:{{th.tagBg}};font-size:11px;font-weight:600;letter-spacing:.06em;color:#fff">{{th.cat}}</span>
+<span style="display:block;margin-top:8px;font-size:15px;font-weight:500;line-height:1.35">{{th.title}}</span>
+<span style="display:flex;gap:14px;margin-top:8px;font-size:12px;color:rgba(251,241,245,.82)"><span style="color:#FFC09A;font-weight:600">▲ {{th.votes}}</span><span>{{th.replies}} respuestas</span><span>{{th.author}}</span><span>{{th.when}}</span></span>
+</button>
+</sc-for>
+</div>
+</section>
+
+<section class="glass" aria-label="Hilo activo" style="position:absolute;left:556px;top:108px;right:32px;height:668px;box-sizing:border-box;border-radius:20px;overflow:hidden;display:flex;flex-direction:column">
+<div style="padding:22px 28px 16px">
+<div style="display:flex;gap:8px;align-items:center">
+<span style="padding:2px 10px;border-radius:10px;background:{{cur.tagBg}};font-size:11px;font-weight:600;letter-spacing:.06em">{{cur.cat}}</span>
+<sc-if value="{{cur.spoiler}}" hint-placeholder-val="{{true}}"><span style="padding:2px 10px;border-radius:10px;background:#FFD166;color:#1A0A22;font-size:11px;font-weight:700;letter-spacing:.06em">SPOILER</span></sc-if>
+<span style="margin-left:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;color:rgba(251,241,245,.7)">categoria = '{{cur.dbCat}}'</span>
+</div>
+<h2 style="margin:10px 0 0;font-family:'Jost',sans-serif;font-weight:700;font-size:28px;line-height:1.2">{{cur.title}}</h2>
+<div style="display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:rgba(251,241,245,.85)">
+<span style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:14px;background:{{cur.avatar}};color:#1A0A22;font-weight:700;font-size:13px">{{cur.initial}}</span>
+<span style="font-weight:500;color:#fff">{{cur.author}}</span><span>· {{cur.when}}</span>
+<button onClick="{{cur.vote}}" aria-pressed="{{cur.voted}}" style="margin-left:auto;min-height:44px;padding:0 16px;border-radius:22px;border:1px solid {{cur.voteBorder}};background:{{cur.voteBg}};color:#fff;font-size:14px;font-weight:600">▲ {{cur.votes}}</button>
+</div>
+</div>
+<div style="flex:1;overflow-y:auto;padding:0 28px 12px">
+<div style="position:relative">
+<p style="margin:0;font-size:15px;line-height:1.65;color:#FBF1F5;filter:{{cur.blur}}">{{cur.body}}</p>
+<sc-if value="{{cur.hidden}}" hint-placeholder-val="{{false}}">
+<button onClick="{{revealSpoiler}}" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);min-height:44px;padding:0 22px;border-radius:22px;border:1px solid rgba(246,146,89,.5);background:rgba(20,14,36,.92);color:#fff;font-size:14px;font-weight:600">Mostrar spoiler</button>
+</sc-if>
+</div>
+<h3 style="margin:24px 0 4px;font-size:12px;font-weight:600;letter-spacing:.1em;color:rgba(251,241,245,.9)">RESPUESTAS · {{cur.replyCount}}</h3>
+<sc-for list="{{cur.replies}}" as="r" hint-placeholder-count="3">
+<div style="display:flex;gap:12px;margin:14px 0 0 {{r.indent}}px">
+<span style="flex:none;display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:16px;background:{{r.avatar}};color:#1A0A22;font-weight:700;font-size:14px">{{r.initial}}</span>
+<div style="flex:1;min-width:0">
+<div style="font-size:13px;color:rgba(251,241,245,.82)"><span style="font-weight:600;color:#fff">{{r.user}}</span> · {{r.when}}</div>
+<p style="margin:4px 0 0;font-size:14px;line-height:1.55;color:#FBF1F5">{{r.text}}</p>
+<button onClick="{{r.vote}}" aria-pressed="{{r.voted}}" style="margin-top:2px;min-height:44px;padding:0 12px 0 0;border:0;background:none;color:{{r.color}};font-size:13px;font-weight:600">▲ {{r.votes}}</button>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="padding:14px 28px 18px;border-top:1px solid rgba(246,146,89,.25);display:flex;gap:12px;align-items:flex-end">
+<textarea aria-label="Respuesta rápida" rows="2" placeholder="Caja de respuesta rápida…" style="flex:1;box-sizing:border-box;resize:none;padding:12px 16px;border-radius:16px;border:1px solid rgba(246,146,89,.3);background:rgba(255,255,255,.07);color:#fff;font-size:14px"></textarea>
+<button class="pbtn hv" style="height:52px;padding:0 24px;border-radius:26px;font-size:15px">
+<svg aria-hidden="true" viewBox="0 0 120 52" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%;color:#2E1A47;opacity:.28"><use href="#palm" x="-6" y="-22" width="38" height="126"></use><use href="#palm" x="44" y="-8" width="32" height="104"></use><use href="#palm" x="86" y="-24" width="40" height="130"></use></svg>
+<span>Responder</span></button>
+<a href="#discord" class="glass hv" style="display:flex;align-items:center;gap:8px;height:52px;box-sizing:border-box;padding:0 18px;border-radius:26px;color:#fff;font-size:13px;font-weight:600;letter-spacing:.04em;text-decoration:none;white-space:nowrap"><svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#fff" stroke-width="1.8"><rect x="2.5" y="5" width="19" height="13" rx="5"></rect><circle cx="9" cy="11.5" r="1.3" fill="#fff"></circle><circle cx="15" cy="11.5" r="1.3" fill="#fff"></circle></svg>DISCORD OFICIAL</a>
+</div>
+</section>
+
+<nav aria-label="Navegación principal" class="glass" style="position:absolute;left:50%;bottom:20px;transform:translateX(-50%);height:72px;box-sizing:border-box;padding:0 12px;border-radius:36px;display:flex;align-items:center;gap:6px">
+<a href="Map.dc.html" class="hv" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:108px;height:56px;border-radius:28px;color:#FBF1F5;font-size:11px;font-weight:500;text-decoration:none">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FBF1F5" stroke-width="1.9"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"></path></svg>Mapa</a>
+<a href="Inspector.dc.html" class="hv" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:108px;height:56px;border-radius:28px;color:#FBF1F5;font-size:11px;font-weight:500;text-decoration:none">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#FBF1F5" stroke-width="1.9"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"></rect><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"></rect><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"></rect></svg>Catálogo</a>
+<a href="Forum.dc.html" aria-current="page" class="pbtn" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:108px;height:56px;border-radius:28px;font-size:11px">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#1A0A22" stroke-width="2" style="position:relative"><path d="M4 5h16v11H9l-5 4V5z"></path></svg><span>Foro</span></a>
+<button aria-disabled="true" title="P06 · Centro de aportes" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;width:108px;height:56px;border:0;border-radius:28px;background:none;color:rgba(251,241,245,.75);font-size:11px;font-weight:500">
+<svg aria-hidden="true" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="rgba(251,241,245,.75)" stroke-width="1.9"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 8v8M8 12h8"></path></svg>Aportar</button>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { cat: 'todos', active: 't1', voted: {}, revealed: {} };
+  }
+  renderVals() {
+    const label = { 'General': 'GENERAL', 'Guias/Ayuda': 'GUÍAS / AYUDA', 'Secretos': 'SECRETOS', 'Crews': 'CREWS' };
+    const colors = { 'General': 'rgba(255,255,255,.2)', 'Guias/Ayuda': 'rgba(94,214,224,.45)', 'Secretos': 'rgba(183,156,255,.5)', 'Crews': 'rgba(255,200,87,.45)' };
+    const avatars = ['#FF9CC4', '#8FE3EC', '#CDBBFF', '#FFD98A', '#A7EEBF'];
+    const raw = [
+      { id: 't1', cat: 'Secretos', title: 'OVNI en la costa oeste: ¿alguien más lo vio?', author: 'nightdriver', when: 'hace 2 h', votes: 142, spoiler: true,
+        body: 'Estaba recorriendo la costa al anochecer y cruzó una luz que no coincide con ningún helicóptero del catálogo. Dejo la ubicación aproximada en el mapa y una captura. Si alguien puede confirmar el horario, lo añadimos como evento.',
+        replies: [
+          { id: 'r1', user: 'palmera_91', when: 'hace 1 h', text: 'Lo vi también, justo después de que cae el sol. Dura unos segundos.', votes: 24, depth: 0 },
+          { id: 'r2', user: 'nightdriver', when: 'hace 1 h', text: 'Perfecto, entonces anoto el horario y lo subo como aporte.', votes: 9, depth: 1 },
+          { id: 'r3', user: 'coco_loco', when: 'hace 40 min', text: '¿Puedes marcar el pin exacto? Quiero comprobarlo esta noche.', votes: 6, depth: 0 }
+        ] },
+      { id: 't2', cat: 'Guias/Ayuda', title: 'Mejor ruta para completar los coleccionables del Sector A', author: 'ruta_rapida', when: 'hace 5 h', votes: 89, spoiler: false,
+        body: 'Armé una ruta circular que cubre todos los pines del Sector A sin repetir caminos. Empieza en el puerto, sigue la costa y termina junto a la tienda. Dime si ves atajos mejores.',
+        replies: [
+          { id: 'r4', user: 'maps_nerd', when: 'hace 4 h', text: 'Cambia el tercer punto por el de la plaza, ahorras casi un minuto.', votes: 15, depth: 0 },
+          { id: 'r5', user: 'ruta_rapida', when: 'hace 3 h', text: 'Buen punto, actualizo la guía.', votes: 4, depth: 1 }
+        ] },
+      { id: 't3', cat: 'Crews', title: 'Busco crew para el lanzamiento', author: 'miami_kid', when: 'ayer', votes: 56, spoiler: false,
+        body: 'Somos cuatro y buscamos dos más para explorar juntos el primer fin de semana. Hablamos en español, buen rollo y sin prisas.',
+        replies: [
+          { id: 'r6', user: 'flamingo_22', when: 'ayer', text: 'Me apunto. ¿Tenéis canal en el Discord oficial?', votes: 7, depth: 0 }
+        ] },
+      { id: 't4', cat: 'Guias/Ayuda', title: '¿Cómo sincronizo mi progreso con Discord?', author: 'novato_vc', when: 'ayer', votes: 31, spoiler: false,
+        body: 'Entré como invitado y ya llevo varios coleccionables marcados. Si inicio sesión con Discord, ¿se conserva ese avance?',
+        replies: [
+          { id: 'r7', user: 'admin_vice', when: 'ayer', text: 'Sí. Al iniciar sesión se fusiona el avance local con el de tu cuenta.', votes: 38, depth: 0 }
+        ] },
+      { id: 't5', cat: 'Secretos', title: 'Teoría: el cocodrilo del arte oficial es un guiño', author: 'lore_hunter', when: 'hace 2 d', votes: 77, spoiler: true,
+        body: 'El cocodrilo con cóctel aparece en varios artes distintos. Creo que anticipa una misión o un coleccionable. Dejo mis capturas para comparar.',
+        replies: [
+          { id: 'r8', user: 'sunset_88', when: 'hace 2 d', text: 'Ya está en el catálogo como coleccionable de ejemplo. Falta confirmar ubicación.', votes: 12, depth: 0 }
+        ] },
+      { id: 't6', cat: 'General', title: 'Bienvenida y reglas de la comunidad', author: 'admin_vice', when: 'hace 1 sem', votes: 210, spoiler: false,
+        body: 'Respeta a los demás, marca los spoilers y usa la categoría adecuada. Los aportes de mapa pasan por moderación antes de publicarse.',
+        replies: [
+          { id: 'r9', user: 'palmera_91', when: 'hace 1 sem', text: 'Gracias por las reglas claras.', votes: 18, depth: 0 }
+        ] }
+    ];
+    const voted = this.state.voted;
+    const revealed = this.state.revealed;
+    const tabsDef = [['todos', 'Todos'], ['Guias/Ayuda', 'Guías / Ayuda'], ['Secretos', 'Secretos'], ['Crews', 'Crews']];
+    const catNow = this.state.cat;
+    const list = raw.filter((t) => catNow === 'todos' || t.cat === catNow);
+    const activeId = list.some((t) => t.id === this.state.active) ? this.state.active : (list[0] ? list[0].id : null);
+    const found = list.find((t) => t.id === activeId);
+    const pad = (s) => avatars[(s.charCodeAt(0) + s.length) % avatars.length];
+    const threads = list.map((t) => {
+      const sel = t.id === activeId;
+      const bonus = voted[t.id] ? 1 : 0;
+      return {
+        cat: label[t.cat],
+        tagBg: colors[t.cat],
+        title: t.title,
+        author: t.author,
+        when: t.when,
+        votes: t.votes + bonus,
+        replies: t.replies.length,
+        sel: sel,
+        bg: sel ? 'rgba(246,126,86,.2)' : 'rgba(255,255,255,.04)',
+        border: sel ? 'rgba(246,146,89,.75)' : 'rgba(246,146,89,.15)',
+        pick: () => this.setState({ active: t.id })
+      };
+    });
+    let cur = { replies: [], replyCount: 0 };
+    if (found) {
+      const hid = found.spoiler && !revealed[found.id];
+      const v = !!voted[found.id];
+      cur = {
+        cat: label[found.cat],
+        dbCat: found.cat,
+        tagBg: colors[found.cat],
+        spoiler: found.spoiler,
+        title: found.title,
+        author: found.author,
+        initial: found.author.charAt(0).toUpperCase(),
+        avatar: pad(found.author),
+        when: found.when,
+        votes: found.votes + (v ? 1 : 0),
+        voted: v,
+        voteBg: v ? 'rgba(246,126,86,.35)' : 'rgba(255,255,255,.07)',
+        voteBorder: v ? '#F67E56' : 'rgba(246,146,89,.3)',
+        vote: () => this.setState({ voted: Object.assign({}, voted, { [found.id]: !v }) }),
+        body: found.body,
+        hidden: hid,
+        blur: hid ? 'blur(9px)' : 'none',
+        replyCount: found.replies.length,
+        replies: found.replies.map((r) => {
+          const rv = !!voted[r.id];
+          return {
+            user: r.user,
+            initial: r.user.charAt(0).toUpperCase(),
+            avatar: pad(r.user),
+            when: r.when,
+            text: r.text,
+            indent: r.depth * 44,
+            votes: r.votes + (rv ? 1 : 0),
+            voted: rv,
+            color: rv ? '#FFC09A' : 'rgba(251,241,245,.85)',
+            vote: () => this.setState({ voted: Object.assign({}, voted, { [r.id]: !rv }) })
+          };
+        })
+      };
+    }
+    const on = 'linear-gradient(90deg,#E1307E,#F67E56)';
+    return {
+      tabs: tabsDef.map((d) => ({
+        name: d[1],
+        sel: d[0] === catNow,
+        bg: d[0] === catNow ? on : 'rgba(255,255,255,.07)',
+        fg: d[0] === catNow ? '#1A0A22' : '#FBF1F5',
+        pick: () => this.setState({ cat: d[0] })
+      })),
+      threads: threads,
+      count: list.length,
+      cur: cur,
+      revealSpoiler: () => this.setState({ revealed: Object.assign({}, revealed, { [activeId]: true }) })
+    };
+  }
+}
+</script>
+</body>
+</html>

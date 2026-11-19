@@ -1,30 +1,107 @@
 // =============================================================================
-// ATLAS VICE - Store de sesión (Invitado / Email / Discord)
-// Contiene también el cliente Supabase tipado: el árbol de carpetas aprobado no
-// define un `src/lib/`, por lo que el cliente vive junto a la capa de sesión.
+// LEONIDAPP - Store de sesión (Invitado + sesión por cookie HttpOnly).
+// El token de sesión vive SOLO en una cookie HttpOnly emitida por la API Fastify:
+// el cliente nunca lo ve ni lo guarda (nada de tokens en localStorage). Aquí solo se
+// persiste la preferencia "Continuar como Invitado" (un booleano) en IndexedDB.
+// Contiene también el cliente HTTP de la API (`apiFetch`): el árbol de carpetas
+// aprobado no define un `src/lib/`, por lo que vive junto a la capa de sesión.
 // =============================================================================
-import { createClient, type Session, type SupabaseClient, type User } from '@supabase/supabase-js';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
+import { del, get as idbGet, set as idbSet } from 'idb-keyval';
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
-import type { Database, Profile } from '../types/database';
+import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
+import type { Profile } from '../types/database';
 
-// ---- Cliente Supabase -------------------------------------------------------
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+// ---- Deep link nativo `leonidapp://auth/callback?code=...` ---------------------
+let deepLinkBound = false;
 
-/** `null` cuando faltan las variables de entorno: la app opera solo en modo Invitado. */
-export const supabase: SupabaseClient<Database> | null =
-  SUPABASE_URL && SUPABASE_ANON_KEY
-    ? createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
-        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+/** Extrae el código efímero de `leonidapp://auth/callback?code=...`; `null` si no coincide. */
+export function parseAuthCallback(url: string): string | null {
+  if (!url.startsWith('leonidapp://auth/callback')) return null;
+  const q = url.indexOf('?');
+  const code = q === -1 ? null : new URLSearchParams(url.slice(q + 1)).get('code');
+  return code !== null && code !== '' ? code : null;
+}
+
+/**
+ * Escucha `appUrlOpen` (plugin nativo App de Capacitor) y canjea el código con `completeNativeLogin`.
+ * Se registra una sola vez y solo en plataformas nativas; si el plugin nativo no está instalado, no hace nada.
+ */
+function bindNativeDeepLink(complete: (code: string) => Promise<unknown>): void {
+  if (deepLinkBound || !Capacitor.isNativePlatform()) return;
+  deepLinkBound = true;
+  try {
+    CapacitorApp
+      .addListener('appUrlOpen', (e) => {
+        const code = parseAuthCallback(e.url);
+        if (code !== null) void complete(code);
       })
-    : null;
+      .catch(() => undefined);
+  } catch {
+    // Plugin nativo no disponible: el login por deep link queda inactivo.
+  }
+}
 
-export const isSupabaseConfigured = supabase !== null;
+// ---- Cliente HTTP de la API --------------------------------------------------
+export const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/+$/, '');
+
+/** `false` cuando falta VITE_API_URL: la app opera solo en modo Invitado / datos semilla. */
+export const isApiConfigured = API_URL !== '';
+
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+export async function apiFetch<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
+  if (!isApiConfigured) throw new ApiError(0, 'API no configurada (VITE_API_URL).');
+  const { json, headers, ...rest } = init;
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...rest,
+      credentials: 'include',
+      headers: { accept: 'application/json', ...(json !== undefined ? { 'content-type': 'application/json' } : {}), ...headers },
+      ...(json !== undefined ? { body: JSON.stringify(json) } : {}),
+    });
+  } catch {
+    throw new ApiError(0, 'Sin conexión con el servidor');
+  }
+  if (res.status === 204) return undefined as T;
+  const data: unknown = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = (data as { error?: string } | null)?.error ?? `Error ${res.status}`;
+    throw new ApiError(res.status, msg);
+  }
+  return data as T;
+}
 
 // ---- Tipos ------------------------------------------------------------------
 export type AuthStatus = 'idle' | 'loading' | 'guest' | 'authenticated';
-export type AuthProviderKind = 'guest' | 'email' | 'discord';
+export type AuthProviderKind = 'guest' | 'google' | 'discord' | 'apple' | 'magic-link';
+export type OAuthProvider = 'google' | 'discord' | 'apple';
+export type Role = 'USER' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
+
+const ROLE_RANK: Record<Role, number> = { USER: 0, MODERATOR: 1, ADMIN: 2, SUPER_ADMIN: 3 };
+
+export interface SessionUser {
+  id: string;
+  email: string | null;
+}
+
+interface ApiUser {
+  id: string;
+  username: string;
+  avatar_url: string | null;
+  discord_id: string | null;
+  rol: Role;
+  email: string | null;
+  created_at?: string;
+}
 
 interface AuthResult {
   ok: boolean;
@@ -34,107 +111,116 @@ interface AuthResult {
 interface AuthState {
   status: AuthStatus;
   provider: AuthProviderKind | null;
-  session: Session | null;
-  user: User | null;
+  user: SessionUser | null;
+  /** Perfil con la forma del DER (`rol` colapsado a USER | ADMIN para la UI existente). */
   profile: Profile | null;
+  /** Rol real del servidor (USER | MODERATOR | ADMIN | SUPER_ADMIN). Solo informativo: el servidor decide. */
+  role: Role | null;
   /** Elección persistida de "Continuar como Invitado" (RF-01 / HU-01). */
   guestMode: boolean;
   error: string | null;
 
   init: () => Promise<void>;
   continueAsGuest: () => void;
-  signInWithEmail: (email: string, password: string) => Promise<AuthResult>;
-  signUpWithEmail: (email: string, password: string) => Promise<AuthResult>;
+  /** Redirige al flujo OAuth2 + PKCE del servidor (Google / Discord / Apple). */
+  signInWithProvider: (provider: OAuthProvider, next?: string) => Promise<AuthResult>;
+  requestMagicLink: (email: string, next?: string) => Promise<AuthResult>;
+  /** Canjea el código efímero recibido en `leonidapp://auth/callback?code=...`. */
+  completeNativeLogin: (code: string) => Promise<AuthResult>;
+  /** @deprecated Sin contraseñas: envía un Magic Link. Se conserva por compatibilidad con la UI. */
+  signInWithEmail: (email: string, _password?: string) => Promise<AuthResult>;
+  /** @deprecated Sin contraseñas: envía un Magic Link. */
+  signUpWithEmail: (email: string, _password?: string) => Promise<AuthResult>;
+  /** @deprecated Usar signInWithProvider('discord'). */
   signInWithDiscord: () => Promise<AuthResult>;
-  /** P02.2 - Envío de enlace de recuperación. */
+  /** @deprecated Sin contraseñas: envía un Magic Link. */
   resetPassword: (email: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   isAdmin: () => boolean;
+  hasRole: (min: Role) => boolean;
 }
 
-const NOT_CONFIGURED = 'Supabase no está configurado (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY).';
-
-const resolveProvider = (user: User | null): AuthProviderKind | null => {
-  if (!user) return null;
-  return user.app_metadata?.provider === 'discord' ? 'discord' : 'email';
+const idbStorage: StateStorage = {
+  getItem: async (name) => (await idbGet<string>(name)) ?? null,
+  setItem: async (name, value) => {
+    await idbSet(name, value);
+  },
+  removeItem: async (name) => {
+    await del(name);
+  },
 };
 
-const redirectUrl = (): string | undefined =>
-  typeof window !== 'undefined' ? window.location.origin : undefined;
+const toProfile = (u: ApiUser): Profile => ({
+  id: u.id,
+  username: u.username,
+  avatar_url: u.avatar_url,
+  discord_id: u.discord_id,
+  rol: ROLE_RANK[u.rol] >= ROLE_RANK.ADMIN ? 'ADMIN' : 'USER',
+  created_at: u.created_at ?? new Date(0).toISOString(),
+});
 
-let authListenerAttached = false;
+const messageOf = (err: unknown): string => (err instanceof Error ? err.message : 'Error desconocido');
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => {
-      const applySession = (session: Session | null): void => {
-        const user = session?.user ?? null;
-        if (user) {
+      const applyUser = (u: ApiUser | null): void => {
+        if (u) {
           set({
-            session,
-            user,
-            provider: resolveProvider(user),
+            user: { id: u.id, email: u.email },
+            profile: toProfile(u),
+            role: u.rol,
+            provider: null,
             status: 'authenticated',
             guestMode: false,
             error: null,
           });
-          void get().refreshProfile();
         } else {
-          set({
-            session: null,
-            user: null,
-            profile: null,
-            provider: get().guestMode ? 'guest' : null,
-            status: get().guestMode ? 'guest' : 'idle',
-          });
+          const guest = get().guestMode;
+          set({ user: null, profile: null, role: null, provider: guest ? 'guest' : null, status: guest ? 'guest' : 'idle' });
         }
       };
 
-      const run = async (
-        fn: (client: SupabaseClient<Database>) => Promise<{ error: { message: string } | null }>,
-      ): Promise<AuthResult> => {
-        if (!supabase) {
-          set({ error: NOT_CONFIGURED });
-          return { ok: false, error: NOT_CONFIGURED };
-        }
+      const sendMagic = async (email: string, next?: string): Promise<AuthResult> => {
         set({ error: null });
-        const { error } = await fn(supabase);
-        if (error) {
-          set({ error: error.message });
-          return { ok: false, error: error.message };
+        try {
+          await apiFetch('/api/auth/magic/request', {
+            method: 'POST',
+            json: { email, native: Capacitor.isNativePlatform(), ...(next ? { next } : {}) },
+          });
+          return { ok: true, error: null };
+        } catch (err) {
+          const error = messageOf(err);
+          set({ error });
+          return { ok: false, error };
         }
-        return { ok: true, error: null };
       };
 
       return {
         status: 'idle',
         provider: null,
-        session: null,
         user: null,
         profile: null,
+        role: null,
         guestMode: false,
         error: null,
 
         init: async () => {
-          if (!supabase) {
-            applySession(null);
+          await useAuthStore.persist.rehydrate();
+          bindNativeDeepLink((code) => get().completeNativeLogin(code));
+          if (!isApiConfigured) {
+            applyUser(null);
             return;
           }
           set({ status: 'loading' });
           try {
-            const { data, error } = await supabase.auth.getSession();
-            if (error) set({ error: error.message });
-            applySession(data.session);
+            const { user } = await apiFetch<{ user: ApiUser | null }>('/api/auth/me');
+            applyUser(user);
           } catch (err) {
             // Sin red: no bloquear la app; seguir como invitado/local.
-            set({ error: err instanceof Error ? err.message : 'Sin conexión' });
-            applySession(null);
-          }
-
-          if (!authListenerAttached) {
-            authListenerAttached = true;
-            supabase.auth.onAuthStateChange((_event, session) => applySession(session));
+            set({ error: messageOf(err) });
+            applyUser(null);
           }
         },
 
@@ -147,54 +233,72 @@ export const useAuthStore = create<AuthState>()(
           });
         },
 
-        signInWithEmail: (email, password) =>
-          run((c) => c.auth.signInWithPassword({ email, password })),
+        signInWithProvider: async (provider, next) => {
+          if (!isApiConfigured) {
+            const error = 'API no configurada (VITE_API_URL).';
+            set({ error });
+            return { ok: false, error };
+          }
+          const qs = new URLSearchParams();
+          if (Capacitor.isNativePlatform()) qs.set('native', '1');
+          if (next) qs.set('next', next);
+          const query = qs.toString();
+          window.location.assign(`${API_URL}/api/auth/${provider}/start${query ? `?${query}` : ''}`);
+          return { ok: true, error: null };
+        },
 
-        signUpWithEmail: (email, password) =>
-          run((c) => c.auth.signUp({ email, password, options: { emailRedirectTo: redirectUrl() } })),
+        requestMagicLink: sendMagic,
 
-        signInWithDiscord: () =>
-          run((c) =>
-            c.auth.signInWithOAuth({
-              provider: 'discord',
-              options: { redirectTo: redirectUrl(), scopes: 'identify email' },
-            }),
-          ),
+        completeNativeLogin: async (code) => {
+          try {
+            const { user } = await apiFetch<{ user: ApiUser }>('/api/auth/exchange', { method: 'POST', json: { code } });
+            applyUser(user);
+            return { ok: true, error: null };
+          } catch (err) {
+            const error = messageOf(err);
+            set({ error });
+            return { ok: false, error };
+          }
+        },
 
-        resetPassword: (email) =>
-          run((c) => c.auth.resetPasswordForEmail(email, { redirectTo: redirectUrl() })),
+        signInWithEmail: (email) => sendMagic(email),
+        signUpWithEmail: (email) => sendMagic(email),
+        signInWithDiscord: () => get().signInWithProvider('discord'),
+        resetPassword: (email) => sendMagic(email),
 
         signOut: async () => {
-          if (supabase) await supabase.auth.signOut();
+          if (isApiConfigured && get().user) {
+            await apiFetch('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+          }
           set({ guestMode: false });
-          applySession(null);
+          applyUser(null);
         },
 
         refreshProfile: async () => {
-          const userId = get().user?.id;
-          if (!supabase || !userId) {
+          if (!isApiConfigured || !get().user) {
             set({ profile: null });
             return;
           }
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', userId)
-            .maybeSingle();
-          if (error) {
-            set({ error: error.message });
-            return;
+          try {
+            const { user } = await apiFetch<{ user: ApiUser | null }>('/api/auth/me');
+            applyUser(user);
+          } catch (err) {
+            set({ error: messageOf(err) });
           }
-          set({ profile: data });
         },
 
-        isAdmin: () => get().profile?.rol === 'ADMIN',
+        isAdmin: () => get().hasRole('ADMIN'),
+        hasRole: (min) => {
+          const r = get().role;
+          return r !== null && ROLE_RANK[r] >= ROLE_RANK[min];
+        },
       };
     },
     {
       name: 'atlas-vice-auth',
-      storage: createJSONStorage(() => localStorage),
-      // La sesión la persiste el propio SDK de Supabase; aquí solo la preferencia de Invitado.
+      storage: createJSONStorage(() => idbStorage),
+      skipHydration: true,
+      // Solo la preferencia de Invitado: la sesión real es una cookie HttpOnly.
       partialize: (state) => ({ guestMode: state.guestMode }),
     },
   ),

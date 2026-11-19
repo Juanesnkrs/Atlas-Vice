@@ -1,4 +1,57 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
+
+const FOCUSABLE =
+  'a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
+/**
+ * Gestión de foco de un panel: lo enfoca al abrir, cierra con Esc, atrapa Tab (si `trap`) y
+ * devuelve el foco al disparador al cerrar. Compartido por BottomSheet y Modal.
+ */
+export function useDialogFocus(
+  active: boolean,
+  panelRef: RefObject<HTMLElement | null>,
+  onClose: () => void,
+  trap: boolean,
+): void {
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!active) return;
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const node = panelRef.current;
+    node?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
+      if (!trap || e.key !== 'Tab' || !node) return;
+      const items = Array.from(node.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (items.length === 0) {
+        e.preventDefault();
+        return;
+      }
+      const first = items[0]!;
+      const last = items[items.length - 1]!;
+      const current = document.activeElement;
+      if (e.shiftKey && (current === first || current === node)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && current === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => {
+      document.removeEventListener('keydown', onKey, true);
+      previous?.focus();
+    };
+  }, [active, panelRef, trap]);
+}
 
 export interface BottomSheetProps {
   open: boolean;
@@ -13,6 +66,8 @@ export interface BottomSheetProps {
   /** Modal (aria-modal + fondo oscurecido). false = ficha no modal sobre el mapa. */
   modal?: boolean;
   closeLabel?: string;
+  /** 'sheet' (defecto) o 'dialog': el Modal usa 'dialog' para quedar sobre otras hojas y el dock. */
+  layer?: 'sheet' | 'dialog';
   className?: string;
 }
 
@@ -24,26 +79,12 @@ export function BottomSheet({
   mode = 'sheet',
   modal = true,
   closeLabel = 'Cerrar',
+  layer = 'sheet',
   className = '',
 }: BottomSheetProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-
-  useEffect(() => {
-    if (!open) return;
-    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    panelRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      previous?.focus();
-    };
-  }, [open]);
+  useDialogFocus(open, panelRef, onClose, modal);
 
   if (!open) return null;
 
@@ -52,8 +93,9 @@ export function BottomSheet({
     ? 'animate-slide-in-right inset-y-0 right-0 w-[min(92vw,380px)] rounded-l-2xl'
     : 'animate-slide-up inset-x-0 bottom-0 max-h-[85dvh] rounded-t-2xl md:animate-slide-in-right md:inset-y-0 md:left-auto md:right-0 md:max-h-none md:w-[380px] md:rounded-l-2xl md:rounded-tr-none';
 
-  return (
-    <div className={`fixed inset-0 z-50 ${modal ? '' : 'pointer-events-none'}`}>
+  // Portal en <body>: sale del contexto de apilado del shell y queda por encima del BottomDock.
+  return createPortal(
+    <div className={`${layer === 'dialog' ? 'z-dialog' : 'z-sheet'} fixed inset-0 ${modal ? '' : 'pointer-events-none'}`}>
       {modal && (
         <div
           aria-hidden="true"
@@ -105,7 +147,8 @@ export function BottomSheet({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(1.25rem+var(--safe-bottom))]">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

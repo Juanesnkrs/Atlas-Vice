@@ -20,6 +20,18 @@
   --safe-right: env(safe-area-inset-right, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
+  /* Espacio que ocupa el BottomDock flotante (alto + margen inferior + safe area): 68+12 / 72+28 */
+  --dock-reserve: calc(92px + var(--safe-bottom));
+  /* Orden z: dock < fondo de hoja < hoja < diálogos (modales del Footer, muros de registro) */
+  --z-dock: 40;
+  --z-sheet-backdrop: 50;
+  --z-sheet: 55;
+  --z-dialog: 70;
+}
+@media (min-width: 768px) {
+  :root {
+    --dock-reserve: calc(112px + var(--safe-bottom));
+  }
 }
 
 html,
@@ -58,6 +70,20 @@ h3 {
   backdrop-filter: blur(14px);
   border: 1px solid var(--vice-glass-border);
   box-shadow: 0 10px 40px rgba(26, 10, 34, 0.45);
+}
+
+/* Capas: ver --z-* en :root. Las hojas se pintan en un portal en <body> para quedar sobre el dock. */
+.z-dock {
+  z-index: var(--z-dock);
+}
+.z-sheet-backdrop {
+  z-index: var(--z-sheet-backdrop);
+}
+.z-sheet {
+  z-index: var(--z-sheet);
+}
+.z-dialog {
+  z-index: var(--z-dialog);
 }
 
 /* Botón firma (PalmButton) */

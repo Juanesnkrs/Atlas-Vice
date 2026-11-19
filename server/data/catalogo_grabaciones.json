@@ -1,0 +1,4996 @@
+[
+  {
+    "modulo": "armas",
+    "slug": "girardi-es9",
+    "titulo": "Girardi ES9",
+    "subtitulo": "Pistola militar",
+    "categoria": "Pistolas",
+    "stats_juego": {
+      "dano": 4.2,
+      "precision": 5.2,
+      "manejo": 8.4,
+      "alcance": 4.4
+    },
+    "metadata": {
+      "slot": "Arma auxiliar",
+      "municion_inicial_hud": "15 / 57 (cargador / reserva)",
+      "descripcion": "Pistola semiautomática del jugador, slot 'ARMA AUXILIAR' de la rueda de armas; el menú de Ammu-Nation describe la categoría como 'Pistolas semiautomáticas compactas.'",
+      "alias": [
+        "Pistola (icono de rueda)"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0080@arriba-der ~ 00:26:25 (ficha con stats 4.2/5.2/8.4/4.4, verificado en fotograma)",
+      "2026-11-18_06-38-41: t_0015@abajo-der ~ 00:04:55",
+      "2026-11-18_08-08-46: t_0080@abajo-izq ~ 00:26:30"
+    ],
+    "notas": "Stats verificados en fotograma. Se une aquí la 'Pistola (icono de rueda)' sin nombre (casilla superior de la rueda con 15/57). Sin precio visible (arma inicial)."
+  },
+  {
+    "modulo": "armas",
+    "slug": "duke-556",
+    "titulo": "Duke 556",
+    "subtitulo": "Fusil carabina",
+    "categoria": "Rifles de Asalto",
+    "stats_juego": {
+      "dano": 5,
+      "precision": 6,
+      "manejo": 5.8,
+      "alcance": 6.2
+    },
+    "metadata": {
+      "precio": 1450,
+      "tienda": "Ammu-Nation (Chuck's Tackle & Shot)",
+      "ubicacion": "Cayo Lento",
+      "estado_tienda": "No disponible (bloqueado)",
+      "descripcion": "Armas de fuego automáticas con cargador.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0182@abajo-izq ~ 01:00:30 (precio y stats, verificado)",
+      "2026-11-18_08-08-46: t_0182@abajo-der ~ 01:00:35"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "wortham-w-14",
+    "titulo": "Wortham W-14",
+    "subtitulo": "Fusil de combate táctico",
+    "categoria": "Rifles de Asalto",
+    "stats_juego": {
+      "dano": 5.8,
+      "precision": 7.5,
+      "manejo": 5.2,
+      "alcance": 7.2
+    },
+    "metadata": {
+      "precio": 1400,
+      "tienda": "Ammu-Nation (Chuck's Tackle & Shot)",
+      "ubicacion": "Cayo Lento",
+      "estado_tienda": "No disponible (bloqueado); en la tira inferior se ven 2 variantes (una con icono $ rojo, otra con candado)",
+      "descripcion": "Fusil que Jason recoge del suelo ('L1 para recoger') al inicio de uno de los vídeos; el HUD pasa a mostrar 10/10.",
+      "alias": [
+        "Fusil W-14",
+        "FUSIL W-14"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0183@arriba-izq ~ 01:00:40 (precio y stats, verificado)",
+      "2026-11-18_06-38-41: t_0001@arriba-izq ~ 00:00:00 (prompt FUSIL W-14)",
+      "2026-11-18_06-38-41: t_0001@abajo-der ~ 00:00:15"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "hawk-little-mediator",
+    "titulo": "Hawk & Little Mediator",
+    "subtitulo": "Fusil táctico",
+    "categoria": "Rifles de Asalto",
+    "stats_juego": {
+      "dano": 4.8,
+      "precision": 7.8,
+      "manejo": 5.6,
+      "alcance": 7
+    },
+    "metadata": {
+      "precio": 450,
+      "precio_lista": 900,
+      "tienda": "Ammu-Nation (Chuck's Tackle & Shot)",
+      "ubicacion": "Cayo Lento",
+      "descripcion": "En oferta (descuento de profesional ofrecido por el dependiente). Acción: COMPRAR Y EQUIPAR; el jugador tenía $39: 'No tienes suficiente efectivo.'",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0184@arriba-izq ~ 01:01:00 (450 $ / 900 $ y stats, verificado)"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "fortune-son-moreland-850",
+    "titulo": "Fortune & Son Moreland 850",
+    "subtitulo": "Escopeta de corredera",
+    "categoria": "Escopetas",
+    "stats_juego": {
+      "dano": 7.5,
+      "precision": 4.2,
+      "manejo": 5.6,
+      "alcance": 2.5
+    },
+    "metadata": {
+      "precio": 350,
+      "precio_lista": 700,
+      "tienda": "Ammu-Nation (Chuck's Tackle & Shot)",
+      "ubicacion": "Cayo Lento",
+      "variantes": "1 / 4 de la tira de modelos",
+      "descripcion": "Armas de dispersión para distancias cortas. En oferta; 'No tienes suficiente efectivo.'",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0184@arriba-der ~ 01:01:05 (350 $ / 700 $ y stats, verificado)"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "municion-de-pistola-x50",
+    "titulo": "Munición de pistola x50",
+    "subtitulo": "Caja Stronghold Ammunition",
+    "categoria": "Munición",
+    "stats_juego": {},
+    "metadata": {
+      "precio": 24,
+      "cantidad_paquete": 50,
+      "marca": "Stronghold Ammunition",
+      "pagina_tienda": "1 / 9",
+      "tienda": "Ammu-Nation (Chuck's Tackle & Shot)",
+      "estado_tienda": "No disponible",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0184@abajo-der ~ 01:01:15 (24 $, verificado)"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "municion-de-escopeta-x10",
+    "titulo": "Munición de escopeta x10",
+    "subtitulo": "Caja Stronghold Ammunition",
+    "categoria": "Munición",
+    "stats_juego": {},
+    "metadata": {
+      "precio": 15,
+      "cantidad_paquete": 10,
+      "marca": "Stronghold Ammunition",
+      "pagina_tienda": "2 / 9",
+      "tienda": "Ammu-Nation (Chuck's Tackle & Shot)",
+      "estado_tienda": "No disponible",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0185@arriba-izq ~ 01:01:20 (15 $, verificado)"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "pistola-nipper-calibre-38",
+    "titulo": "Pistola Nipper del calibre .38",
+    "subtitulo": "Pistola",
+    "categoria": "Pistolas",
+    "stats_juego": {},
+    "metadata": {
+      "calibre": ".38",
+      "descripcion": "Arma recogible del suelo (L1 para recoger) junto a cuerpos; al recogerla sale '+ Munición de pistola'.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-28-51: t_0022@arriba-izq ~ 00:07:00",
+      "2026-11-18_06-28-51: t_0026@arriba-izq ~ 00:08:20"
+    ],
+    "notas": "Sin stats ni precio. Puede ser distinta de la Girardi ES9 (nombre distinto en pantalla); no unida."
+  },
+  {
+    "modulo": "armas",
+    "slug": "bate-de-beisbol",
+    "titulo": "Bate de béisbol",
+    "subtitulo": "Arma cuerpo a cuerpo",
+    "categoria": "Cuerpo a cuerpo",
+    "stats_juego": {},
+    "metadata": {
+      "boton": "L1",
+      "descripcion": "Prompt 'BATE DE BÉISBOL'. Jason lo usa contra el dependiente de una boutique durante la misión de cobrar el alquiler de Brian y luego lo suelta.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0101@arriba-der ~ 00:33:25",
+      "2026-11-18_08-08-46: t_0102@arriba-izq ~ 00:33:40"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "mazo",
+    "titulo": "Mazo",
+    "subtitulo": "Arma cuerpo a cuerpo",
+    "categoria": "Cuerpo a cuerpo",
+    "stats_juego": {},
+    "metadata": {
+      "slot_rueda": "2/2",
+      "descripcion": "Maza/martillo grande que Jason lleva en mano; en la rueda aparece como 'MAZO EN MANO'.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0042@abajo-der ~ 13:55",
+      "2026-11-18_06-55-56: t_0043@arriba-izq ~ 14:00"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "cuchillo",
+    "titulo": "Cuchillo",
+    "subtitulo": null,
+    "categoria": "Cuerpo a cuerpo",
+    "stats_juego": {},
+    "metadata": {
+      "slot_rueda": "abajo-izquierda",
+      "descripcion": "Casilla de cuchillo en la rueda de armas; sin nombre propio ni estadísticas.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0043@arriba-izq ~ 14:00",
+      "2026-11-18_06-55-56: t_0054@arriba-der ~ 17:45"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "prismaticos",
+    "titulo": "Prismáticos",
+    "subtitulo": "Equipo",
+    "categoria": "Equipo",
+    "stats_juego": {},
+    "metadata": {
+      "cantidad": "1 / 3",
+      "slot_rueda": "abajo-derecha (pestaña ARMAS)",
+      "descripcion": "Aviso 'Usa R para seleccionar los prismáticos'.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0003@arriba-izq ~ 00:40",
+      "2026-11-18_06-28-51: t_0008@abajo-izq ~ 00:02:30"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "vapid-ganado-1970",
+    "titulo": "Vapid Ganado (1970)",
+    "subtitulo": "Vapid, pickup coupé-utilitario clásico",
+    "categoria": "Pickups",
+    "stats_juego": {
+      "velocidad": 4.7,
+      "aceleracion": 5.3,
+      "maniobrabilidad_asfalto": 3.6,
+      "maniobrabilidad_todoterreno": 4.5,
+      "fuerza": 3
+    },
+    "metadata": {
+      "anio": 1970,
+      "propietario": "Jason",
+      "calificacion": "330 (barra) / 458 (icono A)",
+      "color_actual": "turquesa (pintura MAR, Brillo)",
+      "carroceria": "pickup oxidada, estilo El Camino",
+      "matricula": "J26 4B7",
+      "almacenamiento_maletero": "0/4",
+      "mejoras_taller": {
+        "aleron_personalizado": {
+          "precio": 790,
+          "posicion": "3/3",
+          "efecto": "maniobrabilidad asfalto 3.7 (+0.1), calificación 331/459 (+1/+1)"
+        },
+        "topes": {
+          "precio": 390,
+          "posicion": "2/2"
+        },
+        "motor_de_serie_restaurar": {
+          "precio": 0,
+          "precio_lista": 200,
+          "posicion": "1/3",
+          "nota": "GRATIS por descuento de Joey"
+        }
+      },
+      "restaurar": {
+        "acabado": 185,
+        "carroceria": 200
+      },
+      "pintura": {
+        "tipos": "1/2 Brillo (400 $, GRATIS por descuento de Joey); 2/2 Metalizado sólido (825 $)",
+        "colores_vistos": "Rojo Culpa (5/8), Mar (2/8), Surfista (3/8)"
+      },
+      "taller": "Coastal Auto Care (Joey)",
+      "descripcion": "Vehículo personal de Jason.",
+      "alias": [
+        "Ganado",
+        "El Ganado",
+        "Vapid Ganado (1970) de Jason"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0125@abajo-izq ~ 00:41:30 (stats base 4.7/5.3/3.6/4.5/3.0, calificación 330/458, verificado)",
+      "2026-11-18_08-08-46: t_0129@arriba-der ~ 00:42:45 (alerón 790 $, 3.7, 331/459, verificado)",
+      "2026-11-18_08-08-46: t_0127@abajo-izq ~ 00:42:10 (pintura 400 $ GRATIS, verificado)",
+      "2026-11-18_06-55-56: t_0005@arriba-izq ~ 01:20 (tarjeta del vehículo)"
+    ],
+    "notas": "Con alerón personalizado solo cambia maniobrabilidad_asfalto a 3.7. Matrícula J26 4B7 vista en fotograma t_0129 (otros agentes leyeron JEE 87 / J26 487). Metalizado 825 $, topes 390 $ y restaurar motor 50 $ tomados de los hallazgos (no reverificados en fotograma; 50 $ dudoso, omitido)."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "lurepredator-l35p",
+    "titulo": "Lurepredator L35P",
+    "subtitulo": "Lurepredator, lancha de pesca / bay boat",
+    "categoria": "Náuticos",
+    "stats_juego": {},
+    "metadata": {
+      "matricula": "LN 7402 27",
+      "motores": "2 fueraborda",
+      "ocupantes": "piloto + 1 pasajero",
+      "descripcion": "Lancha de pesca blanca con casco bicolor usada en la misión 'Just Like Paradise'.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-20-39: t_0016@arriba-der ~ 05:05",
+      "2026-11-18_06-20-39: t_0019@arriba-der ~ 06:05",
+      "2026-11-18_06-20-39: t_0021@abajo-der ~ 07:15"
+    ],
+    "notas": "Precio no visible."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "western-sovereign-107",
+    "titulo": "Western Sovereign 107",
+    "subtitulo": "Western, moto crucero (custom)",
+    "categoria": "Motos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto crucero azul oscura/negra aparcada junto al club NINE1NINE.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0016@arriba-der ~ 05:05",
+      "2026-11-18_07-14-03: t_0020@abajo-izq ~ 06:25",
+      "2026-11-18_07-47-22: t_0004@abajo-der ~ 01:15"
+    ],
+    "notas": "Una moto cruiser azul sin nombre (07-50-32) probablemente es esta; no se cuenta como alias confirmado."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "mammoth-dodo",
+    "titulo": "Mammoth Dodo",
+    "subtitulo": "Mammoth, hidroavión",
+    "categoria": "Aéreos",
+    "stats_juego": {},
+    "metadata": {
+      "propietario": "Brian (rotulado 'Brian's')",
+      "rotulo_capo": "Lapwing",
+      "matricula": "NUL 4573 / NL74573 (dudosa)",
+      "descripcion": "Hidroavión blanco con franjas azules y flotadores, librea de Brian's Boat Works & Marina. HUD con altímetro en pies y aviso 'Motor dañado'.",
+      "alias": [
+        "Dodo de Brian",
+        "MAMMOTH DODO DE BRIAN"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-38-41: t_0019@arriba-izq ~ 00:06:00",
+      "2026-11-18_06-38-41: t_0019@arriba-der ~ 00:06:05",
+      "MAPA: f_0005@completo ~ 00:08"
+    ],
+    "notas": "Unido con 'Hidroavión con librea de Brian's Boat Works & Marina'."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "albany-cavalcade-xl",
+    "titulo": "Albany Cavalcade XL",
+    "subtitulo": "Albany, SUV de lujo",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "color": "negro",
+      "descripcion": "Robado tras un choque; se conduce de Bahía de Peacock a Cayo Lento con 3 estrellas de búsqueda.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0069@arriba-der ~ 00:22:45",
+      "2026-11-18_08-08-46: t_0073@abajo-izq ~ 00:24:10"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "pfister-comet-s2",
+    "titulo": "Pfister Comet S2",
+    "subtitulo": "Pfister, deportivo descapotable",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "color": "rojo",
+      "descripcion": "Robado en un semáforo; termina chocado en la autopista (2 estrellas).",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0066@abajo-der ~ 00:21:55",
+      "2026-11-18_08-08-46: t_0067@arriba-izq ~ 00:22:00"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "imponte-phoenix",
+    "titulo": "Imponte Phoenix",
+    "subtitulo": null,
+    "categoria": "Otros",
+    "stats_juego": {},
+    "metadata": {
+      "color_original": "rojo",
+      "colores_pintura": "Rojo (bloqueado), Gris, Verde, Azul, Negro; GRATIS en Pay 'n' Spray",
+      "color_actual": "negro",
+      "matricula": "ASS MAN",
+      "descripcion": "Coche a recuperar del depósito; se lleva al Pay 'n' Spray y luego al garaje de Brian.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0015@abajo-izq ~ 05:10",
+      "2026-11-18_09-18-06: t_0037@abajo-izq ~ 12:10",
+      "2026-11-18_09-18-06: t_0026@arriba-der ~ 08:25"
+    ],
+    "notas": "Tipo de carrocería no observado; categoría 'Otros' provisional. Sin stats ni precio."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "bravado-bison-900-1995",
+    "titulo": "Bravado Bison 900 (1995)",
+    "subtitulo": "Bravado, pickup 4x4",
+    "categoria": "Pickups",
+    "stats_juego": {},
+    "metadata": {
+      "anio": 1995,
+      "propietario": "Cal",
+      "matricula": "BEE ME",
+      "color": "marrón con pegatinas",
+      "waink": {
+        "acceso": "Cerrado",
+        "sistema_seguridad": "Ninguno",
+        "localizador": "Ninguno"
+      },
+      "alias": [
+        "Bison 900",
+        "BRAVADO BISON 900 (1995) DE CAL"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0001@arriba-izq ~ 00:00",
+      "2026-11-18_09-18-06: t_0022@abajo-der ~ 07:15"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "obey-animus",
+    "titulo": "Obey Animus",
+    "subtitulo": "Obey, berlina de lujo (coupé de cuatro puertas)",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "color": "plateado/gris",
+      "waink": {
+        "acceso": "Cerrado",
+        "sistema_seguridad": "Con alarma",
+        "localizador": "Ninguno"
+      },
+      "descripcion": "Escaneado con la app Waink y robado rompiendo la ventana y haciéndole un puente.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0026@abajo-der ~ 08:35",
+      "2026-11-18_07-14-03: t_0035@abajo-der ~ 11:35"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "pfister-neon",
+    "titulo": "Pfister Neon",
+    "subtitulo": "Pfister, deportivo eléctrico",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "color": "oscuro",
+      "descripcion": "Robado a un conductor.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0019@abajo-izq ~ 06:10",
+      "2026-11-18_07-32-08: t_0019@abajo-der ~ 06:15"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "vapid-dominator-asp",
+    "titulo": "Vapid Dominator ASP",
+    "subtitulo": "Vapid",
+    "categoria": "Otros",
+    "stats_juego": {},
+    "metadata": {
+      "waink": {
+        "acceso": "Cerrado",
+        "sistema_seguridad": "Con alarma",
+        "localizador": "Estándar"
+      },
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0024@arriba-izq ~ 07:40",
+      "2026-11-18_09-18-06: t_0024@arriba-der ~ 07:45"
+    ],
+    "notas": "Solo ficha Waink; carrocería no observada (categoría provisional 'Otros'). Unido con 'VAPID DOMINATOR ASP - ficha WAINK'."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "whiffler-dashound",
+    "titulo": "Whiffler Dashound",
+    "subtitulo": "Whiffler",
+    "categoria": "Otros",
+    "stats_juego": {},
+    "metadata": {
+      "waink": {
+        "acceso": "Cerrado",
+        "sistema_seguridad": "Con alarma",
+        "localizador": "Ninguno"
+      },
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0026@arriba-izq ~ 08:20"
+    ],
+    "notas": "Solo ficha Waink; carrocería no observada (categoría provisional)."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "albany-v-str",
+    "titulo": "Albany V-STR",
+    "subtitulo": "Albany, berlina deportiva plateada",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "waink": {
+        "acceso": "Clonador de llaves",
+        "sistema_seguridad": "Con alarma",
+        "localizador": "Estándar"
+      },
+      "descripcion": "Aviso: 'Actualmente, no puedes arrancar vehículos sin llave'.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0027@arriba-der ~ 08:45"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "declasse-tulip-m-100-1978",
+    "titulo": "Declasse Tulip M-100 (1978)",
+    "subtitulo": "Declasse",
+    "categoria": "Clásicos",
+    "stats_juego": {},
+    "metadata": {
+      "anio": 1978,
+      "waink": {
+        "acceso": "Cerrado",
+        "sistema_seguridad": "Ninguno",
+        "localizador": "Ninguno"
+      },
+      "descripcion": "Vehículo del depósito de incautados.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0022@abajo-izq ~ 07:10"
+    ],
+    "notas": "Categoría 'Clásicos' inferida por el año; carrocería no observada."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "declasse-vamos-1974",
+    "titulo": "Declasse Vamos (1974)",
+    "subtitulo": "Declasse",
+    "categoria": "Clásicos",
+    "stats_juego": {},
+    "metadata": {
+      "anio": 1974,
+      "waink": {
+        "acceso": "Cerrado",
+        "sistema_seguridad": "Ninguno",
+        "localizador": "Ninguno"
+      },
+      "descripcion": "Vehículo del depósito de incautados.",
+      "alias": [
+        "DECLASSE VAMOS (1974) - ficha WAINK"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0023@abajo-der ~ 07:35",
+      "2026-11-18_09-18-06: t_0024@abajo-izq ~ 07:50"
+    ],
+    "notas": "Categoría 'Clásicos' inferida por el año."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "bravado-gresley-xt",
+    "titulo": "Bravado Gresley XT",
+    "subtitulo": "Bravado, SUV blanco",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "color": "blanco",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0017@abajo-izq ~ 05:30"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "waste-lander",
+    "titulo": "Waste Lander",
+    "subtitulo": "HVY, camión todoterreno / volquete",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "marca_logo": "HVY",
+      "descripcion": "Camión de ruedas grandes con jaula y barras antivuelco usado en el campamento.",
+      "alias": [
+        "Waste Lander (HVY)"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_06-28-51: t_0021@abajo-der ~ 00:06:55",
+      "2026-11-18_06-28-51: t_0022@arriba-izq ~ 00:07:00"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "quad-nagasaki",
+    "titulo": "Quad Nagasaki",
+    "subtitulo": "Nagasaki, quad ATV",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Dos quads naranja/azul aparcados frente a la tienda 'Motor Crazy / Vehicle Hire'.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0015@arriba-izq ~ 04:40"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "patinete-zoot",
+    "titulo": "Patinete Zoot",
+    "subtitulo": "Patinete eléctrico de alquiler",
+    "categoria": "Otros",
+    "stats_juego": {},
+    "metadata": {
+      "precio_alquiler": 10,
+      "metodo_pago": "app BuckMe",
+      "descripcion": "Prompt 'ALQUILAR (10 $ SOLO BUCKME)'.",
+      "alias": [
+        "Patinetes ZOOT"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0022@arriba-izq ~ 07:00",
+      "2026-11-18_07-14-03: t_0022@arriba-der ~ 07:05"
+    ]
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "reclaimer",
+    "titulo": "Reclaimer",
+    "subtitulo": "Pickup roja",
+    "categoria": "Pickups",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rótulo RECLAIMER en la compuerta trasera; sin ficha ni precio.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0016@arriba-izq ~ 05:00"
+    ],
+    "notas": "Solo se leyó el rótulo del modelo; marca no vista."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "leonida",
+    "titulo": "Leónida",
+    "subtitulo": "Estado (nivel superior)",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Nombre del estado en letras grandes y blancas al alejar el mapa a la vista de estado completo. Contiene los condados Kelly, Leonard, Vice-Dale, Mariana y Lummox.",
+      "alias": [
+        "Leonida"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0012@arriba-izq ~ 03:40",
+      "2026-11-18_07-32-08: t_0024@abajo-izq ~ 07:30",
+      "2026-11-18_07-50-32: t_0009@arriba-izq ~ 03:00",
+      "MAPA_2: f_0069 ~ 00:02:16 (centro 0.53,0.56)",
+      "MAPA_2: f_0068 ~ 00:02:14 (arriba derecha 0.86,0.04)"
+    ],
+    "notas": "Se clasifica en Condados por no existir categoría de estado."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-mariana",
+    "titulo": "Condado de Mariana",
+    "subtitulo": "Condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Condado del sur con cayos; es la única región descubierta al inicio (isla alargada urbanizada, casa de Jason).",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0010@arriba-der ~ 03:05 (texto parcial ...ADO DE MARIANA)",
+      "2026-11-18_07-14-03: t_0010@abajo-izq ~ 03:10",
+      "2026-11-18_07-47-22: t_0006@abajo-izq ~ 01:50",
+      "2026-11-18_07-47-22: t_0006@abajo-der ~ 01:55",
+      "MAPA_2: f_0064 ~ 00:02:06 (0.43,0.67)"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-vice-dale",
+    "titulo": "Condado de Vice-Dale",
+    "subtitulo": "Condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Condado de la costa este donde está Vice City; rotulado en mayúsculas grises.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0010@abajo-izq ~ 03:10",
+      "2026-11-18_07-32-08: t_0012@arriba-izq ~ 03:40",
+      "2026-11-18_07-32-08: t_0021@arriba-der ~ 06:45",
+      "2026-11-18_07-32-08: t_0024@abajo-izq ~ 07:30",
+      "MAPA_2: f_0072 ~ 00:02:22 (0.68,0.17)"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-kelly",
+    "titulo": "Condado de Kelly",
+    "subtitulo": "Condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Condado visto en la vista de estado, al noroeste/oeste; sin terreno descubierto al inicio.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA_2: f_0069 ~ 00:02:16 (0.34,0.31)",
+      "2026-11-18_06-55-56: t_0028@abajo-izq ~ 09:10",
+      "2026-11-18_06-55-56: t_0028@abajo-der ~ 09:15",
+      "2026-11-18_06-55-56: t_0029@arriba-izq ~ 09:20",
+      "2026-11-18_06-55-56: t_0029@arriba-der ~ 09:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-leonard",
+    "titulo": "Condado de Leonard",
+    "subtitulo": "Condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Condado al noreste del estado; sin terreno descubierto al inicio.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA_2: f_0069 ~ 00:02:16 (0.73,0.19)",
+      "MAPA_2: f_0066 ~ 00:02:10 (0.22,0.59)",
+      "2026-11-18_06-55-56: t_0028@abajo-izq ~ 09:10",
+      "2026-11-18_06-55-56: t_0028@abajo-der ~ 09:15",
+      "2026-11-18_06-55-56: t_0029@arriba-izq ~ 09:20"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-lummox",
+    "titulo": "Condado de Lummox",
+    "subtitulo": "Condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Condado de contorno blanco amplio con entrante al norte; sin descubrir.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA_2: f_0065 ~ 00:02:08 (0.42,0.65)",
+      "MAPA: f_0136@00:04:30",
+      "2026-11-18_07-50-32: t_0007@arriba-der ~ 02:05",
+      "2026-11-18_07-50-32: t_0009@arriba-der ~ 03:00",
+      "2026-11-18_07-50-32: t_0010@arriba-der ~ 03:05"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-vice-dale-sur",
+    "titulo": "Condado de Vice-Dale Sur",
+    "subtitulo": "Subdivisión de condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Etiqueta rotulada en el mapa y en el minimapa al circular por la autopista hacia el sur.",
+      "alias": [],
+      "condado_base": "Condado de Vice-Dale"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0044@abajo-izq ~ 14:30",
+      "2026-11-18_08-08-46: t_0070@abajo-der ~ 00:23:15",
+      "2026-11-18_09-18-06: t_0055@abajo-izq ~ 18:10",
+      "2026-11-18_09-18-06: t_0055@abajo-der ~ 18:15",
+      "2026-11-18_09-18-06: t_0056@arriba-izq ~ 18:20"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-vice-dale-oeste",
+    "titulo": "Condado de Vice-Dale Oeste",
+    "subtitulo": "Subdivisión de condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Etiqueta de zoom medio (también cortada por el borde del mapa).",
+      "alias": [],
+      "condado_base": "Condado de Vice-Dale"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0021@arriba-der ~ 06:45",
+      "2026-11-18_07-14-03: t_0038@abajo-izq ~ 12:30",
+      "2026-11-18_07-47-22: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_07-47-22: t_0001@abajo-izq ~ 00:10",
+      "2026-11-18_07-47-22: t_0001@abajo-der ~ 00:15"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-leonard-sur",
+    "titulo": "Condado de Leonard Sur",
+    "subtitulo": "Subdivisión de condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Región que rodea la zona de Vice City en la vista de zoom medio.",
+      "alias": [],
+      "condado_base": "Condado de Leonard"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0038@abajo-izq ~ 12:30",
+      "2026-11-18_07-32-08: t_0021@arriba-der ~ 06:45",
+      "2026-11-18_07-47-22: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_07-47-22: t_0001@abajo-izq ~ 00:10",
+      "2026-11-18_07-47-22: t_0001@abajo-der ~ 00:15"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-kelly-sur",
+    "titulo": "Condado de Kelly Sur",
+    "subtitulo": "Subdivisión de condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Etiqueta de zoom intermedio.",
+      "alias": [],
+      "condado_base": "Condado de Kelly"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0021@arriba-der ~ 06:45",
+      "2026-11-18_07-50-32: t_0007@arriba-der ~ 02:05",
+      "2026-11-18_07-50-32: t_0009@arriba-der ~ 03:00",
+      "2026-11-18_07-50-32: t_0010@arriba-der ~ 03:05",
+      "2026-11-18_07-50-32: t_0010@abajo-izq ~ 03:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-mariana-norte",
+    "titulo": "Condado de Mariana Norte",
+    "subtitulo": "Subdivisión de condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Etiqueta de zoom intermedio (cortada por el borde como 'do de Mariana Norte').",
+      "alias": [],
+      "condado_base": "Condado de Mariana"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0021@arriba-der ~ 06:45",
+      "2026-11-18_07-14-03: t_0038@abajo-izq ~ 12:30",
+      "2026-11-18_07-50-32: t_0007@arriba-der ~ 02:05",
+      "2026-11-18_07-50-32: t_0009@arriba-der ~ 03:00",
+      "2026-11-18_07-50-32: t_0010@arriba-der ~ 03:05"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-leonard-norte",
+    "titulo": "Condado de Leonard Norte",
+    "subtitulo": "Subdivisión de condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "alias": [],
+      "condado_base": "Condado de Leonard"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0007@arriba-der ~ 02:05",
+      "2026-11-18_07-50-32: t_0009@arriba-der ~ 03:00",
+      "2026-11-18_07-50-32: t_0010@arriba-der ~ 03:05",
+      "2026-11-18_07-50-32: t_0010@abajo-izq ~ 03:10"
+    ],
+    "notas": "Solo consta en la lista de subdivisiones de un hallazgo; verificar rótulo en el mapa."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-kelly-norte",
+    "titulo": "Condado de Kelly Norte",
+    "subtitulo": "Subdivisión de condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "alias": [],
+      "condado_base": "Condado de Kelly"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0007@arriba-der ~ 02:05",
+      "2026-11-18_07-50-32: t_0009@arriba-der ~ 03:00",
+      "2026-11-18_07-50-32: t_0010@arriba-der ~ 03:05",
+      "2026-11-18_07-50-32: t_0010@abajo-izq ~ 03:10"
+    ],
+    "notas": "Solo consta en la lista de subdivisiones de un hallazgo; verificar rótulo en el mapa."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "condado-de-lummox-suroeste",
+    "titulo": "Condado de Lummox Suroeste",
+    "subtitulo": "Subdivisión de condado",
+    "categoria": "Condados",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "alias": [],
+      "condado_base": "Condado de Lummox"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0007@arriba-der ~ 02:05",
+      "2026-11-18_07-50-32: t_0009@arriba-der ~ 03:00",
+      "2026-11-18_07-50-32: t_0010@arriba-der ~ 03:05",
+      "2026-11-18_07-50-32: t_0010@abajo-izq ~ 03:10"
+    ],
+    "notas": "Solo consta en la lista de subdivisiones de un hallazgo; verificar rótulo en el mapa."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "vice-city",
+    "titulo": "Vice City",
+    "subtitulo": "Ciudad",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Ciudad principal; etiqueta en el mapa de zoom medio.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_07-47-22: t_0001@abajo-izq ~ 00:10",
+      "2026-11-18_07-47-22: t_0001@abajo-der ~ 00:15",
+      "2026-11-18_07-47-22: t_0006@arriba-izq ~ 01:40",
+      "2026-11-18_07-50-32: t_0016@arriba-der ~ 05:05"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "vice-beach",
+    "titulo": "Vice Beach",
+    "subtitulo": "Zona costera",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta de zona al este de Vice City en el menú de mapa.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0038@abajo-izq ~ 12:30",
+      "2026-11-18_07-47-22: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_07-47-22: t_0001@abajo-izq ~ 00:10",
+      "2026-11-18_07-47-22: t_0001@abajo-der ~ 00:15",
+      "2026-11-18_07-47-22: t_0006@arriba-izq ~ 01:40"
+    ],
+    "notas": "No consta si es barrio de Vice City o zona propia."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "washington-beach",
+    "titulo": "Washington Beach",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0016@arriba-der ~ 05:05",
+      "2026-11-18_07-50-32: t_0017@arriba-izq ~ 05:20",
+      "2026-11-18_07-50-32: t_0023@abajo-izq ~ 07:30",
+      "2026-11-18_07-50-32: t_0024@arriba-izq ~ 07:40",
+      "2026-11-18_07-47-22: t_0001@arriba-der ~ 00:05"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "ocean-beach",
+    "titulo": "Ocean Beach",
+    "subtitulo": "Barrio costero",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Zona costera de edificios de colores pastel; rótulo al llegar.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0049@arriba-izq ~ 16:00",
+      "2026-11-18_07-50-32: t_0002@arriba-izq ~ 00:20",
+      "2026-11-18_07-50-32: t_0003@abajo-der ~ 01:15",
+      "2026-11-18_07-50-32: t_0005@arriba-der ~ 01:45",
+      "2026-11-18_07-50-32: t_0019@arriba-izq ~ 06:00"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "bayside",
+    "titulo": "Bayside",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rótulo de barrio sobre el minimapa; cartel de salida 'Bayside Downtown'.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0042@arriba-izq ~ 13:40",
+      "2026-11-18_07-32-08: t_0022@arriba-der ~ 07:05",
+      "2026-11-18_07-32-08: t_0022@abajo-izq ~ 07:10",
+      "2026-11-18_08-08-46: t_0117@arriba-izq ~ 00:38:40",
+      "2026-11-18_08-08-46: t_0117@arriba-der ~ 00:38:45"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "stockyard",
+    "titulo": "Stockyard",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0008@arriba-izq ~ 02:20",
+      "2026-11-18_08-08-46: t_0011@arriba-izq ~ 03:20",
+      "2026-11-18_08-08-46: t_0012@abajo-izq ~ 04:10",
+      "2026-11-18_08-08-46: t_0016@arriba-izq ~ 05:00",
+      "2026-11-18_07-50-32: t_0002@arriba-izq ~ 00:20"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "crosstown",
+    "titulo": "Crosstown",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0117@arriba-izq ~ 00:38:40",
+      "2026-11-18_08-08-46: t_0117@arriba-der ~ 00:38:45",
+      "2026-11-18_08-08-46: t_0093@arriba-der ~ 00:30:45",
+      "2026-11-18_08-08-46: t_0116@abajo-der ~ 00:38:35",
+      "2026-11-18_08-08-46: t_0118@abajo-izq ~ 00:39:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "centro",
+    "titulo": "Centro",
+    "subtitulo": "Distrito",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta de zona del centro de Vice City mostrada sobre el minimapa.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0036@abajo-der ~ 00:11:55",
+      "2026-11-18_08-08-46: t_0039@abajo-der ~ 00:12:55",
+      "2026-11-18_08-08-46: t_0058@arriba-der ~ 00:19:05",
+      "2026-11-18_07-50-32: t_0002@arriba-izq ~ 00:20",
+      "2026-11-18_07-50-32: t_0003@abajo-der ~ 01:15"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "downtown",
+    "titulo": "Downtown",
+    "subtitulo": "Distrito",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rótulo de zona bajo los pasos elevados; carteles 'Little Cuba Downtown' y 'Port VC 97 to 397 Downtown'.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0051@abajo-der ~ 16:55",
+      "2026-11-18_06-55-56: t_0046@abajo-der ~ 15:15"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "la-perle",
+    "titulo": "La Perle",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rótulo grafiti 'LA PERLE' sobre la calle.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0026@arriba-der ~ 08:55",
+      "2026-11-18_07-32-08: t_0026@abajo-der ~ 08:55",
+      "2026-11-18_07-50-32: t_0002@arriba-izq ~ 00:20",
+      "2026-11-18_07-50-32: t_0003@abajo-der ~ 01:15",
+      "2026-11-18_07-50-32: t_0005@arriba-der ~ 01:45"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "balsero",
+    "titulo": "Balsero",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0117@arriba-izq ~ 00:38:40",
+      "2026-11-18_08-08-46: t_0117@arriba-der ~ 00:38:45",
+      "2026-11-18_08-08-46: t_0093@arriba-der ~ 00:30:45",
+      "2026-11-18_08-08-46: t_0116@abajo-der ~ 00:38:35",
+      "2026-11-18_08-08-46: t_0118@abajo-izq ~ 00:39:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "rockridge",
+    "titulo": "Rockridge",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0117@arriba-izq ~ 00:38:40",
+      "2026-11-18_08-08-46: t_0117@arriba-der ~ 00:38:45",
+      "2026-11-18_08-08-46: t_0093@arriba-der ~ 00:30:45",
+      "2026-11-18_08-08-46: t_0116@abajo-der ~ 00:38:35",
+      "2026-11-18_08-08-46: t_0118@abajo-izq ~ 00:39:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "little-cuba",
+    "titulo": "Little Cuba",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0117@arriba-izq ~ 00:38:40",
+      "2026-11-18_08-08-46: t_0117@arriba-der ~ 00:38:45",
+      "2026-11-18_08-08-46: t_0093@arriba-der ~ 00:30:45",
+      "2026-11-18_08-08-46: t_0116@abajo-der ~ 00:38:35",
+      "2026-11-18_08-08-46: t_0118@abajo-izq ~ 00:39:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "salton",
+    "titulo": "Salton",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0117@arriba-izq ~ 00:38:40",
+      "2026-11-18_08-08-46: t_0117@arriba-der ~ 00:38:45",
+      "2026-11-18_08-08-46: t_0093@arriba-der ~ 00:30:45",
+      "2026-11-18_08-08-46: t_0116@abajo-der ~ 00:38:35",
+      "2026-11-18_08-08-46: t_0118@abajo-izq ~ 00:39:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "plaza-panos",
+    "titulo": "Plaza Panos",
+    "subtitulo": "Plaza/zona",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Zona junto a The Vault y los clubes del centro, cerca de la autopista elevada.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0041@abajo-der ~ 13:35",
+      "2026-11-18_07-14-03: t_0043@abajo-izq ~ 14:10",
+      "2026-11-18_08-08-46: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_08-08-46: t_0025@abajo-izq ~ 08:10",
+      "2026-11-18_07-32-08: t_0020@abajo-izq ~ 06:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "decor-district",
+    "titulo": "Decor District",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Zona junto a Leaf Links y Washington Beach.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_07-47-22: t_0001@abajo-izq ~ 00:10",
+      "2026-11-18_07-47-22: t_0001@abajo-der ~ 00:15",
+      "2026-11-18_07-47-22: t_0006@arriba-izq ~ 01:40",
+      "2026-11-18_07-50-32: t_0016@arriba-der ~ 05:05"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "leaf-links",
+    "titulo": "Leaf Links",
+    "subtitulo": "Zona delimitada",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Zona delimitada entre Decor District y Washington Beach.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0001@abajo-der ~ 00:15",
+      "2026-11-18_07-47-22: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_07-47-22: t_0001@abajo-izq ~ 00:10",
+      "2026-11-18_07-47-22: t_0006@arriba-izq ~ 01:40"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "tequesta",
+    "titulo": "Tequesta",
+    "subtitulo": "Zona",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0016@arriba-der ~ 05:05",
+      "2026-11-18_07-50-32: t_0017@arriba-izq ~ 05:20",
+      "2026-11-18_07-50-32: t_0023@abajo-izq ~ 07:30",
+      "2026-11-18_07-50-32: t_0024@arriba-izq ~ 07:40",
+      "2026-11-18_07-32-08: t_0022@arriba-der ~ 07:05"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "retiro-de-tequesta",
+    "titulo": "Retiro de Tequesta",
+    "subtitulo": "Zona",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta del sur del mapa.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@arriba-izq ~ 00:20",
+      "2026-11-18_07-50-32: t_0016@arriba-der ~ 05:05",
+      "2026-11-18_07-50-32: t_0017@arriba-izq ~ 05:20",
+      "2026-11-18_07-50-32: t_0023@abajo-izq ~ 07:30",
+      "2026-11-18_07-50-32: t_0024@arriba-izq ~ 07:40"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "hamlet",
+    "titulo": "Hamlet",
+    "subtitulo": "Zona/pueblo",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rótulo de zona naranja al pasar por autopista; zona de pantanos y cayos con tiendas; da nombre al centro penitenciario y al depósito policial.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0034@abajo-der ~ 11:15",
+      "2026-11-18_06-55-56: t_0012@arriba-izq ~ 03:45",
+      "2026-11-18_08-08-46: t_0071@abajo-der ~ 00:23:35",
+      "2026-11-18_08-08-46: t_0071@arriba-der ~ 00:23:25",
+      "2026-11-18_09-18-06: t_0063@abajo-izq ~ 20:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "grassrivers",
+    "titulo": "Grassrivers",
+    "subtitulo": "Zona delimitada",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Zona delimitada al suroeste del mapa con Cayo Lince, Watson Bay y Río Pelican.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@abajo-izq ~ 00:30",
+      "2026-11-18_09-18-06: t_0055@abajo-izq ~ 18:10",
+      "2026-11-18_09-18-06: t_0055@abajo-der ~ 18:15",
+      "2026-11-18_09-18-06: t_0056@arriba-izq ~ 18:20",
+      "2026-11-18_09-18-06: t_0063@abajo-izq ~ 20:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "bahia-de-peacock",
+    "titulo": "Bahía de Peacock",
+    "subtitulo": "Barrio / zona de HUD",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rótulo verde 'PEACOCK BAY' al entrar por autopista; etiqueta de zona en el minimapa; cartel 'SW 9th Ave Southside Peacock Bay (Exit 3)'.",
+      "alias": [
+        "Peacock Bay"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0046@arriba-der ~ 15:05",
+      "2026-11-18_06-55-56: t_0046@abajo-der ~ 15:15",
+      "2026-11-18_08-08-46: t_0068@abajo-izq ~ 00:22:30"
+    ],
+    "notas": "Une 'Peacock Bay' (barrio rotulado) y 'Bahía de Peacock' (HUD). Categoría dudosa entre barrio y Aguas."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "aldea-abajo",
+    "titulo": "Aldea Abajo",
+    "subtitulo": "Barrio",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta de barrio al llegar a la tienda Motor Crazy / Vehicle Hire.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0011@arriba-izq ~ 03:20",
+      "2026-11-18_07-14-03: t_0011@arriba-der ~ 03:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "aldea-de-artistas",
+    "titulo": "Aldea de artistas",
+    "subtitulo": "Aldea/mercado",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Nombre de zona en el minimapa. Mercado con tiendas de madera turquesa, boutique, tienda de camisetas y flamencos rosas; donde se cobra el alquiler de Brian.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0095@arriba-izq ~ 00:31:20",
+      "2026-11-18_08-08-46: t_0096@abajo-izq ~ 00:31:50"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "valle-de-pelican",
+    "titulo": "Valle de Pelican",
+    "subtitulo": "Región",
+    "categoria": "Ciudades y Barrios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta de región semitapada en la esquina del mapa; el campamento resaltado está en una isla del delta de manglares.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_06-38-41: t_0007@abajo-der ~ 00:02:15"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "cayo-lento",
+    "titulo": "Cayo Lento",
+    "subtitulo": "Isla larga y estrecha",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Isla alargada en diagonal NE-SO con calles densas; cartel de bienvenida 'Welcome to Key Lento – Back to the real world'. Con tiendas en el mapa.",
+      "alias": [
+        "Key Lento"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0086@arriba-izq ~ 00:28:20",
+      "2026-11-18_08-08-46: t_0087@abajo-der ~ 00:28:55",
+      "2026-11-18_08-08-46: t_0089@abajo-izq ~ 00:29:30",
+      "2026-11-18_08-08-46: t_0117@abajo-izq ~ 00:38:50",
+      "2026-11-18_08-08-46: t_0118@abajo-izq ~ 00:39:10"
+    ],
+    "notas": "region_padre no consta explícitamente (posible Condado de Mariana por zoom; no verificado)."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "cayo-abismo",
+    "titulo": "Cayo Abismo",
+    "subtitulo": "Cayo",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Zona que el HUD muestra al cruzar el puente; cayo del sur junto a Cayo Lento.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0086@arriba-izq ~ 00:28:20",
+      "2026-11-18_08-08-46: t_0087@abajo-der ~ 00:28:55",
+      "2026-11-18_08-08-46: t_0089@abajo-izq ~ 00:29:30",
+      "2026-11-18_08-08-46: t_0117@abajo-izq ~ 00:38:50",
+      "2026-11-18_08-08-46: t_0118@abajo-izq ~ 00:39:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "cayo-cimarron",
+    "titulo": "Cayo Cimarrón",
+    "subtitulo": "Cayo",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cayo del sur con tiendas.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@abajo-der ~ 00:35"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "cayo-corsario",
+    "titulo": "Cayo Corsario",
+    "subtitulo": "Cayo",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Zona de pantanos y cayos; mencionado también en el chat de Brian.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@arriba-der ~ 00:25",
+      "2026-11-18_08-08-46: t_0086@arriba-izq ~ 00:28:20",
+      "2026-11-18_08-08-46: t_0087@abajo-der ~ 00:28:55",
+      "2026-11-18_08-08-46: t_0089@abajo-izq ~ 00:29:30",
+      "2026-11-18_08-08-46: t_0117@abajo-izq ~ 00:38:50"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "cayos-descalzos",
+    "titulo": "Cayos Descalzos",
+    "subtitulo": "Cayos",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Zona mostrada sobre el minimapa al cruzar el puente largo; valla 'The Keys'.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0033@arriba-izq ~ 10:40",
+      "2026-11-18_06-55-56: t_0033@arriba-der ~ 10:45",
+      "2026-11-18_08-08-46: t_0074@arriba-izq ~ 00:24:20",
+      "2026-11-18_08-08-46: t_0138@abajo-der ~ 00:45:55",
+      "2026-11-18_08-08-46: t_0174@abajo-der ~ 00:57:55"
+    ],
+    "notas": "Alias en inglés aportado por la equivalencia indicada en las instrucciones, no leído en pantalla."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "cayo-lince",
+    "titulo": "Cayo Lince",
+    "subtitulo": "Cayo",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Grassrivers",
+      "descripcion": "Etiqueta dentro de la zona Grassrivers.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@abajo-izq ~ 00:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "cayo-gloriana",
+    "titulo": "Cayo Gloriana",
+    "subtitulo": "Cayo",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta del sur del mapa.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@arriba-izq ~ 00:20"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "cayo-catalan",
+    "titulo": "Cayo Catalán",
+    "subtitulo": "Cayo",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta del sur del mapa; el cartel de carretera 'Hamlet - Catalan Key' lo indica en inglés.",
+      "alias": [
+        "Catalan Key"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@arriba-izq ~ 00:20",
+      "MAPA_2: f_0094 ~ 00:03:06",
+      "MAPA_2: f_0095 ~ 00:03:08 (de fondo)",
+      "MAPA_2: f_0096 ~ 00:03:10 (parcial)",
+      "2026-11-18_08-08-46: t_0135@arriba-izq ~ 00:44:40"
+    ],
+    "notas": "Equivalencia Catalan Key = Cayo Catalán por similitud de nombre; verificar. Distinto de 'Isla Catalana'."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "isla-dalton",
+    "titulo": "Isla Dalton",
+    "subtitulo": "Isla",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Aparece como zona delimitada.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@arriba-izq ~ 00:20"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "isla-penmarch",
+    "titulo": "Isla Penmarch",
+    "subtitulo": "Isla",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Vice City",
+      "descripcion": "Isla frente a Vice City; también etiqueta de zona en el minimapa.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0005@arriba-der ~ 01:45",
+      "2026-11-18_07-50-32: t_0012@abajo-izq ~ 03:50",
+      "2026-11-18_07-50-32: t_0002@arriba-izq ~ 00:20",
+      "2026-11-18_07-50-32: t_0003@abajo-der ~ 01:15",
+      "2026-11-18_07-50-32: t_0019@arriba-izq ~ 06:00"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "isla-oldby",
+    "titulo": "Isla Oldby",
+    "subtitulo": "Isla",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Isla frente a Vice City.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0005@arriba-der ~ 01:45",
+      "2026-11-18_07-50-32: t_0012@abajo-izq ~ 03:50",
+      "2026-11-18_07-50-32: t_0016@arriba-der ~ 05:05",
+      "2026-11-18_07-50-32: t_0017@arriba-izq ~ 05:20",
+      "2026-11-18_07-50-32: t_0023@abajo-izq ~ 07:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "isla-casanova",
+    "titulo": "Isla Casanova",
+    "subtitulo": "Isla",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Isla frente a Vice City.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0005@arriba-der ~ 01:45",
+      "2026-11-18_07-50-32: t_0012@abajo-izq ~ 03:50",
+      "2026-11-18_08-08-46: t_0008@arriba-izq ~ 02:20",
+      "2026-11-18_08-08-46: t_0011@arriba-izq ~ 03:20",
+      "2026-11-18_08-08-46: t_0012@abajo-izq ~ 04:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "isla-washington",
+    "titulo": "Isla Washington",
+    "subtitulo": "Isla",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0016@arriba-der ~ 05:05",
+      "2026-11-18_07-50-32: t_0017@arriba-izq ~ 05:20",
+      "2026-11-18_07-50-32: t_0023@abajo-izq ~ 07:30",
+      "2026-11-18_07-50-32: t_0024@arriba-izq ~ 07:40"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "isla-starfish",
+    "titulo": "Isla Starfish",
+    "subtitulo": "Isla",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0117@arriba-izq ~ 00:38:40",
+      "2026-11-18_08-08-46: t_0117@arriba-der ~ 00:38:45",
+      "2026-11-18_08-08-46: t_0093@arriba-der ~ 00:30:45",
+      "2026-11-18_08-08-46: t_0116@abajo-der ~ 00:38:35",
+      "2026-11-18_08-08-46: t_0118@abajo-izq ~ 00:39:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "isla-waxman",
+    "titulo": "Isla Waxman",
+    "subtitulo": "Isla",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rótulo de ubicación al cruzar un puente en obras; vista de bahía y puerto con crucero.",
+      "alias": [
+        "Waxman Island"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0045@abajo-der ~ 14:55",
+      "2026-11-18_08-08-46: t_0117@arriba-izq ~ 00:38:40",
+      "2026-11-18_08-08-46: t_0117@arriba-der ~ 00:38:45",
+      "2026-11-18_08-08-46: t_0093@arriba-der ~ 00:30:45",
+      "2026-11-18_08-08-46: t_0116@abajo-der ~ 00:38:35"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "isla-vespucci",
+    "titulo": "Isla Vespucci",
+    "subtitulo": "Isla",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0008@arriba-izq ~ 02:20",
+      "2026-11-18_08-08-46: t_0011@arriba-izq ~ 03:20",
+      "2026-11-18_08-08-46: t_0012@abajo-izq ~ 04:10",
+      "2026-11-18_08-08-46: t_0016@arriba-izq ~ 05:00",
+      "2026-11-18_07-50-32: t_0016@arriba-der ~ 05:05"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "isla-catalana",
+    "titulo": "Isla Catalana",
+    "subtitulo": "Isla",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0008@arriba-izq ~ 02:20",
+      "2026-11-18_08-08-46: t_0011@arriba-izq ~ 03:20",
+      "2026-11-18_08-08-46: t_0012@abajo-izq ~ 04:10",
+      "2026-11-18_08-08-46: t_0016@arriba-izq ~ 05:00",
+      "2026-11-18_07-50-32: t_0016@arriba-der ~ 05:05"
+    ],
+    "notas": "Posible relación con Cayo Catalán; no unir sin verificar."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "islas-de-rialto",
+    "titulo": "Islas de Rialto",
+    "subtitulo": "Archipiélago",
+    "categoria": "Islas y Cayos",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0117@arriba-izq ~ 00:38:40",
+      "2026-11-18_08-08-46: t_0117@arriba-der ~ 00:38:45",
+      "2026-11-18_08-08-46: t_0093@arriba-der ~ 00:30:45",
+      "2026-11-18_08-08-46: t_0116@abajo-der ~ 00:38:35",
+      "2026-11-18_08-08-46: t_0118@abajo-izq ~ 00:39:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "estrecho-de-leonida",
+    "titulo": "Estrecho de Leónida",
+    "subtitulo": "Estrecho",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cuerpo de agua rotulado en letras pequeñas grises, al sur del área explorada de Mariana.",
+      "alias": [
+        "Estrecho de Leonida"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA_2: f_0067 ~ 00:02:12 (0.59,0.89)",
+      "MAPA_2: f_0071 ~ 00:02:20 (0.46,0.87)",
+      "MAPA_2: f_0068 ~ 00:02:14 (texto tenue 0.26,0.19, baja)",
+      "MAPA: f_0134@00:04:26",
+      "2026-11-18_06-55-56: t_0028@abajo-izq ~ 09:10"
+    ],
+    "notas": "Un hallazgo lo sitúa dentro del contorno del Condado de Mariana. Masa de agua al sur del Condado de Mariana (no parte del condado)."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "estrecho-de-capri",
+    "titulo": "Estrecho de Capri",
+    "subtitulo": "Estrecho",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0012@arriba-der ~ 03:45",
+      "2026-11-18_07-50-32: t_0010@arriba-der ~ 03:05",
+      "2026-11-18_07-50-32: t_0016@abajo-izq ~ 05:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "oceano-atlantico",
+    "titulo": "Océano Atlántico",
+    "subtitulo": "Océano",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Etiqueta tenue de océano en el mapa; límite este de Leónida.",
+      "alias": [
+        "Oceano Atlantico"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0010@abajo-izq ~ 03:10",
+      "MAPA: f_0137@00:04:32",
+      "2026-11-18_06-55-56: t_0028@abajo-izq ~ 09:10",
+      "2026-11-18_06-55-56: t_0028@abajo-der ~ 09:15",
+      "2026-11-18_06-55-56: t_0029@arriba-izq ~ 09:20"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "bahia-catalana",
+    "titulo": "Bahía Catalana",
+    "subtitulo": "Bahía",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0012@arriba-der ~ 03:45",
+      "2026-11-18_07-50-32: t_0010@arriba-der ~ 03:05",
+      "2026-11-18_07-50-32: t_0016@abajo-izq ~ 05:10",
+      "2026-11-18_07-47-22: t_0002@arriba-izq ~ 00:20",
+      "2026-11-18_07-32-08: t_0021@arriba-der ~ 06:45"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "bahia-de-tola",
+    "titulo": "Bahía de Tola",
+    "subtitulo": "Bahía",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0012@arriba-der ~ 03:45",
+      "2026-11-18_07-50-32: t_0010@arriba-der ~ 03:05",
+      "2026-11-18_07-50-32: t_0016@abajo-izq ~ 05:10",
+      "2026-11-18_07-32-08: t_0021@arriba-der ~ 06:45"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "bahia-de-leonida",
+    "titulo": "Bahía de Leónida",
+    "subtitulo": "Bahía",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "alias": [
+        "Bahia de Leonida"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0003@arriba-izq ~ 00:40",
+      "2026-11-18_07-47-22: t_0003@arriba-der ~ 00:45",
+      "2026-11-18_07-47-22: t_0003@abajo-izq ~ 00:50",
+      "2026-11-18_09-18-06: t_0055@abajo-izq ~ 18:10",
+      "2026-11-18_09-18-06: t_0055@abajo-der ~ 18:15"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "golfo-de-leonida",
+    "titulo": "Golfo de Leónida",
+    "subtitulo": "Golfo",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Leónida",
+      "descripcion": "Etiqueta de agua en el borde izquierdo del mapa de estado, al oeste del contorno.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA: f_0135@00:04:28"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "bahia-de-gambit",
+    "titulo": "Bahía de Gambit",
+    "subtitulo": "Bahía",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Bahía con islotes y área delimitada, al oeste/noroeste de Cayo Lento.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0138@abajo-der ~ 00:45:55",
+      "2026-11-18_08-08-46: t_0174@abajo-izq ~ 00:57:50",
+      "2026-11-18_08-08-46: t_0012@abajo-der ~ 04:25",
+      "2026-11-18_09-18-06: t_0055@abajo-izq ~ 18:10",
+      "2026-11-18_09-18-06: t_0055@abajo-der ~ 18:15"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "bahia-de-peregrine",
+    "titulo": "Bahía de Peregrine",
+    "subtitulo": "Bahía",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@arriba-der ~ 00:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "lago-cottonmouth",
+    "titulo": "Lago Cottonmouth",
+    "subtitulo": "Lago",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@arriba-der ~ 00:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "lago-three-toe",
+    "titulo": "Lago Three Toe",
+    "subtitulo": "Lago",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta cortada ('lago Three To') en el mapa.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_07-47-22: t_0001@abajo-izq ~ 00:10",
+      "2026-11-18_07-47-22: t_0001@abajo-der ~ 00:15",
+      "2026-11-18_07-47-22: t_0006@arriba-izq ~ 01:40",
+      "2026-11-18_08-08-46: t_0008@arriba-izq ~ 02:20"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "lago-tallaloko",
+    "titulo": "Lago Tallaloko",
+    "subtitulo": "Lago",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta de agua del interior.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0010@abajo-izq ~ 03:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "lago-leonida",
+    "titulo": "Lago Leónida",
+    "subtitulo": "Lago",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta de agua del interior.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0010@abajo-izq ~ 03:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "cuenca-de-millport",
+    "titulo": "Cuenca de Millport",
+    "subtitulo": "Cuenca",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta de agua/relieve del interior.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0010@abajo-izq ~ 03:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "watson-bay",
+    "titulo": "Watson Bay",
+    "subtitulo": "Bahía",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Grassrivers",
+      "descripcion": "Etiqueta tenue dentro de Grassrivers.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@abajo-izq ~ 00:30",
+      "2026-11-18_09-18-06: t_0055@abajo-izq ~ 18:10",
+      "2026-11-18_09-18-06: t_0055@abajo-der ~ 18:15",
+      "2026-11-18_09-18-06: t_0056@arriba-izq ~ 18:20",
+      "2026-11-18_09-18-06: t_0063@abajo-izq ~ 20:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "rio-pelican",
+    "titulo": "Río Pelican",
+    "subtitulo": "Río",
+    "categoria": "Aguas",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Grassrivers",
+      "descripcion": "Etiqueta cortada dentro de Grassrivers.",
+      "alias": []
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@abajo-izq ~ 00:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "nine1nine",
+    "titulo": "NINE1NINE",
+    "subtitulo": "Club nocturno",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Vice City",
+      "descripcion": "Club con cola de entrada, alfombra roja, barra principal, pista de baile con plataforma elevada, terraza/azotea con barra y cajeros ATM. Etiqueta de zona en el HUD.",
+      "alias": [],
+      "tipo": "club striptease/discoteca",
+      "zonas_cartel": [
+        "ROOF TERRACE",
+        "MAIN BAR"
+      ],
+      "incluye": [
+        "bailar",
+        "saludar"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0017@abajo-izq ~ 05:50",
+      "2026-11-18_08-08-46: t_0018@arriba-izq ~ 06:00",
+      "2026-11-18_08-08-46: t_0019@abajo-izq ~ 06:50",
+      "2026-11-18_08-08-46: t_0020@arriba-izq ~ 07:00",
+      "2026-11-18_08-08-46: t_0028@arriba-izq ~ 09:00"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "the-vault",
+    "titulo": "The Vault",
+    "subtitulo": "Club nocturno",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "El referente de la música electrónica underground en Vice City. Club para pasarse de rave todo el día y toda la noche con DJ de clase mundial.",
+      "alias": [],
+      "tipo": "club nocturno",
+      "incluye": [
+        "bar/cocteles"
+      ],
+      "cartel": "YOU ARE NOW ENTERING THE VAULT"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_08-08-46: t_0002@arriba-izq ~ 00:20",
+      "2026-11-18_08-08-46: t_0004@abajo-izq ~ 01:10",
+      "2026-11-18_08-08-46: t_0005@abajo-der ~ 01:35",
+      "2026-11-18_08-08-46: t_0006@arriba-izq ~ 01:40"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "ammu-nation-chucks-tackle-y-shot",
+    "titulo": "Ammu-Nation (Chuck's Tackle & Shot)",
+    "subtitulo": "Tienda de armas",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Cayo Lento",
+      "descripcion": "Tienda de armas en centro comercial de tejado rojo; rótulo 'TACKLE & SHOT' y banner AMMU-NATION. Dependiente: Andrew.",
+      "alias": [],
+      "tipo": "armería"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0177@abajo-izq ~ 00:58:50",
+      "2026-11-18_08-08-46: t_0177@abajo-der ~ 00:58:55",
+      "2026-11-18_08-08-46: t_0178@arriba-izq ~ 00:59:00",
+      "2026-11-18_08-08-46: t_0178@arriba-der ~ 00:59:05",
+      "2026-11-18_08-08-46: t_0178@abajo-izq ~ 00:59:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "big-shots",
+    "titulo": "Big Shots",
+    "subtitulo": "Armería",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Tienda de armas y ropa táctica con campo de tiro. Cartel: 'We stock Guns, Ammo, Explosives, Gifts, Knives, Accessories'.",
+      "alias": [],
+      "tipo": "armería"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0050@abajo-izq ~ 16:30",
+      "2026-11-18_09-18-06: t_0052@abajo-izq ~ 17:30",
+      "2026-11-18_09-18-06: t_0053@arriba-izq ~ 17:40"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "urban-legendz",
+    "titulo": "Urban Legendz",
+    "subtitulo": "Tienda de ropa",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Tienda de ropa de barrio que vende moda urbana y accesorios.",
+      "alias": [],
+      "estilo": "ROPA URBANA",
+      "incluye": [
+        "percha"
+      ],
+      "ubicacion": "cerca de Crosstown"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0008@arriba-izq ~ 02:20",
+      "2026-11-18_08-08-46: t_0008@arriba-der ~ 02:25",
+      "2026-11-18_08-08-46: t_0009@arriba-izq ~ 03:00",
+      "2026-11-18_08-08-46: t_0012@arriba-izq ~ 03:40"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "barnacle-beauties",
+    "titulo": "Barnacle Beauties",
+    "subtitulo": "Salón de belleza",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Cayo Lento",
+      "descripcion": "Salón de belleza relajado conocido por su apacible ambiente playero.",
+      "alias": [],
+      "estilo": "UNISEX",
+      "ubicacion": "Cayo Lento, cerca de Cayo Cimarrón y Cayo Abismo"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0002@abajo-der ~ 00:35"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "twa-ponya-tattoo",
+    "titulo": "Twa Ponya Tattoo",
+    "subtitulo": "Estudio de tatuajes",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Estudio de tatuajes conocido por su enfoque moderno en diseños clásicos. También ofrece joyería facial.",
+      "alias": [],
+      "estilo": "NEOTRADICIONAL",
+      "ubicacion": "cerca de Stockyard/Crosstown"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0027@arriba-der ~ 08:45"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "crosstown-cutz",
+    "titulo": "Crosstown Cutz",
+    "subtitulo": "Barbería",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Barbería popular y punto de encuentro, famosa por sus degradados y perfilados.",
+      "alias": [],
+      "estilo": "BARBERÍA"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0012@arriba-der ~ 04:05"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "souvenirs-washed-ashore",
+    "titulo": "Souvenirs Washed Ashore",
+    "subtitulo": "Tienda de souvenirs",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Puesto de souvenirs en un centro comercial que vende accesorios y moda veraniega.",
+      "alias": [],
+      "estilo": "SOUVENIR"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0028@abajo-izq ~ 09:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "taller-janjak",
+    "titulo": "Taller Janjak",
+    "subtitulo": "Negocio / tapadera San4San",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Condado de Vice-Dale",
+      "descripcion": "Los San4San usan el taller Janjak como tapadera para su boyante operación de tráfico de hierba.",
+      "alias": [],
+      "nivel_seguridad": "ALTO",
+      "valor_botin": "3 800 $ - 5 800 $",
+      "objetos_valor_unicos": "???",
+      "ubicacion": "noroeste del Condado de Vice-Dale"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0030@arriba-der ~ 09:45",
+      "2026-11-18_09-18-06: t_0056@arriba-izq ~ 18:20"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "down-time-cafe",
+    "titulo": "Down Time Café",
+    "subtitulo": "Cafetería",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cafetería ('COFFEE · INTERNET · FRIENDS') con etiqueta de zona sobre el minimapa; se compra comida.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0011@abajo-der ~ 03:35"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "coastal-auto-care",
+    "titulo": "Coastal Auto Care",
+    "subtitulo": "Taller",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Taller de Joey con letreros 'New & Used', 'Spare Parts', 'Finance', 'Oil Change' y 'Now offering scooter repairs 1-999-COASTAL'.",
+      "alias": [],
+      "servicios": [
+        "reparaciones",
+        "aceite",
+        "repuestos",
+        "financiación",
+        "scooters"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0121@arriba-izq ~ 00:40:00",
+      "2026-11-18_08-08-46: t_0124@arriba-der ~ 00:41:05",
+      "2026-11-18_08-08-46: t_0131@arriba-der ~ 00:43:25",
+      "2026-11-18_08-08-46: t_0134@arriba-izq ~ 00:44:20"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "motor-crazy-vehicle-hire",
+    "titulo": "Motor Crazy / Vehicle Hire",
+    "subtitulo": "Alquiler y reparación de vehículos",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Escaparate con 'VEHICLE HIRE', 'AUTO PARTS', 'REPAIRS'; junto a un café 24/7.",
+      "alias": [],
+      "servicios": [
+        "alquiler de vehículos",
+        "repuestos",
+        "reparaciones"
+      ],
+      "ubicacion": "zona Aldea Abajo (etiqueta de barrio al llegar)"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0011@arriba-izq ~ 03:20",
+      "2026-11-18_07-14-03: t_0011@arriba-der ~ 03:25",
+      "2026-11-18_07-14-03: t_0011@abajo-izq ~ 03:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "brians-boat-works-y-marina",
+    "titulo": "Brian's Boat Works & Marina",
+    "subtitulo": "Astillero / marina",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Hangar celeste con rótulo 'Brian's' y librea 'Brian's Boat Works & Marina' en el hidroavión; destino final del vuelo.",
+      "alias": [
+        "Puerto deportivo de Brian",
+        "Brian's Marina"
+      ],
+      "tipo": "astillero / taller naval / marina"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA: f_0007@completo ~ 00:12 (rotulo 'Brian's')",
+      "MAPA: f_0008@completo ~ 00:14",
+      "MAPA: f_0017@completo ~ 00:32 (librea 'Brian's Boat Works & Marina')",
+      "MAPA: f_0027@completo ~ 00:52 (interior hangar con yate)",
+      "2026-11-18_06-38-41: t_0021@arriba-izq ~ 00:06:40"
+    ],
+    "notas": "Une 'Puerto deportivo de Brian', 'BRIAN'S MARINA' y el rótulo del hangar; equivalencia probable pero no confirmada en pantalla."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "key-lento-marina-club",
+    "titulo": "Key Lento Marina Club",
+    "subtitulo": "Club náutico / marina",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rótulo en la fachada de un edificio blanco de varias plantas junto a un canal, visto desde un hidroavión.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "MAPA: f_0002@completo ~ 00:02",
+      "MAPA: f_0003@completo ~ 00:04",
+      "MAPA: f_0004@completo ~ 00:06",
+      "MAPA: f_0005@completo ~ 00:08 (texto cortado 'KEY LENTO MAR')"
+    ],
+    "notas": "Visto de noche con tormenta; region_padre no deducible."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "the-trawler",
+    "titulo": "The Trawler",
+    "subtitulo": "Bar",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Bar costero con luces turquesa y banderines; 'DRINK LIKE A FISH' pintado en la pared.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0003@arriba-izq ~ 00:40",
+      "2026-11-18_06-55-56: t_0003@arriba-der ~ 00:45",
+      "2026-11-18_06-55-56: t_0004@arriba-izq ~ 01:00"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "isla-tropical-private-club",
+    "titulo": "Isla Tropical Private Club",
+    "subtitulo": "Club privado",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cartel con pez vela 'Isla Tropical – Private Club'; Brian lo llama 'club privado Isla Tropical'. Su trastienda tiene el escondite de Brian.",
+      "alias": [
+        "Club privado Isla Tropical"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0107@abajo-der ~ 00:35:35",
+      "2026-11-18_08-08-46: t_0114@arriba-izq ~ 00:37:40",
+      "2026-11-18_08-08-46: t_0114@arriba-der ~ 00:37:45"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "the-savannah",
+    "titulo": "The Savannah",
+    "subtitulo": "Local con terraza",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Local con terraza con sofás junto a una marina con barcos y motos acuáticas.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0012@abajo-der ~ 03:55",
+      "2026-11-18_07-32-08: t_0013@arriba-izq ~ 04:00"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "the-red-snapper",
+    "titulo": "The Red Snapper",
+    "subtitulo": "Marisquería",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Valla iluminada 'THE RED SNAPPER - FRESH SEAFOOD' junto a un recinto de Boat Storage.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA: f_0143@00:04:44",
+      "MAPA: f_0144@00:04:46"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "boat-storage",
+    "titulo": "Boat Storage",
+    "subtitulo": "Guardería de barcos",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Banderines amarillos 'BOAT STORAGE' con teléfono en la entrada de un recinto con portón.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "MAPA: f_0142@00:04:42",
+      "MAPA: f_0143@00:04:44",
+      "MAPA: f_0144@00:04:46"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "the-threads-shed-flip-flop-house",
+    "titulo": "The Threads Shed Flip Flop House",
+    "subtitulo": "Tienda de ropa/chanclas",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Tienda con rótulo iluminado en morado y amarillo.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA: f_0145@00:04:48",
+      "MAPA: f_0146@00:04:50",
+      "MAPA: f_0147@00:04:52"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "used-auto-parts-pay-n-spray",
+    "titulo": "Used Auto Parts / Pay 'n' Spray",
+    "subtitulo": "Taller",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Hamlet",
+      "descripcion": "Taller con cartel Used Auto Parts y garaje de pintura (Replicolor, Tiretube).",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0036@abajo-der ~ 11:55",
+      "2026-11-18_09-18-06: t_0037@arriba-izq ~ 12:00"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "hamlet-pawnshop",
+    "titulo": "Hamlet Pawnshop",
+    "subtitulo": "Casa de empeños",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Hamlet",
+      "descripcion": "Cartel en valla publicitaria.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0020@arriba-der ~ 06:45"
+    ],
+    "notas": "Sale en una valla; no se vio el local."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "espinosa-jewels",
+    "titulo": "Espinosa Jewels",
+    "subtitulo": "Joyería",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rótulo visible desde la pasarela del local de cobro, antes del atraco.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_06-16-57: t_0001@abajo-izq ~ 00:10"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "ajax-gym",
+    "titulo": "Ajax Gym",
+    "subtitulo": "Gimnasio",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0004@abajo-der ~ 01:35",
+      "2026-11-18_07-50-32: t_0003@abajo-der ~ 01:15",
+      "2026-11-18_07-50-32: t_0005@arriba-izq ~ 01:40",
+      "2026-11-18_07-50-32: t_0021@abajo-der ~ 06:55"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "tiki-trader",
+    "titulo": "Tiki Trader",
+    "subtitulo": "Arte tallado",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Puesto 'TIKI TRADER — HAND CARVED ART'.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0135@arriba-izq ~ 00:44:40",
+      "2026-11-18_08-08-46: t_0136@arriba-der ~ 00:45:05",
+      "2026-11-18_08-08-46: t_0138@arriba-izq ~ 00:45:40",
+      "2026-11-18_08-08-46: t_0140@abajo-der ~ 00:46:35",
+      "2026-11-18_08-08-46: t_0177@arriba-izq ~ 00:58:40"
+    ],
+    "notas": "Visto en ruta por Cayo Lento; ubicación exacta no indicada."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "tire-sale",
+    "titulo": "Tire Sale",
+    "subtitulo": "Neumáticos y baterías",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cartel 'TIRE SALE - NEW & USED - WE SELL BATTERIES' junto al camino al garaje.",
+      "alias": []
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0040@arriba-der ~ 13:05"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "logger-beer",
+    "titulo": "Logger Beer",
+    "subtitulo": "Bar",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Neón 'LOGGER BEER' en un bar de madera.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0092@abajo-der ~ 00:30:35",
+      "2026-11-18_08-08-46: t_0084@arriba-der ~ 00:27:45",
+      "2026-11-18_08-08-46: t_0094@arriba-izq ~ 00:31:00",
+      "2026-11-18_08-08-46: t_0094@abajo-der ~ 00:31:15",
+      "2026-11-18_08-08-46: t_0093@abajo-izq ~ 00:30:50"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "carlos",
+    "titulo": "Carlo's",
+    "subtitulo": "Pizzería",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cartel 'CARLO'S – the best pizza since ... We deliver'.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0092@abajo-der ~ 00:30:35",
+      "2026-11-18_08-08-46: t_0084@arriba-der ~ 00:27:45",
+      "2026-11-18_08-08-46: t_0094@arriba-izq ~ 00:31:00",
+      "2026-11-18_08-08-46: t_0094@abajo-der ~ 00:31:15",
+      "2026-11-18_08-08-46: t_0093@abajo-izq ~ 00:30:50"
+    ],
+    "notas": "Nombre parcial; podría coincidir con el cartel '...CARL... THE BEST PIZZA S...' de otro hallazgo."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "the-sirens-chest",
+    "titulo": "The Siren's Chest",
+    "subtitulo": "Tienda",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Tienda con rótulo 'THE SIREN'S CHEST'.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0092@abajo-der ~ 00:30:35",
+      "2026-11-18_08-08-46: t_0084@arriba-der ~ 00:27:45",
+      "2026-11-18_08-08-46: t_0094@arriba-izq ~ 00:31:00",
+      "2026-11-18_08-08-46: t_0094@abajo-der ~ 00:31:15",
+      "2026-11-18_08-08-46: t_0093@abajo-izq ~ 00:30:50"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "the-rusty-anchor",
+    "titulo": "The Rusty Anchor",
+    "subtitulo": "Bar/local",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Pegatina 'I DROPPED AT THE RUSTY ANCHOR' en la nevera de la casa; en subtítulos se menciona 'el Rusty'.",
+      "alias": [
+        "El Rusty"
+      ]
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0023@abajo-der ~ 07:35",
+      "2026-11-18_06-55-56: t_0002@arriba-izq ~ 00:20",
+      "2026-11-18_06-55-56: t_0007@abajo-der ~ 02:05",
+      "MAPA_2: f_0012 ~ 00:00:22",
+      "MAPA_2: f_0013 ~ 00:00:24"
+    ],
+    "notas": "Une pegatina 'Rusty Anchor' con 'El Rusty' de subtítulos; equivalencia probable no confirmada."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "six-projects",
+    "titulo": "SIX Projects",
+    "subtitulo": null,
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "estellas",
+    "titulo": "Estella's",
+    "subtitulo": null,
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Comercio junto a West Royal St.",
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "olympian",
+    "titulo": "Olympian",
+    "subtitulo": null,
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "crescent-pie",
+    "titulo": "Crescent Pie",
+    "subtitulo": "Pizzería/restaurante",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Pizzería/restaurante.",
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "mammacitas-cafe",
+    "titulo": "Mammacita's Cafe",
+    "subtitulo": "Café",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Café con el lema 'Vice City's favorite coffee spot'.",
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "aleta",
+    "titulo": "Aleta",
+    "subtitulo": null,
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "snackmart",
+    "titulo": "Snackmart",
+    "subtitulo": null,
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "bartons",
+    "titulo": "Bartons",
+    "subtitulo": null,
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "pops-pills",
+    "titulo": "Pop's Pills",
+    "subtitulo": "Farmacia",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Farmacia con 'FREE DELIVERY' y cajeros ATM junto a ella.",
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "diangelo-italian-bakery",
+    "titulo": "Diangelo Italian Bakery",
+    "subtitulo": "Panadería italiana",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Panadería italiana.",
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "louis-diner",
+    "titulo": "Louis' Diner",
+    "subtitulo": null,
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "alias": [],
+      "ubicacion": "centro de Vice City (rótulo visto en recorrido)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0006@abajo-der ~ 01:55",
+      "2026-11-18_07-14-03: t_0009@arriba-der ~ 02:45",
+      "2026-11-18_07-14-03: t_0014@abajo-der ~ 04:35",
+      "2026-11-18_07-14-03: t_0016@abajo-der ~ 05:15",
+      "2026-11-18_07-14-03: t_0017@arriba-der ~ 05:25"
+    ],
+    "notas": "Lectura incierta."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "buda-farmacia",
+    "titulo": "Buda (farmacia)",
+    "subtitulo": "Farmacia",
+    "categoria": "Negocios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rótulo BUDA con 'PHARMACY FARMACIA' debajo, en el tramo Ocean/Vice Beach.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0039@abajo-der ~ 12:55",
+      "2026-11-18_07-14-03: t_0040@arriba-izq ~ 13:00",
+      "2026-11-18_07-14-03: t_0042@arriba-der ~ 13:45",
+      "2026-11-18_07-14-03: t_0050@abajo-izq ~ 16:30",
+      "2026-11-18_07-14-03: t_0051@abajo-izq ~ 17:00"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "sunrise-rv-park",
+    "titulo": "Sunrise RV Park",
+    "subtitulo": "Campamento / RV park",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Campamento en isla de manglar accesible por muelle de madera; cabañas con techo de palma, jaulas, remolques, aerogenerador y muelle con hidroavión.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-28-51: t_0013@abajo-der ~ 00:04:15",
+      "2026-11-18_06-28-51: t_0015@arriba-izq ~ 00:04:40",
+      "2026-11-18_06-28-51: t_0008@arriba-der ~ 00:02:25",
+      "2026-11-18_06-38-41: t_0011@abajo-izq ~ 00:03:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "vivienda-de-jason",
+    "titulo": "Vivienda de Jason",
+    "subtitulo": "Casa sobre pilotes",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Condado de Mariana",
+      "descripcion": "Casa de madera verde sobre pilotes junto a un canal, con embarcadero y bote; propiedad de Brian según el tutorial.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0010@arriba-der ~ 03:05",
+      "2026-11-18_06-55-56: t_0023@abajo-izq ~ 07:30",
+      "2026-11-18_06-55-56: t_0024@abajo-der ~ 07:55",
+      "2026-11-18_06-55-56: t_0025@arriba-der ~ 08:05",
+      "2026-11-18_06-55-56: t_0026@arriba-der ~ 08:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "casa-de-mandy",
+    "titulo": "Casa de Mandy",
+    "subtitulo": "Casa",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Casa de madera turquesa en barrio residencial.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0147@abajo-izq ~ 00:48:50",
+      "2026-11-18_08-08-46: t_0151@abajo-izq ~ 00:50:10",
+      "2026-11-18_08-08-46: t_0152@abajo-izq ~ 00:50:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "casa-de-cal",
+    "titulo": "Casa de Cal",
+    "subtitulo": "Vivienda sobre pilotes",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Vivienda de dos plantas sobre pilotes, fachada turquesa y garaje con barco; destino del objetivo 'Conduce hasta la casa de Cal.'",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "MAPA: f_0134@00:04:26",
+      "MAPA: f_0138@00:04:34",
+      "MAPA: f_0139@00:04:36",
+      "MAPA: f_0133@00:04:24"
+    ],
+    "notas": "Fuente complementaria en 'otros'; region_padre no indicada en pantalla."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "garaje-de-brian",
+    "titulo": "Garaje de Brian",
+    "subtitulo": "Garaje",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Garaje 'detrás del local de aire acondicionado en Palmetto'; destino de entrega del Phoenix.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0033@arriba-izq ~ 10:40",
+      "2026-11-18_09-18-06: t_0040@arriba-der ~ 13:05",
+      "2026-11-18_09-18-06: t_0045@arriba-izq ~ 14:40"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "hotel-crastenburg",
+    "titulo": "Hotel Crastenburg",
+    "subtitulo": "Hotel",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Lugar de reunión con Brian (bar de la piscina).",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0063@abajo-der ~ 20:35",
+      "2026-11-18_09-18-06: t_0064@arriba-izq ~ 21:00",
+      "2026-11-18_09-18-06: t_0063@arriba-der ~ 20:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "the-clarissa-hotel",
+    "titulo": "The Clarissa Hotel",
+    "subtitulo": "Hotel",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0044@abajo-der ~ 14:35",
+      "2026-11-18_07-14-03: t_0045@arriba-der ~ 14:45",
+      "2026-11-18_07-14-03: t_0042@arriba-izq ~ 13:40",
+      "2026-11-18_07-14-03: t_0026@abajo-der ~ 08:35",
+      "2026-11-18_07-14-03: t_0023@abajo-der ~ 07:35"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "sahara-arena",
+    "titulo": "Sahara Arena",
+    "subtitulo": "Pabellón",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Pabellón blanco facetado.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0044@abajo-der ~ 14:35",
+      "2026-11-18_07-14-03: t_0045@arriba-der ~ 14:45",
+      "2026-11-18_07-14-03: t_0042@arriba-izq ~ 13:40",
+      "2026-11-18_07-14-03: t_0026@abajo-der ~ 08:35",
+      "2026-11-18_07-14-03: t_0023@abajo-der ~ 07:35"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "vice-city-arts-center",
+    "titulo": "Vice City Arts Center",
+    "subtitulo": "Centro de arte",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0044@abajo-der ~ 14:35",
+      "2026-11-18_07-14-03: t_0045@arriba-der ~ 14:45",
+      "2026-11-18_07-14-03: t_0042@arriba-izq ~ 13:40",
+      "2026-11-18_07-14-03: t_0026@abajo-der ~ 08:35",
+      "2026-11-18_07-14-03: t_0023@abajo-der ~ 07:35"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "piker-financial-center",
+    "titulo": "Piker Financial Center",
+    "subtitulo": "Edificio financiero",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0044@abajo-der ~ 14:35",
+      "2026-11-18_07-14-03: t_0045@arriba-der ~ 14:45",
+      "2026-11-18_07-14-03: t_0042@arriba-izq ~ 13:40",
+      "2026-11-18_07-14-03: t_0026@abajo-der ~ 08:35",
+      "2026-11-18_07-14-03: t_0023@abajo-der ~ 07:35"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "shorefront-plaza",
+    "titulo": "ShoreFront Plaza",
+    "subtitulo": "Edificio de oficinas",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Directorio con ShoreFront, Whirlwind Insurance, Brooks Healthcare, Navitrak, VCL Group, Celltat Advertising y Minky Publishing.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0044@abajo-der ~ 14:35",
+      "2026-11-18_07-14-03: t_0045@arriba-der ~ 14:45",
+      "2026-11-18_07-14-03: t_0042@arriba-izq ~ 13:40",
+      "2026-11-18_07-14-03: t_0026@abajo-der ~ 08:35",
+      "2026-11-18_07-14-03: t_0023@abajo-der ~ 07:35"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "st-vitus-medical-center",
+    "titulo": "St. Vitus Medical Center",
+    "subtitulo": "Hospital",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0004@abajo-der ~ 01:35",
+      "2026-11-18_07-50-32: t_0003@abajo-der ~ 01:15",
+      "2026-11-18_07-50-32: t_0005@arriba-izq ~ 01:40",
+      "2026-11-18_07-50-32: t_0021@abajo-der ~ 06:55"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "puerto-de-vice-city",
+    "titulo": "Puerto de Vice City",
+    "subtitulo": "Puerto",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Valla 'Welcome to PORT VICE CITY' en zona portuaria con grúas y contenedores.",
+      "alias": [
+        "Port Vice City"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0004@abajo-izq ~ 01:30",
+      "2026-11-18_07-32-08: t_0005@abajo-izq ~ 01:50",
+      "2026-11-18_07-32-08: t_0007@abajo-izq ~ 02:10",
+      "2026-11-18_07-47-22: t_0002@arriba-izq ~ 00:20",
+      "2026-11-18_07-32-08: t_0020@abajo-izq ~ 06:30"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "ferry-terminal",
+    "titulo": "Ferry Terminal",
+    "subtitulo": "Terminal de ferris",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cartel 'FERRY TERMINAL' junto a aparcamiento y muelle.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0003@abajo-izq ~ 00:50"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "grassrivers-visitor-center",
+    "titulo": "Grassrivers Visitor Center",
+    "subtitulo": "Centro de visitantes",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cartel de carretera 'Grassrivers Visitor Center'.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0033@arriba-izq ~ 10:40",
+      "2026-11-18_09-18-06: t_0002@arriba-der ~ 00:25",
+      "2026-11-18_06-55-56: t_0033@arriba-der ~ 10:45",
+      "2026-11-18_08-08-46: t_0074@arriba-izq ~ 00:24:20",
+      "2026-11-18_08-08-46: t_0138@abajo-der ~ 00:45:55"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "vice-city-metro-fleeca-field",
+    "titulo": "Vice City Metro - Fleeca Field",
+    "subtitulo": "Estación de metro",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cartel 'VICE CITY METRO Fleeca Field'.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0005@abajo-izq ~ 01:50",
+      "2026-11-18_07-47-22: t_0005@abajo-der ~ 01:55"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "hamlet-police-impound",
+    "titulo": "Hamlet Police Impound",
+    "subtitulo": "Depósito policial",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Hamlet",
+      "descripcion": "Depósito con cartel 'POLICE IMPOUND', grúa roja y coches patrulla 'Hamlet Police'.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0014@abajo-der ~ 04:55",
+      "2026-11-18_09-18-06: t_0015@abajo-der ~ 05:15",
+      "2026-11-18_09-18-06: t_0016@arriba-izq ~ 05:20",
+      "2026-11-18_09-18-06: t_0016@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "hamlet-correctional-facility",
+    "titulo": "Hamlet Correctional Facility",
+    "subtitulo": "Centro penitenciario",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Hamlet",
+      "descripcion": "Centro penitenciario de Hamlet; aparece en llamadas gratuitas de presos.",
+      "alias": []
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0034@abajo-der ~ 11:15",
+      "2026-11-18_06-55-56: t_0012@arriba-izq ~ 03:45",
+      "2026-11-18_08-08-46: t_0071@abajo-der ~ 00:23:35",
+      "2026-11-18_08-08-46: t_0071@arriba-der ~ 00:23:25",
+      "2026-11-18_09-18-06: t_0063@abajo-izq ~ 20:30"
+    ],
+    "notas": "Fuente complementaria en 'otros'."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "wonder-whale",
+    "titulo": "Wonder Whale",
+    "subtitulo": "Estatua / rotonda",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Estatua luminosa de una ballena en una rotonda; Brian la llama 'Wonder Whale'.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0092@abajo-der ~ 00:30:35",
+      "2026-11-18_08-08-46: t_0084@arriba-der ~ 00:27:45",
+      "2026-11-18_08-08-46: t_0094@arriba-izq ~ 00:31:00",
+      "2026-11-18_08-08-46: t_0094@abajo-der ~ 00:31:15",
+      "2026-11-18_08-08-46: t_0093@abajo-izq ~ 00:30:50"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "parque-de-harborside",
+    "titulo": "Parque de Harborside",
+    "subtitulo": "Parque",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "region_padre": "Vice Beach",
+      "descripcion": "Destino citado en subtítulo: 'Parque de Harborside, en Vice Beach.'",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0042@arriba-izq ~ 13:40",
+      "2026-11-18_07-14-03: t_0051@abajo-izq ~ 17:50 (cartel Harborside Ave)"
+    ]
+  },
+  {
+    "modulo": "mapa",
+    "slug": "monumento-de-la-isla-salton",
+    "titulo": "Monumento de la Isla Salton",
+    "subtitulo": "Monumento",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta de monumento en el mapa.",
+      "alias": []
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0008@arriba-izq ~ 02:20",
+      "2026-11-18_08-08-46: t_0011@arriba-izq ~ 03:20",
+      "2026-11-18_08-08-46: t_0012@abajo-izq ~ 04:10",
+      "2026-11-18_08-08-46: t_0016@arriba-izq ~ 05:00",
+      "2026-11-18_07-50-32: t_0016@arriba-der ~ 05:05"
+    ],
+    "notas": "Etiqueta cortada ('Monument... a l...') en un hallazgo."
+  },
+  {
+    "modulo": "mapa",
+    "slug": "aivc",
+    "titulo": "AIVC",
+    "subtitulo": "Etiqueta de región (sin confirmar)",
+    "categoria": "Puntos de Interés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Etiqueta del mapa de zoom medio; posible aeropuerto, no confirmado.",
+      "alias": []
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "2026-11-18_07-47-22: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_07-47-22: t_0001@abajo-izq ~ 00:10",
+      "2026-11-18_07-47-22: t_0001@abajo-der ~ 00:15",
+      "2026-11-18_07-47-22: t_0006@arriba-izq ~ 01:40",
+      "2026-11-18_07-14-03: t_0038@abajo-izq ~ 12:30"
+    ],
+    "notas": "Nombre no confirmado. Carteles de autopista citan 'VCI Airport'."
+  },
+  {
+    "modulo": "guias",
+    "slug": "prologo",
+    "titulo": "Prólogo",
+    "subtitulo": "Atraco y regreso a la cafetería",
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 1,
+      "spoiler": true,
+      "capitulo": "Prólogo",
+      "objetivos": [
+        "Usa R para apuntar al cajero (acción AMENAZAR).",
+        "Vuelve a la cafetería."
+      ],
+      "titulo_inferido": true,
+      "detalles": [
+        "Rótulo 'PROLOGUE' al iniciar la parte en la prisión; atraco al local de préstamos 'FAST CASH / CASH HERE' con subtítulos '¡Manos arriba! ¡Es un atraco!'.",
+        "Prompt 'LEVANTARSE' sobre el personaje derribado tras caer en la calzada."
+      ],
+      "videos": [
+        "2026-11-18_06-01-27",
+        "2026-11-18_06-16-57",
+        "2026-11-18_06-20-39"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_06-16-57: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_06-16-57: t_0002@arriba-izq ~ 00:20",
+      "2026-11-18_06-20-39: t_0001@arriba-izq ~ 00:00",
+      "2026-11-18_06-01-27: t_0023@arriba-der ~ 07:25",
+      "2026-11-18_06-20-39: t_0003@abajo-izq ~ 00:50"
+    ],
+    "notas": "El juego muestra 'PROLOGUE' pero no un título de misión; las dos fases (atraco, huida/regreso) podrían ser misiones distintas."
+  },
+  {
+    "modulo": "guias",
+    "slug": "just-like-paradise",
+    "titulo": "Just Like Paradise",
+    "subtitulo": "En el paraíso",
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 2,
+      "spoiler": true,
+      "capitulo": "Capítulo 1",
+      "objetivos": [
+        "Sigue al avión.",
+        "Recoge el paquete.",
+        "Recoge los paquetes.",
+        "Alcanza el avión."
+      ],
+      "detalles": [
+        "Título 'Just Like Paradise' con subtítulo 'EN EL PARAÍSO' tras el rótulo 'CAPÍTULO 1 / Chapter I'.",
+        "Tramo en lancha por manglares y bahía; el avión lanza varios paquetes (se menciona el paquete número dos y la última entrega).",
+        "Marcadores: rosa = objetivo principal, cian = secundario (paquete).",
+        "Notificación de trofeo 'Just Like Paradise - Trophy earned!' vista al abrir el mapa por primera vez en el vídeo 06-55."
+      ],
+      "consejos": [
+        "Concéntrate [botones] para localizar el paquete.",
+        "Pulsa [botón] para que se muestre la interfaz y ver tu objetivo actual.",
+        "Mantén pulsado [botón] al conducir para dar un giro cerrado."
+      ],
+      "videos": [
+        "2026-11-18_06-20-39",
+        "2026-11-18_06-28-51"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-20-39: t_0010@abajo-der ~ 03:15",
+      "2026-11-18_06-28-51: t_0001@arriba-der ~ 00:00:05",
+      "2026-11-18_06-20-39: t_0009@abajo-izq ~ 02:50",
+      "2026-11-18_06-55-56: t_0027@arriba-der ~ 08:45",
+      "2026-11-18_06-55-56: t_0041@abajo-der ~ 13:35"
+    ],
+    "notas": "Dudoso dónde acaba esta misión y empieza 'Día de pesca'; aquí se agrupan los objetivos de los vídeos 06-20 y el inicio de 06-28 (paquetes/avión)."
+  },
+  {
+    "modulo": "guias",
+    "slug": "dia-de-pesca",
+    "titulo": "Día de pesca",
+    "subtitulo": null,
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 3,
+      "spoiler": true,
+      "capitulo": "Capítulo 1",
+      "objetivos": [
+        "Busca a Donnie en el campamento.",
+        "Busca cerca del aerogenerador.",
+        "Busca una forma de entrar en la choza.",
+        "Salva a Donnie.",
+        "Coge el Zombix.",
+        "Dirígete al avión.",
+        "Sube al hidroavión.",
+        "Huye del campamento.",
+        "Vuelve al puerto deportivo de Brian.",
+        "Aterriza cerca del muelle.",
+        "Lleva el avión al puerto deportivo de Brian."
+      ],
+      "detalles": [
+        "El menú de pausa muestra 'CAPÍTULO 1 - DÍA DE PESCA' con las opciones 'Reiniciar el punto de control' y 'Reiniciar la misión'.",
+        "Reconocimiento del campamento con prismáticos (ZOOM con la cruceta); se ve un muelle con hidroavión.",
+        "Se avanza agachado/en sigilo; el minimapa muestra zonas rojas del campamento.",
+        "Aviso 'AEROGENERADOR (R3)' para resaltar el objetivo.",
+        "Al recoger el objeto aparece '+ Zombix'.",
+        "Subtítulo sobre deshacerse del arma: 'No podemos quedarnos con nada que nos incrimine'."
+      ],
+      "consejos": [
+        "Pulsa L1 para equipar o guardar el arma rápidamente.",
+        "Pulsa R1 para ponerte a cubierto.",
+        "Agáchate y muévete sin hacer ruido para que no te detecten.",
+        "Pulsa R3 para mirar el aerogenerador."
+      ],
+      "videos": [
+        "2026-11-18_06-28-51",
+        "2026-11-18_06-38-41"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-38-41: t_0007@abajo-izq ~ 00:02:10",
+      "MAPA: f_0132@00:04:22",
+      "2026-11-18_06-28-51: t_0015@arriba-der ~ 00:04:45",
+      "2026-11-18_06-38-41: t_0002@arriba-izq ~ 00:00:20",
+      "2026-11-18_06-38-41: t_0016@arriba-der ~ 00:05:05"
+    ],
+    "notas": "El menú de pausa lo muestra junto a 'CAPÍTULO 1': podría ser el nombre del capítulo y no de una misión independiente."
+  },
+  {
+    "modulo": "guias",
+    "slug": "conduce-hasta-tu-casa",
+    "titulo": "Conduce hasta tu casa",
+    "subtitulo": "Vuelta a casa y primeros tutoriales",
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 4,
+      "spoiler": true,
+      "capitulo": null,
+      "objetivos": [
+        "Sube a tu coche.",
+        "Conduce hasta la casa de Cal.",
+        "Sube a tu coche.",
+        "Conduce hasta tu casa.",
+        "Entra en tu casa."
+      ],
+      "titulo_inferido": true,
+      "detalles": [
+        "Objetivo 'Sube a tu coche.' con el coche en turquesa en brújula y minimapa; el marcador de la casa aparece rosa.",
+        "Distancias vistas al hogar: 0.73 millas hasta 11 pies; 0.80 millas en otro tramo.",
+        "Tras entrar en casa se muestran los tutoriales de casa y alijo (ver ficha 'Casa y alijo')."
+      ],
+      "videos": [
+        "2026-11-18_06-55-56",
+        "MAPA_2"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0001@abajo-der ~ 00:15",
+      "MAPA_2: f_0086 ~ 00:02:50",
+      "MAPA_2: f_0023 ~ 00:00:44",
+      "MAPA: f_0112@00:03:42",
+      "2026-11-18_06-55-56: t_0003@arriba-der ~ 00:45"
+    ],
+    "notas": "Sin título visible. El orden entre 'Conduce hasta la casa de Cal' y 'Conduce hasta tu casa' sale solo de las marcas de tiempo del vídeo MAPA_2 (00:00:44 coche, 00:01:34 casa de Cal, 00:02:50 tu casa); el vídeo 06-55 repite 'Sube a tu coche' (00:45) y 'Conduce hasta tu casa' (00:15). Podrían ser tramos de misiones distintas."
+  },
+  {
+    "modulo": "guias",
+    "slug": "conduce-hasta-tu-destino",
+    "titulo": "Conduce hasta tu destino",
+    "subtitulo": null,
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 5,
+      "spoiler": true,
+      "capitulo": null,
+      "objetivos": [
+        "Conduce hasta tu destino."
+      ],
+      "titulo_inferido": true,
+      "detalles": [
+        "Destino citado en subtítulo: 'Parque de Harborside, en Vice Beach'; distancias vistas 1,16 millas, 0,13 millas, 470 pies, 253 pies.",
+        "Tramo posterior al robo de un coche (ver ficha 'Robo de vehículos'); no se muestra título de misión ni recompensa.",
+        "Al llegar se ve 'Gracias por el viaje'. Llamada entrante de Lucía durante el trayecto."
+      ],
+      "videos": [
+        "2026-11-18_07-14-03"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0040@arriba-der ~ 13:05",
+      "2026-11-18_07-14-03: t_0042@arriba-izq ~ 13:40",
+      "2026-11-18_07-14-03: t_0041@abajo-izq ~ 13:30",
+      "2026-11-18_07-14-03: t_0042@abajo-izq ~ 13:50",
+      "2026-11-18_07-14-03: t_0047@abajo-der ~ 15:35"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "repara-el-coche",
+    "titulo": "Repara el coche",
+    "subtitulo": "A Lucía le gustará esto",
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 6,
+      "spoiler": true,
+      "capitulo": null,
+      "objetivos": [
+        "Ponlo a punto y dale una mano de pintura en el taller de Joey antes de que salga Lucía."
+      ],
+      "detalles": [
+        "Ficha en el mapa con icono rosa de corazón y el texto 'A Lucía le gustará esto'; ubicada en Bahía de Gambit a 4.62 millas.",
+        "Vehículo mencionado: 'El Ganado'. Taller: Coastal Auto Care (Joey).",
+        "Notificación 'Se ha reparado. Ganado (1970)' tras llamar a Joey."
+      ],
+      "videos": [
+        "2026-11-18_08-08-46"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0012@abajo-der ~ 04:25",
+      "2026-11-18_07-50-32: t_0001@arriba-izq ~ 00:00",
+      "2026-11-18_06-55-56: t_0044@arriba-der ~ 14:25",
+      "2026-11-18_08-08-46: t_0024@arriba-der ~ 07:45",
+      "2026-11-18_08-08-46: t_0013@arriba-izq ~ 04:40"
+    ],
+    "notas": "El objetivo es el texto descriptivo de la ficha del mapa; no se vio la secuencia de objetivos en pantalla."
+  },
+  {
+    "modulo": "guias",
+    "slug": "cobra-el-alquiler-de-brian",
+    "titulo": "Cobra el alquiler de Brian",
+    "subtitulo": "Visita la boutique para cobrar la parte de Brian",
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 7,
+      "spoiler": true,
+      "capitulo": null,
+      "objetivos": [
+        "Llama a Brian.",
+        "Entra en la tienda.",
+        "Habla con el dependiente.",
+        "Cobra el alquiler de Brian.",
+        "Entra en el laboratorio.",
+        "Recoge el ácido.",
+        "Llama a Brian.",
+        "Selecciona el escondite de Brian.",
+        "Guarda el ácido en el escondite de Brian.",
+        "Deja la bolsa en la caja fuerte de Brian para que la recoja más tarde."
+      ],
+      "detalles": [
+        "Encabezado 'COSTES DE LABORATORIO' en el HUD dentro de la tienda.",
+        "Opciones de diálogo con el dependiente: APACIGUAR (X), AMENAZAR (cuadrado), DEPENDIENTE (círculo), ALQUILER (X).",
+        "Se obtienen 12 $ de la caja registradora.",
+        "Código de la puerta del laboratorio: 0420 (se guarda en 'Notas'). Código del escondite de Brian junto al club privado Isla Tropical: 7700 (se guarda en 'Notas').",
+        "La bolsa marca 600 $ en el HUD y vuelve a 0 $ al dejarla; aparece 'Bolsa de aljibo → Escondite de Brian'.",
+        "Al introducir el código aparece la insignia lateral 'Templanza'."
+      ],
+      "consejos": [
+        "Lleva bienes robados a puntos de entrega, como el escondite de Brian. Recibirás el pago en cuanto los recojan."
+      ],
+      "videos": [
+        "2026-11-18_06-55-56",
+        "2026-11-18_08-08-46"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0096@abajo-der ~ 00:31:55",
+      "2026-11-18_06-55-56: t_0028@arriba-der ~ 09:05",
+      "2026-11-18_08-08-46: t_0103@abajo-izq ~ 00:34:10",
+      "2026-11-18_08-08-46: t_0107@arriba-der ~ 00:35:25",
+      "2026-11-18_08-08-46: t_0116@arriba-der ~ 00:38:25"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "fontaneria",
+    "titulo": "Fontanería",
+    "subtitulo": null,
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 8,
+      "spoiler": true,
+      "capitulo": null,
+      "objetivos": [
+        "Sigue a Mandy.",
+        "Coge el desatascador.",
+        "Arregla el fregadero."
+      ],
+      "detalles": [
+        "Título en rosa (esquina inferior derecha) al iniciar la escena en casa de Mandy.",
+        "Acciones: USAR EL DESATASCADOR (RS), USAR LA LLAVE (R2), opción de diálogo ¿DESATASCADOR?, INTERRUMPIR.",
+        "Personajes que aparecen: Mandy, Bert, Brian.",
+        "Resultado observado: Brian avisa por mensaje de que llegó el alquiler de Mandy."
+      ],
+      "videos": [
+        "2026-11-18_08-08-46"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0146@abajo-izq ~ 00:48:30",
+      "2026-11-18_08-08-46: t_0144@abajo-izq ~ 00:47:50",
+      "2026-11-18_08-08-46: t_0147@abajo-der ~ 00:48:55",
+      "2026-11-18_08-08-46: t_0162@arriba-der ~ 00:53:45",
+      "2026-11-18_08-08-46: t_0148@arriba-izq ~ 00:49:00"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "hazte-con-otra-arma",
+    "titulo": "Hazte con otra arma",
+    "subtitulo": null,
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 9,
+      "spoiler": true,
+      "capitulo": null,
+      "objetivos": [
+        "Elige un arma larga en Chuck's Tackle & Shot (Ammu-Nation)."
+      ],
+      "detalles": [
+        "Texto de la ficha: 'Para trabajar con Brian te tendrás que equipar en un Ammu-Nation. Elige un arma larga en Chuck's Tackle & Shot.' (icono de pistola rosa, 427 pies / 4.96 millas).",
+        "El dependiente Andrew atiende en la tienda; con 39 $ no alcanza y sale la pista 'Podrás volver más adelante a comprar un arma cuando tengas dinero.'",
+        "Botón en pantalla: ARMAS Y MODIFICACIONES (triángulo)."
+      ],
+      "videos": [
+        "2026-11-18_07-50-32",
+        "2026-11-18_08-08-46"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0012@arriba-der ~ 03:45",
+      "2026-11-18_08-08-46: t_0181@abajo-der ~ 01:00:15",
+      "2026-11-18_08-08-46: t_0178@abajo-izq ~ 00:59:10",
+      "2026-11-18_06-55-56: t_0026@arriba-izq ~ 08:20",
+      "2026-11-18_08-08-46: t_0174@abajo-izq ~ 00:57:50"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "ve-a-ver-a-cal",
+    "titulo": "Ve a ver a Cal",
+    "subtitulo": null,
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 10,
+      "spoiler": true,
+      "capitulo": null,
+      "objetivos": [
+        "Conduce hasta Hamlet con Cal.",
+        "Líbrate de la policía."
+      ],
+      "detalles": [
+        "Texto de la ficha: 'Brian quiere que os encarguéis de una cosa. Ve con Cal y averigua de qué se trata.' (marcador C, 4.34 millas).",
+        "Destino en Hamlet (Penny Bun Street); distancias vistas 1.01–1.03 millas al inicio y 0.70–0.48 millas después.",
+        "Aviso 'Crimen denunciado' con 1 estrella durante el tramo."
+      ],
+      "videos": [
+        "2026-11-18_07-50-32",
+        "2026-11-18_09-18-06"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0012@abajo-der ~ 03:55",
+      "2026-11-18_09-18-06: t_0001@abajo-izq ~ 00:10",
+      "2026-11-18_09-18-06: t_0003@abajo-izq ~ 00:50",
+      "2026-11-18_09-18-06: t_0004@abajo-der ~ 01:15",
+      "2026-11-18_09-18-06: t_0002@arriba-izq ~ 00:20"
+    ],
+    "notas": "Se asume que 'Conduce hasta Hamlet con Cal' es el primer objetivo de esta misión; el límite con 'Roba el Phoenix' no está confirmado."
+  },
+  {
+    "modulo": "guias",
+    "slug": "roba-el-phoenix",
+    "titulo": "Roba el Phoenix",
+    "subtitulo": null,
+    "categoria": "Misión Principal",
+    "stats_juego": {},
+    "metadata": {
+      "orden_cronologico": 11,
+      "spoiler": true,
+      "capitulo": null,
+      "objetivos": [
+        "Roba el Phoenix.",
+        "Líbrate de la poli.",
+        "Lleva el Phoenix al Pay 'n' Spray.",
+        "Entrega el Phoenix en el garaje de Brian.",
+        "Recoge el dinero.",
+        "Compra una indumentaria en la armería.",
+        "Compra una indumentaria."
+      ],
+      "titulo_inferido": true,
+      "detalles": [
+        "Acceso al depósito policial: subtítulo 'saltar la valla y sacar el coche', escalar la valla, prompt 'ECHAR ABAJO' en una valla y 'CONTROLAR EL MONTACARGAS' (ELEVAR/BAJAR, SALIR) para subir al tejado del edificio 'POLICE ... IMPOUND'.",
+        "Tutorial de puente; aviso 'Imperceptible' al robar el coche sin ser detectado.",
+        "Pago en el garaje de Brian: +150 $ (de 39 $ a 189 $) al recoger el DINERO.",
+        "Compra en Big Shots: camiseta Hinterland y pantalones cargo por 59 $ (de 189 $ a 130 $), lo que despeja la alerta de indumentaria."
+      ],
+      "consejos": [
+        "Puedes llevar tu vehículo a un Pay 'n' Spray para que te lo pinten, y así la policía no lo reconocerá."
+      ],
+      "videos": [
+        "2026-11-18_09-18-06"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0026@arriba-der ~ 08:25",
+      "2026-11-18_09-18-06: t_0028@arriba-izq ~ 09:00",
+      "2026-11-18_09-18-06: t_0040@arriba-der ~ 13:05",
+      "2026-11-18_09-18-06: t_0033@abajo-der ~ 10:55",
+      "2026-11-18_09-18-06: t_0047@abajo-der ~ 15:35"
+    ],
+    "notas": "Sin título visible: el título es el objetivo-ancla. Los dos últimos objetivos (indumentaria) son de la compra posterior y podrían pertenecer a otra misión."
+  },
+  {
+    "modulo": "guias",
+    "slug": "nivel-de-busqueda-y-perfil-criminal",
+    "titulo": "Nivel de búsqueda y perfil criminal",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Estrellas de búsqueda arriba a la derecha (se vieron de 1 a 3, y hasta 6 casillas en un vídeo) con 3 iconos debajo (aspecto, ropa, vehículo).",
+        "Mensajes: 'Crimen denunciado', 'Alerta despejada', 'La policía está buscándote y tiene tu descripción', 'Has despistado a la policía, pero todavía te está buscando'.",
+        "La brújula se tiñe de rojo durante la búsqueda y de azul cuando la policía te ve; el minimapa se tiñe de rojo/rosa.",
+        "Las estrellas parpadean cuando la policía te ha perdido de vista; al despistarla desaparece el HUD de búsqueda.",
+        "Perfil criminal (icono de demonio sonriente): Profesional con acciones precisas y poca violencia (etiqueta 'No letal'), Violento con violencia indiscriminada; insignia lateral 'Templanza'. Mantener la cruceta muestra el perfil actual.",
+        "Aviso 'Imperceptible' al robar un coche sin ser detectado.",
+        "Zonas en alerta: el mapa permite ver en qué zonas aún hay alerta; la alerta desaparece con el tiempo."
+      ],
+      "consejos": [
+        "Cualquier comportamiento sospechoso en un área de búsqueda policial podría llamar su atención.",
+        "La violencia indiscriminada propiciará un perfil criminal Violento.",
+        "Las acciones criminales precisas con un uso limitado de violencia propiciarán un perfil criminal Profesional.",
+        "Tus actos repercutirán en tu perfil criminal y podrían tener consecuencias permanentes. Mantén pulsado [cruceta] para comprobar tu perfil actual.",
+        "Los niveles de búsqueda no afectan a tu perfil delictivo, pero sí la forma en la que elijas ocuparte de la policía.",
+        "Para despistar a los polis que te persiguen, escóndete o sal de la zona de búsqueda.",
+        "Las estrellas de nivel de búsqueda parpadearán cuando la policía te haya perdido de vista.",
+        "La policía te reconocerá antes en las zonas en alerta si no cambias de aspecto y de ropa.",
+        "Si cambias de accesorios o peinado, será más difícil reconocerte.",
+        "Si te vuelves irreconocible (aspecto, ropa, vehículo), la policía no podrá identificarte.",
+        "La policía está buscándote y tiene tu descripción [aspecto/ropa/vehículo].",
+        "La alerta desaparecerá con el tiempo. Utiliza el mapa para ver en qué zonas aún hay alerta."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-20-39: t_0001@arriba-izq ~ 00:00",
+      "2026-11-18_07-14-03: t_0005@arriba-izq ~ 01:20",
+      "2026-11-18_08-08-46: t_0068@arriba-der ~ 00:22:25",
+      "2026-11-18_07-32-08: t_0001@abajo-izq ~ 00:10",
+      "2026-11-18_07-32-08: t_0027@arriba-der ~ 08:55"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "pantalla-eliminado",
+    "titulo": "Pantalla ELIMINADO",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Al ser abatido aparece la pantalla roja 'ELIMINADO' con un consejo de carga.",
+        "Se vio tras una persecución con 3 estrellas y junto a una lancha policial."
+      ],
+      "consejos": [
+        "Consejo: Puedes almacenar y acceder a tus armas desde el maletero de tu vehículo personal."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0083@arriba-izq ~ 00:27:20",
+      "2026-11-18_07-32-08: t_0010@arriba-izq ~ 03:00",
+      "2026-11-18_08-08-46: t_0089@abajo-izq ~ 00:29:30",
+      "2026-11-18_08-08-46: t_0088@abajo-der ~ 00:29:15",
+      "2026-11-18_08-08-46: t_0096@abajo-izq ~ 00:31:50"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "pay-n-spray",
+    "titulo": "Pay 'n' Spray",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Objetivo 'Lleva el Phoenix al Pay 'n' Spray.' con distancias 0.36 a 0.16 millas y luego 507 y 249 pies.",
+        "Por teléfono se indica el Pay 'n' Spray del desguace de Peyton, en Hamlet.",
+        "Tras pintar el coche (Phoenix negro) el siguiente objetivo es entregarlo en el garaje de Brian."
+      ],
+      "consejos": [
+        "Puedes llevar tu vehículo a un Pay 'n' Spray para que te lo pinten, y así la policía no lo reconocerá."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0033@abajo-der ~ 10:55",
+      "2026-11-18_09-18-06: t_0032@arriba-der ~ 10:25",
+      "2026-11-18_09-18-06: t_0040@arriba-der ~ 13:05",
+      "2026-11-18_09-18-06: t_0034@arriba-der ~ 11:05",
+      "2026-11-18_09-18-06: t_0034@arriba-izq ~ 11:00"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "robo-de-vehiculos",
+    "titulo": "Robo de vehículos",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Prompt 'ROMPER LA VENTANA' sobre un coche cerrado.",
+        "Puente al vehículo: minijuego de semicírculos con L y R.",
+        "Texto visto: 'Actualmente, no puedes arrancar vehículos sin llave'.",
+        "Aviso 'Imperceptible' si se roba sin ser detectado.",
+        "Ficha Waink de un coche: Acceso (Cerrado, Clonador de llaves), Sistema de seguridad (Con alarma), Localizador (Ninguno, Estándar)."
+      ],
+      "consejos": [
+        "Junta L y R y muévelos en la dirección adecuada para llenar los semicírculos y hacer un puente al vehículo.",
+        "Algunos vehículos contarán con funciones de seguridad instaladas que todavía no podrás sortear."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0027@arriba-der ~ 08:45",
+      "2026-11-18_09-18-06: t_0026@arriba-der ~ 08:25",
+      "2026-11-18_07-32-08: t_0017@abajo-der ~ 05:35",
+      "2026-11-18_09-18-06: t_0026@abajo-der ~ 08:35",
+      "2026-11-18_07-14-03: t_0025@arriba-izq ~ 08:00"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "rueda-de-armas-e-inventario",
+    "titulo": "Rueda de armas e inventario",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "La rueda tiene pestañas ARMAS y ARTÍCULOS (R1).",
+        "Artículos vistos: gorra de béisbol (Gorras y sombreros), gafas de sol cuadradas (Gafas), puro macizo (Tabaco y drogas), botiquín x2, botella 0; botón PONERSE.",
+        "Armas vistas: pistola, arma larga (VACÍO) y cuchillo.",
+        "Los prismáticos se seleccionan con R en la rueda de artículos; ZOOM con la cruceta."
+      ],
+      "consejos": [
+        "Pulsa L1 para equipar o guardar el arma rápidamente.",
+        "Pulsa R1 para acceder a tus objetos.",
+        "Ajústate las gafas y el sombrero para que no te reconozcan."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0040@abajo-izq ~ 13:10",
+      "2026-11-18_09-18-06: t_0048@arriba-izq ~ 15:40",
+      "2026-11-18_06-28-51: t_0008@abajo-der ~ 00:02:35",
+      "2026-11-18_06-28-51: t_0015@arriba-der ~ 00:04:45",
+      "2026-11-18_08-08-46: t_0089@abajo-izq ~ 00:29:30"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "maletero-y-arsenal",
+    "titulo": "Maletero y arsenal",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Las armas y bolsas se pueden guardar en el maletero del vehículo personal.",
+        "El arsenal se abre manteniendo L1."
+      ],
+      "consejos": [
+        "Consejo: Puedes almacenar y acceder a tus armas desde el maletero de tu vehículo personal.",
+        "Almacena bolsas y artículos en cualquier maletero, incluyendo el de tu vehículo personal, para transportarlos fácilmente.",
+        "Mantén pulsado L1 para abrir tu arsenal."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0089@abajo-izq ~ 00:29:30",
+      "2026-11-18_09-18-06: t_0048@arriba-izq ~ 15:40",
+      "2026-11-18_08-08-46: t_0096@abajo-izq ~ 00:31:50",
+      "2026-11-18_09-18-06: t_0048@arriba-der ~ 15:45",
+      "2026-11-18_08-08-46: t_0098@abajo-izq ~ 00:32:30"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "casa-y-alijo",
+    "titulo": "Casa y alijo",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "La casa es una vivienda sobre pilotes con tejado de zinc y escalera de madera; icono de casa en brújula y minimapa.",
+        "En la cocina hay bebidas y en el armario ropa; en el dormitorio se puede dormir (pasa el tiempo) y acceder al alijo de dinero escondido (tabla suelta).",
+        "El buzón sirve para cobrar el pago de trabajos completados; el HUD mostró un segundo contador de 2,480 $ con icono de casa/alijo.",
+        "Del embarcadero de la casa sale un bote."
+      ],
+      "consejos": [
+        "Esta es tu casa. Brian te deja alojarte aquí, pero el mantenimiento es cosa tuya.",
+        "Hay bebidas en la cocina y ropa en el armario.",
+        "En el dormitorio puedes dormir para descansar y hacer que pase el tiempo. También puedes acceder a tu alijo de dinero escondido.",
+        "Sigue explorando tu casa y los alrededores para descubrir varias actividades.",
+        "Recoge el pago por trabajos completados en tu buzón."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0023@abajo-izq ~ 07:30",
+      "2026-11-18_06-55-56: t_0024@arriba-izq ~ 07:40",
+      "2026-11-18_06-55-56: t_0025@arriba-der ~ 08:05",
+      "2026-11-18_06-55-56: t_0030@arriba-izq ~ 09:40",
+      "2026-11-18_06-55-56: t_0010@arriba-der ~ 03:05"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "mapa-y-menu-de-pausa",
+    "titulo": "Mapa y menú de pausa",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Pestañas superiores (L1/R1): JASON Y LUCÍA, MAPA, INFORME, PROGRESO.",
+        "Barra lateral de filtros del mapa con iconos de vehículo, arma, ropa y comida.",
+        "Atajos del mapa: RESTABLECER (L3), VISTA 2D (R3), AÑADIR MARCADOR / QUITAR EL DESTINO (cuadrado), FIJAR DESTINO (X), SALIR (círculo).",
+        "Menú de pausa de misión: lista Partida, Tienda, Ayuda, Estudio fotográfico, Ajustes; opciones 'Reiniciar el punto de control' y 'Reiniciar la misión'; pie ESTUDIO FOTOGRÁFICO / VOLVER.",
+        "Aviso 'Mapa actualizado' (icono rosa) cuando se descubre una ubicación o tarea nueva.",
+        "Las fichas del mapa muestran descripción y distancia (millas) de cada misión; el panel de objetivos activo aparece arriba a la izquierda."
+      ],
+      "consejos": [
+        "Consulta el índice del mapa para ver las tareas y las ubicaciones que has descubierto en Leónida. También puedes mantener pulsado [direccional] para ver las ubicaciones cercanas y fijar un destino.",
+        "Mantén pulsado [cruceta] para ver las ubicaciones cercanas."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0010@arriba-der ~ 03:05",
+      "2026-11-18_08-08-46: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_06-55-56: t_0027@arriba-der ~ 08:45",
+      "2026-11-18_07-50-32: t_0005@abajo-izq ~ 01:30",
+      "2026-11-18_06-55-56: t_0030@abajo-izq ~ 09:50"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "navegacion-gps-brujula-y-minimapa",
+    "titulo": "Navegación GPS, brújula y minimapa",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Brújula arriba al centro (N/E/S/W) con marcador de destino y distancia en millas, que pasa a pies al acercarse.",
+        "Minimapa abajo a la izquierda con la hora del juego, nombre de zona y ruta; tarjeta de giro con flecha y distancia en pies.",
+        "Indicaciones: 'Gira a la derecha/izquierda', 'Mantente a la derecha/izquierda', 'Cambia de sentido'.",
+        "Colores: marcador rosa = objetivo principal; cian/turquesa = waypoint propio o objetivo secundario; el coche se marca en turquesa; la brújula y el minimapa cambian de color con el estado policial.",
+        "Distancias de ejemplo vistas: 0.61 millas, 291 pies, 0 pies."
+      ],
+      "consejos": [
+        "Pulsa [botón] para que se muestre la interfaz y ver tu objetivo actual.",
+        "Mantén pulsado [cruceta] para ver las ubicaciones cercanas."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA: f_0131@00:04:20",
+      "MAPA_2: f_0090 ~ 00:02:58 (183 pies)",
+      "2026-11-18_07-14-03: t_0006@arriba-izq ~ 01:40",
+      "2026-11-18_08-08-46: t_0139@arriba-izq ~ 00:46:00",
+      "2026-11-18_06-55-56: t_0007@arriba-der ~ 02:05"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "conduccion-y-vehiculos",
+    "titulo": "Conducción y vehículos",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Mantener la cruceta abre la radio y los controles del vehículo.",
+        "Al hundir un coche aparece 'Motor destruido'.",
+        "Se puede llamar a Joey desde Contactos para reparar o traer el coche personal."
+      ],
+      "consejos": [
+        "Mantén pulsado [cruceta] para acceder a la radio y a los controles del vehículo.",
+        "Mantén pulsado [botón] al conducir para dar un giro cerrado.",
+        "Llama a Joey desde la aplicación de Contactos si necesitas que reparen o traigan tu Ganado.",
+        "Puedes llamar a Paradise Taxi desde Contactos para ir a cualquier sitio, como a tu casa o a tu vehículo.",
+        "Cada uno de los talleres de Leónida se especializa en distintas modificaciones estéticas o de rendimiento."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA_2: f_0099 ~ 00:03:16",
+      "2026-11-18_06-20-39: t_0023@abajo-der ~ 07:35",
+      "2026-11-18_09-18-06: t_0056@abajo-der ~ 18:35",
+      "2026-11-18_07-32-08: t_0017@abajo-der ~ 05:35",
+      "2026-11-18_07-32-08: t_0004@abajo-izq ~ 01:10"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "controles-y-acciones-contextuales",
+    "titulo": "Controles y acciones contextuales",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Natación: SUMERGIRSE (R1) y ASCENDER (círculo/X).",
+        "Combate y sigilo: L1 equipar/guardar arma, R1 cubierto, agacharse para no ser detectado, cuadrado para pelear en un forcejeo.",
+        "Prompts abajo a la derecha: SAQUEAR (triángulo), SILBAR (triángulo), MARCAR (cruceta), LEVANTARSE, ECHAR ABAJO (vallas), SOMBRERO (triángulo).",
+        "Plataforma elevadora: 'CONTROLAR EL MONTACARGAS', ELEVAR/BAJAR (stick) y SALIR (círculo).",
+        "Mirar el objetivo con R3 (por ejemplo 'AEROGENERADOR (R3)').",
+        "Se puede escalar vallas."
+      ],
+      "consejos": [
+        "Muévete silenciosa y sigilosamente para evitar que te detecten.",
+        "Agáchate y muévete sin hacer ruido para que no te detecten.",
+        "Pulsa cuadrado para pelear."
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_07-32-08: t_0004@abajo-izq ~ 01:10",
+      "2026-11-18_06-28-51: t_0017@arriba-izq ~ 00:05:20",
+      "2026-11-18_06-28-51: t_0015@arriba-der ~ 00:04:45",
+      "2026-11-18_06-38-41: t_0004@abajo-izq ~ 00:01:10",
+      "2026-11-18_09-18-06: t_0020@abajo-izq ~ 06:50"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "interaccion-con-pnj",
+    "titulo": "Interacción con PNJ",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Prompts de saludo y acción: SALUDAR (X), CAMARERA (Y), LUGAREÑOS (círculo), TURISTA (círculo), MOLESTAR (cuadrado).",
+        "Algunos PNJ muestran etiqueta de grupo o nombre (por ejemplo ANFITRIONA, GUARDIA DE SEGURIDAD).",
+        "Mantener L2 interactúa con ciertos personajes con nombre.",
+        "En la conversación de la tienda: APACIGUAR (X), AMENAZAR (cuadrado)."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0039@abajo-der ~ 00:12:55",
+      "2026-11-18_09-18-06: t_0054@arriba-der ~ 17:45",
+      "2026-11-18_08-08-46: t_0002@abajo-der ~ 00:35",
+      "2026-11-18_08-08-46: t_0096@abajo-der ~ 00:31:55",
+      "2026-11-18_08-08-46: t_0050@abajo-izq ~ 00:16:30"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "salud-resistencia-y-concentracion",
+    "titulo": "Salud, resistencia y concentración",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Los atributos son salud (corazón), resistencia (rayo) y concentración (ojo), y suben de forma temporal.",
+        "REFRESCARSE en el baño del club muestra el efecto 'Concentración aumentada'.",
+        "Comer o beber en una cafetería indica el efecto de salud de cada producto."
+      ],
+      "consejos": [
+        "Algunos objetos y acciones harán que tu salud, resistencia y concentración aumenten temporalmente."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0014@abajo-izq ~ 04:30",
+      "2026-11-18_08-08-46: t_0038@abajo-der ~ 00:12:35",
+      "2026-11-18_07-14-03: t_0011@abajo-der ~ 03:35",
+      "2026-11-18_08-08-46: t_0039@arriba-izq ~ 00:12:40",
+      "2026-11-18_07-14-03: t_0012@arriba-der ~ 03:45"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "dinero-y-bolsas",
+    "titulo": "Dinero y bolsas",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "El efectivo se muestra arriba a la derecha con las variaciones en verde (ganancia) o rojo (gasto).",
+        "Las bolsas llevan un valor propio en el HUD (se vieron 150 $, 300 $ y 600 $) y se entregan en escondites.",
+        "Cajeros ATM del club con el texto parcial 'FREE CASH WITHDRAWALS'.",
+        "Al recoger DINERO en el garaje de Brian se pasó de 39 $ a 189 $."
+      ],
+      "consejos": [
+        "Lleva bienes robados a puntos de entrega, como el escondite de Brian. Recibirás el pago en cuanto los recojan."
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0102@abajo-der ~ 00:33:55",
+      "2026-11-18_09-18-06: t_0047@abajo-der ~ 15:35",
+      "2026-11-18_07-32-08: t_0011@arriba-izq ~ 03:20",
+      "2026-11-18_06-55-56: t_0030@arriba-izq ~ 09:40",
+      "2026-11-18_08-08-46: t_0035@arriba-izq ~ 00:11:20"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "ajustes-iniciales-de-la-partida",
+    "titulo": "Ajustes iniciales de la partida",
+    "subtitulo": null,
+    "categoria": "Sistemas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "'Navigation Experience': Minimap (Dynamic) o Minimap Always On.",
+        "'UI Text Size': Small (Default), con 4 opciones.",
+        "'Subtitles': tamaño Small con 4 opciones.",
+        "'Brightness': deslizador con valor 20 y el texto 'Adjust the value until the symbol is barely visible.'",
+        "'Finish Setup?': los controles por defecto usan L3 para correr y esprintar; opciones SETTINGS / CONTINUE / BACK."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-01-27: t_0001@abajo-der ~ 00:15",
+      "2026-11-18_06-01-27: t_0002@abajo-izq ~ 00:30",
+      "2026-11-18_06-01-27: t_0003@arriba-izq ~ 00:40",
+      "2026-11-18_06-01-27: t_0003@arriba-der ~ 00:45",
+      "2026-11-18_06-01-27: t_0003@abajo-izq ~ 00:50"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "telefono",
+    "titulo": "Teléfono",
+    "subtitulo": null,
+    "categoria": "Teléfono y Apps",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Pantalla de inicio con hora del juego, temperatura y widget de Recordatorios (7 notificaciones); cuadrícula de 9–10 apps.",
+        "Apps nombradas: Snapmatic, Noticias, Ajustes, WhatUp, Waink, Contactos, Galería, Fitness.",
+        "Controles: RECORDATORIOS, SELECCIONAR, SALIR, DESPLAZAR, VOLVER.",
+        "Se abre en primera persona, también dentro del coche."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0022@abajo-der ~ 07:15",
+      "2026-11-18_07-32-08: t_0014@arriba-izq ~ 04:40",
+      "2026-11-18_08-08-46: t_0175@arriba-der ~ 00:58:05",
+      "2026-11-18_09-18-06: t_0064@arriba-der ~ 21:05",
+      "2026-11-18_07-14-03: t_0023@arriba-izq ~ 07:20"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "contactos",
+    "titulo": "Contactos",
+    "subtitulo": null,
+    "categoria": "Teléfono y Apps",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Lista 'Todos los contactos' con sección 'Sugerido' e índice alfabético.",
+        "Contactos vistos: Brian, Bret Vogel, Cal, Donnie, Joey, Lucía, Paradise Taxi, Armería de Chuck.",
+        "Al elegir un contacto: Llamar, Abrir WhatUp, Abrir Snapmatic. Llamada con 'Llamando...', cronómetro y 'Fin de la llamada'."
+      ],
+      "consejos": [
+        "Puedes llamar a Paradise Taxi desde Contactos para ir a cualquier sitio, como a tu casa o a tu vehículo.",
+        "Llama a Joey desde la aplicación de Contactos si necesitas que reparen o traigan tu Ganado."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0096@abajo-der ~ 00:31:55",
+      "2026-11-18_07-32-08: t_0014@arriba-der ~ 04:45",
+      "2026-11-18_06-55-56: t_0044@arriba-der ~ 14:25",
+      "2026-11-18_06-55-56: t_0026@arriba-izq ~ 08:20",
+      "2026-11-18_09-18-06: t_0056@abajo-der ~ 18:35"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "whatup",
+    "titulo": "WhatUp",
+    "subtitulo": "Mensajes",
+    "categoria": "Teléfono y Apps",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Lista con Sugeridos (Joey, Donnie, Brian) y Mensajes (Cal, Lucía, Rusty Anchor).",
+        "Controles: DESPLAZAR, ENVIAR, VOLVER; se puede responder con frases preestablecidas.",
+        "Los mensajes pueden traer ubicación o aviso de mapa (por ejemplo Caladero de pesca de Cal, Cayo Corsario) y a veces la nota Marcador del mapa no disponible.",
+        "Notificaciones de mensajes de Brian, Joey (Coastal Auto Care), Donnie y Cal."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-50-32: t_0001@arriba-izq ~ 00:00",
+      "2026-11-18_08-08-46: t_0116@arriba-der ~ 00:38:25",
+      "2026-11-18_09-18-06: t_0046@arriba-der ~ 15:05",
+      "2026-11-18_06-55-56: t_0030@arriba-der ~ 09:40",
+      "2026-11-18_06-55-56: t_0044@arriba-der ~ 14:25"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "snapmatic",
+    "titulo": "Snapmatic",
+    "subtitulo": "Cámara",
+    "categoria": "Teléfono y Apps",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "HACER UNA FOTO (R2), APAGAR EL FLASH (L1), MOSTRAR LA REJILLA (L3), SELFI (R3).",
+        "ZOOM de X1,0 a X5,0; FILTRO (1/17); GALERÍA (hasta 32 fotos)."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0022@abajo-der ~ 07:15",
+      "2026-11-18_07-14-03: t_0023@arriba-izq ~ 07:20",
+      "2026-11-18_07-14-03: t_0023@arriba-der ~ 07:25",
+      "2026-11-18_07-14-03: t_0023@abajo-izq ~ 07:30",
+      "2026-11-18_07-14-03: t_0023@abajo-der ~ 07:35"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "waink",
+    "titulo": "Waink",
+    "subtitulo": "Escaneo de vehículos y puntos de interés",
+    "categoria": "Teléfono y Apps",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Se abre manteniendo R1 (botón WAINK) y se sale con VOLVER (círculo).",
+        "La ficha de un vehículo muestra Acceso, Sistema de seguridad y Localizador (valores vistos: Cerrado / Clonador de llaves; Con alarma; Ninguno / Estándar).",
+        "Muestra las especificaciones e información de un vehículo."
+      ],
+      "consejos": [
+        "Usa la aplicación Waink para escanear vehículos y puntos de interés con el fin de obtener más información sobre ellos.",
+        "Mantén pulsado [R1] para abrir WAINK en tu teléfono y ver las especificaciones e información de un vehículo."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0025@arriba-izq ~ 08:00",
+      "2026-11-18_09-18-06: t_0021@abajo-der ~ 07:00",
+      "2026-11-18_08-08-46: t_0002@abajo-der ~ 00:35",
+      "2026-11-18_07-14-03: t_0026@arriba-izq ~ 08:20",
+      "2026-11-18_09-18-06: t_0022@arriba-der ~ 07:05"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "notas",
+    "titulo": "Notas",
+    "subtitulo": null,
+    "categoria": "Teléfono y Apps",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Guarda automáticamente los códigos de las puertas (0420 y 7700) con un icono de lápiz."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0103@abajo-izq ~ 00:34:10",
+      "2026-11-18_08-08-46: t_0107@arriba-der ~ 00:35:25",
+      "2026-11-18_08-08-46: t_0096@abajo-der ~ 00:31:55",
+      "2026-11-18_08-08-46: t_0104@arriba-der ~ 00:34:25",
+      "2026-11-18_08-08-46: t_0108@arriba-der ~ 00:35:45"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "ajustes-escaner-policial",
+    "titulo": "Escáner policial",
+    "subtitulo": "Función de la app Ajustes",
+    "categoria": "Teléfono y Apps",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Notificación 'Ajustes - Escáner policial instalado'."
+      ],
+      "consejos": [
+        "Ahora podrás escuchar las frecuencias de radio de la policía y se te avisará de cuáles son las zonas de patrulla.",
+        "Ahora te enterarás de cuándo y dónde acude la policía."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0015@arriba-izq ~ 05:00",
+      "2026-11-18_09-18-06: t_0016@arriba-izq ~ 05:20",
+      "2026-11-18_09-18-06: t_0016@arriba-der ~ 05:25"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "red-social-del-movil",
+    "titulo": "Red social del móvil",
+    "subtitulo": null,
+    "categoria": "Teléfono y Apps",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Feed con pestañas L1/R1, opciones, ver comentarios y ver el vídeo; botón VOLVER.",
+        "Cuentas vistas: @saras_unisex_salon (patrocinado, Hamlet), @Catfishing (Río Nehrling), @PlanetLeonidaMan (verificado)."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0065@arriba-der ~ 21:25",
+      "2026-11-18_09-18-06: t_0065@abajo-der ~ 21:35",
+      "2026-11-18_09-18-06: t_0066@arriba-izq ~ 21:40",
+      "2026-11-18_09-18-06: t_0066@arriba-der ~ 21:45"
+    ],
+    "notas": "No se vio el nombre de la app; titulado según su función."
+  },
+  {
+    "modulo": "guias",
+    "slug": "down-time-cafe",
+    "titulo": "Down Time Café",
+    "subtitulo": "Cafetería",
+    "categoria": "Tiendas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "productos": [
+        {
+          "nombre": "Bocadillo",
+          "precio": 5
+        },
+        {
+          "nombre": "Rosquilla glaseada",
+          "precio": 3
+        },
+        {
+          "nombre": "Café",
+          "precio": 5
+        },
+        {
+          "nombre": "Refresco Ecola",
+          "precio": 2
+        }
+      ],
+      "detalles": [
+        "Menú de pedido con acciones PEDIR / SALUDAR / COMER / DEJAR / PERSONAL (L2) y efecto de salud por producto; al comprar aparece 'Compra efectuada'."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_07-14-03: t_0011@abajo-der ~ 03:35",
+      "2026-11-18_07-14-03: t_0014@abajo-izq ~ 04:30",
+      "2026-11-18_07-14-03: t_0012@arriba-der ~ 03:45",
+      "2026-11-18_07-14-03: t_0012@abajo-izq ~ 03:50",
+      "2026-11-18_07-14-03: t_0013@arriba-izq ~ 04:00"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "big-shots",
+    "titulo": "Big Shots",
+    "subtitulo": "Tienda de ropa y pistolas",
+    "categoria": "Tiendas",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "productos": [
+        {
+          "nombre": "Ropa de trabajo Big Shots: camiseta Hinterland y pantalones cargo",
+          "precio": 59
+        }
+      ],
+      "detalles": [
+        "Opciones COMPRAR Y PONERSE / SALIR; la compra despeja la alerta de indumentaria.",
+        "Otra opción interactuable: 'Vestimenta táctica Big Shots'; vitrina PISTOLAS y botón PERSONAL (L2)."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0050@abajo-der ~ 16:35",
+      "2026-11-18_09-18-06: t_0052@abajo-izq ~ 17:10",
+      "2026-11-18_09-18-06: t_0050@arriba-izq ~ 16:20",
+      "2026-11-18_09-18-06: t_0051@arriba-izq ~ 16:40",
+      "2026-11-18_09-18-06: t_0052@abajo-der ~ 17:15"
+    ],
+    "notas": "El objetivo previo la llama 'armería'; no se confirmó la relación con Ammu-Nation."
+  },
+  {
+    "modulo": "guias",
+    "slug": "coastal-auto-care",
+    "titulo": "Coastal Auto Care",
+    "subtitulo": "Taller de Joey",
+    "categoria": "Talleres",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Joey, de Coastal Auto Care, avisa por mensaje con ubicación de que el coche necesita arreglos.",
+        "Con 39 $ no alcanza para pinturas ni mejoras en el taller.",
+        "Se llama a Joey desde Contactos para traer el coche reparado ('Se ha reparado')."
+      ],
+      "consejos": [
+        "Cada uno de los talleres de Leónida se especializa en distintas modificaciones estéticas o de rendimiento."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0012@abajo-der ~ 04:25",
+      "2026-11-18_07-50-32: t_0001@arriba-izq ~ 00:00",
+      "2026-11-18_06-55-56: t_0044@arriba-der ~ 14:25",
+      "2026-11-18_08-08-46: t_0102@abajo-der ~ 00:33:55",
+      "2026-11-18_08-08-46: t_0013@arriba-izq ~ 04:40"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "taller-janjak",
+    "titulo": "Taller Janjak",
+    "subtitulo": null,
+    "categoria": "Talleres",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Aparece como destino GPS en el mapa.",
+        "Su ficha del mapa menciona a la banda San4San, que usa el taller de tapadera para tráfico de hierba."
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0030@arriba-der ~ 09:45",
+      "2026-11-18_08-08-46: t_0024@arriba-der ~ 07:45",
+      "2026-11-18_09-18-06: t_0056@arriba-izq ~ 18:20",
+      "2026-11-18_08-08-46: t_0025@abajo-izq ~ 08:10",
+      "2026-11-18_08-08-46: t_0026@arriba-izq ~ 08:20"
+    ],
+    "notas": "También puede ser ficha de mapa (Negocios); revisar duplicados con el agente de mapa."
+  },
+  {
+    "modulo": "guias",
+    "slug": "bailar-en-el-club",
+    "titulo": "Bailar en el club",
+    "subtitulo": null,
+    "categoria": "Actividades",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Prompt BAILAR (R2) en la pista y la terraza del club NINE1NINE; también al caminar cerca de la zona VIP."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0037@arriba-izq ~ 00:12:00",
+      "2026-11-18_08-08-46: t_0002@abajo-der ~ 00:35",
+      "2026-11-18_08-08-46: t_0042@abajo-der ~ 00:13:55",
+      "2026-11-18_08-08-46: t_0004@abajo-der ~ 01:15",
+      "2026-11-18_08-08-46: t_0045@arriba-izq ~ 00:14:40"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "refrescarse-en-el-bano",
+    "titulo": "Refrescarse en el baño del club",
+    "subtitulo": null,
+    "categoria": "Actividades",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Prompt REFRESCARSE junto al lavabo; muestra el efecto 'Concentración aumentada'."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0038@abajo-der ~ 00:12:35",
+      "2026-11-18_08-08-46: t_0039@arriba-izq ~ 00:12:40"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "encuentro-policial-en-carretera",
+    "titulo": "Encuentro policial en carretera",
+    "subtitulo": "Evento aleatorio",
+    "categoria": "Actividades",
+    "stats_juego": {},
+    "metadata": {
+      "spoiler": false,
+      "detalles": [
+        "Agentes detienen a un civil en la carretera de Cayo Lento, cerca de Brian's Marina.",
+        "El jugador puede intervenir; disparar a un agente desencadenó 3 estrellas."
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0077@arriba-der ~ 00:25:25",
+      "2026-11-18_08-08-46: t_0077@abajo-der ~ 00:25:35",
+      "2026-11-18_08-08-46: t_0078@arriba-izq ~ 00:25:40",
+      "2026-11-18_08-08-46: t_0079@arriba-izq ~ 00:26:00",
+      "2026-11-18_08-08-46: t_0079@abajo-der ~ 00:26:15"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "jason",
+    "titulo": "Jason",
+    "subtitulo": "Protagonista jugable",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Protagonista jugable",
+      "spoiler": false,
+      "descripcion": "Pestaña del menú 'JASON Y LUCÍA'; se presenta como 'Jason Duval' en una llamada."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_09-18-06: t_0046@arriba-der ~ 15:05",
+      "2026-11-18_09-18-06: t_0046@abajo-izq ~ 15:10",
+      "2026-11-18_09-18-06: t_0046@abajo-der ~ 15:15"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "lucia",
+    "titulo": "Lucía",
+    "subtitulo": "Contacto y personaje principal",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Contacto y personaje principal",
+      "spoiler": false,
+      "descripcion": "Aparece en la pestaña 'JASON Y LUCÍA', en el teléfono y en la ficha 'Repara el coche'."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "MAPA_2: f_0086 ~ 00:02:50",
+      "2026-11-18_08-08-46: t_0122@arriba-izq ~ 00:40:20",
+      "2026-11-18_08-08-46: t_0012@abajo-der ~ 04:25",
+      "MAPA_2: f_0087 ~ 00:02:52",
+      "2026-11-18_08-08-46: t_0122@abajo-der ~ 00:40:35"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "brian",
+    "titulo": "Brian",
+    "subtitulo": "Contacto que encarga los trabajos",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Contacto que encarga los trabajos",
+      "spoiler": false,
+      "descripcion": "Envía mensajes y encarga misiones (cobros, entregas, armas); su casa, garaje y escondite son destinos de objetivos."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-28-51: t_0013@arriba-der ~ 00:04:05",
+      "2026-11-18_08-08-46: t_0116@arriba-der ~ 00:38:25",
+      "2026-11-18_09-18-06: t_0046@arriba-der ~ 15:05",
+      "2026-11-18_06-38-41: t_0010@arriba-izq ~ 00:03:00",
+      "2026-11-18_08-08-46: t_0116@abajo-izq ~ 00:38:30"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "cal",
+    "titulo": "Cal",
+    "subtitulo": "Contacto y compañero de misiones",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Contacto y compañero de misiones",
+      "spoiler": false,
+      "descripcion": "Contacto del teléfono; acompaña a Jason en 'Ve a ver a Cal'; se menciona 'Caladero de pesca de Cal'."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-38-41: t_0010@arriba-izq ~ 00:03:00",
+      "2026-11-18_08-08-46: t_0122@arriba-izq ~ 00:40:20",
+      "2026-11-18_07-50-32: t_0012@abajo-der ~ 03:55",
+      "2026-11-18_06-55-56: t_0021@abajo-der ~ 06:55",
+      "2026-11-18_08-08-46: t_0122@abajo-der ~ 00:40:35"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "donnie",
+    "titulo": "Donnie",
+    "subtitulo": "Contacto",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Contacto",
+      "spoiler": false,
+      "descripcion": "Contacto con mensajes; es el personaje a rescatar en 'Día de pesca'."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-28-51: t_0008@arriba-der ~ 00:02:25",
+      "2026-11-18_06-55-56: t_0030@arriba-der ~ 09:40",
+      "2026-11-18_08-08-46: t_0122@arriba-izq ~ 00:40:20",
+      "2026-11-18_06-28-51: t_0012@arriba-izq ~ 00:03:40",
+      "2026-11-18_06-55-56: t_0031@abajo-der ~ 10:15"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "joey",
+    "titulo": "Joey",
+    "subtitulo": "Mecánico de Coastal Auto Care",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Mecánico de Coastal Auto Care",
+      "spoiler": false,
+      "negocio": "Coastal Auto Care"
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0044@arriba-der ~ 14:25",
+      "2026-11-18_07-50-32: t_0001@arriba-izq ~ 00:00",
+      "2026-11-18_07-50-32: t_0001@arriba-der ~ 00:05",
+      "2026-11-18_08-08-46: t_0121@abajo-der ~ 00:40:15",
+      "2026-11-18_08-08-46: t_0133@arriba-izq ~ 00:44:00"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "mandy",
+    "titulo": "Mandy",
+    "subtitulo": "Inquilina de la casa turquesa",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Inquilina de la casa turquesa",
+      "spoiler": false,
+      "descripcion": "Aparece en la misión 'Fontanería'."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0147@abajo-der ~ 00:48:55",
+      "2026-11-18_08-08-46: t_0146@abajo-izq ~ 00:48:30",
+      "2026-11-18_08-08-46: t_0149@abajo-der ~ 00:49:35",
+      "2026-11-18_08-08-46: t_0158@abajo-izq ~ 00:52:30",
+      "2026-11-18_08-08-46: t_0148@arriba-izq ~ 00:49:00"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "bert",
+    "titulo": "Bert",
+    "subtitulo": "Vecino malhumorado",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Vecino malhumorado",
+      "spoiler": false,
+      "descripcion": "Se queja de los inquilinos de la casa de al lado."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0144@abajo-izq ~ 00:47:50",
+      "2026-11-18_08-08-46: t_0146@abajo-izq ~ 00:48:30",
+      "2026-11-18_08-08-46: t_0162@arriba-der ~ 00:53:45",
+      "2026-11-18_08-08-46: t_0147@abajo-der ~ 00:48:55",
+      "2026-11-18_08-08-46: t_0162@abajo-izq ~ 00:53:50"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "andrew",
+    "titulo": "Andrew",
+    "subtitulo": "Dependiente de Ammu-Nation",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Dependiente de Ammu-Nation",
+      "spoiler": false,
+      "descripcion": "Etiqueta ANDREW; mantener L2 para interactuar."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0178@abajo-izq ~ 00:59:10",
+      "2026-11-18_08-08-46: t_0179@arriba-izq ~ 00:59:20",
+      "2026-11-18_08-08-46: t_0180@arriba-izq ~ 00:59:40",
+      "2026-11-18_08-08-46: t_0181@abajo-der ~ 01:00:15"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "chuck",
+    "titulo": "Chuck",
+    "subtitulo": "Armero (contacto Armería de Chuck)",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Armero (contacto Armería de Chuck)",
+      "spoiler": false,
+      "descripcion": "Contacto 'Armería de Chuck' por teléfono."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-55-56: t_0026@arriba-izq ~ 08:20",
+      "2026-11-18_06-55-56: t_0026@abajo-der ~ 08:35",
+      "2026-11-18_06-55-56: t_0027@arriba-izq ~ 08:40"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "yolanda",
+    "titulo": "Yolanda",
+    "subtitulo": "Reclusa (NPC del prólogo)",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Reclusa (NPC del prólogo)",
+      "spoiler": false,
+      "descripcion": "Etiqueta de interacción 'YOLANDA' con prompt TALK en la celda."
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "2026-11-18_06-01-27: t_0024@abajo-izq ~ 07:50",
+      "2026-11-18_06-01-27: t_0025@arriba-izq ~ 08:00",
+      "2026-11-18_06-01-27: t_0024@abajo-der ~ 07:55",
+      "2026-11-18_06-01-27: t_0025@arriba-der ~ 08:05"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "bret-vogel",
+    "titulo": "Bret Vogel",
+    "subtitulo": "Contacto del teléfono",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Contacto del teléfono",
+      "spoiler": false
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0096@abajo-der ~ 00:31:55",
+      "2026-11-18_08-08-46: t_0122@arriba-izq ~ 00:40:20",
+      "2026-11-18_08-08-46: t_0097@arriba-izq ~ 00:32:00",
+      "2026-11-18_08-08-46: t_0122@abajo-der ~ 00:40:35",
+      "2026-11-18_08-08-46: t_0106@abajo-izq ~ 00:35:10"
+    ]
+  },
+  {
+    "modulo": "guias",
+    "slug": "los-kingfishers",
+    "titulo": "Los Kingfishers",
+    "subtitulo": "Grupo mencionado en diálogos y mensajes",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Grupo mencionado en diálogos y mensajes",
+      "spoiler": false,
+      "descripcion": "Se citan en subtítulos y en mensajes de Donnie."
+    },
+    "confianza": "media",
+    "evidencia": [
+      "MAPA: f_0032@completo ~ 01:02",
+      "2026-11-18_06-55-56: t_0031@abajo-izq ~ 10:50",
+      "2026-11-18_06-55-56: t_0030@arriba-der ~ 09:40",
+      "MAPA: f_0071@completo ~ 02:20",
+      "2026-11-18_06-55-56: t_0031@abajo-der ~ 10:15"
+    ],
+    "notas": "Rol inferido; solo menciones."
+  },
+  {
+    "modulo": "guias",
+    "slug": "san4san",
+    "titulo": "San4San",
+    "subtitulo": "Banda mencionada en la ficha del Taller Janjak",
+    "categoria": "Personajes",
+    "stats_juego": {},
+    "metadata": {
+      "rol": "Banda mencionada en la ficha del Taller Janjak",
+      "spoiler": false
+    },
+    "confianza": "media",
+    "evidencia": [
+      "2026-11-18_08-08-46: t_0030@arriba-der ~ 09:45",
+      "2026-11-18_09-18-06: t_0056@arriba-izq ~ 18:20"
+    ]
+  }
+]

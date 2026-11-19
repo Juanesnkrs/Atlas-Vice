@@ -1,0 +1,264 @@
+[
+  {
+    "modulo": "armas",
+    "slug": "girardi-es9",
+    "titulo": "Girardi ES9",
+    "subtitulo": "Pistola semiautomática de Jason Duval",
+    "categoria": "Pistolas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "La Girardi ES9 es el arma corta que Rockstar asigna a Jason en el material de variantes personalizadas. Por su rol de pistola de cabecera del protagonista, es la referencia natural para comparar el resto de armas cortas del catálogo cuando se publiquen cifras reales.",
+      "fabricante": "Girardi",
+      "slot": "Arma corta",
+      "usuario": "Jason Duval",
+      "alias": [
+        "Girardi ES9"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Nombrada por Rockstar en el texto de variantes personalizadas de la edición Ultimate"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "klose-k17",
+    "titulo": "Klose K17",
+    "subtitulo": "Pistola semiautomática de Lucia Caminos",
+    "categoria": "Pistolas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "La Klose K17 es la pistola con la que Rockstar identifica a Lucia en las variantes personalizadas. Su silueta de armazón polimérico contrasta con la ES9 de Jason, y forma con ella el par de armas cortas que definen a la pareja protagonista.",
+      "fabricante": "Klose",
+      "slot": "Arma corta",
+      "usuario": "Lucia Caminos",
+      "alias": [
+        "Klose K17",
+        "Polymer Pistol"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Nombrada por Rockstar junto a la ES9 en el mismo texto promocional"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "morgan-revolver",
+    "titulo": "Revólver Hawk & Little Morgan",
+    "subtitulo": "Revólveres gemelos en versión de él y de ella",
+    "categoria": "Revólveres",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "El Morgan llega como dos revólveres distintos: uno inoxidable con mira telescópica y otro azulado con grabados. La propia descripción de Rockstar habla de versiones para él y para ella, lo que apunta a un arma de lujo pensada para la pareja y no a un simple objeto de tienda.",
+      "fabricante": "Hawk & Little",
+      "slot": "Arma corta",
+      "variantes": [
+        "Inoxidable con mira telescópica",
+        "Azulado con grabados"
+      ],
+      "alias": [
+        "Hawk & Little Morgan Revolver"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Mencionado en la descripción oficial de la edición Ultimate y mostrado en una captura oficial"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "moreland-850",
+    "titulo": "Escopeta Moreland 850",
+    "subtitulo": "Escopeta de corredera",
+    "categoria": "Escopetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "El nombre Moreland 850 aparece en el aviso de recogida del arma dentro del avance extendido oficial. Es la confirmación más sólida de una escopeta de corredera en Leonida, aunque Rockstar aún no ha detallado capacidad, daño ni precio.",
+      "fabricante": "Moreland",
+      "slot": "Arma larga",
+      "alias": [
+        "Moreland 850 Shotgun"
+      ]
+    },
+    "confianza": "alta",
+    "evidencia": [
+      "Nombre visible en el aviso de recogida del avance extendido oficial"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "mustang-357-revolver",
+    "titulo": "Revólver Duke Arms Mustang .357",
+    "subtitulo": "Revólver de calibre .357",
+    "categoria": "Revólveres",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "El grabado MUSTANG .357 se lee en el cañón del revólver que aparece en una captura oficial de Ambrosia. Rockstar no ha publicado ficha ni cifras, así que por ahora solo se confirman su calibre y su identidad visual.",
+      "fabricante": "Duke Arms",
+      "slot": "Arma corta",
+      "calibre": ".357",
+      "alias": [
+        "Duke Arms Mustang .357 Revolver"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Marcado del cañón legible en una captura oficial; el fabricante se deduce del catálogo contrastado"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "carbine-rifle-mk-ii",
+    "titulo": "Carabina Duke Arms AR-15",
+    "subtitulo": "Carabina de asalto de Duke Arms",
+    "categoria": "Rifles de Asalto",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Una carabina con la marca Duke Arms Company se ve en manos de Jason en una captura oficial, y una variante de operaciones especiales aparece en video oficial. El nombre exacto dentro del juego no está confirmado, por lo que esta ficha describe el arma por su marca y su aspecto.",
+      "fabricante": "Duke Arms",
+      "slot": "Arma larga",
+      "alias": [
+        "Duke Arms AR-15 Carbine"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Marca visible en una captura oficial con Jason",
+      "Variante distinta vista en video oficial"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "double-barrel-shotgun",
+    "titulo": "Escopeta de dos cañones",
+    "subtitulo": "Escopeta de cañones paralelos",
+    "categoria": "Escopetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Una escopeta de dos cañones se distingue en una captura oficial protagonizada por Grassrivers. Es un arma de dos disparos y recarga lenta pensada para el cuerpo a cuerpo, aunque Rockstar no ha confirmado su nombre comercial ni sus cifras.",
+      "slot": "Arma larga",
+      "alias": [
+        "Double Barrel Shotgun"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Visible en una captura oficial ambientada en Grassrivers"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "grenade-launcher",
+    "titulo": "Lanzagranadas",
+    "subtitulo": "Lanzador de granadas de hombro",
+    "categoria": "Lanzadores",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "El lanzagranadas se asoma en el segundo avance oficial y es el único proyectil explosivo visto hasta ahora en material de Rockstar. Se desconocen fabricante, munición y precio, por lo que no se publican cifras.",
+      "slot": "Arma pesada",
+      "alias": [
+        "Grenade Launcher"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Visto en el segundo avance oficial"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "baseball-bat",
+    "titulo": "Bate de béisbol",
+    "subtitulo": "Arma cuerpo a cuerpo contundente",
+    "categoria": "Cuerpo a cuerpo",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Un bate de béisbol aparece en una captura oficial tomada en Port Gellhorn. Es el arma improvisada más reconocible de la saga y encaja con el tono callejero de la ciudad.",
+      "slot": "Cuerpo a cuerpo",
+      "alias": [
+        "Baseball Bat"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Presente en una captura oficial de Port Gellhorn"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "pool-cue",
+    "titulo": "Taco de billar",
+    "subtitulo": "Arma cuerpo a cuerpo de bar",
+    "categoria": "Cuerpo a cuerpo",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "El taco de billar se ve en una captura oficial de Cal Hampton, junto a la mesa de juego. Sugiere que los bares de Leonida ofrecen armas al alcance en las peleas.",
+      "slot": "Cuerpo a cuerpo",
+      "alias": [
+        "Pool Cue"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Aparece en una captura oficial de Cal Hampton"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "golf-club",
+    "titulo": "Palo de golf",
+    "subtitulo": "Arma cuerpo a cuerpo deportiva",
+    "categoria": "Cuerpo a cuerpo",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Una captura oficial de Cal Hampton muestra un palo de golf corto, de minigolf. Se desconoce si el juego distingue varios tipos de palo.",
+      "slot": "Cuerpo a cuerpo",
+      "alias": [
+        "Golf Club"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Visible en una captura oficial de Cal Hampton"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "hammer",
+    "titulo": "Martillo",
+    "subtitulo": "Herramienta usable como arma",
+    "categoria": "Cuerpo a cuerpo",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Jason sostiene un martillo en el primer avance oficial. Es una herramienta de uso doméstico que el juego permite empuñar como arma improvisada, aunque se ignoran sus cifras.",
+      "slot": "Cuerpo a cuerpo",
+      "alias": [
+        "Hammer"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Visto en el primer avance oficial"
+    ]
+  },
+  {
+    "modulo": "armas",
+    "slug": "switchblade",
+    "titulo": "Navaja automática",
+    "subtitulo": "Navaja plegable",
+    "categoria": "Cuerpo a cuerpo",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rockstar nombra la navaja automática en el pie de una imagen oficial. No está claro si será un arma equipable o solo un objeto de ambientación, así que se publica con cautela.",
+      "slot": "Cuerpo a cuerpo",
+      "alias": [
+        "Switchblade"
+      ]
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Mencionada en el pie de una imagen oficial; su función como arma no está confirmada"
+    ]
+  }
+]
