@@ -399,7 +399,7 @@
    "titulo": "Paquetes Ocultos",
    "subtitulo": "Cápsulas escondidas por toda la isla",
    "categoria": "Paquetes Ocultos",
-   "imagen_url": "/assets/complexmusic_1794873298_4032011328293408607_12790857096.jpg",
+   "imagen_url": null,
    "stats_json": {
     "rareza": 40
    },
@@ -417,7 +417,7 @@
    "titulo": "Reliquias de la Costa",
    "subtitulo": "Piezas antiguas halladas en el litoral",
    "categoria": "Reliquias",
-   "imagen_url": "/assets/rockstargames_1782392540_3927315665585859597_184595688.jpg",
+   "imagen_url": null,
    "stats_json": {
     "rareza": 70
    },
@@ -435,7 +435,7 @@
    "titulo": "Graffitis de Downtown",
    "subtitulo": "Obras de arte urbano por descubrir",
    "categoria": "Graffitis",
-   "imagen_url": "/assets/complexmusic_1794873298_4032011329073355805_12790857096.jpg",
+   "imagen_url": null,
    "stats_json": {
     "rareza": 35
    },
@@ -453,7 +453,7 @@
    "titulo": "Placas de Matrícula Raras",
    "subtitulo": "Series limitadas de matrículas",
    "categoria": "Reliquias",
-   "imagen_url": "/assets/rockstargames_1790262334_3993332294647284992_184595688.jpg",
+   "imagen_url": null,
    "stats_json": {
     "rareza": 82
    },
@@ -471,7 +471,7 @@
    "titulo": "Cápsulas del Pantano",
    "subtitulo": "Escondidas entre la vegetación",
    "categoria": "Paquetes Ocultos",
-   "imagen_url": "/assets/complexmusic_1794873298_4032011331254611421_12790857096.jpg",
+   "imagen_url": null,
    "stats_json": {
     "rareza": 58
    },
@@ -489,7 +489,7 @@
    "titulo": "Postales de los Cayos",
    "subtitulo": "Imágenes de colección del archipiélago",
    "categoria": "Graffitis",
-   "imagen_url": "/assets/rockstargames_1791475498_4003509049827826360_184595688.jpg",
+   "imagen_url": null,
    "stats_json": {
     "rareza": 46
    },
@@ -587,7 +587,7 @@
    "descripcion": "Cápsula escondida bajo el pasamanos del muelle.",
    "coord_x": 765.25,
    "coord_y": 318.5,
-   "media_url": "/assets/complexmusic_1794873298_4032011328293408607_12790857096.jpg",
+   "media_url": null,
    "created_at": "2026-06-01T12:00:00.000Z"
   },
   {
@@ -620,7 +620,7 @@
    "descripcion": "Pieza antigua semienterrada en la arena.",
    "coord_x": 800,
    "coord_y": 280.25,
-   "media_url": "/assets/rockstargames_1782392540_3927315665585859597_184595688.jpg",
+   "media_url": null,
    "created_at": "2026-06-01T12:00:00.000Z"
   },
   {
@@ -631,7 +631,7 @@
    "descripcion": "Mural visible desde el callejón trasero.",
    "coord_x": 590.5,
    "coord_y": 385,
-   "media_url": "/assets/complexmusic_1794873298_4032011329073355805_12790857096.jpg",
+   "media_url": null,
    "created_at": "2026-06-01T12:00:00.000Z"
   },
   {
@@ -642,7 +642,7 @@
    "descripcion": "Sobre la baranda de un contenedor.",
    "coord_x": 520,
    "coord_y": 140.5,
-   "media_url": "/assets/rockstargames_1790262334_3993332294647284992_184595688.jpg",
+   "media_url": null,
    "created_at": "2026-06-01T12:00:00.000Z"
   },
   {
@@ -653,7 +653,7 @@
    "descripcion": "Entre las raíces de un manglar.",
    "coord_x": 215.75,
    "coord_y": 225,
-   "media_url": "/assets/complexmusic_1794873298_4032011331254611421_12790857096.jpg",
+   "media_url": null,
    "created_at": "2026-06-01T12:00:00.000Z"
   },
   {
@@ -664,7 +664,7 @@
    "descripcion": "En el faro del cayo más pequeño.",
    "coord_x": 330,
    "coord_y": 610,
-   "media_url": "/assets/rockstargames_1791475498_4003509049827826360_184595688.jpg",
+   "media_url": null,
    "created_at": "2026-06-01T12:00:00.000Z"
   },
   {

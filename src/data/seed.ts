@@ -29,15 +29,6 @@ const T0 = '2026-06-01T12:00:00.000Z';
 const at = (day: number, hour = 12): string =>
   `2026-06-${String(day).padStart(2, '0')}T${String(hour).padStart(2, '0')}:00:00.000Z`;
 
-const ART = {
-  a: '/assets/complexmusic_1794873298_4032011328293408607_12790857096.jpg',
-  c: '/assets/complexmusic_1794873298_4032011329073355805_12790857096.jpg',
-  e: '/assets/complexmusic_1794873298_4032011331254611421_12790857096.jpg',
-  g: '/assets/rockstargames_1782392540_3927315665585859597_184595688.jpg',
-  h: '/assets/rockstargames_1790262334_3993332294647284992_184595688.jpg',
-  i: '/assets/rockstargames_1791475498_4003509049827826360_184595688.jpg',
-} as const;
-
 export const HERO_IMAGE = '/assets/hero-gas-station.jpg';
 export const DISCORD_URL = 'https://discord.com/';
 export const SAMPLE_NOTICE = 'Datos de ejemplo: no son información oficial del juego.';
@@ -143,19 +134,19 @@ export const SEED_ENTITIES: Entity[] = [
     { velocidad: 78, aceleracion: 66, frenado: 40, manejo: 58 },
     { ubicacion: 'Leonida Keys', precio: 64000, plazas: 4, silueta: 'boat' }),
 
-  // Coleccionables (30-35) - artwork real de public/assets
+  // Coleccionables (30-35) - sin imagen: la UI muestra el banner Vice Sunset
   ent(30, MOD.coleccionables, 'Paquetes Ocultos', 'Cápsulas escondidas por toda la isla', 'Paquetes Ocultos',
-    { rareza: 40 }, { region: 'Varias', total: 3, ubicacion: 'Varias regiones' }, ART.a),
+    { rareza: 40 }, { region: 'Varias', total: 3, ubicacion: 'Varias regiones' }),
   ent(31, MOD.coleccionables, 'Reliquias de la Costa', 'Piezas antiguas halladas en el litoral', 'Reliquias',
-    { rareza: 70 }, { region: 'Vice Beach', total: 2, ubicacion: 'Vice Beach y Ocean Beach' }, ART.g),
+    { rareza: 70 }, { region: 'Vice Beach', total: 2, ubicacion: 'Vice Beach y Ocean Beach' }),
   ent(32, MOD.coleccionables, 'Graffitis de Downtown', 'Obras de arte urbano por descubrir', 'Graffitis',
-    { rareza: 35 }, { region: 'Downtown', total: 1, ubicacion: 'Downtown' }, ART.c),
+    { rareza: 35 }, { region: 'Downtown', total: 1, ubicacion: 'Downtown' }),
   ent(33, MOD.coleccionables, 'Placas de Matrícula Raras', 'Series limitadas de matrículas', 'Reliquias',
-    { rareza: 82 }, { region: 'Port Gellhorn', total: 1, ubicacion: 'Port Gellhorn' }, ART.h),
+    { rareza: 82 }, { region: 'Port Gellhorn', total: 1, ubicacion: 'Port Gellhorn' }),
   ent(34, MOD.coleccionables, 'Cápsulas del Pantano', 'Escondidas entre la vegetación', 'Paquetes Ocultos',
-    { rareza: 58 }, { region: 'Grassrivers', total: 1, ubicacion: 'Grassrivers' }, ART.e),
+    { rareza: 58 }, { region: 'Grassrivers', total: 1, ubicacion: 'Grassrivers' }),
   ent(35, MOD.coleccionables, 'Postales de los Cayos', 'Imágenes de colección del archipiélago', 'Graffitis',
-    { rareza: 46 }, { region: 'Leonida Keys', total: 1, ubicacion: 'Leonida Keys' }, ART.i),
+    { rareza: 46 }, { region: 'Leonida Keys', total: 1, ubicacion: 'Leonida Keys' }),
 
   // Guías (40-43)
   ent(40, MOD.guias, 'Primer día en Leonida', 'Cómo empezar sin perderse', 'Consejos', {}, {
@@ -199,14 +190,14 @@ const mk = (
 });
 
 export const SEED_MARKERS: MapMarker[] = [
-  mk(100, 30, 'Vice Beach', 'Paquete oculto junto al muelle', 'Cápsula escondida bajo el pasamanos del muelle.', 765.25, 318.5, ART.a),
+  mk(100, 30, 'Vice Beach', 'Paquete oculto junto al muelle', 'Cápsula escondida bajo el pasamanos del muelle.', 765.25, 318.5),
   mk(101, 30, 'Downtown', 'Paquete oculto en la azotea', 'Accesible desde la escalera de incendios.', 618, 352.75),
   mk(102, 30, 'Grassrivers', 'Paquete oculto en el embarcadero', 'Cerca del embarcadero de madera.', 262.5, 178),
-  mk(103, 31, 'Vice Beach', 'Reliquia de la costa', 'Pieza antigua semienterrada en la arena.', 800, 280.25, ART.g),
-  mk(104, 32, 'Downtown', 'Graffiti en el callejón', 'Mural visible desde el callejón trasero.', 590.5, 385, ART.c),
-  mk(105, 33, 'Port Gellhorn', 'Placa rara en el astillero', 'Sobre la baranda de un contenedor.', 520, 140.5, ART.h),
-  mk(106, 34, 'Grassrivers', 'Cápsula del pantano', 'Entre las raíces de un manglar.', 215.75, 225, ART.e),
-  mk(107, 35, 'Leonida Keys', 'Postal de los Cayos', 'En el faro del cayo más pequeño.', 330, 610, ART.i),
+  mk(103, 31, 'Vice Beach', 'Reliquia de la costa', 'Pieza antigua semienterrada en la arena.', 800, 280.25),
+  mk(104, 32, 'Downtown', 'Graffiti en el callejón', 'Mural visible desde el callejón trasero.', 590.5, 385),
+  mk(105, 33, 'Port Gellhorn', 'Placa rara en el astillero', 'Sobre la baranda de un contenedor.', 520, 140.5),
+  mk(106, 34, 'Grassrivers', 'Cápsula del pantano', 'Entre las raíces de un manglar.', 215.75, 225),
+  mk(107, 35, 'Leonida Keys', 'Postal de los Cayos', 'En el faro del cayo más pequeño.', 330, 610),
   mk(108, 31, 'Ocean Beach', 'Reliquia de Ocean Beach', 'Bajo el paseo marítimo.', 695.5, 480),
   mk(109, 10, 'Ocean Beach', 'Tienda de armas Ocean', 'Venta de la Pistola Compacta C9.', 705, 455.5),
   mk(110, 11, 'Vice Beach', 'Armería de Vice Beach', 'Venta del Revólver Magnum R44.', 745.25, 360),

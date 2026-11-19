@@ -104,7 +104,7 @@
 - **Sin SUPER_ADMIN persistido:** la base tiene 4 USER y 1 ADMIN; ningún SUPER_ADMIN. El Panel Control Total solo se alcanza con `SUPER_ADMIN_EMAIL` o con el acceso demo de desarrollo (`server/src/scripts/demoAccess.ts`, se niega con `NODE_ENV=production`).
 - **Noticias:** solo se ingiere Take-Two IR (1 noticia hoy). Rockstar Newswire (sin RSS/API) y YouTube (prohibido por su robots.txt) no se ingieren, aunque el modelo todavía los lista (`server/src/workers/sources.ts:22-27`).
 - **Sin pruebas automatizadas, CI, linter, Dockerfile ni despliegue**; sin service worker ni manifest (no es PWA).
-- **Derechos de imagen:** `public/assets/` contiene imágenes con nombres de cuentas de terceros (`complexmusic_*`, `rockstargames_*`, `theofficialselfridges_*`) usadas como artwork; riesgo legal antes de monetizar.
+- **Derechos de imagen:** resuelto en el Sprint 4: `public/assets/` solo conserva `hero-gas-station.jpg`; las capturas con prefijos de terceros se eliminaron y la UI usa degradados Vice Sunset propios.
 
 > ⚠️ **Brecha:** la auditoría de conformidad e el inventario del cliente hablan de "23 entidades y 20 marcadores de ejemplo". Eso **ya no está en la base** (se borró). Sigue existiendo en `server/src/scripts/seedData.json` y `src/data/seed.ts` como *fallback* cuando la API devuelve 0 entidades y 0 marcadores (`src/data/seed.ts:464-473`). Con 227 entidades en la API, el cliente usa datos de la API, no la semilla.
 
@@ -2193,9 +2193,9 @@ Atlas Vice/
 ├─ package.json (atlas-vice)     Cliente: scripts y dependencias
 ├─ pnpm-lock.yaml
 ├─ index.html  vite.config.ts  tailwind.config.ts  tsconfig.json
-├─ capacitor.config.ts           Config Capacitor (appId com.atlasvice.app, ver brecha)
+├─ capacitor.config.ts           Config Capacitor (appId com.leonidapp.companion, appName LeonidApp; proyectos nativos pendientes de sync)
 ├─ .env / .env.example           VITE_API_URL
-├─ public/assets/                hero-gas-station.jpg, vice-sunset-ref.jpg y capturas de referencia
+├─ public/assets/                hero-gas-station.jpg (único archivo; el resto de superficies usa degradados/SVG propios)
 ├─ src/                          Cliente Vite + React + TS
 │  ├─ App.tsx  main.tsx
 │  ├─ components/layout/         BottomDock, Footer (RockstarFooter), ViceShell
@@ -2218,7 +2218,6 @@ Atlas Vice/
 │     └─ scripts/                seed.ts, seedData.json, importCatalog.ts, demoAccess.ts
 ├─ android/  ios/                Proyectos nativos Capacitor generados
 ├─ docs/                         3 docs vigentes LeonidApp-*.md, 3 legados AtlasVice*.md, referencias-ui/
-├─ PDF/                          3 PDF de documentos legados (versionados)
 ├─ supabase/                     LEGADO: schema.sql, 02_rls_and_triggers.sql, 03_seed_data.sql
 ├─ dist/                         Salida de build (ignorada)
 ├─ graphify-out/                 Grafo de conocimiento (ignorado)
@@ -2233,13 +2232,13 @@ Atlas Vice/
 | `server/src/` subcarpetas | config, models, routes, plugins, services, workers, scripts + app.ts, index.ts | Coincide | ✅ |
 | `src/components/ui/CatalogAdminPanel.tsx` | No figura en DesignSpec §6.1 | Existe | ⚠️ Excepción |
 | `server/src/scripts/importCatalog.ts`, `demoAccess.ts`, `catalogo_grabaciones.json` | DesignSpec §6.2 lista solo `seed.ts` y `seedData.json` (CLAUDE.md permite la carpeta `scripts`) | Existen (el JSON de datos vive en `server/data/`, versionado) | ⚠️ Excepción |
-| `PDF/` | No listada | 3 PDF legados versionados | ⚠️ Excepción |
+| `docs/legado/PDF/` | Legado | 3 PDF legados movidos desde la raíz | ✅ |
 | `.tmp-mongo/` | No listada | Datos temporales de MongoDB (ignorada en git) | ⚠️ Excepción |
 | `supabase/` | Válida como legado, no se amplía | Presente | ✅ (deprecada) |
 | `android/`, `ios/` | Válidas | Presentes, con identidad antigua `com.atlasvice.app` y nombre «ATLAS VICE» (CLAUDE.md §0 exige `com.leonidapp.companion` y `leonidapp://`) | ⚠️ Divergente |
 | `graphify-out/`, `.claude/skills/graphify/` | Válidas | Presentes | ✅ |
 | `public/robots.txt` | Mencionado en DesignSpec §6.3 | No existe (el robots es dinámico) | ⚠️ |
-| `public/assets/` con capturas de terceros | — | Incluye `complexmusic_*`, `rockstargames_*`, `theofficialselfridges_*` | ⚠️ Riesgo de derechos (ver §23) |
+| `public/assets/` | — | Solo `hero-gas-station.jpg`; capturas de terceros eliminadas | ✅ |
 | `tests/` | — | No existe | ❌ |
 
 ### 20.3 Árbol limpio recomendado (propuesta, no aplicada)
@@ -2248,7 +2247,7 @@ Atlas Vice/
 Atlas Vice/
 ├─ src/  server/  android/  ios/  public/        sin cambios de estructura
 ├─ docs/
-│  └─ legado/       <- aqui AtlasVice*.md y PDF/ (la raiz queda sin PDF/)
+│  └─ legado/       <- PDF/ ya movido aquí; AtlasVice*.md siguen en docs/
 ├─ server/
 │  ├─ src/scripts/  importCatalog.ts y demoAccess.ts aprobados como excepciones en DesignSpec 6.2
 │  └─ data/         catalogo_grabaciones.json (datos, no codigo), versionado (commit `ecfcacf`)
@@ -2333,7 +2332,11 @@ pnpm --dir server import:catalog data/catalogo_grabaciones.json --source grabaci
 # Aplicar
 pnpm --dir server import:catalog data/catalogo_grabaciones.json --source grabacion --apply
 ```
+Valida cada ficha con Zod (`modulo`, `slug`, `titulo`, `subtitulo?`, `categoria`, `stats_juego` 0-10, `metadata`, `confianza` alta/media/baja, `evidencia` ≤5, `notas?` y `marker?`). El módulo debe existir. Convierte `stats_juego × 10` a `stats_json` (0-100), guarda `stats_juego` exacto en `metadata_json`, copia `notas` a `metadata_json.notas` y marca `fuente` con el valor de `--source` (por defecto `editorial`; el lote histórico de grabaciones usa `--source grabacion`), `confianza` y `evidencia`.
 
+Opciones: `--apply` (sin ella es simulación), `--source <nombre>` y `--replace-source <nombre>` (permite sobrescribir fichas previas de esa otra fuente, p. ej. `grabacion`). Upsert por (módulo, slug): si la entidad existente tiene una fuente distinta de `--source` y de `--replace-source`, se omite como conflicto. Un bloque opcional `marker: { region, coord_x, coord_y, descripcion? }` hace upsert en `MapMarker` (por `entity_id`) solo con los campos aprobados (`entity_id`, `region`, `titulo`, `descripcion`, `coord: { x, y }`) y solo con `--apply`.
+
+Resumen real impreso al terminar: `{ nuevas, actualizadas, reemplazadas, conflictos, errores, marcadores }` (`reemplazadas` cuenta las fichas de otra fuente sobrescritas vía `--replace-source`; `actualizadas`, las de la misma fuente). Código de salida 1 si hay errores. No invalida la caché SSR de un servidor en marcha (expira en ≤5 min). Sin guardas de entorno. Actualizar: regenerar el JSON y reimportar con `--apply` (idempotente). Ejemplo editorial: `pnpm --dir server import:catalog data/<archivo>.json --apply --source editorial`. El archivo histórico `server/data/catalogo_grabaciones.json` (166 KB, versionado) tiene 225 fichas (armas 12, vehículos 20, mapa 138, guías 55).
 Valida cada ficha con Zod (`modulo`, `slug`, `titulo`, `subtitulo?`, `categoria`, `stats_juego` 0-10, `metadata`, `confianza` alta/media/baja, `evidencia` ≤5). El módulo debe existir. Convierte `stats_juego × 10` a `stats_json` (0-100), guarda `stats_juego` exacto en `metadata_json`, marca `fuente` con el valor de `--source` (por defecto `editorial`; para este archivo usar `--source grabacion`), `confianza` y `evidencia`. Upsert por (módulo, slug); si ya hay una entidad de otra fuente la omite como conflicto. Resumen `{nuevas, actualizadas, conflictos, errores}`; código de salida 1 si hay errores. No invalida la caché SSR de un servidor en marcha (expira en ≤5 min). Sin guardas de entorno. Actualizar: regenerar el JSON y reimportar con `--apply` (idempotente). El archivo actual (`server/data/catalogo_grabaciones.json`, 166 KB, versionado) tiene 225 fichas (armas 12, vehículos 20, mapa 138, guías 55). El uso de ese archivo concreto con el script es una inferencia (❓ el JSON es la entrada prevista, no confirmado en código).
 
 ### 21.6 `demo:access`
@@ -2401,7 +2404,7 @@ Esfuerzo relativo: S (horas a un par de días), M (varios días), L (una a varia
 
 | # | Paso | Depende de | Esfuerzo |
 |---|---|---|---|
-| 1 | Resolver derechos de imágenes de `public/assets` (capturas con nombres de cuentas de terceros `complexmusic_*`, `theofficialselfridges_*`, `rockstargames_*`, usadas en portada/catálogo según la auditoría) y decidir la procedencia del contenido de las 225 fichas | — | M |
+| 1 | Verificar la licencia de `hero-gas-station.jpg` (las capturas de terceros ya se eliminaron) y decidir la procedencia del contenido de las 225 fichas | — | M |
 | 2 | Elegir hosting y arquitectura (un servicio Node que sirve API + `dist/`, ya soportado, o cliente estático + API separada) | — | S |
 | 3 | Dominio y HTTPS (certificado, redirección HTTP→HTTPS) | 2 | S |
 | 4 | MongoDB gestionado con réplica (para que las transacciones de aportes sean atómicas), usuarios y red restringida | 2 | M |
@@ -3127,19 +3130,15 @@ Control Total (SUPER_ADMIN):
 | Contraste medido (WCAG AA) de textos sobre glass y sunset | ❓ no medido |
 | `html lang` | ⚠️ fijo `es`; el selector ES/EN no lo cambia |
 
-### 28.4 Assets de `public/assets/` (16 archivos, 3 656 159 B)
+### 28.4 Assets de `public/assets/` (1 archivo)
 
 | Archivo | Uso |
 |---|---|
 | `hero-gas-station.jpg` | Hero de Portada y `/entrar` |
-| `vice-sunset-ref.jpg` (1,2 MB) | **Sin uso** en `src` (referencia cálida) |
-| `complexmusic_*` (10 archivos) | 3 se usan (Portada y semilla), 7 **sin uso** |
-| `rockstargames_*` (3) | Portada y semilla |
-| `theofficialselfridges_*` (1) | Portada (tienda) |
 
-Sin uso: 8 archivos, ≈2,3 MB. No hay iconos de app, favicon ni splash.
+Sprint 4: se eliminaron `vice-sunset-ref.jpg` y todos los `complexmusic_*`, `rockstargames_*` y `theofficialselfridges_*`. Las tarjetas de Portada/Dashboard (`CropImg`) usan degradados Vice Sunset en CSS y las fichas semilla sin imagen muestran el banner sunset. No hay iconos de app, favicon ni splash.
 
-> ⚠️ **Riesgo de derechos:** 14 de los 16 archivos tienen nombres de cuentas de terceros (formato de descargas de Instagram: `complexmusic_…`, `rockstargames_…`, `theofficialselfridges_…`); el origen y la licencia no están verificados (❓). Usarlos en un sitio público/comercial puede infringir derechos de autor y de marca. El `hero-gas-station.jpg` y el artwork de Rockstar también requieren permiso o sustitución por material propio. Recomendación: sustituir por imágenes propias o con licencia antes de publicar, y borrar las 8 sin uso. (Propuesta.)
+> ⚠️ **Pendiente de derechos:** `hero-gas-station.jpg` es artwork protagonista según CLAUDE.md §3; su procedencia y licencia siguen sin verificar (❓). `supabase/03_seed_data.sql` (legado) aún referencia las rutas eliminadas.
 
 ---
 
@@ -3367,7 +3366,7 @@ Notas de lectura:
 | 17 | D3 | Contact con `userId` de sesión | `server/src/services/submissions.ts:234` | Siempre guarda `userId: null`. |
 | 18 | D4 | Sobra `CatalogAdminPanel.tsx` | `src/components/ui/` | No está en DesignSpec §6.1. |
 | 19 | D4 | Sobran `demoAccess.ts`, `importCatalog.ts` y `catalogo_grabaciones.json` | `server/src/scripts/` (JSON en `server/data/`) | DesignSpec §6.2 solo lista `seed.ts` y `seedData.json`. CLAUDE.md sí permite la carpeta `scripts`. El JSON ya está versionado en `server/data/`. |
-| 20 | D4 | Sobra `PDF/` en la raíz | `PDF/` | 3 PDF legados, fuera del árbol de DesignSpec §6.3. |
+| 20 | D4 | ~~Sobra `PDF/` en la raíz~~ | `docs/legado/PDF/` | Resuelto: movido a `docs/legado/PDF/`. |
 | 21 | D4 | Falta `public/robots.txt` | `public/` | Ver fila 11. |
 | 22 | D4 | Identidad de Capacitor | `capacitor.config.ts:4-5`; `android/app/build.gradle:4,7`; `ios/.../project.pbxproj:312,333` | `appId com.atlasvice.app`, `appName ATLAS VICE`, fondo `#160B14`. CLAUDE.md §0 exige `com.leonidapp.companion` y `leonidapp://`. Ver §30. |
 
@@ -3413,7 +3412,7 @@ Criterios. **P0:** bloquea lanzar al público o generar ingresos. **P1:** necesa
 | P0-1 | **Monetización sin ingresos** | El AdSlot solo reserva el hueco. No inyecta el script del proveedor, no usa `publisher_id`, no lee el consentimiento. `ads_enabled=false`, proveedor `none`, sin slots configurados (`AdSlot.tsx`; Rutas §6.3.2-3; §31.4 filas 7 y 8). Además, `/guias/:slug` puede mostrar 3 anuncios (el máximo es 2) y `/foro` no tiene slot. | Ingresos publicitarios = 0. | M | P0-3 (contenido a monetizar), P1-4 (consentimiento de cookies), P0-5 (dominio y hosting), cuenta con un proveedor de anuncios. |
 | P0-2 | **Identidad nativa heredada** | `appId com.atlasvice.app`, `appName ATLAS VICE` y fondo `#160B14` en Capacitor, Android e iOS. Sin esquema `leonidapp://`, sin `@capacitor/app` ni `appUrlOpen`, sin intent-filter ni `CFBundleURLSchemes` (`capacitor.config.ts:4-5`; §31.3 fila 22). | El login nativo no vuelve a la app. Las tiendas exigen el identificador definitivo. | S a M | Decidir el identificador definitivo. Cuentas de desarrollador de las tiendas. |
 | P0-3 | **Contenido real insuficiente** | Estado verificado: 227 entidades (mapa 138, guías 57, vehículos 20, armas 12), coleccionables 0, **marcadores de mapa 0**, hilos de foro 6 (de ejemplo) con 9 posts, 5 usuarios, **1 noticia**, 7 módulos. Las 138 entidades del módulo mapa son lugares sin coordenadas ni pines. De las 57 guías, 55 vienen de grabaciones y 2 son semilla. | Sin pines no hay mapa interactivo. Sin datos reales no hay valor de uso ni SEO. | L | Fuente de datos legítima (§33.3). Proceso de captura de coordenadas. Ver §14. |
-| P0-4 | **Derechos de las imágenes de `public/assets`** | Hay capturas con nombres `complexmusic_*`, `theofficialselfridges_*` y `rockstargames_*` (referencias de terceros). Se usan en portada y catálogo (el inventario de infraestructura). | Riesgo legal al monetizar. Posible retirada de contenido. | M | Inventario de qué se usa dónde. Material propio, licenciado u oficial con permiso. Almacén de imágenes (P1-5). |
+| P0-4 | **Derechos de las imágenes de `public/assets`** | Resuelto en parte (Sprint 4): solo queda `hero-gas-station.jpg`; capturas de terceros eliminadas. Falta verificar la licencia del hero. | Riesgo legal residual al monetizar. | S | Procedencia del hero o sustitución por material propio. |
 | P0-5 | **Sesión y autenticación** | JWT sin estado de 7 días, sin revocación al cerrar sesión, sin rotación, `Secure` solo en producción, CSRF que acepta peticiones sin Origin. Magic Link con anti-reuso en memoria (se pierde al reiniciar o con varias instancias). OAuth pierde `?next`. Sin credenciales de proveedores ni SMTP, los 4 botones devuelven 503 (§31.3 filas 5 a 8; §31.4 fila 3). Hoy hay 0 SUPER_ADMIN persistido; el acceso demo se niega en producción. | Riesgo de seguridad y embudo de registro roto. | M | Despliegue (P1-1). Credenciales OAuth y SMTP. Decisión de sesiones con estado o JWT corto con rotación. Ver §12 y §19. |
 
 ### 32.2 Brechas P1 (necesarias para operar con calidad)

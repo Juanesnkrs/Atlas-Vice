@@ -27,44 +27,33 @@ const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visi
 const SOURCE_LABEL: Record<string, string> = Object.fromEntries(NEWS_SOURCES.map((s) => [s.value, s.label]));
 const fmtDate = (iso: string): string => new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
 
-const A = {
-  poster: '/assets/rockstargames_1782392540_3927315665585859597_184595688.jpg',
-  viceCity: '/assets/rockstargames_1790262334_3993332294647284992_184595688.jpg',
-  merch: '/assets/rockstargames_1791475498_4003509049827826360_184595688.jpg',
-  shop: '/assets/theofficialselfridges_1794241614_4026712410269493569_19775742.jpg',
-  street: '/assets/complexmusic_1794873298_4032011328293408607_12790857096.jpg',
-} as const;
-
 interface Crop {
-  src: string;
+  /** Texto accesible de la tarjeta (el degradado es decorativo, no lleva imagen de terceros). */
   alt: string;
-  /** Punto focal (%) y zoom del recorte, como en las miniaturas de Map.dc.html. */
-  x: number;
-  y: number;
-  zoom: number;
+  /** Degradado Vice Sunset propio de la tarjeta. */
+  bg: string;
 }
 
+const SUNSET_STOPS = '#2E1A47, #7B2C6F 38%, #E14B7B 70%, #F69259';
+const sunset = (angle: number, glowX: number, glowY: number): string =>
+  `radial-gradient(circle at ${glowX}% ${glowY}%, rgba(246,146,89,0.55), transparent 55%), linear-gradient(${angle}deg, ${SUNSET_STOPS})`;
+
 export const CROPS: Record<'mapa' | 'armas' | 'vehiculos' | 'coleccionables' | 'guias' | 'noticias', Crop> = {
-  mapa: { src: A.poster, alt: 'Ilustración de un helicóptero sobre el skyline de Vice City', x: 12, y: 10, zoom: 1.9 },
-  armas: { src: A.poster, alt: 'Personaje armado con un fusil frente a un banco', x: 55, y: 95, zoom: 1.9 },
-  vehiculos: { src: A.shop, alt: 'Deportivo azul y rosa junto a un gran logo VI con palmeras', x: 55, y: 75, zoom: 1.3 },
-  coleccionables: { src: A.merch, alt: 'Camisetas, gorras y objetos de coleccionista de Vice City', x: 80, y: 40, zoom: 1.5 },
-  guias: { src: A.street, alt: 'Calle de Vice City con el neón del club Jack of Hearts', x: 25, y: 35, zoom: 1.1 },
-  noticias: { src: A.viceCity, alt: 'Cartel ilustrado de Vice City, The Goodtime State', x: 50, y: 45, zoom: 1.35 },
+  mapa: { alt: 'Skyline de Vice City al atardecer', bg: sunset(160, 15, 15) },
+  armas: { alt: 'Atardecer con diagonales rosadas', bg: sunset(200, 60, 90) },
+  vehiculos: { alt: 'Horizonte costero con luces de neón', bg: sunset(135, 55, 75) },
+  coleccionables: { alt: 'Cielo cálido con destellos naranjas', bg: sunset(180, 80, 40) },
+  guias: { alt: 'Calle de Vice City con neón al anochecer', bg: sunset(150, 25, 35) },
+  noticias: { alt: 'Cielo Vice Sunset de la portada informativa', bg: sunset(170, 50, 45) },
 };
 
 export function CropImg({ crop }: { crop: Crop }) {
   return (
-    <img
-      src={crop.src}
-      alt={crop.alt}
-      loading="lazy"
-      className="absolute inset-0 h-full w-full max-w-none object-cover transition-transform duration-300 group-hover:scale-[1.04] motion-reduce:transition-none"
-      style={{
-        objectPosition: `${crop.x}% ${crop.y}%`,
-        transform: crop.zoom === 1 ? undefined : `scale(${crop.zoom})`,
-        transformOrigin: `${crop.x}% ${crop.y}%`,
-      }}
+    <span
+      role="img"
+      aria-label={crop.alt}
+      className="absolute inset-0 block h-full w-full transition-transform duration-300 group-hover:scale-[1.04] motion-reduce:transition-none"
+      style={{ backgroundImage: crop.bg }}
     />
   );
 }

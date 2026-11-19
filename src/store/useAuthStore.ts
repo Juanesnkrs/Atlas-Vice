@@ -6,11 +6,48 @@
 // Contiene también el cliente HTTP de la API (`apiFetch`): el árbol de carpetas
 // aprobado no define un `src/lib/`, por lo que vive junto a la capa de sesión.
 // =============================================================================
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { del, get as idbGet, set as idbSet } from 'idb-keyval';
 import { create } from 'zustand';
 import { createJSONStorage, persist, type StateStorage } from 'zustand/middleware';
 import type { Profile } from '../types/database';
+
+// ---- Deep link nativo `leonidapp://auth/callback?code=...` ---------------------
+interface AppUrlOpenEvent {
+  url: string;
+}
+interface AppPluginLike {
+  addListener: (event: 'appUrlOpen', cb: (e: AppUrlOpenEvent) => void) => Promise<{ remove: () => Promise<void> }>;
+}
+let deepLinkBound = false;
+
+/** Extrae el código efímero de `leonidapp://auth/callback?code=...`; `null` si no coincide. */
+export function parseAuthCallback(url: string): string | null {
+  if (!url.startsWith('leonidapp://auth/callback')) return null;
+  const q = url.indexOf('?');
+  const code = q === -1 ? null : new URLSearchParams(url.slice(q + 1)).get('code');
+  return code !== null && code !== '' ? code : null;
+}
+
+/**
+ * Escucha `appUrlOpen` (plugin nativo App de Capacitor) y canjea el código con `completeNativeLogin`.
+ * Se registra una sola vez y solo en plataformas nativas; si el plugin nativo no está instalado, no hace nada.
+ */
+function bindNativeDeepLink(complete: (code: string) => Promise<unknown>): void {
+  if (deepLinkBound || !Capacitor.isNativePlatform()) return;
+  deepLinkBound = true;
+  try {
+    const appPlugin = registerPlugin<AppPluginLike>('App');
+    appPlugin
+      .addListener('appUrlOpen', (e) => {
+        const code = parseAuthCallback(e.url);
+        if (code !== null) void complete(code);
+      })
+      .catch(() => undefined);
+  } catch {
+    // Plugin nativo no disponible: el login por deep link queda inactivo.
+  }
+}
 
 // ---- Cliente HTTP de la API --------------------------------------------------
 export const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) ?? '').replace(/\/+$/, '');
@@ -177,6 +214,7 @@ export const useAuthStore = create<AuthState>()(
 
         init: async () => {
           await useAuthStore.persist.rehydrate();
+          bindNativeDeepLink((code) => get().completeNativeLogin(code));
           if (!isApiConfigured) {
             applyUser(null);
             return;
