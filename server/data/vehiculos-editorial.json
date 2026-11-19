@@ -1533,5 +1533,1540 @@
       "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
     ],
     "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "marquis",
+    "titulo": "Dinka Marquis",
+    "subtitulo": "Yate de cuatro plazas",
+    "categoria": "Embarcaciones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Yate de recreo de la casa Dinka, tomado de un modelo naviero de Adjutor Yachts. Es la pieza más lujosa de la flota marítima del lote: casco de crucero pensado para lucirse frente a la costa y no para competir.",
+      "marca": "Dinka",
+      "clase": "Embarcaciones",
+      "carroceria": "Yate de cuatro plazas",
+      "ocupantes": 4,
+      "basado_en": "Adjutor Yachts"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "sugoi",
+    "titulo": "Dinka Sugoi",
+    "subtitulo": "Compacto deportivo de cuatro plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Hatchback de tracción delantera que remite al Honda Civic Type R de la generación FK8. Su gracia está en mezclar la practicidad de cuatro asientos con el carácter agresivo de un compacto de calle.",
+      "marca": "Dinka",
+      "clase": "Deportivos",
+      "carroceria": "Compacto deportivo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "FWD",
+      "basado_en": "Honda Civic Type R FK8"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "verus",
+    "titulo": "Dinka Verus",
+    "subtitulo": "Cuatrimoto todoterreno de dos plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cuatriciclo de tracción total con asiento para dos, inspirado en los Polaris Sportsman. Es la herramienta lógica para atajar por caminos de tierra donde un coche no pasa.",
+      "marca": "Dinka",
+      "clase": "Todoterreno",
+      "carroceria": "Cuatrimoto todoterreno de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Polaris Sportsman MV850 and 570"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "landstalker-xl",
+    "titulo": "Dundreary Landstalker XL",
+    "subtitulo": "SUV de lujo de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Versión alargada de la familia Landstalker, con tracción total y una silueta que recuerda al Lincoln Navigator de cuarta generación. Apunta a quien busca presencia de SUV de representación sin renunciar a la altura libre.",
+      "marca": "Dundreary",
+      "clase": "SUV",
+      "carroceria": "SUV de lujo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Fourth generation Lincoln Navigator"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "regina",
+    "titulo": "Dundreary Regina",
+    "subtitulo": "Sedán familiar de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rancho de tracción trasera que toma como modelo la familiar Chevy Caprice. Es el típico coche de barrio antiguo, espacioso y sin pretensiones, ideal para pasar desapercibido.",
+      "marca": "Dundreary",
+      "clase": "Sedanes",
+      "carroceria": "Sedán familiar de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Chevy Caprice wagon"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "sultan",
+    "titulo": "Emperor Sultan",
+    "subtitulo": "Sedán deportivo de cuatro plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina de tracción total que mezcla referencias del Lexus IS, el Lancer Evo VI y el Impreza. Representa el estilo rally de calle en un envoltorio de cuatro puertas.",
+      "marca": "Emperor",
+      "clase": "Deportivos",
+      "carroceria": "Sedán deportivo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Lexus IS, Mitsubishi Lancer Evo VI, Subaru Impreza"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "vectre",
+    "titulo": "Emperor Vectre",
+    "subtitulo": "Cupé deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Gran turismo de Emperor con tracción total, cuya silueta se apoya en el Lexus RC F. Su perfil es el de un coupé japonés de lujo.",
+      "marca": "Emperor",
+      "clase": "Deportivos",
+      "carroceria": "Cupé deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Lexus RC F"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "paragon-r",
+    "titulo": "Enus Paragon R",
+    "subtitulo": "Gran turismo de lujo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de tracción total que reinterpreta el Bentley Continental GT de 2018. Es la propuesta de Enus para el segmento de los grandes cruceros de autopista.",
+      "marca": "Enus",
+      "clase": "Deportivos",
+      "carroceria": "Gran turismo de lujo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "2018 Bentley Continental GT"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "fr36",
+    "titulo": "Fathom FR36",
+    "subtitulo": "Cupé deportivo de dos plazas",
+    "categoria": "Cupés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de propulsión trasera de Fathom, ligado visualmente al Infiniti G35 de la serie V35. Una opción de líneas sobrias dentro de los cupés de gama media.",
+      "marca": "Fathom",
+      "clase": "Cupés",
+      "carroceria": "Cupé deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Infiniti G35 (V35)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "baller",
+    "titulo": "Gallivanter Baller II",
+    "subtitulo": "SUV premium de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Todocamino de tracción total de Gallivanter con ecos del Range Rover Evoque y del Range Rover Sport. El numeral II indica una revisión de la fórmula del Baller original.",
+      "marca": "Gallivanter",
+      "clase": "SUV",
+      "carroceria": "SUV premium de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Range Rover Evoque/Range Rover Sport"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "baller-st-d",
+    "titulo": "Gallivanter Baller ST-D",
+    "subtitulo": "SUV de lujo de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Variante ST-D del Baller, con tracción total y referencia a la quinta generación del Range Rover (L460). Es la rama más actual de la familia en el catálogo.",
+      "marca": "Gallivanter",
+      "clase": "SUV",
+      "carroceria": "SUV de lujo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Fifth-generation Range Rover (L460)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "zorrusso",
+    "titulo": "Granforma Zorrusso",
+    "subtitulo": "Superdeportivo de dos plazas",
+    "categoria": "Superdeportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Deportivo extremo de propulsión trasera que se inspira en el Italdesign Zerouno. En GTA VI figura bajo la casa Granforma, mientras que en la entrega online se asocia a Pegassi.",
+      "marca": "Granforma",
+      "clase": "Superdeportivos",
+      "carroceria": "Superdeportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Italdesign Zerouno"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Fabricante Granforma coincide con el crudo y con la ficha externa consultada, que indica que en la entrega online era Pegassi. Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "bestia-gts",
+    "titulo": "Grotti Bestia GTS",
+    "subtitulo": "Gran turismo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de tracción total de Grotti que evoca al Ferrari FF y al GTC4Lusso. Combina vocación de viaje largo con un punto de exclusividad italiana.",
+      "marca": "Grotti",
+      "clase": "Deportivos",
+      "carroceria": "Gran turismo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Ferrari FF, GTC4Lusso"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "carbonizzare",
+    "titulo": "Grotti Carbonizzare",
+    "subtitulo": "Deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de propulsión trasera con una mezcla de referencias: Zagato V12, Nissan GT-R y los Ferrari 458 Italia y 612 Scaglietti. Es un deportivo de silueta mestiza y sello Grotti.",
+      "marca": "Grotti",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "V12 Zagato rear, Nissan GT-R, Ferrari 458 Italia, Ferrari 612 Scagliëtti"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "cheetah-classic",
+    "titulo": "Grotti Cheetah '95",
+    "subtitulo": "Deportivo clásico de dos plazas",
+    "categoria": "Deportivos clásicos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Superdeportivo de propulsión trasera basado en el Ferrari Testarossa y el 512 BB. Su aire de cuña ochentera encaja con la imagen de Vice City.",
+      "marca": "Grotti",
+      "clase": "Deportivos clásicos",
+      "carroceria": "Deportivo clásico de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Ferrari Testarossa, 512 BB"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "itali-gto",
+    "titulo": "Grotti Itali GTO",
+    "subtitulo": "Deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cupé de tracción total que toma la línea del Ferrari 812 Superfast. Es la propuesta de morro largo de la gama Itali de Grotti.",
+      "marca": "Grotti",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Ferrari 812 Superfast"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "itali-rsx",
+    "titulo": "Grotti Itali RSX",
+    "subtitulo": "Superdeportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Deportivo de tracción total con aire de Ferrari SF90 Stradale. Representa el lado más moderno de la línea Itali.",
+      "marca": "Grotti",
+      "clase": "Deportivos",
+      "carroceria": "Superdeportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Ferrari SF90 Stradale"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "airtug",
+    "titulo": "HVY Airtug",
+    "subtitulo": "Tractor de remolque aeroportuario de dos plazas",
+    "categoria": "Utilitarios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Vehículo de servicio en tierra con tracción delantera, similar al Clark CT30. Es el pequeño remolcador asociado a las pistas y plataformas de aeropuerto.",
+      "marca": "HVY",
+      "clase": "Utilitarios",
+      "carroceria": "Tractor de remolque aeroportuario de dos plazas",
+      "ocupantes": 2,
+      "traccion": "FWD",
+      "basado_en": "Clark CT30"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "biff",
+    "titulo": "HVY Biff",
+    "subtitulo": "Cabeza tractora de dos plazas",
+    "categoria": "Comerciales",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión pesado de propulsión trasera inspirado en el Kenworth T800. Es el músculo comercial de HVY para arrastrar remolques.",
+      "marca": "HVY",
+      "clase": "Comerciales",
+      "carroceria": "Cabeza tractora de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Kenworth T800"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "dozer",
+    "titulo": "HVY Dozer",
+    "subtitulo": "Bulldozer de una plaza",
+    "categoria": "Industrial",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Máquina de movimiento de tierras con tracción total, relacionada con la Caterpillar 963D. Está hecha para abrir paso en obras y escombros, no para circular por avenidas.",
+      "marca": "HVY",
+      "clase": "Industrial",
+      "carroceria": "Bulldozer de una plaza",
+      "ocupantes": 1,
+      "traccion": "AWD",
+      "basado_en": "Caterpillar 963D"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "forklift",
+    "titulo": "HVY Forklift",
+    "subtitulo": "Carretilla elevadora de una plaza",
+    "categoria": "Utilitarios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Montacargas de propulsión trasera que toma como modelo la Yale GLP060VX. Es un vehículo de almacén y puerto.",
+      "marca": "HVY",
+      "clase": "Utilitarios",
+      "carroceria": "Carretilla elevadora de una plaza",
+      "ocupantes": 1,
+      "traccion": "RWD",
+      "basado_en": "Yale Forklift truck model (Yale GLP060VX)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "mixer",
+    "titulo": "HVY Mixer",
+    "subtitulo": "Camión hormigonera de dos plazas",
+    "categoria": "Industrial",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Mezclador de cemento con propulsión trasera sobre una base cercana al Kenworth T800. Un clásico de las obras, con tambor giratorio a la espalda.",
+      "marca": "HVY",
+      "clase": "Industrial",
+      "carroceria": "Camión hormigonera de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Kenworth T800"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "rhino-tank",
+    "titulo": "Hauners Rhino Tank",
+    "subtitulo": "Carro de combate de una plaza",
+    "categoria": "Militar",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Tanque de tracción total de Hauners, con referencias al M1 Abrams y al Leopard 2A5. Es el vehículo blindado por antonomasia de la categoría militar.",
+      "marca": "Hauners",
+      "clase": "Militar",
+      "carroceria": "Carro de combate de una plaza",
+      "ocupantes": 1,
+      "traccion": "AWD",
+      "basado_en": "M1 Abrams and Leopard 2A5"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "df8-90",
+    "titulo": "Imponte DF8-90",
+    "subtitulo": "Sedán de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina de propulsión trasera que combina influencias de la gama Pontiac (G6, Grand Am, Sunfire, Bonneville, G8) con un Honda Civic y un Subaru SVX. Un sedán de líneas polivalentes y herencia norteamericana.",
+      "marca": "Imponte",
+      "clase": "Sedanes",
+      "carroceria": "Sedán de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Pontiac G6; Pontiac Grand Am; Pontiac Sunfire; Honda Civic; Pontiac Bonneville; Subaru SVX; Pontiac G8"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "phoenix",
+    "titulo": "Imponte Phoenix",
+    "subtitulo": "Muscle de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cupé muscle de propulsión trasera que alude al Chevy Camaro y al Pontiac Firebird de segunda generación. Un clásico de línea cuadrada y espíritu de autopista.",
+      "marca": "Imponte",
+      "clase": "Muscle",
+      "carroceria": "Muscle de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Chevy Camaro, Pontiac Firebird (2nd generation)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "ruiner",
+    "titulo": "Imponte Ruiner '82",
+    "subtitulo": "Muscle de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de propulsión trasera con perfil del Pontiac Trans Am y del Chevrolet Camaro. El año de su nombre, 82, remite a la estética de principios de los ochenta.",
+      "marca": "Imponte",
+      "clase": "Muscle",
+      "carroceria": "Muscle de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Pontiac Trans Am/Chevrolet Camaro"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "benson",
+    "titulo": "Interstate Benson",
+    "subtitulo": "Camión de reparto de dos plazas",
+    "categoria": "Comerciales",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Rígido de tracción total sobre un chasis de reparto International 4700. Es el transporte logístico para trayectos de mercancías entre comercios.",
+      "marca": "Interstate",
+      "clase": "Comerciales",
+      "carroceria": "Camión de reparto de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "International 4700 Delivery Truck Chassis"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "coquette",
+    "titulo": "Invetero Coquette",
+    "subtitulo": "Deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de propulsión trasera basado en el Chevrolet Corvette C7 y el Stingray de 2014. Es el deportivo americano de siempre, de morro largo.",
+      "marca": "Invetero",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Corvette C7, 2014 Corvette Stingray"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "coquette-classic",
+    "titulo": "Invetero Coquette Classic",
+    "subtitulo": "Deportivo clásico de dos plazas",
+    "categoria": "Deportivos clásicos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Deportivo de propulsión trasera que retoma al Chevrolet Corvette C2. Un coche de colección con estética de los años sesenta.",
+      "marca": "Invetero",
+      "clase": "Deportivos clásicos",
+      "carroceria": "Deportivo clásico de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Chevrolet Corvette C2"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "coquette-d10",
+    "titulo": "Invetero Coquette D10",
+    "subtitulo": "Deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de propulsión trasera que remite al Chevrolet Corvette C8. Marca la puesta al día más reciente del linaje Coquette.",
+      "marca": "Invetero",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Chevrolet Corvette C8"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "flatbed",
+    "titulo": "JoBuilt Flatbed",
+    "subtitulo": "Grúa de plataforma de dos plazas",
+    "categoria": "Industrial",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión de plataforma con tracción total sobre una base Freightliner Century Class 112 de 2004. Pensado para remolcar vehículos averiados.",
+      "marca": "JoBuilt",
+      "clase": "Industrial",
+      "carroceria": "Grúa de plataforma de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "2004 Freightliner Century Class 112"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "hauler",
+    "titulo": "JoBuilt Hauler",
+    "subtitulo": "Cabeza tractora de dos plazas",
+    "categoria": "Comerciales",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión de larga distancia de propulsión trasera, con referencias a Freightliner y Kenworth. Es el tractor genérico de las carreteras interestatales.",
+      "marca": "JoBuilt",
+      "clase": "Comerciales",
+      "carroceria": "Cabeza tractora de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Freightliner and Kenworth"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "mammatus",
+    "titulo": "JoBuilt Mammatus",
+    "subtitulo": "Avioneta de cuatro plazas",
+    "categoria": "Aviones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Monomotor ligero que evoca a la Cessna 172 Skyhawk. Una aeronave modesta para vuelos recreativos o de entrenamiento.",
+      "marca": "JoBuilt",
+      "clase": "Aviones",
+      "carroceria": "Avioneta de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Cessna 172 Skyhawk"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "phantom",
+    "titulo": "JoBuilt Phantom",
+    "subtitulo": "Cabeza tractora de dos plazas",
+    "categoria": "Comerciales",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión pesado de morro largo con propulsión trasera, inspirado en el Peterbilt 359 EXHD. Un tractor clásico de silueta imponente.",
+      "marca": "JoBuilt",
+      "clase": "Comerciales",
+      "carroceria": "Cabeza tractora de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Peterbilt 359 EXHD"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "phantom-custom",
+    "titulo": "JoBuilt Phantom Custom",
+    "subtitulo": "Cabeza tractora personalizada de cinco plazas",
+    "categoria": "Comerciales",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Variante del Phantom con cabina dormitorio aerodinámica, basada en un GMC General de 1984. Con cinco asientos es la versión de mayor capacidad del camión.",
+      "marca": "JoBuilt",
+      "clase": "Comerciales",
+      "carroceria": "Cabeza tractora personalizada de cinco plazas",
+      "ocupantes": 5,
+      "traccion": "RWD",
+      "basado_en": "1984 GMC General with an Aerodynamic Sleeper Cab"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "rubble",
+    "titulo": "JoBuilt Rubble",
+    "subtitulo": "Camión volquete de dos plazas",
+    "categoria": "Industrial",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión de obra de propulsión trasera, sobre la base del Peterbilt 359 EXHD. Su configuración refleja el trabajo duro de canteras y construcción.",
+      "marca": "JoBuilt",
+      "clase": "Industrial",
+      "carroceria": "Camión volquete de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Peterbilt 359 EXHD"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "asterope-gz",
+    "titulo": "Karin Asterope GZ",
+    "subtitulo": "Sedán de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina de propulsión trasera con la silueta del Toyota Camry de la generación XV30. Un coche de familia sobrio y discreto.",
+      "marca": "Karin",
+      "clase": "Sedanes",
+      "carroceria": "Sedán de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Toyota Camry (XV30)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "contender",
+    "titulo": "Karin Contender",
+    "subtitulo": "Pickup SUV de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camioneta de tracción total que combina referencias de la Toyota Tundra, la Ford Raptor y la Ford F-150. Es el pickup de uso mixto más corpulento de la marca Karin.",
+      "marca": "Karin",
+      "clase": "SUV",
+      "carroceria": "Pickup SUV de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Toyota Tunder Devolro Diablo, Ford Raptor, Ford F-150"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "feroci",
+    "titulo": "Karin Feroci",
+    "subtitulo": "Sedán de lujo de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina de propulsión trasera con la apariencia del Lexus GS 300 de primera generación. Un sedán ejecutivo de estilo noventero.",
+      "marca": "Karin",
+      "clase": "Sedanes",
+      "carroceria": "Sedán de lujo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Lexus GS 300 (First-generation)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "futo",
+    "titulo": "Karin Futo",
+    "subtitulo": "Deportivo ligero de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de propulsión trasera que rinde homenaje al Toyota AE86 Levin. Es el icono del drift de pequeña cilindrada en el catálogo.",
+      "marca": "Karin",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo ligero de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Toyota AE86 Levin"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "intruder",
+    "titulo": "Karin Intruder",
+    "subtitulo": "Sedán de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina de propulsión trasera inspirada en el Infiniti Q45 y el I30. Un cuatro puertas de aire discreto.",
+      "marca": "Karin",
+      "clase": "Sedanes",
+      "carroceria": "Sedán de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Infiniti Q45/I30"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "rebel",
+    "titulo": "Karin Rebel",
+    "subtitulo": "Pickup todoterreno de dos plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camioneta de tracción total de Karin con ecos del Toyota Hilux. Una opción para caminos duros y trabajo de campo.",
+      "marca": "Karin",
+      "clase": "Todoterreno",
+      "carroceria": "Pickup todoterreno de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Toyota Hilux"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "vivanite",
+    "titulo": "Karin Vivanite",
+    "subtitulo": "Minivan de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Monovolumen de tracción total que recuerda al Toyota Sienna de cuarta generación (XL40). Un vehículo familiar y práctico.",
+      "marca": "Karin",
+      "clase": "SUV",
+      "carroceria": "Minivan de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Fourth generation Toyota Sienna (XL40)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "avarus",
+    "titulo": "LCC Avarus",
+    "subtitulo": "Chopper de una plaza",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de propulsión trasera de estilo chopper casi desnudo, sin referente real concreto indicado. Su gracia reside en el aspecto de moto clásica de carretera.",
+      "marca": "LCC",
+      "clase": "Motocicletas",
+      "carroceria": "Chopper de una plaza",
+      "ocupantes": 1,
+      "traccion": "RWD",
+      "basado_en": "Generica mostly-naked chopper"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "novak",
+    "titulo": "Lampadati Novak",
+    "subtitulo": "SUV de lujo de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Todocamino de tracción total con un diseño cercano al Maserati Levante y al Alfa Romeo Stelvio. Un SUV de aspiración deportiva y sello italiano.",
+      "marca": "Lampadati",
+      "clase": "SUV",
+      "carroceria": "SUV de lujo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Maserati Levante, Alfa Romeo Stelvio"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "fire-truck",
+    "titulo": "MTL Fire Truck",
+    "subtitulo": "Camión de bomberos de ocho plazas",
+    "categoria": "Emergencia",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Autobomba de propulsión trasera que remite al Pierce Arrow XT Rescue Pumper de 2012. Con ocho asientos, traslada a la dotación completa.",
+      "marca": "MTL",
+      "clase": "Emergencia",
+      "carroceria": "Camión de bomberos de ocho plazas",
+      "ocupantes": 8,
+      "traccion": "RWD",
+      "basado_en": "2012 Pierce Arrow XT Rescue Pumper"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "packer",
+    "titulo": "MTL Packer",
+    "subtitulo": "Camión de basura de dos plazas",
+    "categoria": "Comerciales",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Recolector de residuos con propulsión trasera, sobre un chasis International 9000/9200 de 1994. Una máquina de servicio urbano.",
+      "marca": "MTL",
+      "clase": "Comerciales",
+      "carroceria": "Camión de basura de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "1994 International 9000/9200"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "wastelander",
+    "titulo": "MTL Wastelander",
+    "subtitulo": "Todoterreno de combate de seis plazas",
+    "categoria": "Servicio",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Vehículo de tracción total concebido a partir del Mongo de la saga Fast & Furious. Con seis asientos, es un transporte de grupo para entornos hostiles.",
+      "marca": "MTL",
+      "clase": "Servicio",
+      "carroceria": "Todoterreno de combate de seis plazas",
+      "ocupantes": 6,
+      "traccion": "AWD",
+      "basado_en": "Mongo (Fast & Furious)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "manchez",
+    "titulo": "Maibatsu Manchez",
+    "subtitulo": "Moto todoterreno de dos plazas",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de propulsión trasera con ecos de una KTM de 500 cc. Una máquina de campo a través.",
+      "marca": "Maibatsu",
+      "clase": "Motocicletas",
+      "carroceria": "Moto todoterreno de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "500cc KTM"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "mule",
+    "titulo": "Maibatsu Mule",
+    "subtitulo": "Camión de reparto de seis plazas",
+    "categoria": "Comerciales",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión rígido de propulsión trasera cercano al Mitsubishi Fuso Canter de séptima generación. Tiene espacio para una cabina con tripulación completa.",
+      "marca": "Maibatsu",
+      "clase": "Comerciales",
+      "carroceria": "Camión de reparto de seis plazas",
+      "ocupantes": 6,
+      "traccion": "RWD",
+      "basado_en": "Mitsubishi Fuso Canter (7th gen)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "penumbra",
+    "titulo": "Maibatsu Penumbra",
+    "subtitulo": "Cupé deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de propulsión trasera con líneas que combinan el Mitsubishi Eclipse y el Audi TT. Un deportivo compacto de aire japonés.",
+      "marca": "Maibatsu",
+      "clase": "Deportivos",
+      "carroceria": "Cupé deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Mitsubishi Eclipse, Audi TT"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "sanchez",
+    "titulo": "Maibatsu Sanchez",
+    "subtitulo": "Moto de motocross de dos plazas",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de propulsión trasera que toma de modelos de motocross como la Yamaha YZ450F, la Kawasaki KX450F y la Honda CRF450X. Una deportiva ligera pensada para saltos.",
+      "marca": "Maibatsu",
+      "clase": "Motocicletas, Todoterreno",
+      "carroceria": "Moto de motocross de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "2006-2009 Yamaha YZ450F, 2007 Kawasaki KX450F, Honda CRF450X"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "La clase cruda combina dos valores; categoria se normaliza a Motocicletas. Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "dodo",
+    "titulo": "Mammoth Dodo",
+    "subtitulo": "Avión de cuatro plazas",
+    "categoria": "Aviones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Monomotor de hélice que se inspira en el De Havilland Canada DHC-2 Beaver. Una aeronave de utilidad y estilo clásico.",
+      "marca": "Mammoth",
+      "clase": "Aviones",
+      "carroceria": "Avión de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "De Havilland Canada DHC-2 Beaver"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "streamer216",
+    "titulo": "Mammoth Streamer216",
+    "subtitulo": "Avión bimotor de cuatro plazas",
+    "categoria": "Aviones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Turbohélice de transporte inspirado en el DHC-6 Twin Otter. Referente de aeronaves de carga y pasajeros en pistas cortas.",
+      "marca": "Mammoth",
+      "clase": "Aviones",
+      "carroceria": "Avión bimotor de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "de Havilland Canada DHC-6 Twin Otter"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "outlaw",
+    "titulo": "Mer-Can Outlaw",
+    "subtitulo": "Buggy todoterreno de dos plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Side-by-side de tracción total que alude al Can-Am Maverick X3 Turbo. Una máquina pensada para dunas y senderos.",
+      "marca": "Mer-Can",
+      "clase": "Todoterreno",
+      "carroceria": "Buggy todoterreno de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Can-Am Maverick X3 Turbo"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "blazer",
+    "titulo": "Nagasaki Blazer",
+    "subtitulo": "Cuatrimoto deportiva de una plaza",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cuatriciclo de tracción total, similar al Yamaha YFZ450. Ligero y ágil para arena y tierra.",
+      "marca": "Nagasaki",
+      "clase": "Todoterreno",
+      "carroceria": "Cuatrimoto deportiva de una plaza",
+      "ocupantes": 1,
+      "traccion": "AWD",
+      "basado_en": "Yamaha YFZ450"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "buzzard-attack-chopper",
+    "titulo": "Nagasaki Buzzard Attack Chopper",
+    "subtitulo": "Helicóptero de ataque de cuatro plazas",
+    "categoria": "Helicópteros",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Helicóptero militar ligero que se inspira en el MD Helicopters AH-6 Little Bird. Es la versión de combate de la familia Buzzard.",
+      "marca": "Nagasaki",
+      "clase": "Helicópteros",
+      "carroceria": "Helicóptero de ataque de cuatro plazas",
+      "ocupantes": 4,
+      "basado_en": "MD Helicopters AH-6 Little Bird"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "caddy",
+    "titulo": "Nagasaki Caddy",
+    "subtitulo": "Carrito de golf de dos plazas",
+    "categoria": "Utilitarios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Pequeño vehículo de propulsión trasera típico de los campos de golf. No se indica un modelo real de referencia.",
+      "marca": "Nagasaki",
+      "clase": "Utilitarios",
+      "carroceria": "Carrito de golf de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "carbon-rs",
+    "titulo": "Nagasaki Carbon RS",
+    "subtitulo": "Moto deportiva de dos plazas",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de propulsión trasera que recuerda a la Ducati 1199 y a la EBR 1190RS. Una superbike de líneas agresivas.",
+      "marca": "Nagasaki",
+      "clase": "Motocicletas",
+      "carroceria": "Moto deportiva de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Ducati 1199, EBR 1190RS"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "dinghy",
+    "titulo": "Nagasaki Dinghy",
+    "subtitulo": "Lancha neumática de dos plazas",
+    "categoria": "Embarcaciones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Bote hinchable de casco rígido, con referencia a las embarcaciones RIB. Una embarcación pequeña y ligera.",
+      "marca": "Nagasaki",
+      "clase": "Embarcaciones",
+      "carroceria": "Lancha neumática de dos plazas",
+      "ocupantes": 2,
+      "basado_en": "Rigid-hulled inflatable boat"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "8f-drafter",
+    "titulo": "Obey 8F Drafter",
+    "subtitulo": "Cupé deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de tracción total con referencia al Audi RS5 Coupé de 2018. Una opción refinada de la marca Obey.",
+      "marca": "Obey",
+      "clase": "Deportivos",
+      "carroceria": "Cupé deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "2018 Audi RS5 Coupe"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "omnis-e-gt",
+    "titulo": "Obey Omnis e-GT",
+    "subtitulo": "Gran turismo de cuatro plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Deportivo de tracción total inspirado en el Audi e-Tron GT. Su nombre apunta a un enfoque eléctrico dentro del catálogo.",
+      "marca": "Obey",
+      "clase": "Deportivos",
+      "carroceria": "Gran turismo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Audi e-Tron GT"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "tailgater",
+    "titulo": "Obey Tailgater",
+    "subtitulo": "Sedán de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina de propulsión trasera tomada del Audi A6. Un sedán ejecutivo de uso diario.",
+      "marca": "Obey",
+      "clase": "Sedanes",
+      "carroceria": "Sedán de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Audi A6"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "jugular",
+    "titulo": "Ocelot Jugular",
+    "subtitulo": "Sedán deportivo de cuatro plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina de tracción total inspirada en el Jaguar XE SV Project 8. Un cuatro puertas con ánimo deportivo.",
+      "marca": "Ocelot",
+      "clase": "Deportivos",
+      "carroceria": "Sedán deportivo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Jaguar XE SV Project 8"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "locust",
+    "titulo": "Ocelot Locust",
+    "subtitulo": "Deportivo ligero de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Roadster de propulsión trasera que remite al Lotus 3-Eleven de 2015. Un biplaza minimalista.",
+      "marca": "Ocelot",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo ligero de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "2015 Lotus 3-Eleven"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "bati-801",
+    "titulo": "Pegassi Bati 801",
+    "subtitulo": "Moto deportiva de dos plazas",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Superbike de propulsión trasera tomada de la Ducati 848. Una moto de pista y calle.",
+      "marca": "Pegassi",
+      "clase": "Motocicletas",
+      "carroceria": "Moto deportiva de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Ducati 848"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "faggio",
+    "titulo": "Pegassi Faggio",
+    "subtitulo": "Scooter de dos plazas",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Ciclomotor de propulsión trasera que recuerda a las Piaggio Vespa LX y Primavera. Un scooter urbano de estilo italiano.",
+      "marca": "Pegassi",
+      "clase": "Motocicletas",
+      "carroceria": "Scooter de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Piaggio Vespa LX and Primavera"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "infernus-classic",
+    "titulo": "Pegassi Infernus Classic",
+    "subtitulo": "Superdeportivo clásico de dos plazas",
+    "categoria": "Deportivos clásicos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Deportivo de propulsión trasera inspirado en el Lamborghini Diablo, el Cizeta V16T y el Ferrari Testarossa. Un coche de póster de los noventa.",
+      "marca": "Pegassi",
+      "clase": "Deportivos clásicos",
+      "carroceria": "Superdeportivo clásico de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Lamborghini Diablo, Cizeta V16T, Ferrari Testarossa"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "speeder",
+    "titulo": "Pegassi Speeder",
+    "subtitulo": "Lancha rápida de cuatro plazas",
+    "categoria": "Embarcaciones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Lancha deportiva con referencia a la Coeur 290 Nighthawk y a la Cherubini Classic 20. Una embarcación de recreo para la costa.",
+      "marca": "Pegassi",
+      "clase": "Embarcaciones",
+      "carroceria": "Lancha rápida de cuatro plazas",
+      "ocupantes": 4,
+      "basado_en": "Coeur 290 Nighthawk, Cherubini Classic 20"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "tempesta",
+    "titulo": "Pegassi Tempesta",
+    "subtitulo": "Superdeportivo de dos plazas",
+    "categoria": "Superdeportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Deportivo de tracción total relacionado con el Lamborghini Huracán y el Centenario, además de un Lotus Esprit propuesto en 2015. Una máquina exótica y vistosa.",
+      "marca": "Pegassi",
+      "clase": "Superdeportivos",
+      "carroceria": "Superdeportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Lamborghini Huracán/Centenario, proposed 2015 Lotus Esprit"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
   }
 ]
