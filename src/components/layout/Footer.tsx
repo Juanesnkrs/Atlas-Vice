@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useMemo, useState, type FormEvent } from 'react';
 import { Modal } from '../ui/Modal';
-import { ApiError, apiFetch, isApiConfigured } from '../../store/useAuthStore';
+import { ApiError, apiFetch } from '../../store/useAuthStore';
+import { usePublicConfig } from '../../data/seed';
 
 /* ------------------------------------------------------------------ */
 /* Footer estilo Rockstar (pilar 6): negro puro, enlaces funcionales,  */
@@ -402,29 +403,19 @@ function safeHttpUrl(raw: unknown): string | null {
   }
 }
 
+/** Enlaces sociales de la configuración pública (consulta compartida: una sola petición a /api/config/public). */
 function useSocialLinks(): SocialLink[] {
-  const [links, setLinks] = useState<SocialLink[]>([]);
-  useEffect(() => {
-    if (!isApiConfigured) return;
-    let alive = true;
-    apiFetch<{ social_links?: unknown }>('/api/config/public')
-      .then((cfg) => {
-        if (!alive || !Array.isArray(cfg?.social_links)) return;
-        const out: SocialLink[] = [];
-        for (const item of cfg.social_links as Array<Record<string, unknown>>) {
-          const url = safeHttpUrl(item?.url);
-          if (url && typeof item.platform === 'string' && item.platform.trim()) {
-            out.push({ platform: item.platform.trim().slice(0, 30), url });
-          }
-        }
-        setLinks(out);
-      })
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, []);
-  return links;
+  const cfg = usePublicConfig();
+  return useMemo(() => {
+    const out: SocialLink[] = [];
+    for (const item of cfg.social_links as Array<Record<string, unknown>>) {
+      const url = safeHttpUrl(item?.url);
+      if (url && typeof item.platform === 'string' && item.platform.trim()) {
+        out.push({ platform: item.platform.trim().slice(0, 30), url });
+      }
+    }
+    return out;
+  }, [cfg.social_links]);
 }
 
 /* ------------------------------------------------------------------ */

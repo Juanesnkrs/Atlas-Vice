@@ -6,7 +6,7 @@
 // - Trazos con vector-effect: non-scaling-stroke y rótulos/pines a tamaño constante en pantalla
 //   mediante la variable CSS --k (= 1 / escala).
 import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type Ref } from 'react';
-import { LEONIDA_MAP, MAP_H, MAP_W, loadBaseTerrain, loadDetailLayers, type RouteShield, type TerrainBase, type TerrainDetail } from '../../data/leonidaMap';
+import { ISLAND_BBOX, LEONIDA_MAP, MAP_H, MAP_W, loadBaseTerrain, loadDetailLayers, type RouteShield, type TerrainBase, type TerrainDetail } from '../../data/leonidaMap';
 import { buildBasePaths, buildDetailPaths, paintMap, WATER, type BasePaths, type DetailPaths } from './mapPaint';
 
 export interface MapPin {
@@ -64,6 +64,8 @@ export interface MapCanvasProps {
   /** Mira del editor. */
   crosshair?: { x: number; y: number } | null;
   /** Modo editor: el pin `pinId` se puede arrastrar y al soltarlo se llama a `onMove`. */
+  /** Trazador activo: el clic va siempre al lienzo (añade vértices) y nunca selecciona ni abre pines. */
+  captureClicks?: boolean;
   editable?: {
     pinId: string | null;
     /** Si devuelve (una promesa de) false, el pin vuelve a su posición original. */
@@ -76,7 +78,19 @@ export interface MapCanvasProps {
 }
 
 // ---- Constantes del motor ---------------------------------------------------------------------------
-const FIT_MARGIN_PX = 8;
+const FIT_MARGIN_PX = 14;
+/** Aire alrededor de la isla al encuadrar (unidades del mapa). */
+const FIT_PAD_UNITS = 16;
+const BBOX_W = ISLAND_BBOX.x1 - ISLAND_BBOX.x0;
+const BBOX_H = ISLAND_BBOX.y1 - ISLAND_BBOX.y0;
+const BBOX_CX = (ISLAND_BBOX.x0 + ISLAND_BBOX.x1) / 2;
+const BBOX_CY = (ISLAND_BBOX.y0 + ISLAND_BBOX.y1) / 2;
+/** DPR máximo del bitmap: más bajo en táctil para evitar picos de rasterización. */
+const DPR_MAX_DESKTOP = 2;
+const DPR_MAX_TOUCH = 1.75;
+/** Margen de sobre-dibujo del bitmap (fracción del viewport por lado). */
+const BG_MARGIN_DESKTOP = 0.22;
+const BG_MARGIN_TOUCH = 0.15;
 const MAX_REL_ZOOM = 14;
 const MIN_REL_ZOOM = 0.9;
 const WORLD_PAD = 80;
@@ -164,6 +178,7 @@ const CSS = `
 .lm-county{font-size:calc(10px * var(--lf,1));letter-spacing:2.5px;font-style:italic;font-weight:600;fill:#E8C9A0;stroke:#10234A}
 .lm-road{font-size:calc(9px * var(--lf,1));letter-spacing:.5px;font-weight:600;fill:#F6B58A}
 [data-h="1"]{visibility:hidden}
+[data-capture="1"] .lm-pin{pointer-events:none}
 .lm-sh text{font-family:Jost,sans-serif;font-weight:700;font-size:9px;text-anchor:middle;dominant-baseline:central;fill:#1A0F2A;paint-order:normal;stroke:none}
 [data-lod="0"] .lm-t1,[data-lod="0"] .lm-t2,[data-lod="1"] .lm-t2{display:none}
 .lm-pin{cursor:pointer;outline:none}
@@ -290,7 +305,7 @@ function textWidth(text: string, kind: string, lf: number): number {
 const overlaps = (a: Box, b: Box, pad = 3): boolean => a.x0 < b.x1 + pad && a.x1 > b.x0 - pad && a.y0 < b.y1 + pad && a.y1 > b.y0 - pad;
 
 // ---- Componente ---------------------------------------------------------------------------------------------------
-export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect, onBackgroundClick, crosshair, editable, insets, ariaLabel, className = '' }: MapCanvasProps) {
+export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, selectedId, onSelect, onBackgroundClick, crosshair, editable, insets, ariaLabel, className = '' }: MapCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const worldRef = useRef<SVGGElement>(null);
@@ -359,13 +374,14 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
     (s: number) => {
       const { w, h } = size.current;
       const f = freeArea();
-      const cw = MAP_W * s;
-      const ch = MAP_H * s;
+      const cw = BBOX_W * s;
+      const ch = BBOX_H * s;
       const pad = WORLD_PAD * s;
-      const range = (view: number, content: number, centre: number): [number, number] =>
-        content + 2 * pad <= view ? [centre - content / 2, centre - content / 2] : [view - content - pad, pad];
-      const [x0, x1] = range(w, cw, f.cx);
-      const [y0, y1] = range(h, ch, f.cy);
+      // t = posición en pantalla del origen del mundo; la isla ocupa [bx0*s + t, bx1*s + t]
+      const range = (view: number, content: number, centre: number, w0: number, wc: number): [number, number] =>
+        content + 2 * pad <= view ? [centre - wc * s, centre - wc * s] : [view - (w0 * s + content) - pad, pad - w0 * s];
+      const [x0, x1] = range(w, cw, f.cx, ISLAND_BBOX.x0, BBOX_CX);
+      const [y0, y1] = range(h, ch, f.cy, ISLAND_BBOX.y0, BBOX_CY);
       return { x0, x1, y0, y1 };
     },
     [freeArea],
@@ -407,12 +423,14 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
     const { w, h } = size.current;
     const rel = s / fit.current;
     const lod: 0 | 1 | 2 = rel < 1.7 ? 0 : rel < 3.4 ? 1 : 2;
-    const mx = (w * 0.3) / s;
-    const my = (h * 0.3) / s;
+    const touch = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    const margin = touch ? BG_MARGIN_TOUCH : BG_MARGIN_DESKTOP;
+    const mx = (w * margin) / s;
+    const my = (h * margin) / s;
     const R = { x0: -x / s - mx, y0: -y / s - my, x1: (w - x) / s + mx, y1: (h - y) / s + my };
     const cssW = (R.x1 - R.x0) * s;
     const cssH = (R.y1 - R.y0) * s;
-    const dpr = Math.min(2, window.devicePixelRatio || 1, 6144 / cssW, 6144 / cssH);
+    const dpr = Math.min(touch ? DPR_MAX_TOUCH : DPR_MAX_DESKTOP, window.devicePixelRatio || 1, 6144 / cssW, 6144 / cssH);
     const pw = Math.max(1, Math.round(cssW * dpr));
     const ph = Math.max(1, Math.round(cssH * dpr));
     if (cv.width !== pw) cv.width = pw;
@@ -487,7 +505,7 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
     for (const c of cands) {
       let hit = false;
       // el pin al que está anclado el propio rótulo no cuenta como obstáculo
-      for (const o of obstacles) if (Math.hypot(o.cx - c.ax, o.cy - c.ay) >= 10 && overlaps(c.box, o.box)) { hit = true; break; }
+      for (const o of obstacles) if ((c.prio === 3 || Math.hypot(o.cx - c.ax, o.cy - c.ay) >= 10) && overlaps(c.box, o.box)) { hit = true; break; }
       if (!hit) for (const p of placed) if (overlaps(c.box, p)) { hit = true; break; }
       setHidden(c.el, hit);
       if (!hit) placed.push(c.box);
@@ -618,8 +636,8 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
 
   const fitTransform = useCallback((): Transform => {
     const f = freeArea();
-    const s = Math.max(0.05, Math.min((f.fw - 2 * FIT_MARGIN_PX) / MAP_W, (f.fh - 2 * FIT_MARGIN_PX) / MAP_H));
-    return { s, x: f.cx - (MAP_W / 2) * s, y: f.cy - (MAP_H / 2) * s };
+    const s = Math.max(0.05, Math.min((f.fw - 2 * FIT_MARGIN_PX) / (BBOX_W + 2 * FIT_PAD_UNITS), (f.fh - 2 * FIT_MARGIN_PX) / (BBOX_H + 2 * FIT_PAD_UNITS)));
+    return { s, x: f.cx - BBOX_CX * s, y: f.cy - BBOX_CY * s };
   }, [freeArea]);
 
   const toWorld = useCallback((clientX: number, clientY: number): { x: number; y: number } | null => {
@@ -690,8 +708,8 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
           s1: t.s,
           cx0: (f.cx - c.x) / c.s,
           cy0: (f.cy - c.y) / c.s,
-          cx1: MAP_W / 2,
-          cy1: MAP_H / 2,
+          cx1: BBOX_CX,
+          cy1: BBOX_CY,
           sx: f.cx,
           sy: f.cy,
         };
@@ -917,6 +935,7 @@ export function MapCanvas({ ref, refOverlay, tracer, pins, selectedId, onSelect,
         role="application"
         aria-label={ariaLabel}
         data-lod="0"
+        data-capture={captureClicks ? '1' : undefined}
         className="absolute inset-0 h-full w-full cursor-grab touch-none active:cursor-grabbing"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

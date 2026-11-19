@@ -7,6 +7,8 @@
 
 export const MAP_W = 1000;
 export const MAP_H = 700;
+/** Contorno de la isla de Leonida (con sus cayos) dentro del lienzo: base del encuadre, de los límites de paneo y de la rejilla. */
+export const ISLAND_BBOX = { x0: 265, y0: 22, x1: 731, y1: 696 } as const;
 
 // ---- Geometría pesada: archivos estáticos cargados bajo demanda ----------------------------------------------------
 // La cartografía vectorizada (~1 MB) vive en `public/map-data/*.json` y NO entra en el bundle JS:
@@ -80,7 +82,7 @@ export const MARKER_SPOTS: Readonly<Record<string, { x: number; y: number }>> = 
   'vice-city': { x: 617.6, y: 388.2 },
   'ocean-beach': { x: 708.5, y: 359.3 },
   'leonida-keys': { x: 532.5, y: 619.4 },
-  'grassrivers': { x: 499.3, y: 541.3 },
+  'grassrivers': { x: 492.9, y: 542.4 },
   'port-gellhorn': { x: 343.8, y: 196.2 },
   'ambrosia': { x: 518.5, y: 227.1 },
   'lake-leonida': { x: 561.1, y: 200.3 },

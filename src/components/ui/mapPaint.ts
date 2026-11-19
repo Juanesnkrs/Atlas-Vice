@@ -8,7 +8,7 @@
 // de unidad; el primer punto de cada anillo/línea es absoluto y el resto son incrementos; `|` separa
 // anillos/líneas. Las curvas se suavizan al pintar (cuadráticas entre puntos medios).
 import type { TerrainBase, TerrainDetail } from '../../data/leonidaMap';
-import { MAP_H, MAP_W } from '../../data/leonidaMap';
+import { ISLAND_BBOX } from '../../data/leonidaMap';
 
 // Paleta: un agua, una tierra, un acento ámbar; el resto, tono sobre tono.
 export const WATER = '#10234A';
@@ -181,17 +181,21 @@ export function paintMap(ctx: CanvasRenderingContext2D, base: BasePaths | null, 
   // Océano: un único azul oscuro (cubre también el margen fuera del lienzo del mapa).
   ctx.fillStyle = WATER;
   ctx.fillRect(o.x0 - 1, o.y0 - 1, o.x1 - o.x0 + 2, o.y1 - o.y0 + 2);
-  // Rejilla muy tenue de referencia cada 100 unidades.
+  // Rejilla muy tenue cada 100 unidades, acotada al área del mapa (isla + margen).
+  const gx0 = Math.floor((ISLAND_BBOX.x0 - 60) / 100) * 100;
+  const gx1 = Math.ceil((ISLAND_BBOX.x1 + 60) / 100) * 100;
+  const gy0 = Math.floor((ISLAND_BBOX.y0 - 60) / 100) * 100;
+  const gy1 = Math.ceil((ISLAND_BBOX.y1 + 60) / 100) * 100;
   ctx.strokeStyle = 'rgba(255,255,255,0.025)';
   ctx.lineWidth = px(1);
   ctx.beginPath();
-  for (let x = 0; x <= MAP_W; x += 100) {
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, MAP_H);
+  for (let x = gx0; x <= gx1; x += 100) {
+    ctx.moveTo(x, gy0);
+    ctx.lineTo(x, gy1);
   }
-  for (let y = 0; y <= MAP_H; y += 100) {
-    ctx.moveTo(0, y);
-    ctx.lineTo(MAP_W, y);
+  for (let y = gy0; y <= gy1; y += 100) {
+    ctx.moveTo(gx0, y);
+    ctx.lineTo(gx1, y);
   }
   ctx.stroke();
   if (!base) return;

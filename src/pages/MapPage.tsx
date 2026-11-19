@@ -662,10 +662,10 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
   const capasParam = params.get('capas');
   const region = params.get('region');
   const hideDone = params.get('ocultar') === '1';
-  const active = useMemo(
-    () => (capasParam === null ? new Set<MapLayerId>(MAP_LAYERS.map((l) => l.id)) : new Set(capasParam.split(',').filter((id): id is MapLayerId => LAYER_IDS.has(id)))),
-    [capasParam],
-  );
+  // Capas válidas de ?capas=; si no hay ninguna coincidencia (valores inválidos) se activan todas.
+  const parsedLayers = useMemo(() => (capasParam === null ? [] : capasParam.split(',').filter((id): id is MapLayerId => LAYER_IDS.has(id))), [capasParam]);
+  const capasValid = capasParam !== null && parsedLayers.length > 0;
+  const active = useMemo(() => (capasValid ? new Set<MapLayerId>(parsedLayers) : new Set<MapLayerId>(MAP_LAYERS.map((l) => l.id))), [capasValid, parsedLayers]);
 
   const updateUrl = useCallback(
     (mut: (p: URLSearchParams) => void) => {
@@ -689,7 +689,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
   };
   const setRegionFilter = (v: string) => updateUrl((p) => (v ? p.set('region', v) : p.delete('region')));
   const setHideDone = (v: boolean) => updateUrl((p) => (v ? p.set('ocultar', '1') : p.delete('ocultar')));
-  const filtersActive = capasParam !== null || region !== null || hideDone;
+  const filtersActive = capasValid || region !== null || hideDone;
   const resetFilters = () =>
     updateUrl((p) => {
       p.delete('capas');
@@ -768,6 +768,19 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       p.delete('entity');
     });
   }, [updateUrl]);
+
+  // Escape cierra la tarjeta del marcador (salvo que el foco esté en un campo de texto).
+  useEffect(() => {
+    if (!selectedId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const el = e.target as HTMLElement | null;
+      if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
+      deselect();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectedId, deselect]);
 
   // Deep-link: ?pin=<slug> (y compatibilidad con ?marker=<uuid> y ?entity=<uuid>).
   useEffect(() => {
@@ -984,6 +997,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
         crosshair={editor && !trace.on ? cross : null}
         refOverlay={refOverlay}
         tracer={tracer}
+        captureClicks={editor && trace.on}
         editable={editable}
         ariaLabel="Mapa de Leonida. Arrastra para mover, rueda, pellizco o botones para acercar."
         onSelect={(id) => {
@@ -1000,6 +1014,18 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           } else if (selectedId) deselect();
         }}
       />
+
+      {/* Sin resultados: aviso claro con salida directa */}
+      {pins.length === 0 && filtersActive && (
+        <div role="status" className="pointer-events-none absolute inset-x-3 bottom-28 z-10 flex justify-center md:bottom-10">
+          <div className="glass pointer-events-auto flex max-w-sm flex-col items-center gap-3 rounded-2xl p-4 text-center">
+            <p className="font-semibold">No hay marcadores con estos filtros.</p>
+            <PalmButton type="button" onClick={resetFilters} className="min-h-11!">
+              Limpiar filtros
+            </PalmButton>
+          </div>
+        </div>
+      )}
 
       {/* HUD superior izquierdo: buscador + filtros (+ editor en escritorio) */}
       <div className="pointer-events-none absolute left-3 right-3 top-2 z-10 flex max-h-[calc(100%-1rem)] flex-col gap-2 md:right-auto md:w-80 md:overflow-y-auto">

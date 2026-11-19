@@ -176,7 +176,7 @@ const SEED_REGION_RENAME: Record<string, string> = { 'Vice Beach': 'Vice-Dale Co
 const SEED_REGION_ANCHOR: Record<string, { from: [number, number]; to: [number, number] }> = {
   'Vice Beach': { from: [765, 330], to: [627.9, 311.8] },
   Downtown: { from: [610, 375], to: [617.6, 388.2] },
-  Grassrivers: { from: [250, 215], to: [499.3, 541.3] },
+  Grassrivers: { from: [250, 215], to: [492.9, 542.4] },
   'Port Gellhorn': { from: [520, 175], to: [343.8, 196.2] },
   Ambrosia: { from: [800, 205], to: [518.5, 227.1] },
   'Ocean Beach': { from: [700, 520], to: [708.5, 359.3] },
