@@ -159,7 +159,7 @@ const CSS = `
 .lm-l{pointer-events:none;font-family:Jost,sans-serif;font-weight:700;fill:#FBF1F5;stroke:#1B1033;paint-order:stroke;stroke-linejoin:round;text-anchor:middle;dominant-baseline:central;stroke-width:3.5px}
 .lm-region{font-size:calc(13px * var(--lf,1));letter-spacing:2px}
 .lm-city{font-size:calc(11px * var(--lf,1));letter-spacing:1px;fill:#FFD9C2}
-.lm-water{font-size:calc(11px * var(--lf,1));letter-spacing:3px;font-style:italic;font-weight:600;fill:#B6A6F0;stroke:#1B1033}
+.lm-water{font-size:calc(11px * var(--lf,1));letter-spacing:3px;font-style:italic;font-weight:600;fill:#8FA8E0;stroke:#0B1630}
 .lm-road{font-size:calc(9px * var(--lf,1));letter-spacing:.5px;font-weight:600;fill:#F6B58A}
 [data-lod="0"] .lm-t1,[data-lod="0"] .lm-t2,[data-lod="1"] .lm-t2{display:none}
 .lm-pin{cursor:pointer;outline:none}
@@ -170,6 +170,8 @@ const CSS = `
 @media (prefers-reduced-motion:reduce){.lm-pulse{animation:none}}
 `;
 
+/** Único tono del agua en todo el mapa (azul oscuro). */
+const WATER = '#10234A';
 const NS = { vectorEffect: 'non-scaling-stroke' } as const;
 
 const LeonidaBase = memo(function LeonidaBase() {
@@ -177,10 +179,6 @@ const LeonidaBase = memo(function LeonidaBase() {
   return (
     <g>
       <defs>
-        <linearGradient id="lm-water" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#170C2E" />
-          <stop offset="1" stopColor="#2A1747" />
-        </linearGradient>
         <linearGradient id="lm-land" x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#7A3F90" />
           <stop offset="1" stopColor="#B24F80" />
@@ -193,13 +191,11 @@ const LeonidaBase = memo(function LeonidaBase() {
           <path d="M0 0H5M0 0V5" fill="none" stroke="rgba(60,30,90,0.42)" strokeWidth={0.3} />
         </pattern>
       </defs>
-      {/* Océano profundo, halo de batimetría violeta (somero) y cian (muy somero) */}
-      <rect x={-3000} y={-3000} width={7000} height={7000} fill="url(#lm-water)" />
-      <path d={m.gridD} fill="none" stroke="rgba(255,255,255,0.045)" strokeWidth={1} {...NS} />
-      <path d={m.shallowD} fill="rgba(52,96,196,0.30)" fillRule="evenodd" />
-      <path d={m.vshallowD} fill="rgba(70,205,235,0.30)" fillRule="evenodd" stroke="rgba(140,240,250,0.55)" strokeWidth={0.8} {...NS} />
+      {/* Agua: un único tono azul oscuro para océano, bahías, lagos y ríos */}
+      <rect x={-3000} y={-3000} width={7000} height={7000} fill={WATER} />
+      <path d={m.gridD} fill="none" stroke="rgba(255,255,255,0.025)" strokeWidth={1} {...NS} />
       {/* Borde costero nítido: halo cian suave + línea cálida */}
-      <path d={m.landD} fill="none" stroke="rgba(150,235,245,0.3)" strokeWidth={4} strokeLinejoin="round" />
+      <path d={m.landD} fill="none" stroke="rgba(120,160,230,0.16)" strokeWidth={4} strokeLinejoin="round" />
       <path d={m.landD} fill="url(#lm-land)" fillRule="evenodd" stroke="#FFC48A" strokeOpacity={0.85} strokeWidth={1.3} strokeLinejoin="round" {...NS} />
       <g clipPath="url(#lm-clip)">
         {m.regions.map((r) => (
@@ -207,8 +203,8 @@ const LeonidaBase = memo(function LeonidaBase() {
         ))}
         {/* Arena cálida (playas y cayos) y humedales fragmentados */}
         <path d={m.sandD} fill="rgba(255,205,140,0.78)" fillRule="evenodd" />
-        <path d={m.wetD} fill="rgba(80,215,225,0.4)" fillRule="evenodd" />
-        <path d={m.swampD} fill="none" stroke="rgba(150,240,245,0.55)" strokeWidth={1} strokeLinecap="round" {...NS} />
+        <path d={m.wetD} fill="rgba(90,170,200,0.26)" fillRule="evenodd" />
+        <path d={m.swampD} fill="none" stroke="rgba(150,200,225,0.35)" strokeWidth={1} strokeLinecap="round" {...NS} />
         {/* Relieve escalonado: cada nivel oscurece un poco más + curvas de nivel */}
         <path d={m.contoursMinorD} fill="rgba(36,8,58,0.12)" fillRule="evenodd" />
         <path d={m.contoursMajorD} fill="rgba(36,8,58,0.16)" fillRule="evenodd" />
@@ -224,7 +220,7 @@ const LeonidaBase = memo(function LeonidaBase() {
         <path className="lm-t1" d={m.railD} fill="none" stroke="rgba(251,241,245,0.42)" strokeWidth={5} strokeDasharray="1.2 4.4" {...NS} />
       </g>
       {/* Agua interior: lago, ríos y bahías */}
-      <path d={m.lakesD} fill="rgba(48,172,220,0.8)" fillRule="evenodd" stroke="#A6F3F8" strokeWidth={0.9} {...NS} />
+      <path d={m.lakesD} fill={WATER} fillRule="evenodd" stroke="rgba(120,160,230,0.45)" strokeWidth={0.9} {...NS} />
       {/* Red vial: secundarias (LOD 1), autopistas de doble trazo y autopista de los cayos */}
       <path className="lm-t1" d={m.minorRoadsD} fill="none" stroke="#1A0A22" strokeOpacity={0.55} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" {...NS} />
       <path className="lm-t1" d={m.minorRoadsD} fill="none" stroke="rgba(255,236,222,0.7)" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" {...NS} />
