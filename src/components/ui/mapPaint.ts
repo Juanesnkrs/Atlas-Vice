@@ -19,7 +19,6 @@ export interface TileManifest {
   /** Tamaño en píxeles del mosaico completo en `maxZoom`. */
   maxZoomSize: { width: number; height: number };
   levels: ReadonlyArray<{ z: number; cols: number; rows: number; width: number; height: number }>;
-  attribution: string;
 }
 
 let manifestPromise: Promise<TileManifest> | null = null;

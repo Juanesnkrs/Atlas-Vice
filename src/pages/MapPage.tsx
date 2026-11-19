@@ -637,7 +637,6 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [layersOpen, setLayersOpen] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(false);
   const [editor, setEditor] = useState(false);
   const [cross, setCross] = useState<{ x: number; y: number } | null>(null);
   const [overrides, setOverrides] = useState<ReadonlyMap<string, { x: number; y: number }>>(new Map());
@@ -1171,18 +1170,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
               <path d="M4 12a8 8 0 108-8H8M8 4L4.5 7.5 8 11" />
             </svg>
           </button>
-          <button type="button" aria-label="Información de la base cartográfica" aria-expanded={infoOpen} onClick={() => setInfoOpen((v) => !v)} className={ZOOM_BTN}>
-            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="9" />
-              <path d="M12 11v5M12 8h.01" strokeLinecap="round" />
-            </svg>
-          </button>
         </div>
-        {infoOpen && (
-          <p role="status" className="glass absolute right-14 top-[8.25rem] z-20 w-56 rounded-xl p-3 text-xs leading-snug">
-            Base cartográfica: GTA VI Community Map (Yanis, v18).
-          </p>
-        )}
         {isAdmin && (
           <button
             type="button"

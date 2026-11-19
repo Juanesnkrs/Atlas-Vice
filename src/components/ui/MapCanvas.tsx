@@ -843,11 +843,6 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
           })}
         </g>
       </svg>
-      {manifest && (
-        <p className="pointer-events-none absolute bottom-[calc(96px+var(--safe-bottom))] left-3 z-10 max-w-[55%] rounded-md bg-black/45 px-2 py-0.5 text-[9px] leading-tight text-vice-text/75 md:bottom-3">
-          {manifest.attribution}
-        </p>
-      )}
     </div>
   );
 }
