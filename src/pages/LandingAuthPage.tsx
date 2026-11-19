@@ -38,7 +38,7 @@ const PROVIDERS: ReadonlyArray<{ id: ProviderId; label: string }> = [
 ];
 
 // ---- Magic Link (Modal) ------------------------------------------------------------------------
-function MagicLinkDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function MagicLinkDialog({ open, onClose, next }: { open: boolean; onClose: () => void; next: string | null }) {
   const requestMagicLink = useAuthStore((s) => s.requestMagicLink);
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -51,7 +51,7 @@ function MagicLinkDialog({ open, onClose }: { open: boolean; onClose: () => void
     setError(null);
     if (!/^S+@S+.S+$/.test(email.trim())) return setError('Introduce un correo electrónico válido.');
     setBusy(true);
-    const res = await requestMagicLink(email.trim());
+    const res = await requestMagicLink(email.trim(), safeNext(next));
     setBusy(false);
     if (!res.ok) return setError(res.error ?? 'No se pudo enviar el enlace.');
     setSent(true);
@@ -186,7 +186,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
       return;
     }
     setBusy(id);
-    const res = await signInWithProvider(id);
+    const res = await signInWithProvider(id, safeNext(next));
     setBusy(null);
     if (!res.ok) setError(res.error ?? 'No se pudo iniciar sesión.');
   };
@@ -329,7 +329,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
         </div>
       </div>
 
-      <MagicLinkDialog open={magicOpen} onClose={() => setMagicOpen(false)} />
+      <MagicLinkDialog open={magicOpen} onClose={() => setMagicOpen(false)} next={next} />
     </ViceShell>
   );
 }

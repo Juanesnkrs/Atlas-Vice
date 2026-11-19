@@ -64,6 +64,9 @@ export async function buildApp(): Promise<FastifyInstance> {
     if (err instanceof HttpError) {
       return reply.code(err.statusCode).send({ error: err.message, ...(err.details ? { details: err.details } : {}) });
     }
+    if ((err as { code?: unknown }).code === 11000) {
+      return reply.code(409).send({ error: 'Conflicto: el slug o identificador ya existe' });
+    }
     if (err instanceof ZodError) return reply.code(400).send({ error: 'Datos invalidos' });
     const status = (err as { statusCode?: number }).statusCode ?? 500;
     if (status >= 500) app.log.error(err);

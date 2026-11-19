@@ -92,8 +92,8 @@ interface AuthState {
   init: () => Promise<void>;
   continueAsGuest: () => void;
   /** Redirige al flujo OAuth2 + PKCE del servidor (Google / Discord / Apple). */
-  signInWithProvider: (provider: OAuthProvider) => Promise<AuthResult>;
-  requestMagicLink: (email: string) => Promise<AuthResult>;
+  signInWithProvider: (provider: OAuthProvider, next?: string) => Promise<AuthResult>;
+  requestMagicLink: (email: string, next?: string) => Promise<AuthResult>;
   /** Canjea el código efímero recibido en `leonidapp://auth/callback?code=...`. */
   completeNativeLogin: (code: string) => Promise<AuthResult>;
   /** @deprecated Sin contraseñas: envía un Magic Link. Se conserva por compatibilidad con la UI. */
@@ -151,12 +151,12 @@ export const useAuthStore = create<AuthState>()(
         }
       };
 
-      const sendMagic = async (email: string): Promise<AuthResult> => {
+      const sendMagic = async (email: string, next?: string): Promise<AuthResult> => {
         set({ error: null });
         try {
           await apiFetch('/api/auth/magic/request', {
             method: 'POST',
-            json: { email, native: Capacitor.isNativePlatform() },
+            json: { email, native: Capacitor.isNativePlatform(), ...(next ? { next } : {}) },
           });
           return { ok: true, error: null };
         } catch (err) {
@@ -201,14 +201,17 @@ export const useAuthStore = create<AuthState>()(
           });
         },
 
-        signInWithProvider: async (provider) => {
+        signInWithProvider: async (provider, next) => {
           if (!isApiConfigured) {
             const error = 'API no configurada (VITE_API_URL).';
             set({ error });
             return { ok: false, error };
           }
-          const native = Capacitor.isNativePlatform() ? '?native=1' : '';
-          window.location.assign(`${API_URL}/api/auth/${provider}/start${native}`);
+          const qs = new URLSearchParams();
+          if (Capacitor.isNativePlatform()) qs.set('native', '1');
+          if (next) qs.set('next', next);
+          const query = qs.toString();
+          window.location.assign(`${API_URL}/api/auth/${provider}/start${query ? `?${query}` : ''}`);
           return { ok: true, error: null };
         },
 

@@ -4,6 +4,7 @@ import { requireRole } from '../plugins/auth.js';
 import { Entity, entitySchema, entityUpdateSchema, toEntityDTO, type EntityDoc } from '../models/Entity.js';
 import { MapMarker, mapMarkerSchema, mapMarkerUpdateSchema, toMarkerDTO, type MapMarkerDoc } from '../models/MapMarker.js';
 import { Module, moduleSchema, moduleUpdateSchema, toModuleDTO, type ModuleDoc } from '../models/Module.js';
+import { clearSsrCache } from '../services/ssrLite.js';
 import { writeAudit } from '../services/audit.js';
 import { HttpError, idParamsSchema, parse } from '../services/validate.js';
 
@@ -52,6 +53,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const { id, ...rest } = body;
     const doc = await Module.create({ ...rest, ...(id ? { _id: id } : {}) });
     await writeAudit(req, 'module.create', 'Module', doc._id, { slug: doc.slug });
+    clearSsrCache();
     return reply.code(201).send(toModuleDTO(doc.toObject()));
   });
 
@@ -61,6 +63,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const doc = await Module.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after' }).lean<ModuleDoc>();
     if (!doc) throw new HttpError(404, 'Modulo no encontrado');
     await writeAudit(req, 'module.update', 'Module', id, { patch });
+    clearSsrCache();
     return toModuleDTO(doc);
   });
 
@@ -69,6 +72,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const doc = await Module.findByIdAndDelete(id).lean<ModuleDoc>();
     if (!doc) throw new HttpError(404, 'Modulo no encontrado');
     await writeAudit(req, 'module.delete', 'Module', id, { slug: doc.slug });
+    clearSsrCache();
     return reply.code(204).send();
   });
 
@@ -84,6 +88,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     if (!(await Module.exists({ _id: rest.module_id }))) throw new HttpError(422, 'module_id inexistente');
     const doc = await Entity.create({ ...rest, ...(id ? { _id: id } : {}) });
     await writeAudit(req, 'entity.create', 'Entity', doc._id, { titulo: doc.titulo });
+    clearSsrCache();
     return reply.code(201).send(toEntityDTO(doc.toObject()));
   });
 
@@ -93,6 +98,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const doc = await Entity.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after' }).lean<EntityDoc>();
     if (!doc) throw new HttpError(404, 'Entidad no encontrada');
     await writeAudit(req, 'entity.update', 'Entity', id, { patch });
+    clearSsrCache();
     return toEntityDTO(doc);
   });
 
@@ -101,6 +107,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const doc = await Entity.findByIdAndDelete(id).lean<EntityDoc>();
     if (!doc) throw new HttpError(404, 'Entidad no encontrada');
     await writeAudit(req, 'entity.delete', 'Entity', id, { titulo: doc.titulo });
+    clearSsrCache();
     return reply.code(204).send();
   });
 
@@ -115,6 +122,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const body = parse(mapMarkerSchema, req.body);
     const doc = await MapMarker.create(markerToDoc(body));
     await writeAudit(req, 'marker.create', 'MapMarker', doc._id, { titulo: doc.titulo });
+    clearSsrCache();
     return reply.code(201).send(toMarkerDTO(doc.toObject()));
   });
 
@@ -127,6 +135,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const doc = await MapMarker.findByIdAndUpdate(id, { $set: markerToDoc({ ...body, id: undefined }) }, { returnDocument: 'after' }).lean<MapMarkerDoc>();
     if (!doc) throw new HttpError(404, 'Marcador no encontrado');
     await writeAudit(req, 'marker.update', 'MapMarker', id, { patch: body });
+    clearSsrCache();
     return toMarkerDTO(doc);
   });
 
@@ -135,6 +144,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const doc = await MapMarker.findByIdAndDelete(id).lean<MapMarkerDoc>();
     if (!doc) throw new HttpError(404, 'Marcador no encontrado');
     await writeAudit(req, 'marker.delete', 'MapMarker', id, { titulo: doc.titulo });
+    clearSsrCache();
     return reply.code(204).send();
   });
 }

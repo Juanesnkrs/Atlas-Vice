@@ -31,6 +31,13 @@ const TABS: ReadonlyArray<{ slug: TabSlug; label: string; heading: string; doneL
   { slug: 'coleccionables', label: 'Coleccionables', heading: 'COLECCIONABLES', doneLabel: 'Completado' },
 ];
 
+const normalizeText = (t: string): string =>
+  t
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .trim();
+
 const ACCENTS: StatAccent[] = ['magenta', 'gold', 'cyan', 'lilac'];
 
 // ---- Siluetas SVG de armas y vehículos -----------------------------------------
@@ -390,9 +397,25 @@ function CatalogInspector({ params }: { params: URLSearchParams }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const tabEntities = data.entities.filter((e) => modulesById.get(e.module_id)?.slug === tab);
+  // Buscador por URL: /catalogo?q=texto (SearchAction de ssrLite). Filtra por titulo, subtitulo, categoria y alias.
+  const q = normalizeText(params.get('q') ?? '');
+  const matchesQuery = (e: Entity): boolean => {
+    if (!q) return true;
+    const alias = metaOf(e).alias;
+    const aliases = Array.isArray(alias) ? alias.map(String) : alias ? [String(alias)] : [];
+    return [e.titulo, e.subtitulo ?? '', e.categoria, ...aliases].some((f) => normalizeText(f).includes(q));
+  };
+  const inTab = (slug: string) => data.entities.filter((e) => modulesById.get(e.module_id)?.slug === slug && matchesQuery(e));
+  const tabEntities = inTab(tab);
   const categories = ['Todas', ...Array.from(new Set(tabEntities.map((e) => e.categoria)))];
   const list = cat === 'Todas' ? tabEntities : tabEntities.filter((e) => e.categoria === cat);
+  const qTab = q && tabEntities.length === 0 ? tabs.find((t) => inTab(t.slug).length > 0)?.slug : undefined;
+  useEffect(() => {
+    if (qTab) {
+      setTab(qTab);
+      setCat('Todas');
+    }
+  }, [qTab]);
   const selected = list.find((e) => e.id === selectedId) ?? list[0] ?? null;
   const tabDef = TABS.find((t) => t.slug === tab) ?? TABS[0]!;
   const compareTarget = selected

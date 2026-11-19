@@ -11,6 +11,7 @@ import {
 import { Module, type ModuleDoc } from '../models/Module.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { roleSchema, toPublicUserDTO, toSelfUserDTO, User, type UserDoc } from '../models/User.js';
+import { clearSsrCache } from '../services/ssrLite.js';
 import { writeAudit } from '../services/audit.js';
 import { HttpError, idParamsSchema, parse } from '../services/validate.js';
 
@@ -45,6 +46,7 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
     await getGlobalConfig();
     const updated = await AppConfig.findOneAndUpdate({ key: 'global' }, { $set: patch }, { returnDocument: 'after' }).lean();
     await writeAudit(req, 'config.update', 'AppConfig', 'global', { patch });
+    clearSsrCache();
     return updated;
   });
 
@@ -73,7 +75,7 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
     return { user: updated ? toPublicUserDTO(updated) : null };
   });
 
-  app.get('/api/admin/audit-logs', { preHandler: requireRole('ADMIN') }, async (req) => {
+  app.get('/api/admin/audit-logs', { preHandler: requireRole('SUPER_ADMIN') }, async (req) => {
     const q = parse(
       z.object({
         limit: z.coerce.number().int().min(1).max(200).default(50),

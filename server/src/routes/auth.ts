@@ -27,23 +27,30 @@ import { HttpError, parse } from '../services/validate.js';
 import { findOrCreateUser } from '../services/users.js';
 
 const providerParams = z.object({ provider: z.enum(['google', 'discord', 'apple']) });
-const startQuery = z.object({ native: z.enum(['0', '1']).optional() });
+const startQuery = z.object({ native: z.enum(['0', '1']).optional(), next: z.string().max(512).optional() });
+
+/** Ruta relativa segura para el retorno: debe iniciar con `/` y no con `//` ni con barra invertida. */
+const sanitizeNext = (next: unknown): string | undefined =>
+  typeof next === 'string' && next.startsWith('/') && !next.startsWith('//') && !next.includes('\\') && !/[\r\n]/.test(next)
+    ? next
+    : undefined;
 
 interface PkceCookie {
   state: string;
   verifier: string;
   provider: OAuthProviderId;
   native: boolean;
+  next?: string;
 }
 
 /** Cierra el login: cookie de sesion (web) o codigo efimero de un solo uso (deep link nativo). */
-async function finishLogin(reply: FastifyReply, user: UserDoc, native: boolean): Promise<FastifyReply> {
+async function finishLogin(reply: FastifyReply, user: UserDoc, native: boolean, next?: string): Promise<FastifyReply> {
   if (native) {
     const code = await signPurposeToken('exchange', { uid: user._id }, 60);
     return reply.redirect(`${env.APP_DEEPLINK}?code=${encodeURIComponent(code)}`);
   }
   setSessionCookie(reply, await signSession(user._id));
-  return reply.redirect(`${env.PUBLIC_SITE_URL}/?auth=ok`);
+  return reply.redirect(`${env.PUBLIC_SITE_URL}${next ?? '/?auth=ok'}`);
 }
 
 function failRedirect(reply: FastifyReply, native: boolean, reason: string): FastifyReply {
@@ -68,11 +75,12 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
   // --- OAuth2 Authorization Code + PKCE ---------------------------------------
   app.get('/api/auth/:provider/start', strict, async (req, reply) => {
     const { provider } = parse(providerParams, req.params);
-    const { native } = parse(startQuery, req.query);
+    const { native, next } = parse(startQuery, req.query);
+    const safe = sanitizeNext(next);
     const state = newState();
     const verifier = newVerifier();
     const url = buildAuthorizeUrl(provider, state, verifier); // 503 si falta credencial
-    const payload: PkceCookie = { state, verifier, provider, native: native === '1' };
+    const payload: PkceCookie = { state, verifier, provider, native: native === '1', ...(safe ? { next: safe } : {}) };
     reply.setCookie(OAUTH_COOKIE, JSON.stringify(payload), {
       httpOnly: true,
       signed: true,
@@ -107,7 +115,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     try {
       const identity = await exchangeCode(provider, input['code'], pkce.verifier);
       const user = await findOrCreateUser(identity);
-      return await finishLogin(reply, user, pkce.native);
+      return await finishLogin(reply, user, pkce.native, sanitizeNext(pkce.next));
     } catch (err) {
       req.log.error({ err }, 'oauth callback');
       return failRedirect(reply, pkce.native, 'fallo_proveedor');
@@ -118,10 +126,10 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
   // --- Magic Link --------------------------------------------------------------
   app.post('/api/auth/magic/request', { config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } }, async (req, reply) => {
-    const body = parse(z.object({ email: z.email(), native: z.boolean().optional() }), req.body);
+    const body = parse(z.object({ email: z.email(), native: z.boolean().optional(), next: z.string().max(512).optional() }), req.body);
     if (!mailerConfigured()) throw new HttpError(503, 'Magic Link no configurado (SMTP)');
     const email = body.email.toLowerCase();
-    const token = await signPurposeToken('magic', { email, native: body.native === true }, 15 * 60);
+    const token = await signPurposeToken('magic', { email, native: body.native === true, ...(sanitizeNext(body.next) ? { next: sanitizeNext(body.next) } : {}) }, 15 * 60);
     await sendMagicLink(email, `${env.API_PUBLIC_URL}/api/auth/magic/verify?token=${encodeURIComponent(token)}`);
     return reply.code(202).send({ ok: true }); // respuesta identica exista o no la cuenta
   });
@@ -141,7 +149,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       emailVerified: true,
       name: email.split('@')[0] ?? 'jugador',
     });
-    return finishLogin(reply, user, native);
+    return finishLogin(reply, user, native, sanitizeNext(payload['next']));
   });
 
   // --- Intercambio del codigo nativo (leonidapp://auth/callback?code=...) -------
