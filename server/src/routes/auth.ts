@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { env, isProd } from '../config/env.js';
+import { env, secureCookies } from '../config/env.js';
 import { requireAuth } from '../plugins/auth.js';
 import { getGlobalConfig } from '../models/AppConfig.js';
 import { toSelfUserDTO, User, type UserDoc } from '../models/User.js';
@@ -87,7 +87,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       path: '/api/auth',
       maxAge: 600,
       // Apple vuelve con POST cross-site (form_post): Lax no enviaria la cookie.
-      secure: isProd || provider === 'apple',
+      secure: secureCookies || provider === 'apple',
       sameSite: provider === 'apple' ? 'none' : 'lax',
     });
     return reply.redirect(url);

@@ -73,6 +73,15 @@ export async function buildApp(): Promise<FastifyInstance> {
     return reply.code(status).send({ error: status >= 500 ? 'Error interno' : (err as Error).message });
   });
 
+  // Cabeceras de seguridad en todas las respuestas.
+  app.addHook('onSend', async (_req, reply, payload) => {
+    reply.header('X-Content-Type-Options', 'nosniff');
+    reply.header('X-Frame-Options', 'DENY');
+    reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+    reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    return payload;
+  });
+
   app.get('/api/health', async () => ({ ok: true }));
 
   await registerConfigRoutes(app);

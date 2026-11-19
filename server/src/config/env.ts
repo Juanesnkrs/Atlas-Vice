@@ -33,6 +33,8 @@ const envSchema = z.object({
 export type Env = z.infer<typeof envSchema>;
 export const env: Env = envSchema.parse(process.env);
 export const isProd = env.NODE_ENV === 'production';
+/** Cookies Secure en produccion o cuando el sitio/API publico usa https. */
+export const secureCookies = isProd || env.PUBLIC_SITE_URL.startsWith('https://') || env.API_PUBLIC_URL.startsWith('https://');
 
 if (isProd && (env.JWT_SECRET.startsWith('dev-only') || env.COOKIE_SECRET.startsWith('dev-only'))) {
   throw new Error('JWT_SECRET y COOKIE_SECRET deben definirse en produccion.');

@@ -1,7 +1,7 @@
 import type { FastifyReply } from 'fastify';
 import { jwtVerify, SignJWT } from 'jose';
 import { randomUUID } from 'node:crypto';
-import { env, isProd } from '../config/env.js';
+import { env, secureCookies } from '../config/env.js';
 
 export const SESSION_COOKIE = 'lv_session';
 export const OAUTH_COOKIE = 'lv_oauth';
@@ -70,7 +70,7 @@ export async function verifyPurposeToken(
 export function setSessionCookie(reply: FastifyReply, token: string): void {
   reply.setCookie(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: isProd,
+    secure: secureCookies,
     sameSite: 'lax',
     path: '/',
     maxAge: SESSION_TTL_S,
@@ -78,5 +78,5 @@ export function setSessionCookie(reply: FastifyReply, token: string): void {
 }
 
 export function clearSessionCookie(reply: FastifyReply): void {
-  reply.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, secure: isProd, sameSite: 'lax' });
+  reply.clearCookie(SESSION_COOKIE, { path: '/', httpOnly: true, secure: secureCookies, sameSite: 'lax' });
 }

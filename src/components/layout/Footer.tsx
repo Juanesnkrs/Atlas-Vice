@@ -34,6 +34,7 @@ function readCookie(name: string): string | null {
 function writeCookie(name: string, value: string): void {
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
   document.cookie = `${name}=${encodeURIComponent(value)}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
+  if (name === CONSENT_COOKIE) window.dispatchEvent(new Event('leonidapp:consent'));
 }
 
 /** Migración única: copia las claves antiguas de localStorage a cookies y las borra. */
