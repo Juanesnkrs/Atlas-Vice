@@ -1,0 +1,1537 @@
+[
+  {
+    "modulo": "vehiculos",
+    "slug": "airgator-airboat",
+    "titulo": "Airgator Airboat",
+    "subtitulo": "Embarcación de hélice aérea",
+    "categoria": "Embarcaciones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Lancha de fondo plano propulsada por hélice, pensada para zonas de aguas someras y pantanos. Su modelo de referencia real es el Panther Airboat, y encaja con el paisaje de humedales que define a buena parte de Leonida.",
+      "marca": "Airgator",
+      "clase": "Embarcaciones",
+      "carroceria": "Embarcación de hélice aérea",
+      "basado_en": "Panther Airboat"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "airboat-09",
+    "titulo": "Airgator Airboat 09",
+    "subtitulo": "Embarcación de hélice aérea, variante 09",
+    "categoria": "Embarcaciones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Segunda lancha de hélice de Airgator en el catálogo, derivada del Diamondback Hunting & Fishing Airboat. Es la opción de silueta más utilitaria para recorrer canales poco profundos sin depender de un casco convencional.",
+      "marca": "Airgator",
+      "clase": "Embarcaciones",
+      "carroceria": "Embarcación de hélice aérea, variante 09",
+      "basado_en": "Diamondback Hunting & Fishing Airboat"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "alpha",
+    "titulo": "Albany Alpha",
+    "subtitulo": "Coupé deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de dos plazas con tracción trasera que toma como modelo al Cadillac Sixteen y al ATS de 2013. Su perfil elegante lo coloca entre los deportivos de lujo de Albany, más cerca del paseo por la costa que del bólido de carreras.",
+      "marca": "Albany",
+      "clase": "Deportivos",
+      "carroceria": "Coupé deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Cadillac Sixteen, 2013 Cadillac ATS"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "buccaneer",
+    "titulo": "Albany Buccaneer",
+    "subtitulo": "Muscle clásico de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Muscle de dos plazas y tracción trasera inspirado en el Ford Fairlane y el Buick Riviera. Es un clásico de carrocería ancha que ya se ha dejado ver en varias entregas de la saga.",
+      "marca": "Albany",
+      "clase": "Muscle",
+      "carroceria": "Muscle clásico de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Ford Fairlane, Buick Riviera"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "buccaneer-custom",
+    "titulo": "Albany Buccaneer Custom",
+    "subtitulo": "Muscle personalizado de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Versión modificada del Buccaneer que conserva la base del Ford Fairlane y el Buick Riviera. Mantiene la tracción trasera y las dos plazas, con un carácter más a medida que el modelo de serie.",
+      "marca": "Albany",
+      "clase": "Muscle",
+      "carroceria": "Muscle personalizado de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Ford Fairlane, Buick Riviera"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "cavalcade-xl",
+    "titulo": "Albany Cavalcade XL",
+    "subtitulo": "SUV de lujo de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "SUV grande de cuatro plazas y tracción total, cuyo referente real es el Cadillac Escalade-V de 2023. Representa el todoterreno urbano de alto estatus que Albany ofrece a quien prefiere volumen y presencia.",
+      "marca": "Albany",
+      "clase": "SUV",
+      "carroceria": "SUV de lujo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "2023 Cadillac Escalade-V"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "emperor",
+    "titulo": "Albany Emperor",
+    "subtitulo": "Sedán clásico de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Sedán de cuatro plazas con tracción trasera que bebe del Cadillac Sedan de Ville de finales de los setenta y del Brougham de los noventa. Es el típico coche de barrio con aire de otra época.",
+      "marca": "Albany",
+      "clase": "Sedanes",
+      "carroceria": "Sedán clásico de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "1977-1980 Cadillac Sedan de Ville (5th Gen) and 1986–1990 Cadillac Brougham"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "manana",
+    "titulo": "Albany Manana",
+    "subtitulo": "Deportivo clásico de dos plazas",
+    "categoria": "Deportivos clásicos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cupé retro de dos plazas con tracción trasera, referenciado en el Buick LeSabre y el Cadillac Eldorado. Es una de las siluetas más longevas de la franquicia y regresa a la costa de Leonida.",
+      "marca": "Albany",
+      "clase": "Deportivos clásicos",
+      "carroceria": "Deportivo clásico de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Buick LeSabre, Cadillac Eldorado"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "primo",
+    "titulo": "Albany Primo",
+    "subtitulo": "Sedán familiar de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina sencilla de cuatro plazas y tracción trasera modelada sobre un Pontiac Bonneville de finales de los ochenta. Su atractivo es la discreción de un coche cotidiano.",
+      "marca": "Albany",
+      "clase": "Sedanes",
+      "carroceria": "Sedán familiar de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Late 80's Pontiac Bonneville"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "v-str",
+    "titulo": "Albany V-STR",
+    "subtitulo": "Sedán deportivo de cuatro plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Sedán deportivo de cuatro plazas y tracción trasera cuya base real es el Cadillac CTS-V de 2019. Mezcla la practicidad de cuatro puertas con la imagen de un coche de carácter.",
+      "marca": "Albany",
+      "clase": "Deportivos",
+      "carroceria": "Sedán deportivo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "2019 Cadillac CTS-V"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "elegy-retro-custom",
+    "titulo": "Annis Elegy '90",
+    "subtitulo": "Deportivo japonés retro de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cupé de dos plazas con tracción total que evoca al Nissan Skyline GT-R. Su apodo Elegy '90 apunta a la estética noventera que tanto encaja con el aire neón de Vice City.",
+      "marca": "Annis",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo japonés retro de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Nissan Skyline GT-R"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "hellion",
+    "titulo": "Annis Hellion",
+    "subtitulo": "Todoterreno ligero de dos plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Todoterreno de dos plazas y tracción total, con raíces en el Nissan Patrol Safari Y6 y el Jeep Cherokee XJ. Es la propuesta de Annis para quien quiere salir del asfalto con una carrocería angulosa y compacta.",
+      "marca": "Annis",
+      "clase": "Todoterreno",
+      "carroceria": "Todoterreno ligero de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Nissan Patrol Safari Y6, Jeep Cherokee (XJ)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Contraste puntual de fabricante y clase con una segunda ficha de catálogo de terceros",
+      "Datos objetivos del extracto de catálogo; redacción propia"
+    ],
+    "notas": "Fabricante y clase contrastados puntualmente; stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "injection",
+    "titulo": "BF Injection",
+    "subtitulo": "Buggy de playa de dos plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Buggy de dos plazas y tracción trasera inspirado en los Volkswagen Baja Bug. Su carácter lúdico lo hace compañero natural de las dunas y las pistas costeras.",
+      "marca": "BF",
+      "clase": "Todoterreno",
+      "carroceria": "Buggy de playa de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "VW \"Baja Bugs\""
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "surfer",
+    "titulo": "BF Surfer",
+    "subtitulo": "Furgoneta hippie de dos plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Furgoneta de dos plazas con tracción trasera, pariente del Volkswagen Type 2. Es el icono de la cultura surfera y un guiño al ambiente playero de Leonida.",
+      "marca": "BF",
+      "clase": "Furgonetas",
+      "carroceria": "Furgoneta hippie de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Volkswagen Type 2"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "dubsta",
+    "titulo": "Benefactor Dubsta",
+    "subtitulo": "SUV cuadrado de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "SUV de cuatro plazas y tracción total que homenajea al Mercedes-Benz Clase G. Su silueta recta y robusta lo convierte en un clásico del lujo todoterreno.",
+      "marca": "Benefactor",
+      "clase": "SUV",
+      "carroceria": "SUV cuadrado de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Mercedes-Benz G-Class"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "schafter-v12",
+    "titulo": "Benefactor Schafter V12",
+    "subtitulo": "Sedán de lujo de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Sedán de cuatro plazas y tracción trasera basado en el Brabus E V12. Apuesta por una elegancia contundente, pensada para lucirse en las avenidas más caras.",
+      "marca": "Benefactor",
+      "clase": "Sedanes",
+      "carroceria": "Sedán de lujo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Brabus E V12"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "xls",
+    "titulo": "Benefactor XLS",
+    "subtitulo": "SUV premium de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "SUV de cuatro plazas y tracción total que mezcla rasgos del Mercedes Clase GL y el BMW X5. Es el todocamino familiar con acabado de gama alta de Benefactor.",
+      "marca": "Benefactor",
+      "clase": "SUV",
+      "carroceria": "SUV premium de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Mercedes GL Class, BMW X5"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "bravado-bison-1800-policia",
+    "titulo": "Bravado Bison 1800 Policía",
+    "subtitulo": "Pickup policial de seis plazas",
+    "categoria": "Emergencia",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Variante de servicio policial del Bison 1800, con tracción total y capacidad para seis ocupantes. Su base es la Ram 1500 de la generación DT, adaptada para patrulla.",
+      "marca": "Bravado",
+      "clase": "Emergencia",
+      "carroceria": "Pickup policial de seis plazas",
+      "ocupantes": 6,
+      "traccion": "AWD",
+      "basado_en": "Ram 1500 (DT)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "banshee",
+    "titulo": "Bravado Banshee",
+    "subtitulo": "Deportivo biplaza de tracción trasera",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Roadster de dos plazas con tracción trasera, inspirado en el Dodge Viper. Es un icono recurrente de la saga y uno de los deportivos de Bravado más reconocibles.",
+      "marca": "Bravado",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo biplaza de tracción trasera",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Dodge Viper"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Contraste puntual de fabricante y clase con una segunda ficha de catálogo de terceros",
+      "Datos objetivos del extracto de catálogo; redacción propia"
+    ],
+    "notas": "Fabricante y clase contrastados puntualmente; stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "bison",
+    "titulo": "Bravado Bison",
+    "subtitulo": "Pickup de cabina extendida",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Pickup de seis plazas y tracción total que toma como referencia a la Dodge Ram de cuarta generación con cabina doble. Es un caballo de trabajo cómodo para cargar y llevar compañía.",
+      "marca": "Bravado",
+      "clase": "Furgonetas",
+      "carroceria": "Pickup de cabina extendida",
+      "ocupantes": 6,
+      "traccion": "AWD",
+      "basado_en": "Dodge Ram Quad Cab (4th Gen)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "bison-ii",
+    "titulo": "Bravado Bison 1800",
+    "subtitulo": "Pickup moderna de seis plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Pickup de seis plazas y tracción total basada en la Ram 1500 DT. Es la versión más actual del linaje Bison, con líneas más contemporáneas.",
+      "marca": "Bravado",
+      "clase": "Furgonetas",
+      "carroceria": "Pickup moderna de seis plazas",
+      "ocupantes": 6,
+      "traccion": "AWD",
+      "basado_en": "Ram 1500 (DT)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "buffalo",
+    "titulo": "Bravado Buffalo",
+    "subtitulo": "Sedán deportivo de cuatro plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Sedán de cuatro plazas con tracción trasera, que se inspira en el Dodge Charger. Combina puertas traseras con una estampa agresiva.",
+      "marca": "Bravado",
+      "clase": "Deportivos",
+      "carroceria": "Sedán deportivo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Dodge Charger"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "dorado",
+    "titulo": "Bravado Dorado",
+    "subtitulo": "SUV mediano de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "SUV de cuatro plazas y tracción total que remite a la primera generación del Dodge Durango. Un utilitario familiar de formas sobrias.",
+      "marca": "Bravado",
+      "clase": "SUV",
+      "carroceria": "SUV mediano de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "1st generation Dodge Durango"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "gauntlet-classic",
+    "titulo": "Bravado Gauntlet Classic",
+    "subtitulo": "Muscle clásico de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Muscle de dos plazas con tracción trasera basado en el Dodge Challenger de primera generación. Es la cara más nostálgica de la familia Gauntlet.",
+      "marca": "Bravado",
+      "clase": "Muscle",
+      "carroceria": "Muscle clásico de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "First generation Dodge Challenger"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "gauntlet-hellfire",
+    "titulo": "Bravado Gauntlet Hellfire",
+    "subtitulo": "Muscle moderno de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Muscle de dos plazas y tracción trasera que reúne rasgos del Dodge Challenger Demon de 2018, el Camaro de quinta generación y el Mustang de sexta. Es el Gauntlet más cargado de actitud.",
+      "marca": "Bravado",
+      "clase": "Muscle",
+      "carroceria": "Muscle moderno de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "2018 Dodge Challenger Demon, 5th Gen Chevrolet Camaro, 6th Gen Ford Mustang"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "rumpo-custom",
+    "titulo": "Bravado Rumpo Custom",
+    "subtitulo": "Furgoneta personalizada de cuatro plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Furgoneta de cuatro plazas y tracción total derivada de la GMC Vandura. La versión Custom apunta a un uso más personalizado que el reparto básico.",
+      "marca": "Bravado",
+      "clase": "Furgonetas",
+      "carroceria": "Furgoneta personalizada de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "GMC Vandura"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "youga",
+    "titulo": "Bravado Youga",
+    "subtitulo": "Furgoneta comercial de dos plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Furgoneta de dos plazas y tracción trasera que parte de la Dodge Ram Van de la serie B. Es la clásica furgoneta de reparto de estética americana.",
+      "marca": "Bravado",
+      "clase": "Furgonetas",
+      "carroceria": "Furgoneta comercial de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Dodge Ram Van (Dodge B-Series)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "youga-classic",
+    "titulo": "Bravado Youga Classic",
+    "subtitulo": "Furgoneta clásica de cuatro plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Furgoneta de cuatro plazas y tracción trasera inspirada en la Ford Econoline de segunda generación. Tiene un cuerpo alargado de aire setentero.",
+      "marca": "Bravado",
+      "clase": "Furgonetas",
+      "carroceria": "Furgoneta clásica de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Ford Ecoline (2nd gen)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "ambulance",
+    "titulo": "Brute Ambulance",
+    "subtitulo": "Ambulancia de emergencias",
+    "categoria": "Emergencia",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Vehículo de emergencias médicas de cuatro plazas y tracción total, basado en el chasis cabina de la Chevrolet Express 3500. Aparece en casi todas las entregas de la saga.",
+      "marca": "Brute",
+      "clase": "Emergencia",
+      "carroceria": "Ambulancia de emergencias",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Chevrolet Express 3500 cab-chassis"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "boxville",
+    "titulo": "Brute Boxville",
+    "subtitulo": "Furgón de reparto de cuatro plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Furgón de caja alta, cuatro plazas y tracción trasera, parecido a la GMC Step Van. Su cuerpo cúbico lo hace inconfundible en las calles.",
+      "marca": "Brute",
+      "clase": "Furgonetas",
+      "carroceria": "Furgón de reparto de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "GMC Step Van"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "camper",
+    "titulo": "Brute Camper",
+    "subtitulo": "Autocaravana de dos plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Autocaravana de dos plazas con tracción delantera, sobre la base de la Chevrolet Express de 1996 a 2002. Es un hogar rodante a pequeña escala.",
+      "marca": "Brute",
+      "clase": "Furgonetas",
+      "carroceria": "Autocaravana de dos plazas",
+      "ocupantes": 2,
+      "traccion": "FWD",
+      "basado_en": "1996-2002 Chevrolet Express"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "police-riot",
+    "titulo": "Brute Police Riot",
+    "subtitulo": "Vehículo antidisturbios de ocho plazas",
+    "categoria": "Emergencia",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Vehículo blindado de ocho plazas y tracción trasera que evoca al Lenco BEAR. Es un transporte táctico para operaciones policiales de gran escala.",
+      "marca": "Brute",
+      "clase": "Emergencia",
+      "carroceria": "Vehículo antidisturbios de ocho plazas",
+      "ocupantes": 8,
+      "traccion": "RWD",
+      "basado_en": "Lenco BEAR"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "rental-shuttle-bus",
+    "titulo": "Brute Rental Shuttle Bus",
+    "subtitulo": "Microbús de alquiler de diez plazas",
+    "categoria": "Servicio",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Microbús de diez plazas con tracción trasera, derivado de la Chevrolet Express de 1996 a 2002. Es un transporte de pasajeros típico de aeropuertos y hoteles.",
+      "marca": "Brute",
+      "clase": "Servicio",
+      "carroceria": "Microbús de alquiler de diez plazas",
+      "ocupantes": 10,
+      "traccion": "RWD",
+      "basado_en": "1996-2002 Chevrolet Express"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "stockade",
+    "titulo": "Brute Stockade",
+    "subtitulo": "Camión blindado de cuatro plazas",
+    "categoria": "Comerciales",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión de transporte de valores con cuatro plazas y tracción trasera, similar a la serie International 4700. Su aspecto de caja fuerte rodante es un clásico de los atracos del juego.",
+      "marca": "Brute",
+      "clase": "Comerciales",
+      "carroceria": "Camión blindado de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "International 4700 Series"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "brute-tipper-6-ruedas",
+    "titulo": "Brute Tipper de 6 ruedas",
+    "subtitulo": "Camión volquete de dos plazas",
+    "categoria": "Industrial",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión volquete de seis ruedas, dos plazas y tracción trasera, parecido a los Chevy Kodiak y GMC TopKick. Es pesado y de uso industrial, para obras y canteras.",
+      "marca": "Brute",
+      "clase": "Industrial",
+      "carroceria": "Camión volquete de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Chevy Kodiak/GMC TopKick"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "utility-truck-van",
+    "titulo": "Brute Utility Truck",
+    "subtitulo": "Camión utilitario de dos plazas",
+    "categoria": "Utilitarios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión de servicio de dos plazas y tracción trasera, derivado de la serie International 4700. Un vehículo de trabajo para cuadrillas técnicas.",
+      "marca": "Brute",
+      "clase": "Utilitarios",
+      "carroceria": "Camión utilitario de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "International 4700 Series"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "jubilee",
+    "titulo": "Buckingham Jubilee",
+    "subtitulo": "SUV de ultra lujo de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "SUV de cuatro plazas y tracción total que toma al Rolls-Royce Cullinan como modelo. Es lujo pesado pensado para figurar en las zonas más exclusivas.",
+      "marca": "Buckingham",
+      "clase": "SUV",
+      "carroceria": "SUV de ultra lujo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Rolls-Royce Cullinan"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "luxor",
+    "titulo": "Buckingham Luxor",
+    "subtitulo": "Jet privado de diez plazas",
+    "categoria": "Aviones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Jet ejecutivo para diez ocupantes inspirado en el Learjet 45. Pone Leonida al alcance del aire con un estilo de alta sociedad.",
+      "marca": "Buckingham",
+      "clase": "Aviones",
+      "carroceria": "Jet privado de diez plazas",
+      "ocupantes": 10,
+      "traccion": "FWD",
+      "basado_en": "Learjet 45"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "maverick",
+    "titulo": "Buckingham Maverick",
+    "subtitulo": "Helicóptero ligero de cuatro plazas",
+    "categoria": "Helicópteros",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Helicóptero de cuatro plazas basado en el Bell 206L Longranger. Un aparato de uso general para turismo y transporte ágil.",
+      "marca": "Buckingham",
+      "clase": "Helicópteros",
+      "carroceria": "Helicóptero ligero de cuatro plazas",
+      "ocupantes": 4,
+      "basado_en": "Bell 206L Longranger"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "shamal",
+    "titulo": "Buckingham Shamal",
+    "subtitulo": "Jet ejecutivo de diez plazas",
+    "categoria": "Aviones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Avión de diez plazas que comparte referente real con el Luxor, el Learjet 45. Es otra aeronave de lujo de la línea Buckingham.",
+      "marca": "Buckingham",
+      "clase": "Aviones",
+      "carroceria": "Jet ejecutivo de diez plazas",
+      "ocupantes": 10,
+      "traccion": "FWD",
+      "basado_en": "Learjet 45"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "supervolito",
+    "titulo": "Buckingham SuperVolito",
+    "subtitulo": "Helicóptero de lujo de cuatro plazas",
+    "categoria": "Helicópteros",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Helicóptero de cuatro plazas con base en el Eurocopter EC145. Un aparato de aire corporativo, más refinado que el Maverick.",
+      "marca": "Buckingham",
+      "clase": "Helicópteros",
+      "carroceria": "Helicóptero de lujo de cuatro plazas",
+      "ocupantes": 4,
+      "basado_en": "Eurocopter EC145"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "swift",
+    "titulo": "Buckingham Swift",
+    "subtitulo": "Helicóptero ejecutivo de cuatro plazas",
+    "categoria": "Helicópteros",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Helicóptero de cuatro plazas que combina rasgos del AgustaWestland AW109 y el Bell 222. Su silueta estilizada lo asocia a clientes de alto nivel.",
+      "marca": "Buckingham",
+      "clase": "Helicópteros",
+      "carroceria": "Helicóptero ejecutivo de cuatro plazas",
+      "ocupantes": 4,
+      "basado_en": "AgustaWestland AW109, Bell 222"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "valkyrie",
+    "titulo": "Buckingham Valkyrie",
+    "subtitulo": "Helicóptero militar de cuatro plazas",
+    "categoria": "Helicópteros",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Helicóptero de cuatro plazas basado en la familia Bell UH-1Y Venom, UH-1 Huey, 212 y 412, con rotor de cola carenado. Es la versión más castrense de Buckingham.",
+      "marca": "Buckingham",
+      "clase": "Helicópteros",
+      "carroceria": "Helicóptero militar de cuatro plazas",
+      "ocupantes": 4,
+      "basado_en": "Bell UH-1Y Venom/UH-1 Iroquois Huey/212/412, Fenestron"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "volatus",
+    "titulo": "Buckingham Volatus",
+    "subtitulo": "Helicóptero moderno de cuatro plazas",
+    "categoria": "Helicópteros",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Helicóptero de cuatro plazas que mira al Airbus Helicopters H160. Es la apuesta más contemporánea del fabricante en alas rotatorias.",
+      "marca": "Buckingham",
+      "clase": "Helicópteros",
+      "carroceria": "Helicóptero moderno de cuatro plazas",
+      "ocupantes": 4,
+      "basado_en": "Airbus Helicopters H160"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "windsor-drop",
+    "titulo": "Buckingham Windsor Drop",
+    "subtitulo": "Descapotable de lujo de cuatro plazas",
+    "categoria": "Cupés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Descapotable de cuatro plazas con tracción trasera, que se inspira en el Rolls-Royce Ghost y el Dawn. Pensado para pasear con estilo por la costa.",
+      "marca": "Buckingham",
+      "clase": "Cupés",
+      "carroceria": "Descapotable de lujo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Rolls-Royce Ghost & Rolls-Royce Dawn"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "kamacho",
+    "titulo": "Canis Kamacho",
+    "subtitulo": "Todoterreno extremo de cuatro plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Todoterreno de cuatro plazas y tracción total que remite al concepto Jeep Crew Chief 715. Su carrocería rectilínea y militar lo destaca.",
+      "marca": "Canis",
+      "clase": "Todoterreno",
+      "carroceria": "Todoterreno extremo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Jeep Crew Chief 715 concept"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "mesa",
+    "titulo": "Canis Mesa",
+    "subtitulo": "SUV compacto de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "SUV de cuatro plazas y tracción total basado en el Jeep Wrangler. Un clásico de las pistas de tierra que reaparece en la saga.",
+      "marca": "Canis",
+      "clase": "SUV",
+      "carroceria": "SUV compacto de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Jeep Wrangler"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "seminole-frontier",
+    "titulo": "Canis Seminole Frontier",
+    "subtitulo": "SUV compacto retro de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "SUV de cuatro plazas y tracción total inspirado en el Jeep Cherokee XJ de segunda generación. Su aire noventero es una rareza simpática.",
+      "marca": "Canis",
+      "clase": "SUV",
+      "carroceria": "SUV compacto retro de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "2nd Generation Jeep Cherokee (XJ)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "terminus",
+    "titulo": "Canis Terminus",
+    "subtitulo": "Todoterreno de cuatro plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Todoterreno de cuatro plazas y tracción total basado en el Jeep Wrangler Rubicon JL de cuarta generación. Es el Canis más moderno en el sendero.",
+      "marca": "Canis",
+      "clase": "Todoterreno",
+      "carroceria": "Todoterreno de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Fourth generation Jeep Wrangler Rubicon (JL)"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Contraste puntual de fabricante y clase con una segunda ficha de catálogo de terceros",
+      "Datos objetivos del extracto de catálogo; redacción propia"
+    ],
+    "notas": "Fabricante y clase contrastados puntualmente; stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "raiden",
+    "titulo": "Coil Raiden",
+    "subtitulo": "Deportivo eléctrico de cuatro plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina deportiva de cuatro plazas y tracción total con el Tesla Model S como referente. Es la propuesta eléctrica de Coil.",
+      "marca": "Coil",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo eléctrico de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Tesla Model S"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Contraste puntual de fabricante y clase con una segunda ficha de catálogo de terceros",
+      "Datos objetivos del extracto de catálogo; redacción propia"
+    ],
+    "notas": "Fabricante y clase contrastados puntualmente; stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "whiffler-dashound",
+    "titulo": "Whiffler Dashound",
+    "subtitulo": "Autobús interurbano de diez plazas",
+    "categoria": "Servicio",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Autobús de larga distancia de diez plazas y tracción total, basado en el MCI Renaissance y en los Greyhound. Es el transporte colectivo clásico de carretera.",
+      "marca": "Whiffler",
+      "clase": "Servicio",
+      "carroceria": "Autobús interurbano de diez plazas",
+      "ocupantes": 10,
+      "traccion": "AWD",
+      "basado_en": "MCI Renaissance E series bus, Greyhound Lines"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "bobcat-xl",
+    "titulo": "Declasse Bobcat XL",
+    "subtitulo": "Pickup de trabajo de dos plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Pickup de dos plazas y tracción trasera inspirada en la Chevrolet C/K de cuarta generación. Un utilitario sencillo.",
+      "marca": "Declasse",
+      "clase": "Furgonetas",
+      "carroceria": "Pickup de trabajo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Fourth generation Chevrolet C/K"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "burrito",
+    "titulo": "Declasse Burrito",
+    "subtitulo": "Furgoneta de carga de cuatro plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Furgoneta de cuatro plazas y tracción trasera con base en la Chevrolet Express de 1996 a 2002. Es una de las furgonetas más veteranas de la serie.",
+      "marca": "Declasse",
+      "clase": "Furgonetas",
+      "carroceria": "Furgoneta de carga de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "1996-2002 Chevrolet Express"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "granger",
+    "titulo": "Declasse Granger",
+    "subtitulo": "SUV familiar de ocho plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "SUV grande de ocho plazas y tracción total modelado sobre la Chevrolet Suburban. Su capacidad lo vuelve idóneo para grupos.",
+      "marca": "Declasse",
+      "clase": "SUV",
+      "carroceria": "SUV familiar de ocho plazas",
+      "ocupantes": 8,
+      "traccion": "AWD",
+      "basado_en": "Chevrolet Suburban"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "declasse-impaler-80",
+    "titulo": "Declasse Impaler '80",
+    "subtitulo": "Sedán muscle de cuatro plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Sedán de cuatro plazas con tracción trasera que remite a la Chevrolet Impala de sexta generación. Aporta un aire de boulevard ochentero.",
+      "marca": "Declasse",
+      "clase": "Muscle",
+      "carroceria": "Sedán muscle de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Sixth generation Chevrolet Impala"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "impaler-sz",
+    "titulo": "Declasse Impaler SZ",
+    "subtitulo": "Sedán muscle noventero de cuatro plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Sedán de cuatro plazas y tracción trasera inspirado en el Chevrolet Impala SS de 1994 a 1996. Es la cara más deportiva del Impaler.",
+      "marca": "Declasse",
+      "clase": "Muscle",
+      "carroceria": "Sedán muscle noventero de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "1994-1996 Chevrolet Impala SS"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "mamba-gt",
+    "titulo": "Declasse Mamba GT",
+    "subtitulo": "Cupé clásico de competición",
+    "categoria": "Deportivos clásicos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cupé de dos plazas con tracción trasera que rinde tributo al Shelby Daytona Coupe. Es un homenaje a las carreras clásicas.",
+      "marca": "Declasse",
+      "clase": "Deportivos clásicos",
+      "carroceria": "Cupé clásico de competición",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Shelby Daytona Coupe"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "moonbeam",
+    "titulo": "Declasse Moonbeam",
+    "subtitulo": "Minivan de cuatro plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Monovolumen de cuatro plazas y tracción trasera con referencias en la Chevrolet Astro, la GMC Safari y el Jeep Liberty KK. Su clase aparece catalogada como Muscle en el extracto.",
+      "marca": "Declasse",
+      "clase": "Muscle",
+      "carroceria": "Minivan de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "1985-1994 Chevrolet Astro/1985-1994 GMC Safari; KK Jeep Liberty"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "rancher",
+    "titulo": "Declasse Rancher",
+    "subtitulo": "Todoterreno grande de cuatro plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Todoterreno de cuatro plazas y tracción total basado en la Chevy Suburban. Aparece en la saga desde las entregas clásicas.",
+      "marca": "Declasse",
+      "clase": "Todoterreno",
+      "carroceria": "Todoterreno grande de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Chevy Suburban"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "sabre-turbo",
+    "titulo": "Declasse Sabre Turbo",
+    "subtitulo": "Muscle de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Muscle de dos plazas y tracción trasera con rasgos del Chevrolet Chevelle y el Oldsmobile Cutlass. Un clásico del asfalto americano.",
+      "marca": "Declasse",
+      "clase": "Muscle",
+      "carroceria": "Muscle de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Chevrolet Chevelle, Oldsmobile Cutlass"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "stallion",
+    "titulo": "Classique Stallion",
+    "subtitulo": "Muscle de dos plazas retro",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Muscle de dos plazas y tracción trasera con líneas de coupé de finales de los sesenta, inspirado en los Oldsmobile Cutlass y en el Plymouth Hemi Barracuda. Hereda el nombre de una veterana de la serie y pertenece a la rama clásica del catálogo muscle.",
+      "marca": "Classique",
+      "clase": "Muscle",
+      "carroceria": "Muscle de dos plazas retro",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "68 - '69 & '70 - '71 Oldsmobile Cutlass, '70 Plymouth Hemi Barracuda"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante corregido a Classique según una ficha externa de catálogo; clase y datos restantes sin contraste adicional"
+    ],
+    "notas": "Fabricante corregido de Declasse a Classique por indicación editorial, a partir de una ficha externa de catálogo. Sin contraste independiente del resto de datos. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "tornado",
+    "titulo": "Declasse Tornado",
+    "subtitulo": "Clásico de dos plazas",
+    "categoria": "Deportivos clásicos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Clásico de dos plazas y tracción trasera inspirado en el Chevrolet Bel Air. Es un coche de colección de líneas redondeadas.",
+      "marca": "Declasse",
+      "clase": "Deportivos clásicos",
+      "carroceria": "Clásico de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Chevrolet Bel Air"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "tulip",
+    "titulo": "Declasse Tulip",
+    "subtitulo": "Muscle de cuatro plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Muscle de cuatro plazas y tracción trasera con base en el Chevelle Malibu y el Cutlass Supreme de 1972. Es un cupé amplio.",
+      "marca": "Declasse",
+      "clase": "Muscle",
+      "carroceria": "Muscle de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "1972 Chevelle Malibu, 1972 Oldsmobile Cutlass Supreme"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "tulip-m-100",
+    "titulo": "Declasse Tulip M-100",
+    "subtitulo": "Muscle compacto de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Muscle de dos plazas y tracción trasera inspirado en el Chevrolet Malibu de cuarta generación. Un coche de formas más contenidas.",
+      "marca": "Declasse",
+      "clase": "Muscle",
+      "carroceria": "Muscle compacto de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Fourth generation Chevrolet Malibu"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "vamos",
+    "titulo": "Declasse Vamos",
+    "subtitulo": "Muscle de dos plazas con aire de Nova",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Muscle de dos plazas con tracción trasera que se parece al Chevrolet Nova. Un clásico de línea sencilla.",
+      "marca": "Declasse",
+      "clase": "Muscle",
+      "carroceria": "Muscle de dos plazas con aire de Nova",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Chevrolet Nova"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "vigero-zx-convertible",
+    "titulo": "Declasse Vigero ZX Convertible",
+    "subtitulo": "Muscle descapotable de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Descapotable de dos plazas y tracción trasera basado en el Chevrolet Camaro de sexta generación. Es la variante a cielo abierto del Vigero ZX.",
+      "marca": "Declasse",
+      "clase": "Muscle",
+      "carroceria": "Muscle descapotable de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Chevrolet Camaro Gen VI"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "walton-l35",
+    "titulo": "Declasse Walton L35",
+    "subtitulo": "Pickup todoterreno de dos plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Pickup de dos plazas y tracción total con raíces en la Chevrolet S-10 de 1991 a 1993. Es un utilitario ligero.",
+      "marca": "Declasse",
+      "clase": "Todoterreno",
+      "carroceria": "Pickup todoterreno de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "1991-1993 Chevrolet S-10"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "blista-compact",
+    "titulo": "Dinka Blista Compact",
+    "subtitulo": "Compacto deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Compacto de dos plazas y tracción delantera basado en el Honda CRX de primera generación. Es el hatchback ágil de Dinka.",
+      "marca": "Dinka",
+      "clase": "Deportivos",
+      "carroceria": "Compacto deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "FWD",
+      "basado_en": "Honda CRX 1st Gen"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "double-t",
+    "titulo": "Dinka Double-T",
+    "subtitulo": "Moto deportiva de dos plazas",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto deportiva de dos plazas y tracción trasera inspirada en la Honda CBR. Ficha de Dinka para circuito y ciudad.",
+      "marca": "Dinka",
+      "clase": "Motocicletas",
+      "carroceria": "Moto deportiva de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Honda CBR"
+    },
+    "confianza": "media",
+    "evidencia": [
+      "Contraste puntual de fabricante y clase con una segunda ficha de catálogo de terceros",
+      "Datos objetivos del extracto de catálogo; redacción propia"
+    ],
+    "notas": "Fabricante y clase contrastados puntualmente; stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "enduro",
+    "titulo": "Dinka Enduro",
+    "subtitulo": "Moto de enduro de dos plazas",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de dos plazas que evoca a las Honda XL350, XR500 y la serie CB. Es una máquina polivalente para pistas.",
+      "marca": "Dinka",
+      "clase": "Motocicletas",
+      "carroceria": "Moto de enduro de dos plazas",
+      "ocupantes": 2,
+      "basado_en": "Honda XL350, XR500 & CB Series"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  }
+]
