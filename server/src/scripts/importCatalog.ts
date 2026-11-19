@@ -3,6 +3,7 @@
 // Sin --apply solo simula. Upsert por (module_id, slug). Marca cada ficha con metadata_json.fuente = --source
 // (por defecto 'editorial'). Nunca pisa entidades de otra fuente: solo las de --source y, si se indica,
 // las de --replace-source (p. ej. 'grabacion') cuyo (módulo, slug) coincida con una ficha del lote.
+// Caso especial: --replace-source seed incluye también las entidades del seed sin metadata_json.fuente.
 // Bloque opcional `marker` por ficha: upsert en MapMarker (entity_id, region, titulo, descripcion, coord).
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -111,7 +112,11 @@ async function main(): Promise<void> {
     }
     const existing = await Entity.findOne({ module_id, slug: f.slug }, { metadata_json: 1 }).lean();
     const prevSource = (existing?.metadata_json as Record<string, unknown> | undefined)?.fuente;
-    if (existing && (typeof prevSource !== 'string' || !overwritable.has(prevSource))) {
+    // Con --replace-source seed también se reemplazan las entidades legadas del seed que no llevan fuente
+    // etiquetada (null o inexistente). Las que tienen fuente (editorial, grabacion, gtabase...) solo se pisan si
+    // esa fuente está en `overwritable`.
+    const isUntaggedSeed = replaceSource === 'seed' && (prevSource === undefined || prevSource === null);
+    if (existing && !isUntaggedSeed && (typeof prevSource !== 'string' || !overwritable.has(prevSource))) {
       resumen.conflictos++;
       console.warn(`! ${f.modulo}/${f.slug}: ya existe una entidad no importada con ese slug; se omite`);
       continue;
