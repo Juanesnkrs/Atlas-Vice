@@ -6,7 +6,7 @@
 // - Trazos con vector-effect: non-scaling-stroke y rótulos/pines a tamaño constante en pantalla
 //   mediante la variable CSS --k (= 1 / escala).
 import { memo, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState, type Ref } from 'react';
-import { ISLAND_BBOX, MAP_H, MAP_W } from '../../data/leonidaMap';
+import { ISLAND_BBOX, MAP_H, MAP_LABELS, MAP_W } from '../../data/leonidaMap';
 import { loadTileManifest, paintTiles, TileStore, WATER, type TileManifest } from './mapPaint';
 
 export interface MapPin {
@@ -172,6 +172,15 @@ function buildItems(pins: ReadonlyArray<MapPin>, view: ViewState, selectedId: st
 // ---- Capas estáticas (React.memo: no se re-renderizan jamás) -------------------------------------------------
 const CSS = `
 [data-capture="1"] .lm-pin{pointer-events:none}
+.lm-l{pointer-events:none;font-family:Jost,sans-serif;font-weight:700;fill:#FFFDF8;stroke:#090514;paint-order:stroke;stroke-linejoin:round;text-anchor:middle;dominant-baseline:central;stroke-width:3.6px}
+.lm-region{font-size:14px;letter-spacing:2.4px}
+.lm-county{font-size:11px;letter-spacing:2.2px;font-style:italic;font-weight:600;fill:#E8C9A0}
+.lm-city{font-size:11.5px;letter-spacing:.8px;fill:#FFE9D6}
+.lm-water{font-size:11px;letter-spacing:2.4px;font-style:italic;font-weight:600;fill:#B9C7F5}
+.lm-land{font-size:10.5px;letter-spacing:.8px;font-style:italic;font-weight:600;fill:#D8E9B0}
+.lm-poi{font-size:10.5px;letter-spacing:.5px;font-weight:600;fill:#E3D2FA}
+[data-h="1"]{visibility:hidden}
+svg[data-lod="0"] .lm-t1,svg[data-lod="0"] .lm-t2,svg[data-lod="1"] .lm-t2{display:none}
 .lm-pin{cursor:pointer;outline:none}
 .lm-pin:focus-visible .lm-ring,[data-sel="1"] .lm-ring{stroke:#FFC857;opacity:1}
 .lm-ring{fill:none;stroke:transparent;stroke-width:2.5;opacity:0}
@@ -212,6 +221,67 @@ const TracerOverlay = memo(function TracerOverlay({ tracer }: { tracer: MapTrace
     </g>
   );
 });
+
+/** Rótulos propios: tamaño constante en pantalla (--k), siempre bajo pines y clusters; la colisión la resuelve runLabels. */
+const LabelsLayer = memo(function LabelsLayer() {
+  return (
+    <g style={{ pointerEvents: 'none' }}>
+      {MAP_LABELS.map((l) => (
+        <g
+          key={l.text}
+          data-lbl=""
+          data-x={l.x}
+          data-y={l.y}
+          data-tier={l.tier}
+          data-rot={l.rot ?? 0}
+          data-kind={l.kind}
+          className={l.tier === 0 ? undefined : `lm-t${l.tier}`}
+          style={{ transform: `${pxPos(l.x, l.y)}${l.rot ? ` rotate(${l.rot}deg)` : ''}` }}
+        >
+          <text className={`lm-l lm-${l.kind}`} y={0}>
+            {l.kind === 'region' ? l.text.toUpperCase() : l.text}
+          </text>
+        </g>
+      ))}
+    </g>
+  );
+});
+
+// ---- Colisión de rótulos ---------------------------------------------------------------------------------------------
+interface Box {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+const LABEL_FONT: Record<string, { font: string; ls: number }> = {
+  region: { font: '700 14px Jost, sans-serif', ls: 2.4 },
+  county: { font: 'italic 600 11px Jost, sans-serif', ls: 2.2 },
+  city: { font: '700 11.5px Jost, sans-serif', ls: 0.8 },
+  water: { font: 'italic 600 11px Jost, sans-serif', ls: 2.4 },
+  land: { font: 'italic 600 10.5px Jost, sans-serif', ls: 0.8 },
+  poi: { font: '600 10.5px Jost, sans-serif', ls: 0.5 },
+};
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+const widthCache = new Map<string, number>();
+function textWidth(text: string, kind: string): number {
+  const key = `${kind}|${text}`;
+  const hit = widthCache.get(key);
+  if (hit !== undefined) return hit;
+  if (measureCtx === undefined) measureCtx = document.createElement('canvas').getContext('2d');
+  const spec = LABEL_FONT[kind] ?? LABEL_FONT.city!;
+  const shown = kind === 'region' ? text.toUpperCase() : text;
+  let w = shown.length * 7;
+  if (measureCtx) {
+    measureCtx.font = spec.font;
+    w = measureCtx.measureText(shown).width + spec.ls * shown.length;
+  }
+  widthCache.set(key, w);
+  return w;
+}
+const LABEL_EDGE_PX = 6;
+const UI_SELECTOR = 'button, input, select, header, nav, aside, fieldset, .glass, [role="dialog"], [role="status"]';
+const overlaps = (a: Box, b: Box, pad = 3): boolean => a.x0 < b.x1 + pad && a.x1 > b.x0 - pad && a.y0 < b.y1 + pad && a.y1 > b.y0 - pad;
 
 // ---- Componente ---------------------------------------------------------------------------------------------------
 export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, selectedId, onSelect, onBackgroundClick, crosshair, editable, insets, ariaLabel, className = '' }: MapCanvasProps) {
@@ -348,6 +418,104 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
     bgTimer.current = window.setTimeout(flushBg, 160);
   }, [flushBg]);
 
+  // ---- Rótulos: anti-colisión por cajas (P0 > P1 > P2) contra rótulos, pines/clusters (el pin activo con más radio) y la interfaz ----
+  const lblTimer = useRef(0);
+  const itemsRef = useRef<Item[]>([]);
+  const selectedRef = useRef<string | null>(null);
+  const runLabels = useCallback(() => {
+    const svg = svgRef.current;
+    const wrap = wrapRef.current;
+    if (!svg || !wrap || size.current.w === 0) return;
+    const { x, y, s } = cur.current;
+    const { w, h } = size.current;
+    const rel = s / fit.current;
+    const lod = rel < 1.7 ? 0 : rel < 3.4 ? 1 : 2;
+    const ins = insetsRef.current;
+    const safe: Box = { x0: ins.left + LABEL_EDGE_PX, y0: ins.top + LABEL_EDGE_PX, x1: w - ins.right - LABEL_EDGE_PX, y1: h - ins.bottom - LABEL_EDGE_PX };
+    const obstacles = itemsRef.current.map((it) => {
+      const sel = it.kind === 'pin' && it.pin.id === selectedRef.current;
+      const wx = it.kind === 'pin' ? it.pin.x : it.x;
+      const wy = it.kind === 'pin' ? it.pin.y : it.y;
+      const cx = wx * s + x;
+      const cy = wy * s + y;
+      const r = it.kind === 'cluster' ? 24 : sel ? 30 : 17;
+      return { x0: cx - r, y0: cy - r, x1: cx + r, y1: cy + r } as Box;
+    });
+    const wr = wrap.getBoundingClientRect();
+    const ui: Box[] = [];
+    document.querySelectorAll<HTMLElement>(UI_SELECTOR).forEach((el) => {
+      if (wrap.contains(el)) return;
+      const r = el.getBoundingClientRect();
+      if (r.width < 8 || r.height < 8) return;
+      const b: Box = { x0: r.left - wr.left - 3, y0: r.top - wr.top - 3, x1: r.right - wr.left + 3, y1: r.bottom - wr.top + 3 };
+      if (b.x1 > 0 && b.y1 > 0 && b.x0 < w && b.y0 < h) ui.push(b);
+    });
+    interface Cand {
+      el: SVGElement;
+      text: SVGTextElement | null;
+      bw: number;
+      bh: number;
+      sx: number;
+      sy: number;
+      tier: number;
+      rot: number;
+    }
+    const cands: Cand[] = [];
+    const setHidden = (el: SVGElement, hide: boolean): void => {
+      if ((el.dataset.h === '1') === hide) return;
+      if (hide) el.dataset.h = '1';
+      else delete el.dataset.h;
+    };
+    svg.querySelectorAll<SVGElement>('[data-lbl]').forEach((el) => {
+      const tier = Number(el.dataset.tier);
+      if (tier > lod) return;
+      const sx = Number(el.dataset.x) * s + x;
+      const sy = Number(el.dataset.y) * s + y;
+      if (sx < -160 || sx > w + 160 || sy < -160 || sy > h + 160) {
+        setHidden(el, true);
+        return;
+      }
+      const kind = el.dataset.kind ?? 'city';
+      const rot = Number(el.dataset.rot ?? 0);
+      let bw = textWidth(el.textContent ?? '', kind) + 8;
+      let bh = 20;
+      if (rot !== 0) [bw, bh] = [bh, bw];
+      cands.push({ el, text: el.querySelector('text'), bw, bh, sx, sy, tier, rot });
+    });
+    cands.sort((a, b) => a.tier - b.tier);
+    const placed: Box[] = [];
+    for (const c of cands) {
+      // el rótulo prueba su posición y, si choca con un pin, se aparta arriba/abajo (los rotados no se mueven)
+      const step = 26;
+      const tries = c.rot === 0 && c.tier <= 1 ? [0, -step, step, -2 * step, 2 * step] : [0];
+      let ok: { box: Box; dy: number } | null = null;
+      for (const dy of tries) {
+        const box: Box = { x0: c.sx - c.bw / 2, y0: c.sy + dy - c.bh / 2, x1: c.sx + c.bw / 2, y1: c.sy + dy + c.bh / 2 };
+        if (box.x0 < safe.x0 || box.y0 < safe.y0 || box.x1 > safe.x1 || box.y1 > safe.y1) continue;
+        let hit = false;
+        for (const o of obstacles) if (overlaps(box, o)) { hit = true; break; }
+        if (!hit) for (const u of ui) if (overlaps(box, u, 0)) { hit = true; break; }
+        if (!hit) for (const p of placed) if (overlaps(box, p)) { hit = true; break; }
+        if (!hit) {
+          ok = { box, dy };
+          break;
+        }
+      }
+      setHidden(c.el, ok === null);
+      if (ok) {
+        placed.push(ok.box);
+        if (c.text) {
+          const ny = String(ok.dy);
+          if (c.text.getAttribute('y') !== ny) c.text.setAttribute('y', ny);
+        }
+      }
+    }
+  }, []);
+  const scheduleLabels = useCallback(() => {
+    clearTimeout(lblTimer.current);
+    lblTimer.current = window.setTimeout(runLabels, 80);
+  }, [runLabels]);
+
   /** Escribe la transformación en el DOM y, solo si cambia el nivel/rect, avisa a React. */
   const apply = useCallback(() => {
     const g = worldRef.current;
@@ -357,7 +525,10 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
     g.setAttribute('transform', `translate(${x} ${y}) scale(${s})`);
     svg.style.setProperty('--k', String(1 / s));
     const rel = s / fit.current;
+    const lod = rel < 1.7 ? '0' : rel < 3.4 ? '1' : '2';
+    if (svg.dataset.lod !== lod) svg.dataset.lod = lod;
     placeBg();
+    scheduleLabels();
 
     const level = Math.floor(Math.log2(Math.max(rel, 0.01)) * 2);
     const { w, h } = size.current;
@@ -382,7 +553,7 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
       viewRef.current = nv;
       setView(nv);
     }
-  }, [placeBg, flushBg, settleBg]);
+  }, [placeBg, scheduleLabels, flushBg, settleBg]);
 
   // Al llegar el manifiesto se crea la caché de teselas; cada tesela cargada repinta el bitmap.
   useEffect(() => {
@@ -747,6 +918,27 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
 
   // ---- Render de pines/clusters --------------------------------------------------------------------------------------------
   const items = useMemo(() => (view ? buildItems(pins, view, selectedId, fitState) : []), [pins, view, selectedId, fitState]);
+  itemsRef.current = items;
+  selectedRef.current = selectedId;
+  useEffect(() => {
+    scheduleLabels();
+  }, [items, selectedId, manifest, scheduleLabels]);
+  // La interfaz flotante cambia sin que el mapa se mueva (hojas, paneles, filtros): se recalculan las zonas seguras.
+  useEffect(() => {
+    let late = 0;
+    const onUi = (): void => {
+      scheduleLabels();
+      clearTimeout(late);
+      late = window.setTimeout(scheduleLabels, 500);
+    };
+    const mo = new MutationObserver(onUi);
+    mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'hidden', 'open'] });
+    return () => {
+      mo.disconnect();
+      clearTimeout(late);
+      clearTimeout(lblTimer.current);
+    };
+  }, [scheduleLabels]);
 
   const zoomIntoCluster = (x: number, y: number) => {
     const c = cur.current;
@@ -767,6 +959,7 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
         ref={svgRef}
         role="application"
         aria-label={ariaLabel}
+        data-lod="0"
         data-capture={captureClicks ? '1' : undefined}
         className="absolute inset-0 h-full w-full cursor-grab touch-none active:cursor-grabbing"
         onPointerDown={onPointerDown}
@@ -784,7 +977,7 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
       >
         <style>{CSS}</style>
         <g ref={worldRef}>
-          
+          <LabelsLayer />
           {refOverlay && <RefOverlay data={refOverlay} />}
           {tracer && <TracerOverlay tracer={tracer} />}
           {crosshair && (
@@ -843,11 +1036,6 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
           })}
         </g>
       </svg>
-      {manifest && (
-        <p className="pointer-events-none absolute bottom-[calc(96px+var(--safe-bottom))] left-3 z-10 max-w-[55%] rounded-md bg-black/45 px-2 py-0.5 text-[9px] leading-tight text-vice-text/75 md:bottom-3">
-          {manifest.attribution}
-        </p>
-      )}
     </div>
   );
 }

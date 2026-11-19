@@ -630,6 +630,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [layersOpen, setLayersOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [editor, setEditor] = useState(false);
   const [cross, setCross] = useState<{ x: number; y: number } | null>(null);
   const [overrides, setOverrides] = useState<ReadonlyMap<string, { x: number; y: number }>>(new Map());
@@ -736,7 +737,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
 
   // ---- Enfoque y selección ------------------------------------------------------------------------------------------------
   const lift = useCallback(
-    (): number => (isDesktop ? 0 : (wrapRef.current?.clientHeight ?? 700) * 0.18),
+    (): number => (isDesktop ? 0 : (wrapRef.current?.clientHeight ?? 700) * 0.24),
     [isDesktop],
   );
   const focusMarker = useCallback(
@@ -1028,7 +1029,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       )}
 
       {/* HUD superior izquierdo: buscador + filtros (+ editor en escritorio) */}
-      <div className="pointer-events-none absolute left-3 right-3 top-2 z-10 flex max-h-[calc(100%-1rem)] flex-col gap-2 md:right-auto md:w-80 md:overflow-y-auto">
+      <div className="pointer-events-none absolute left-3 right-3 top-2 z-10 flex max-h-[calc(100%-1rem)] flex-col gap-2 md:right-auto md:w-64 md:overflow-y-auto">
         <div className="pointer-events-auto relative">
           <label htmlFor="map-search" className="sr-only">
             Buscar marcador, entidad o región
@@ -1088,14 +1089,29 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
         >
           <legend className="sr-only">Capas y filtros del mapa</legend>
           <p className="mb-1 px-1 text-xs font-semibold tracking-widest text-vice-text/90">CAPAS DEL MAPA</p>
-          {MAP_LAYERS.map((l) => (
-            <label key={l.id} className="flex min-h-10 cursor-pointer items-center gap-3 rounded-lg px-2 text-sm hover:bg-white/10">
-              <input type="checkbox" checked={active.has(l.id)} onChange={() => toggleLayer(l.id)} className="h-5 w-5 accent-[#E1307E]" />
-              <span aria-hidden="true" className="h-3 w-3 rounded-full" style={{ background: l.color }} />
+          {MAP_LAYERS.filter((l) => (layerCount.get(l.id) ?? 0) > 0).map((l) => (
+            <label key={l.id} className="flex min-h-9 cursor-pointer items-center gap-2 rounded-lg px-2 text-[13px] hover:bg-white/10">
+              <input type="checkbox" checked={active.has(l.id)} onChange={() => toggleLayer(l.id)} className="h-4 w-4 accent-[#E1307E]" />
+              <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: l.color }} />
               <span className="flex-1">{l.label}</span>
               <span className="text-xs text-vice-text/70">{layerCount.get(l.id) ?? 0}</span>
             </label>
           ))}
+          {MAP_LAYERS.some((l) => (layerCount.get(l.id) ?? 0) === 0) && (
+            <details className="mt-1 rounded-lg px-2 text-vice-text/60">
+              <summary className="flex min-h-9 cursor-pointer items-center text-[13px] font-semibold">
+                Próximamente ({MAP_LAYERS.filter((l) => (layerCount.get(l.id) ?? 0) === 0).length})
+              </summary>
+              {MAP_LAYERS.filter((l) => (layerCount.get(l.id) ?? 0) === 0).map((l) => (
+                <label key={l.id} className="flex min-h-9 cursor-pointer items-center gap-2 text-[13px] opacity-70">
+                  <input type="checkbox" checked={active.has(l.id)} onChange={() => toggleLayer(l.id)} className="h-4 w-4 accent-[#E1307E]" />
+                  <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full" style={{ background: l.color }} />
+                  <span className="flex-1">{l.label}</span>
+                  <span className="text-xs">sin puntos aún</span>
+                </label>
+              ))}
+            </details>
+          )}
           <div className="mt-2 flex flex-col gap-2 border-t border-white/10 pt-2">
             <label htmlFor="map-region" className="px-1 text-xs font-semibold tracking-widest text-vice-text/90">
               REGIÓN
@@ -1141,12 +1157,23 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           <button type="button" aria-label="Alejar" onClick={() => canvas.current?.zoomBy(1 / 1.6)} className={ZOOM_BTN}>
             −
           </button>
+          <button type="button" aria-label="Información de la base cartográfica" aria-expanded={infoOpen} onClick={() => setInfoOpen((v) => !v)} className={ZOOM_BTN}>
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 11v5M12 8h.01" strokeLinecap="round" />
+            </svg>
+          </button>
           <button type="button" aria-label="Restablecer vista" onClick={() => canvas.current?.reset()} className={ZOOM_BTN}>
             <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M4 12a8 8 0 108-8H8M8 4L4.5 7.5 8 11" />
             </svg>
           </button>
         </div>
+        {infoOpen && (
+          <p role="status" className="glass absolute right-14 top-0 z-20 w-56 rounded-xl p-3 text-xs leading-snug">
+            Base cartográfica: GTA VI Community Map (Yanis, v18), recoloreada.
+          </p>
+        )}
         {isAdmin && (
           <button
             type="button"
