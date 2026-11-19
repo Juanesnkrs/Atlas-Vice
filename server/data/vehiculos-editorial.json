@@ -3068,5 +3068,1321 @@
       "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
     ],
     "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "toros",
+    "titulo": "Pegassi Toros",
+    "subtitulo": "SUV deportivo de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Todocamino de tracción total que mezcla la silueta del Urus con el aire agresivo del Aventador y del Q8. Es una opción familiar para quien no quiere renunciar al lujo italiano.",
+      "marca": "Pegassi",
+      "clase": "SUV",
+      "carroceria": "SUV deportivo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Lamborghini Urus, Lamborghini Aventador, Audi Q8"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "astron",
+    "titulo": "Pfister Astron",
+    "subtitulo": "SUV compacto de lujo de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Utilitario premium de tracción total y tamaño contenido, cuyo diseño recuerda al Macan alemán. Resulta cómodo para el uso diario en carreteras urbanas.",
+      "marca": "Pfister",
+      "clase": "SUV",
+      "carroceria": "SUV compacto de lujo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Porsche Macan"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "comet-retro-custom",
+    "titulo": "Pfister Comet Retro Custom",
+    "subtitulo": "Deportivo preparado de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de tracción trasera con estética de preparación artesanal, emparentado con los 911 modificados al estilo Rauh-Welt. Apuesta por la ligereza y el carácter clásico.",
+      "marca": "Pfister",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo preparado de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Rauh-Welt Porsche 911 930"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "comet-s2-cabrio",
+    "titulo": "Pfister Comet S2 Cabrio",
+    "subtitulo": "Deportivo descapotable de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Variante abierta de la saga Comet, con propulsión trasera y proporciones de un 911 Turbo S Cabriolet. Pensada para disfrutar la costa con la capota fuera.",
+      "marca": "Pfister",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo descapotable de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Porsche 911 Turbo S Cabriolet"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "growler",
+    "titulo": "Pfister Growler",
+    "subtitulo": "Deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Biplaza de propulsión trasera inspirado en el Cayman 718, de línea baja y compacta. Prioriza el equilibrio por encima de la potencia bruta.",
+      "marca": "Pfister",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Porsche 718 Cayman"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "neon",
+    "titulo": "Pfister Neon",
+    "subtitulo": "Deportivo de cuatro plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina deportiva de tracción total con rasgos tomados del Taycan, del 918 Spyder, de la segunda generación del Panamera y del 911 991.2. Reúne varias ideas de Stuttgart en una sola carrocería.",
+      "marca": "Pfister",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Porsche Taycan, Porsche 918 Spyder, second generation Porsche Panamera and the 991.2 Porsche 911"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "furia",
+    "titulo": "Piccia Furia",
+    "subtitulo": "Superdeportivo de dos plazas",
+    "categoria": "Superdeportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Hiperdeportivo de tracción total que toma como referencia al Battista de Pininfarina. Su identidad es la de un coche exclusivo y muy veloz.",
+      "marca": "Piccia",
+      "clase": "Superdeportivos",
+      "carroceria": "Superdeportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Pininfarina Battista"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "police-cruiser-buffalo-stx",
+    "titulo": "Bravado Police Buffalo STX Pursuit",
+    "subtitulo": "Patrulla de persecución de cuatro plazas",
+    "categoria": "Emergencia",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Versión policial de propulsión trasera de la berlina Buffalo, con base en un Dodge Charger de 2015. Se usa para perseguir y cerrar el paso a sospechosos.",
+      "marca": "Bravado",
+      "clase": "Emergencia",
+      "carroceria": "Patrulla de persecución de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "2015 Dodge Charger"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "police-cruiser-buffalo",
+    "titulo": "Bravado Police Cruiser (Buffalo)",
+    "subtitulo": "Patrulla sedán de cuatro plazas",
+    "categoria": "Emergencia",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coche patrulla rotulado sobre el Buffalo, con silueta de Charger y propulsión trasera. Es el vehículo de rutina del cuerpo policial urbano.",
+      "marca": "Bravado",
+      "clase": "Emergencia",
+      "carroceria": "Patrulla sedán de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Dodge Charger"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "police-cruiser",
+    "titulo": "Vapid Police Cruiser (Stanier LE)",
+    "subtitulo": "Patrulla clásica de cuatro plazas",
+    "categoria": "Emergencia",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Sedán policial de gran tamaño y propulsión trasera que evoca al veterano Crown Victoria. Representa la imagen más tradicional de la patrulla estadounidense.",
+      "marca": "Vapid",
+      "clase": "Emergencia",
+      "carroceria": "Patrulla clásica de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Ford Crown Victoria"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "police-cruiser-gauntlet-hellfire",
+    "titulo": "Bravado Police Gauntlet Interceptor",
+    "subtitulo": "Patrulla muscle de dos plazas",
+    "categoria": "Emergencia",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé policial de propulsión trasera con línea de Challenger SRT Demon de 2018. Es la opción de los agentes que buscan potencia antes que espacio.",
+      "marca": "Bravado",
+      "clase": "Emergencia",
+      "carroceria": "Patrulla muscle de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "2018 Dodge Challenger SRT Demon"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "police-cruiser-interceptor",
+    "titulo": "Vapid Police Lowline (Interceptor)",
+    "subtitulo": "Patrulla interceptora de cuatro plazas",
+    "categoria": "Emergencia",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Sedán policial moderno de propulsión trasera que parte del Police Interceptor Sedan de Ford, derivado del Taurus. Un crucero más discreto y actual que los modelos antiguos.",
+      "marca": "Vapid",
+      "clase": "Emergencia",
+      "carroceria": "Patrulla interceptora de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Ford Police Interceptor Sedan (2013–2019), based on the Ford Taurus"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "police-maverick",
+    "titulo": "Buckingham Police Maverick",
+    "subtitulo": "Helicóptero policial de cuatro plazas",
+    "categoria": "Helicópteros",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Helicóptero ligero de vigilancia con la configuración del AS350B de Eurocopter. Sirve de apoyo aéreo para las unidades de tierra.",
+      "marca": "Buckingham",
+      "clase": "Helicópteros, Emergencia",
+      "carroceria": "Helicóptero policial de cuatro plazas",
+      "ocupantes": 4,
+      "basado_en": "Eurocopter AS350B"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "La clase cruda combina dos valores; categoria se normaliza a Helicópteros. Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "emerus",
+    "titulo": "Progen Emerus",
+    "subtitulo": "Superdeportivo de dos plazas",
+    "categoria": "Superdeportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Biplaza de propulsión trasera con aerodinámica extrema, comparado con el McLaren Senna. Su planteamiento es de circuito antes que de paseo.",
+      "marca": "Progen",
+      "clase": "Superdeportivos",
+      "carroceria": "Superdeportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "McLaren Senna"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "sadler",
+    "titulo": "Vapid Sadler",
+    "subtitulo": "Pickup de trabajo de cuatro plazas",
+    "categoria": "Utilitarios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camioneta robusta de tracción total basada en la primera generación de la Ford F-250 Super Duty. Típica del trabajo rural y de obra.",
+      "marca": "Vapid",
+      "clase": "Utilitarios",
+      "carroceria": "Pickup de trabajo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "First Generation Ford F250 Super Duty"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "pmp-700",
+    "titulo": "Schyster PMP 700",
+    "subtitulo": "Sedán ejecutivo de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina de propulsión trasera cuya referencia es el Chrysler 300 de segunda generación. Transmite una presencia imponente y algo mafiosa.",
+      "marca": "Schyster",
+      "clase": "Sedanes",
+      "carroceria": "Sedán ejecutivo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Second-generation Chrysler 300 (LD)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "squalo",
+    "titulo": "Shitzu Squalo",
+    "subtitulo": "Lancha rápida de dos plazas",
+    "categoria": "Embarcaciones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Embarcación deportiva de casco bajo, comparable con la Stinger 390x de Chris-Craft. Se asocia a la navegación de alta velocidad por la costa.",
+      "marca": "Shitzu",
+      "clase": "Embarcaciones",
+      "carroceria": "Lancha rápida de dos plazas",
+      "ocupantes": 2,
+      "basado_en": "Chris-Craft Stinger 390x"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "tropic",
+    "titulo": "Shitzu Tropic",
+    "subtitulo": "Yate de recreo de cuatro plazas",
+    "categoria": "Embarcaciones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Embarcación de recreo con camarote ligero, cercana al Sundancer 300 de Sea Ray. Cumple bien para salidas de fin de semana por la bahía.",
+      "marca": "Shitzu",
+      "clase": "Embarcaciones",
+      "carroceria": "Yate de recreo de cuatro plazas",
+      "ocupantes": 4,
+      "basado_en": "Sea Ray 300 Sundancer"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "seashark",
+    "titulo": "Speedophile Seashark",
+    "subtitulo": "Moto acuática de dos plazas",
+    "categoria": "Embarcaciones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de agua ligera con base en la Sea-Doo RXT. Es la forma más ágil de moverse sobre las olas.",
+      "marca": "Speedophile",
+      "clase": "Embarcaciones",
+      "carroceria": "Moto acuática de dos plazas",
+      "ocupantes": 2,
+      "basado_en": "Sea Doo RXT"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "fieldmaster",
+    "titulo": "Stanley Fieldmaster",
+    "subtitulo": "Tractor agrícola de una plaza",
+    "categoria": "Utilitarios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Tractor pesado de propulsión trasera tomado del John Deere 7810. Es lento, pero muy resistente, y recuerda a las zonas rurales del estado.",
+      "marca": "Stanley",
+      "clase": "Utilitarios",
+      "carroceria": "Tractor agrícola de una plaza",
+      "ocupantes": 1,
+      "traccion": "RWD",
+      "basado_en": "John Deere 7810"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "thrax",
+    "titulo": "Truffade Thrax",
+    "subtitulo": "Superdeportivo de dos plazas",
+    "categoria": "Superdeportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cupé de tracción total que mezcla ideas del Bugatti Divo y del Italdesign Zerouno. Ofrece líneas angulosas y mucha pretensión de exclusividad.",
+      "marca": "Truffade",
+      "clase": "Superdeportivos",
+      "carroceria": "Superdeportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Bugatti Divo, Italdesign Zerouno"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "aleutian",
+    "titulo": "Vapid Aleutian",
+    "subtitulo": "SUV grande de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Todocamino de tracción total derivado de la cuarta generación del Ford Expedition. Un vehículo de familia numerosa o de equipo de seguridad.",
+      "marca": "Vapid",
+      "clase": "SUV",
+      "carroceria": "SUV grande de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Fourth generation Ford Expedition (U553)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "caracara",
+    "titulo": "Vapid Caracara",
+    "subtitulo": "Pickup todoterreno de cinco plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camioneta de tracción total con cabina amplia, entre la F-150 y las preparaciones de seis ruedas de Hennessey. Va igual de bien por carretera que por caminos de tierra.",
+      "marca": "Vapid",
+      "clase": "Todoterreno",
+      "carroceria": "Pickup todoterreno de cinco plazas",
+      "ocupantes": 5,
+      "traccion": "AWD",
+      "basado_en": "Ford F-150, Hennessey VelociRaptor 6X6"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "caracara-4x4",
+    "titulo": "Vapid Caracara 4x4",
+    "subtitulo": "Pickup todoterreno de cuatro plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Reinterpretación más compacta con tracción total, inspirada en la segunda generación de la F-150 Raptor. Pensada para saltar zanjas y dunas.",
+      "marca": "Vapid",
+      "clase": "Todoterreno",
+      "carroceria": "Pickup todoterreno de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "2nd gen Ford F-150 Raptor (P552)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "chino",
+    "titulo": "Vapid Chino",
+    "subtitulo": "Cupé clásico de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cupé de propulsión trasera con la gran carrocería de los sesenta y setenta, entre el Lincoln Continental, el Imperial y el Thunderbird. Un crucero largo y de mucho brillo.",
+      "marca": "Vapid",
+      "clase": "Muscle",
+      "carroceria": "Cupé clásico de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "1965 Lincoln Continental, 1965 Chrysler Imperial, 1970s Ford Thunderbird(s)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "dominator",
+    "titulo": "Vapid Dominator",
+    "subtitulo": "Muscle de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cupé de propulsión trasera que recoge la herencia del Ford Mustang. Es el muscle de referencia de la marca.",
+      "marca": "Vapid",
+      "clase": "Muscle",
+      "carroceria": "Muscle de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Ford Mustang"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "dominator-asp",
+    "titulo": "Vapid Dominator ASP",
+    "subtitulo": "Muscle aerodinámico de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Variante deportiva del Dominator con inspiración en el Mustang SVT Cobra R de generación New Edge. Incorpora una imagen más afilada y de pista.",
+      "marca": "Vapid",
+      "clase": "Muscle",
+      "carroceria": "Muscle aerodinámico de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Ford Mustang SVT Cobra R (New Edge)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "dominator-gt",
+    "titulo": "Vapid Dominator GT",
+    "subtitulo": "Muscle descapotable de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Versión abierta con aire del Mustang Convertible de 2018 a 2023, propulsión trasera. Una opción para pasear con estilo por la costa.",
+      "marca": "Vapid",
+      "clase": "Muscle",
+      "carroceria": "Muscle descapotable de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "2018-2023 Ford Mustang Convertible"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "dominator-gtx",
+    "titulo": "Vapid Dominator GTX",
+    "subtitulo": "Muscle moderno de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Combinación de rasgos del Mustang reciente, del Charger de séptima generación y del Camaro ZL1. Es el Dominator más agresivo de la saga.",
+      "marca": "Vapid",
+      "clase": "Muscle",
+      "carroceria": "Muscle moderno de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "2015-present Ford Mustang, seventh generation Dodge Charger, 2016-present Chevrolet Camaro ZL1, Ford Mustang GTT"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "hustler",
+    "titulo": "Vapid Hustler",
+    "subtitulo": "Hot rod de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Roadster de propulsión trasera que revive el Ford Coupe de 1932. Un vehículo personalizado de la vieja escuela de los hot rods.",
+      "marca": "Vapid",
+      "clase": "Muscle",
+      "carroceria": "Hot rod de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "1932 Ford Coupe"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "liberator",
+    "titulo": "Vapid Liberator",
+    "subtitulo": "Monster truck de dos plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión de gran altura y tracción total con base en la cuarta generación de la Super Duty. Aplasta obstáculos sin esfuerzo.",
+      "marca": "Vapid",
+      "clase": "Todoterreno",
+      "carroceria": "Monster truck de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Ford Super Duty (4th Gen)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "minivan",
+    "titulo": "Vapid Minivan",
+    "subtitulo": "Monovolumen familiar de cuatro plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Minivan de tracción total que toma ideas del Windstar y del Caravan. Es el transporte clásico de la vida suburbana.",
+      "marca": "Vapid",
+      "clase": "Furgonetas",
+      "carroceria": "Monovolumen familiar de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Ford Windstar, Dodge Caravan"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "police-ghost-stanier-le",
+    "titulo": "Vapid Police Ghost (Stanier LE)",
+    "subtitulo": "Patrulla camuflada de cuatro plazas",
+    "categoria": "Emergencia",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Sedán policial sin rotulación llamativa, con silueta de Crown Victoria y propulsión trasera. Se usa para pasar desapercibido en las vías principales.",
+      "marca": "Vapid",
+      "clase": "Emergencia",
+      "carroceria": "Patrulla camuflada de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Ford Crown Victoria"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "rumpo",
+    "titulo": "Vapid Rumpo",
+    "subtitulo": "Furgoneta de reparto de cuatro plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Furgón de propulsión trasera con carrocería semejante a la gama Ford E-Series. Sirve de transporte de carga o de equipos de trabajo.",
+      "marca": "Vapid",
+      "clase": "Furgonetas",
+      "carroceria": "Furgoneta de reparto de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Ford E-Series"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "sandking-xl",
+    "titulo": "Vapid Sandking XL",
+    "subtitulo": "Pickup todoterreno extendida de cuatro plazas",
+    "categoria": "Todoterreno",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camioneta alta de tracción total basada en la tercera generación de la Super Duty. Fue diseñada para terrenos arenosos y caminos duros.",
+      "marca": "Vapid",
+      "clase": "Todoterreno",
+      "carroceria": "Pickup todoterreno extendida de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Ford Super Duty (3rd Gen)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "slamvan",
+    "titulo": "Vapid Slamvan",
+    "subtitulo": "Pickup lowrider de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camioneta de propulsión trasera con aspecto de rat rod y trazos de las Ford F-Series de los años cincuenta. Se presenta con acabado oxidado y de taller.",
+      "marca": "Vapid",
+      "clase": "Muscle",
+      "carroceria": "Pickup lowrider de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Rat Rodded 1953–1956 Ford F-Series (pickup form), 1950s Ford F-Series"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "speedo",
+    "titulo": "Vapid Speedo",
+    "subtitulo": "Furgoneta comercial de cuatro plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Furgón de propulsión trasera inspirado en la Chevrolet Express desde 2003. Es el clásico vehículo de reparto de cualquier ciudad.",
+      "marca": "Vapid",
+      "clase": "Furgonetas",
+      "carroceria": "Furgoneta comercial de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "2003-present Chevrolet Express van"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "vapid-stanier-55",
+    "titulo": "Vapid Stanier '55",
+    "subtitulo": "Sedán retro de dos plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Berlina de líneas de los cincuenta con propulsión trasera, vinculada al Ford Fairlane Club Sedan de 1956. Su variante amarilla evoca los coches de Ocean Drive.",
+      "marca": "Vapid",
+      "clase": "Sedanes",
+      "carroceria": "Sedán retro de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "1956 Ford Fairlane Club Sedan; The yellow-on-white Stanier is inspired by the 1955 Oldsmobile 88 parked on Ocean Drive, Miami Beach."
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "stanier",
+    "titulo": "Vapid Stanier G2",
+    "subtitulo": "Sedán de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Segunda generación del veterano Stanier, de propulsión trasera y referencia en el Ford Crown Victoria. Un coche sencillo y muy habitual en la calle.",
+      "marca": "Vapid",
+      "clase": "Sedanes",
+      "carroceria": "Sedán de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Ford Crown Victoria"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "taxi",
+    "titulo": "Vapid Stanier Taxi",
+    "subtitulo": "Taxi de cuatro plazas",
+    "categoria": "Servicio",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Versión de servicio público del Stanier, con propulsión trasera y silueta de Crown Victoria. Es el taxi característico de Leonida.",
+      "marca": "Vapid",
+      "clase": "Servicio",
+      "carroceria": "Taxi de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "RWD",
+      "basado_en": "Ford Crown Victoria"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "tow-truck",
+    "titulo": "Vapid Tow Truck",
+    "subtitulo": "Grúa de remolque de dos plazas",
+    "categoria": "Utilitarios",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Camión de asistencia en carretera con propulsión trasera, con base en un International Harvester Serie S de los ochenta. Rescata coches averiados.",
+      "marca": "Vapid",
+      "clase": "Utilitarios",
+      "carroceria": "Grúa de remolque de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "1980s International Harvester S-Series"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "ingot",
+    "titulo": "Vulcar Ingot",
+    "subtitulo": "Familiar de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Ranchera de tracción delantera cuyos rasgos recuerdan al Passat Variant y al Nissan Stagea. Es un modelo práctico y poco llamativo.",
+      "marca": "Vulcar",
+      "clase": "Sedanes",
+      "carroceria": "Familiar de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "FWD",
+      "basado_en": "VW Passat wagon, Nissan Stagea"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "neo",
+    "titulo": "Vysser Neo",
+    "subtitulo": "Deportivo exclusivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Biplaza de tracción total con trazos del Spyker C8 Aileron y del Maserati 3200 GT. Es un coche europeo de edición reducida.",
+      "marca": "Vysser",
+      "clase": "Deportivos",
+      "carroceria": "Deportivo exclusivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "AWD",
+      "basado_en": "Spyker C8 Aileron, Maserati 3200 GT"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "cliffhanger",
+    "titulo": "Western Cliffhanger",
+    "subtitulo": "Moto de competición de dos plazas",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de propulsión trasera relacionada con la Harley-Davidson XR-750 de competición. Es ligera y muy nerviosa.",
+      "marca": "Western",
+      "clase": "Motocicletas",
+      "carroceria": "Moto de competición de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Harley Davidson XR-750"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "duster",
+    "titulo": "Western Company Duster",
+    "subtitulo": "Avioneta de dos plazas",
+    "categoria": "Aviones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Biplano de hélice con base en la Stearman Model 75. Es un clásico del vuelo agrícola.",
+      "marca": "Western Company",
+      "clase": "Aviones",
+      "carroceria": "Avioneta de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Stearman Model 75"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "mallard",
+    "titulo": "Western Company Mallard",
+    "subtitulo": "Avioneta acrobática de una plaza",
+    "categoria": "Aviones",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Monoplaza ligero con referencia en la Extra EA-300 y tracción delantera por la hélice. Está pensado para las maniobras de vuelo.",
+      "marca": "Western Company",
+      "clase": "Aviones",
+      "carroceria": "Avioneta acrobática de una plaza",
+      "ocupantes": 1,
+      "traccion": "FWD",
+      "basado_en": "Extra EA-300"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "nightblade",
+    "titulo": "Western Nightblade",
+    "subtitulo": "Moto custom de dos plazas",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de propulsión trasera con la imagen de la Night Rod Special y de la Dyna Street Bob de Harley-Davidson. Tiene una línea oscura y baja.",
+      "marca": "Western",
+      "clase": "Motocicletas",
+      "carroceria": "Moto custom de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Harley Davidson Night Rod Special / Harley Davidson Dyna Street Bob"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "sovereign",
+    "titulo": "Western Sovereign",
+    "subtitulo": "Moto de crucero de una plaza",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de gran cilindrada con aire de la Harley-Davidson Road King. Es una máquina de crucero para tramos largos.",
+      "marca": "Western",
+      "clase": "Motocicletas",
+      "carroceria": "Moto de crucero de una plaza",
+      "ocupantes": 1,
+      "traccion": "RWD",
+      "basado_en": "Harley Davidson Road King"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "sovereign-107",
+    "titulo": "Western Sovereign 107",
+    "subtitulo": "Moto de patrulla de una plaza",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Variante inspirada en la Road King FLHP, la versión de uso policial de Harley-Davidson. Es una montura pesada y cómoda.",
+      "marca": "Western",
+      "clase": "Motocicletas",
+      "carroceria": "Moto de patrulla de una plaza",
+      "ocupantes": 1,
+      "traccion": "RWD",
+      "basado_en": "Harley-Davidson Road King FLHP"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "zombie-chopper",
+    "titulo": "Western Zombie Chopper",
+    "subtitulo": "Chopper de dos plazas",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de propulsión trasera inspirada en el Fat Bob Custom y el Iron 883 de Harley-Davidson. Un diseño largo y sombrío al estilo chopper.",
+      "marca": "Western",
+      "clase": "Motocicletas",
+      "carroceria": "Chopper de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "Harley Davidson Fat Bob Custom, Iron 883"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "faction-custom-donk",
+    "titulo": "Willard Faction Custom Donk",
+    "subtitulo": "Muscle elevado de dos plazas",
+    "categoria": "Muscle",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de propulsión trasera con ruedas enormes, cercano al Buick Regal de 1982 a 1987 y al Grand National. Es un donk de exposición.",
+      "marca": "Willard",
+      "clase": "Muscle",
+      "carroceria": "Muscle elevado de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "1982-1987 Buick Regal; Buick Grand National/T-Type/GNX"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "journey",
+    "titulo": "Zirconium Journey",
+    "subtitulo": "Autocaravana de seis plazas",
+    "categoria": "Furgonetas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Casa rodante de tracción delantera con planteamiento del Fleetwood Pace Arrow de finales de los setenta. Admite hasta seis ocupantes.",
+      "marca": "Zirconium",
+      "clase": "Furgonetas",
+      "carroceria": "Autocaravana de seis plazas",
+      "ocupantes": 6,
+      "traccion": "FWD",
+      "basado_en": "1979–1981 Fleetwood Pace Arrow"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "stratum",
+    "titulo": "Zirconium Stratum",
+    "subtitulo": "Familiar de cuatro plazas",
+    "categoria": "Sedanes",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Ranchera de tracción total que sigue el patrón del Honda Accord familiar. Es un transporte tranquilo y discreto.",
+      "marca": "Zirconium",
+      "clase": "Sedanes",
+      "carroceria": "Familiar de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Honda Accord station wagon"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "cypher",
+    "titulo": "Übermacht Cypher",
+    "subtitulo": "Cupé deportivo de dos plazas",
+    "categoria": "Deportivos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de propulsión trasera con base en el BMW M2 F87, con toques del M6 F13 y del M8 F92. Un biplaza compacto y directo.",
+      "marca": "Übermacht",
+      "clase": "Deportivos",
+      "carroceria": "Cupé deportivo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "BMW M2 (F87) with some design cues from the BMW M6 (F13) and BMW M8 (F92)"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "fcr-1000",
+    "titulo": "Übermacht FCR 1000",
+    "subtitulo": "Moto de calle de una plaza",
+    "categoria": "Motocicletas",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Moto de propulsión trasera con ecos de la BMW R100. Tiene un carácter clásico alemán.",
+      "marca": "Übermacht",
+      "clase": "Motocicletas",
+      "carroceria": "Moto de calle de una plaza",
+      "ocupantes": 1,
+      "traccion": "RWD",
+      "basado_en": "BMW R100"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "rebla-gts",
+    "titulo": "Übermacht Rebla GTS",
+    "subtitulo": "SUV deportivo de cuatro plazas",
+    "categoria": "SUV",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Todocamino de tracción total con base en el BMW X5 de cuarta generación. Equilibra confort y potencia.",
+      "marca": "Übermacht",
+      "clase": "SUV",
+      "carroceria": "SUV deportivo de cuatro plazas",
+      "ocupantes": 4,
+      "traccion": "AWD",
+      "basado_en": "Fourth generation BMW X5"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "sentinel-classic",
+    "titulo": "Übermacht Sentinel Classic",
+    "subtitulo": "Cupé deportivo clásico de dos plazas",
+    "categoria": "Deportivos clásicos",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Biplaza de propulsión trasera que rinde homenaje al BMW M3 E30. Un coupé ligero de aire noventero.",
+      "marca": "Übermacht",
+      "clase": "Deportivos clásicos",
+      "carroceria": "Cupé deportivo clásico de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "BMW E30 M3"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "sentinel-xs",
+    "titulo": "Übermacht Sentinel XS",
+    "subtitulo": "Cupé de dos plazas",
+    "categoria": "Cupés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Cupé de propulsión trasera que sigue al BMW M3 E92. Es una opción deportiva para el día a día.",
+      "marca": "Übermacht",
+      "clase": "Cupés",
+      "carroceria": "Cupé de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "BMW M3 E92"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "zion",
+    "titulo": "Übermacht Zion",
+    "subtitulo": "Cupé de lujo de dos plazas",
+    "categoria": "Cupés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Coupé de propulsión trasera con referencia en el BMW M6 E63. Es una berlina larga de dos puertas.",
+      "marca": "Übermacht",
+      "clase": "Cupés",
+      "carroceria": "Cupé de lujo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "BMW M6 E63"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
+  },
+  {
+    "modulo": "vehiculos",
+    "slug": "zion-cabrio",
+    "titulo": "Übermacht Zion Cabrio",
+    "subtitulo": "Cabrio de lujo de dos plazas",
+    "categoria": "Cupés",
+    "stats_juego": {},
+    "metadata": {
+      "descripcion": "Versión descapotable del Zion, de propulsión trasera y vinculada al BMW Serie 6 E64. Un gran turismo para pasear de día.",
+      "marca": "Übermacht",
+      "clase": "Cupés",
+      "carroceria": "Cabrio de lujo de dos plazas",
+      "ocupantes": 2,
+      "traccion": "RWD",
+      "basado_en": "BMW 6-Series E64"
+    },
+    "confianza": "baja",
+    "evidencia": [
+      "Fabricante y clase tomados solo de un extracto de catálogo de terceros, sin contraste adicional"
+    ],
+    "notas": "Sin contraste independiente: datos objetivos provienen solo del extracto crudo de un tercero. Stats sin confirmar y omitidas."
   }
 ]
