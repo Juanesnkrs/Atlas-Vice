@@ -19,6 +19,13 @@ const queryClient = new QueryClient({
 
 void useAuthStore.getState().init();
 
+// PWA ligera: el Service Worker solo se registra en produccion.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+  });
+}
+
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('No se encontró el elemento #root');
 

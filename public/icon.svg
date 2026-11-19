@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="s" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E1A47"/><stop offset=".4" stop-color="#7B2C6F"/>
+      <stop offset=".75" stop-color="#E14B7B"/><stop offset="1" stop-color="#F69259"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#s)"/>
+  <circle cx="256" cy="300" r="120" fill="#F69259" opacity=".85"/>
+  <path d="M0 400h512v112H0z" fill="#1A0A22"/>
+  <path d="M40 400v-50h30v-30h26v50h30v-70h34v70h24v-40h28v40h28v-90h36v90h30v-56h26v56h30v-34h28v34h30v-24h26v24h26v50H40z" fill="#1A0A22"/>
+  <text x="256" y="470" text-anchor="middle" font-family="Jost,Arial,sans-serif" font-weight="700" font-size="56" fill="#F69259">LEONID</text>
+</svg>
