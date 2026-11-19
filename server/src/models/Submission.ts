@@ -13,7 +13,7 @@ export const submissionTypeSchema = z.enum(SUBMISSION_TYPES);
 export const FOOTER_SUBMISSION_TYPES = ['contact', 'newsletter'] as const;
 export const isFooterType = (t: string): boolean => (FOOTER_SUBMISSION_TYPES as readonly string[]).includes(t);
 
-const coordsSchema = z.object({ x: z.number().finite(), y: z.number().finite() });
+const coordsSchema = z.object({ x: z.number().min(0).max(1000), y: z.number().min(0).max(700) });
 
 const submissionBase = z.object({
   moduleSlug: z.string().min(1).max(60),

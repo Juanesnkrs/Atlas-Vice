@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { requireRole } from '../plugins/auth.js';
@@ -11,9 +12,10 @@ import { HttpError, idParamsSchema, parse } from '../services/validate.js';
 const admin = { preHandler: requireRole('ADMIN') };
 
 const markerToDoc = (m: Partial<z.infer<typeof mapMarkerSchema>>): Record<string, unknown> => {
-  const { coord_x, coord_y, id, ...rest } = m;
+  const { coord_x, coord_y, id, slug, ...rest } = m;
   return {
     ...rest,
+    ...(slug ? { slug } : {}),
     ...(id ? { _id: id } : {}),
     ...(coord_x !== undefined && coord_y !== undefined ? { coord: { x: coord_x, y: coord_y } } : {}),
   };
@@ -112,10 +114,32 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
   });
 
   // ---- Markers ----------------------------------------------------------------
-  app.get('/api/markers', async (req) => {
-    const q = parse(z.object({ region: z.string().optional() }), req.query);
-    const rows = await MapMarker.find(q).sort({ created_at: 1 }).lean<MapMarkerDoc[]>();
-    return rows.map(toMarkerDTO);
+  app.get('/api/markers', async (req, reply) => {
+    const q = parse(
+      z.object({
+        region: z.string().optional(),
+        // x1,y1,x2,y2 en coordenadas del lienzo (cualquier orden de esquinas).
+        bbox: z
+          .string()
+          .transform((v) => v.split(',').map(Number))
+          .pipe(z.array(z.number().finite()).length(4))
+          .optional(),
+      }),
+      req.query,
+    );
+    const filter: Record<string, unknown> = {};
+    if (q.region) filter.region = q.region;
+    if (q.bbox) {
+      const [x1, y1, x2, y2] = q.bbox as [number, number, number, number];
+      filter.coord = { $geoWithin: { $box: [[Math.min(x1, x2), Math.min(y1, y2)], [Math.max(x1, x2), Math.max(y1, y2)]] } };
+    }
+    const rows = await MapMarker.find(filter).sort({ created_at: 1, _id: 1 }).lean<MapMarkerDoc[]>();
+    const body = rows.map(toMarkerDTO);
+    // ETag débil sobre el contenido: el cliente revalida con If-None-Match y recibe 304.
+    const etag = `W/"${createHash('sha1').update(JSON.stringify(body)).digest('base64url')}"`;
+    void reply.header('ETag', etag).header('Cache-Control', 'public, max-age=60, must-revalidate');
+    if (req.headers['if-none-match'] === etag) return reply.code(304).send();
+    return body;
   });
 
   app.post('/api/markers', admin, async (req, reply) => {

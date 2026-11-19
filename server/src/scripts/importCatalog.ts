@@ -9,7 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { z } from 'zod';
 import { connectDb, disconnectDb } from '../config/db.js';
-import { Entity, entitySchema } from '../models/Entity.js';
+import { Entity, entitySchema, slugSchema } from '../models/Entity.js';
 import { MapMarker, mapMarkerSchema } from '../models/MapMarker.js';
 import { Module } from '../models/Module.js';
 
@@ -30,6 +30,7 @@ const markerBlockSchema = z.object({
   coord_x: z.number().finite(),
   coord_y: z.number().finite(),
   descripcion: z.string().optional(),
+  slug: slugSchema.optional(),
 });
 
 const fichaSchema = z.object({
@@ -98,6 +99,7 @@ async function main(): Promise<void> {
     // Valida el marcador antes de tocar nada (campos aprobados de MapMarker).
     const markerParsed = f.marker
       ? mapMarkerSchema.safeParse({
+          slug: f.marker.slug,
           region: f.marker.region,
           titulo: f.titulo,
           descripcion: f.marker.descripcion ?? null,
@@ -147,6 +149,8 @@ async function main(): Promise<void> {
                 titulo: m.titulo,
                 descripcion: m.descripcion ?? null,
                 coord: { x: m.coord_x, y: m.coord_y },
+                // slug del marcador (deep-link /mapa?pin=): el explícito o el de la ficha.
+                slug: m.slug ?? f.slug,
               },
               $setOnInsert: { _id: randomUUID() },
             },
