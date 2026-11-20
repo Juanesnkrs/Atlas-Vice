@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { requireAuth, requireRole } from '../plugins/auth.js';
+import { requireAuth, requireStaffRole } from '../plugins/auth.js';
 import { ForumPost, forumPostSchema, toPostDTO, type ForumPostDoc } from '../models/ForumPost.js';
 import { ForumThread, forumThreadSchema, toThreadDTO, type ForumThreadDoc } from '../models/ForumThread.js';
 import { ForumVote, forumVoteSchema } from '../models/ForumVote.js';
@@ -110,7 +110,8 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // ---- Moderacion (MODERATOR+) -------------------------------------------------
-  const mod = { preHandler: requireRole('MODERATOR') };
+  // 404 uniforme (hook onRequest, antes de Zod) para quien no sea MODERATOR+: no revela que la ruta existe.
+  const mod = { onRequest: requireStaffRole('MODERATOR') };
 
   app.delete('/api/forum/threads/:id', mod, async (req, reply) => {
     const { id } = parse(idParamsSchema, req.params);

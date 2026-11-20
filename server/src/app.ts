@@ -1,3 +1,4 @@
+import compress from '@fastify/compress';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import formbody from '@fastify/formbody';
@@ -30,6 +31,21 @@ const allowedOrigins = new Set([
   'https://localhost',
 ]);
 
+type RateClass = 'read' | 'page' | 'default';
+const RATE_MAX: Record<RateClass, number> = { read: 3000, page: 1500, default: 200 };
+/** GET/HEAD publicos de solo lectura del catalogo y config (sin sesion ni escritura). */
+const PUBLIC_READ_RE = /^\/api\/(health|modules|entities|markers|news|config)(\/|$)/;
+/**
+ * Clasifica la peticion para el rate-limit: lecturas publicas de API (tope muy alto), SSR-lite/estaticos/sitemap
+ * (tope alto por IP) y el resto (auth, escrituras, foro, progreso, admin: 200/min, sin debilitar).
+ */
+function rateClass(req: { method: string; url: string }): RateClass {
+  if (req.method !== 'GET' && req.method !== 'HEAD') return 'default';
+  const path = req.url.split('?')[0] ?? '';
+  if (path.startsWith('/api/')) return PUBLIC_READ_RE.test(path) ? 'read' : 'default';
+  return 'page';
+}
+
 const OAUTH_CALLBACK_RE = /^\/api\/auth\/(google|discord|apple)\/callback$/;
 
 /** Carga modulos del agente de workers/SEO solo si existen (compilados o en fuente). */
@@ -51,10 +67,20 @@ export async function buildApp(): Promise<FastifyInstance> {
     origin: (origin, cb) => cb(null, !origin || allowedOrigins.has(origin)),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    // Metadatos de paginacion de GET /api/entities legibles desde el cliente.
+    exposedHeaders: ['X-Total-Count', 'X-Page', 'X-Per-Page', 'X-Total-Pages', 'Link', 'ETag'],
   });
+  // gzip/brotli segun Accept-Encoding (JSON, HTML, XML, JS, CSS; ignora imagenes y binarios ya comprimidos).
+  await app.register(compress, { threshold: 1024, encodings: ['br', 'gzip'] });
   await app.register(cookie, { secret: env.COOKIE_SECRET });
   await app.register(formbody);
-  await app.register(rateLimit, { global: true, max: 200, timeWindow: '1 minute' });
+  await app.register(rateLimit, {
+    global: true,
+    timeWindow: '1 minute',
+    // Cubos separados por IP: las lecturas publicas no consumen el cupo de escrituras/auth (200/min).
+    keyGenerator: (req) => `${req.ip}|${rateClass(req)}`,
+    max: (req) => RATE_MAX[rateClass(req)],
+  });
   await app.register(authPlugin);
 
   // Defensa CSRF adicional para sesiones por cookie: mutaciones solo desde origenes propios.

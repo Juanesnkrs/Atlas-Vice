@@ -1,4 +1,5 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { sendPublicJson } from '../services/httpCache.js';
 import { z } from 'zod';
 import { requireStaffRole } from '../plugins/auth.js';
 import {
@@ -21,12 +22,11 @@ const configPatchSchema = appConfigUpdateSchema
   .refine((v) => Object.keys(v).length > 0, { message: 'Se requiere al menos una clave' });
 
 export async function registerConfigRoutes(app: FastifyInstance): Promise<void> {
-  const publicConfig = async (_req: unknown, reply: { header: (k: string, v: string) => unknown }) => {
+  const publicConfig = async (req: FastifyRequest, reply: FastifyReply) => {
     const c = await getGlobalConfig();
     const mods = await Module.find({}).sort({ orden: 1 }).lean<ModuleDoc[]>();
     const mon = monetizationSchema.safeParse(c.monetization ?? DEFAULT_MONETIZATION);
-    reply.header('cache-control', 'public, max-age=30');
-    return {
+    return sendPublicJson(req, reply, {
       maintenance_mode: c.maintenance_mode,
       announcement: c.announcement,
       feature_flags: c.feature_flags,
@@ -41,7 +41,7 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
         orden: m.orden,
         isActive: m.activo,
       })),
-    };
+    }, 30);
   };
   app.get('/api/config', publicConfig);
   app.get('/api/config/public', publicConfig);

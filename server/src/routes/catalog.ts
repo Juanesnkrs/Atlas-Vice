@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { requireStaffRole } from '../plugins/auth.js';
@@ -7,7 +6,12 @@ import { MapMarker, mapMarkerSchema, mapMarkerUpdateSchema, toMarkerDTO, type Ma
 import { Module, moduleSchema, moduleUpdateSchema, toModuleDTO, type ModuleDoc } from '../models/Module.js';
 import { clearSsrCache } from '../services/ssrLite.js';
 import { writeAudit } from '../services/audit.js';
+import { sendPublicJson } from '../services/httpCache.js';
 import { HttpError, idParamsSchema, parse } from '../services/validate.js';
+
+/** Paginacion de GET /api/entities: el catalogo actual (~250 fichas) cabe en una pagina por defecto. */
+const ENTITIES_DEFAULT_LIMIT = 500;
+const ENTITIES_MAX_LIMIT = 500;
 
 const admin = { onRequest: requireStaffRole('ADMIN') };
 
@@ -23,31 +27,36 @@ const markerToDoc = (m: Partial<z.infer<typeof mapMarkerSchema>>): Record<string
 
 export async function registerCatalogRoutes(app: FastifyInstance): Promise<void> {
   // ---- Modules ----------------------------------------------------------------
-  app.get('/api/modules', async (req) => {
+  app.get('/api/modules', async (req, reply) => {
     const all = z.object({ all: z.enum(['1']).optional() }).parse(req.query).all === '1';
     const canSeeAll = all && req.authUser && ['ADMIN', 'SUPER_ADMIN'].includes(req.authUser.rol);
     const rows = await Module.find(canSeeAll ? {} : { activo: true }).sort({ orden: 1 }).lean<ModuleDoc[]>();
-    return rows.map(toModuleDTO);
+    // Con ?all=1 el contenido depende de la sesion: nunca se cachea publicamente.
+    if (all) {
+      void reply.header('Cache-Control', 'private, no-store').header('Vary', 'Cookie');
+      return rows.map(toModuleDTO);
+    }
+    return sendPublicJson(req, reply, rows.map(toModuleDTO));
   });
 
   // Consulta por slug (URLs limpias /catalogo/:modulo/:slug y /guias/:slug). Solo modulos activos.
   const moduleSlugParams = z.object({ moduleSlug: z.string().min(1).max(60) });
 
-  app.get('/api/modules/:moduleSlug/entities', async (req) => {
+  app.get('/api/modules/:moduleSlug/entities', async (req, reply) => {
     const { moduleSlug } = parse(moduleSlugParams, req.params);
     const mod = await Module.findOne({ slug: moduleSlug, activo: true }).lean<ModuleDoc>();
     if (!mod) throw new HttpError(404, 'Modulo no encontrado');
     const rows = await Entity.find({ module_id: mod._id }).sort({ created_at: 1 }).lean<EntityDoc[]>();
-    return rows.map(toEntityDTO);
+    return sendPublicJson(req, reply, rows.map(toEntityDTO));
   });
 
-  app.get('/api/modules/:moduleSlug/entities/:slug', async (req) => {
+  app.get('/api/modules/:moduleSlug/entities/:slug', async (req, reply) => {
     const { moduleSlug, slug } = parse(moduleSlugParams.extend({ slug: z.string().min(1).max(120) }), req.params);
     const mod = await Module.findOne({ slug: moduleSlug, activo: true }).lean<ModuleDoc>();
     if (!mod) throw new HttpError(404, 'Modulo no encontrado');
     const doc = await Entity.findOne({ module_id: mod._id, slug }).lean<EntityDoc>();
     if (!doc) throw new HttpError(404, 'Entidad no encontrada');
-    return { ...toEntityDTO(doc), module_slug: mod.slug };
+    return sendPublicJson(req, reply, { ...toEntityDTO(doc), module_slug: mod.slug });
   });
 
   app.post('/api/modules', admin, async (req, reply) => {
@@ -79,10 +88,57 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
   });
 
   // ---- Entities ---------------------------------------------------------------
-  app.get('/api/entities', async (req) => {
-    const q = parse(z.object({ module_id: z.uuid().optional(), categoria: z.string().optional() }), req.query);
-    const rows = await Entity.find(q).sort({ created_at: 1 }).lean<EntityDoc[]>();
-    return rows.map(toEntityDTO);
+  /**
+   * Lista paginada de fichas. Cuerpo = array (compatible con clientes previos); metadatos en cabeceras
+   * (X-Total-Count, X-Page, X-Per-Page, X-Total-Pages, Link rel=next/prev). Con ?envelope=1 el cuerpo es
+   * { items, total, page, limit, pages }.
+   */
+  app.get('/api/entities', async (req, reply) => {
+    const q = parse(
+      z.object({
+        module: z.string().min(1).max(60).optional(), // slug o id de modulo
+        module_id: z.uuid().optional(),
+        categoria: z.string().max(80).optional(),
+        limit: z.coerce.number().int().min(1).max(ENTITIES_MAX_LIMIT).default(ENTITIES_DEFAULT_LIMIT),
+        page: z.coerce.number().int().min(1).max(100_000).default(1),
+        envelope: z.enum(['1']).optional(),
+      }),
+      req.query,
+    );
+    const filter: Record<string, unknown> = {};
+    if (q.module_id) filter.module_id = q.module_id;
+    if (q.categoria) filter.categoria = q.categoria;
+    if (q.module) {
+      const mod = await Module.findOne({ $or: [{ _id: q.module }, { slug: q.module }] })
+        .select('_id')
+        .lean<{ _id: string }>();
+      // Modulo inexistente (o contradictorio con module_id): lista vacia, no 404 (es un filtro, no un recurso).
+      filter.module_id = !mod || (q.module_id && q.module_id !== mod._id) ? '__none__' : mod._id;
+    }
+    const [total, rows] = await Promise.all([
+      Entity.countDocuments(filter),
+      Entity.find(filter)
+        .sort({ created_at: 1, _id: 1 })
+        .skip((q.page - 1) * q.limit)
+        .limit(q.limit)
+        .lean<EntityDoc[]>(),
+    ]);
+    const pages = Math.max(1, Math.ceil(total / q.limit));
+    const items = rows.map(toEntityDTO);
+    const link = (p: number, rel: string) => {
+      const u = new URLSearchParams(req.query as Record<string, string>);
+      u.set('page', String(p));
+      u.set('limit', String(q.limit));
+      return '</api/entities?' + u.toString() + '>; rel="' + rel + '"';
+    };
+    const links = [...(q.page < pages ? [link(q.page + 1, 'next')] : []), ...(q.page > 1 ? [link(q.page - 1, 'prev')] : [])];
+    void reply
+      .header('X-Total-Count', String(total))
+      .header('X-Page', String(q.page))
+      .header('X-Per-Page', String(q.limit))
+      .header('X-Total-Pages', String(pages));
+    if (links.length) void reply.header('Link', links.join(', '));
+    return sendPublicJson(req, reply, q.envelope ? { items, total, page: q.page, limit: q.limit, pages } : items);
   });
 
   app.post('/api/entities', admin, async (req, reply) => {
@@ -134,12 +190,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
       filter.coord = { $geoWithin: { $box: [[Math.min(x1, x2), Math.min(y1, y2)], [Math.max(x1, x2), Math.max(y1, y2)]] } };
     }
     const rows = await MapMarker.find(filter).sort({ created_at: 1, _id: 1 }).lean<MapMarkerDoc[]>();
-    const body = rows.map(toMarkerDTO);
-    // ETag débil sobre el contenido: el cliente revalida con If-None-Match y recibe 304.
-    const etag = `W/"${createHash('sha1').update(JSON.stringify(body)).digest('base64url')}"`;
-    void reply.header('ETag', etag).header('Cache-Control', 'public, max-age=60, must-revalidate');
-    if (req.headers['if-none-match'] === etag) return reply.code(304).send();
-    return body;
+    return sendPublicJson(req, reply, rows.map(toMarkerDTO));
   });
 
   app.post('/api/markers', admin, async (req, reply) => {
