@@ -3,6 +3,7 @@
 // enlazan terceros. Cada noticia enlaza a su fuente oficial original.
 import { useEffect, useMemo, useState } from 'react';
 import { AdSlot } from '../components/ui/AdSlot';
+import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { NEWS_SOURCES, useOfficialNews, useOfficialNewsItem, type NewsSource, type OfficialNews } from '../data/seed';
 import { navigate, useLocation, usePageMeta } from '../store/useRouteStore';
 
@@ -55,7 +56,7 @@ function SourceMeta({ source, publishedAt }: { source: string; publishedAt: stri
 
 function NewsList() {
   const [source, setSource] = useState<NewsSource | 'all'>('all');
-  const { news: all, loading, error } = useOfficialNews('all', 24);
+  const { news: all, loading, error, retry } = useOfficialNews('all', 24);
   // Solo se ofrecen filtros por las fuentes que realmente tienen noticias.
   const sources = useMemo(
     () => NEWS_SOURCES.filter((f) => f.value !== 'all' && all.some((n) => n.source === f.value)),
@@ -102,15 +103,14 @@ function NewsList() {
         </div>
       )}
 
-      <div aria-live="polite" className="mt-4">
+      {/* Alto mínimo común a carga / vacío / error: el pie no salta al llegar la respuesta (CLS = 0). */}
+      <div aria-live="polite" className="mt-4 min-h-[70dvh]">
         {loading ? (
           <p role="status" className="text-sm">
             Cargando noticias oficiales…
           </p>
-        ) : error ? (
-          <p role="status" className="glass rounded-2xl p-5 text-sm text-vice-gold">
-            No pudimos cargar las noticias ahora mismo. Inténtalo de nuevo en unos minutos o consulta Rockstar Newswire.
-          </p>
+        ) : error && all.length === 0 ? (
+          <ApiErrorState compact title="No pudimos cargar las noticias" message={error} onRetry={retry} />
         ) : news.length === 0 ? (
           <p className="glass rounded-2xl p-5 text-sm text-vice-text/85">Aún no hay noticias oficiales guardadas en LeonidApp.</p>
         ) : (
@@ -149,7 +149,7 @@ function NewsList() {
 }
 
 function NewsDetail({ slug }: { slug: string }) {
-  const { item, loading, error } = useOfficialNewsItem(slug);
+  const { item, loading, error, notFound, retry } = useOfficialNewsItem(slug);
   usePageMeta(
     item
       ? {
@@ -157,7 +157,7 @@ function NewsDetail({ slug }: { slug: string }) {
           description: clip(item.summary || `Noticia oficial de ${SOURCE_LABEL[item.source] ?? item.source}.`, 160),
           canonicalPath: `/noticias/${slug}`,
         }
-      : { title: loading ? 'Cargando noticia' : 'Noticia no encontrada', robots: 'noindex,nofollow' },
+      : { title: loading ? 'Cargando noticia' : error && !notFound ? 'No pudimos cargar la noticia' : 'Noticia no encontrada', robots: 'noindex,nofollow' },
   );
 
   return (
@@ -168,10 +168,14 @@ function NewsDetail({ slug }: { slug: string }) {
         </a>
       </nav>
       {loading ? (
-        <p role="status">Cargando noticia oficial…</p>
+        <div className="min-h-[100dvh]">
+          <p role="status">Cargando noticia oficial…</p>
+        </div>
+      ) : !item && error && !notFound ? (
+        <ApiErrorState compact title="No pudimos cargar la noticia" message={error} onRetry={retry} />
       ) : !item ? (
         <p role="status" className="glass rounded-2xl p-6">
-          {error ? 'No pudimos cargar esta noticia ahora mismo.' : 'No encontramos esta noticia oficial.'}{' '}
+          No encontramos esta noticia oficial.{' '}
           <a href="/noticias" className="font-semibold text-vice-orange underline">
             Ver todas
           </a>

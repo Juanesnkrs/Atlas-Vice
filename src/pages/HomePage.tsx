@@ -1,13 +1,13 @@
 // Portada pública `/` (DesignSpec §7.2): hero compacto, "Explora Leonida", noticias oficiales,
 // guías, foro en vivo (§7.5) y franja de registro. Cabecera, dock y Footer los pone App.tsx.
 import { useMemo, useRef, useState } from 'react';
+import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { Modal } from '../components/ui/Modal';
 import { PalmButton } from '../components/ui/PalmButton';
 import { StatBar } from '../components/ui/StatBar';
 import {
   HERO_IMAGE,
   NEWS_SOURCES,
-  SAMPLE_NOTICE,
   entitySlug,
   forumCategoryLabel,
   guideSteps,
@@ -16,12 +16,14 @@ import {
   useModuleGate,
   useOfficialNews,
   useWorldData,
+  type WorldScope,
 } from '../data/seed';
 import { useAuthStore } from '../store/useAuthStore';
 import { useProgressStore } from '../store/useProgressStore';
 import { usePageMeta } from '../store/useRouteStore';
 import type { Entity, ForumThread } from '../types/database';
 
+const HOME_SCOPE: WorldScope = { entities: ['guias'], markers: true, counts: ['armas', 'vehiculos', 'coleccionables'] };
 const NEWSWIRE_URL = 'https://www.rockstargames.com/newswire';
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold';
 const SOURCE_LABEL: Record<string, string> = Object.fromEntries(NEWS_SOURCES.map((s) => [s.value, s.label]));
@@ -181,7 +183,17 @@ function ExploreSection({ cards }: { cards: ExploreCard[] }) {
   );
 }
 
-function NewsSection({ news, loading, error }: { news: ReturnType<typeof useOfficialNews>['news']; loading: boolean; error: string | null }) {
+function NewsSection({
+  news,
+  loading,
+  error,
+  onRetry,
+}: {
+  news: ReturnType<typeof useOfficialNews>['news'];
+  loading: boolean;
+  error: string | null;
+  onRetry: () => void;
+}) {
   const shown = news.slice(0, 6);
   return (
     <section aria-labelledby="noticias-title" className="flex flex-col gap-4">
@@ -191,12 +203,12 @@ function NewsSection({ news, loading, error }: { news: ReturnType<typeof useOffi
           <p role="status" className="text-sm text-vice-text/80">
             Cargando noticias oficiales…
           </p>
+        ) : error && shown.length === 0 ? (
+          <ApiErrorState compact title="No pudimos cargar las noticias" message={error} onRetry={onRetry} />
         ) : shown.length === 0 ? (
           <div className="glass rounded-2xl p-5">
             <p className="font-semibold">Aún no hay noticias oficiales aquí.</p>
-            <p className="mt-1 text-sm text-vice-text/85">
-              {error ? 'No pudimos conectar con el servicio de noticias. ' : ''}Mientras tanto, lee la fuente original.
-            </p>
+            <p className="mt-1 text-sm text-vice-text/85">Mientras tanto, lee la fuente original.</p>
           </div>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -308,8 +320,8 @@ function ForumCard({
   );
 }
 
-function ForumSection({ authenticated }: { authenticated: boolean }) {
-  const { data } = useForumData();
+function ForumSection({ authenticated, onRetryAll }: { authenticated: boolean; onRetryAll: () => void }) {
+  const { data, unavailable, error } = useForumData();
   const [wall, setWall] = useState(false);
   const closeWall = useRef(() => setWall(false)).current;
   const names = useMemo(() => new Map(data.profiles.map((p) => [p.id, p.username])), [data.profiles]);
@@ -335,7 +347,9 @@ function ForumSection({ authenticated }: { authenticated: boolean }) {
           Ir al foro
         </a>
       </div>
-      {threads.length === 0 ? (
+      {unavailable ? (
+        <ApiErrorState compact title="No pudimos cargar el foro" message={error ?? ''} onRetry={onRetryAll} />
+      ) : threads.length === 0 ? (
         <p className="glass rounded-2xl p-5 text-sm">Aún no hay hilos. Sé la primera persona en abrir uno.</p>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2">
@@ -364,22 +378,27 @@ export default function HomePage() {
     canonicalPath: '/',
   });
   const authenticated = useAuthStore((s) => s.status === 'authenticated');
-  const { data: world } = useWorldData();
-  const { data: forum } = useForumData();
+  // Solo lo necesario: totales por módulo (consulta de 1 elemento), marcadores y las guías del módulo `guias`.
+  const { data: world, unavailable: worldDown, error: worldError, retry: retryWorld } = useWorldData(HOME_SCOPE);
   const { isActive, catalogActive } = useModuleGate();
-  const { news, loading: newsLoading, error: newsError } = useOfficialNews('all', 50);
+  const { retry: retryForum } = useForumData();
+  const { news, loading: newsLoading, error: newsError, retry: retryNews } = useOfficialNews('all', 50);
 
-  const slugById = new Map(world.modules.map((m) => [m.id, m.slug]));
-  const countOf = (slug: string): number => world.entities.filter((e) => slugById.get(e.module_id) === slug).length;
-  const guides = world.entities.filter((e) => slugById.get(e.module_id) === 'guias');
-  const plural = (n: number, one: string, many: string): string => `${n} ${n === 1 ? one : many}`;
+  const retryAll = (): void => {
+    retryWorld();
+    retryNews();
+    retryForum();
+  };
+  const countOf = (slug: string): number => world.counts[slug] ?? 0;
+  const guides = world.entities;
+  const plural = (n: number, one: string, many: string): string => (worldDown || world.modules.length === 0 ? '' : `${n} ${n === 1 ? one : many}`);
 
   const candidates: Array<ExploreCard | false> = [
-    isActive('mapa') && { href: '/mapa', title: 'Mapa interactivo', count: plural(world.markers.length, 'marcador', 'marcadores'), crop: CROPS.mapa },
-    catalogActive && isActive('armas') && { href: '/catalogo/armas', title: 'Armas', count: plural(countOf('armas'), 'ficha', 'fichas'), crop: CROPS.armas },
-    catalogActive && isActive('vehiculos') && { href: '/catalogo/vehiculos', title: 'Vehículos', count: plural(countOf('vehiculos'), 'ficha', 'fichas'), crop: CROPS.vehiculos },
-    catalogActive && isActive('coleccionables') && { href: '/catalogo/coleccionables', title: 'Coleccionables', count: plural(countOf('coleccionables'), 'ficha', 'fichas'), crop: CROPS.coleccionables },
-    isActive('guias') && { href: '/guias', title: 'Guías', count: plural(guides.length, 'guía', 'guías'), crop: CROPS.guias },
+    isActive('mapa') && { href: '/mapa', title: 'Mapa interactivo', count: plural(world.markers.length, 'marcador', 'marcadores') || null, crop: CROPS.mapa },
+    catalogActive && isActive('armas') && { href: '/catalogo/armas', title: 'Armas', count: plural(countOf('armas'), 'ficha', 'fichas') || null, crop: CROPS.armas },
+    catalogActive && isActive('vehiculos') && { href: '/catalogo/vehiculos', title: 'Vehículos', count: plural(countOf('vehiculos'), 'ficha', 'fichas') || null, crop: CROPS.vehiculos },
+    catalogActive && isActive('coleccionables') && { href: '/catalogo/coleccionables', title: 'Coleccionables', count: plural(countOf('coleccionables'), 'ficha', 'fichas') || null, crop: CROPS.coleccionables },
+    isActive('guias') && { href: '/guias', title: 'Guías', count: plural(guides.length, 'guía', 'guías') || null, crop: CROPS.guias },
     { href: '/noticias', title: 'Noticias oficiales', count: newsLoading || newsError ? null : plural(news.length, 'noticia', 'noticias'), crop: CROPS.noticias },
   ];
   const cards = candidates.filter((c): c is ExploreCard => c !== false);
@@ -388,9 +407,10 @@ export default function HomePage() {
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-10 pt-2 md:gap-12 md:px-8">
       <Hero guest={!authenticated} />
       <ExploreSection cards={cards} />
-      <NewsSection news={news} loading={newsLoading} error={newsError} />
+      {worldDown && <ApiErrorState compact title="No pudimos cargar el catálogo" message={worldError ?? ''} onRetry={retryAll} />}
+      <NewsSection news={news} loading={newsLoading} error={newsError} onRetry={retryAll} />
       {isActive('guias') && guides.length > 0 && <GuidesSection guides={guides} />}
-      {isActive('foro') && <ForumSection authenticated={authenticated} />}
+      {isActive('foro') && <ForumSection authenticated={authenticated} onRetryAll={retryAll} />}
       {!authenticated && (
         <section aria-labelledby="registro-title" className="glass flex flex-col items-start gap-4 rounded-3xl p-6 md:flex-row md:items-center md:justify-between md:p-8">
           <div>
@@ -404,7 +424,6 @@ export default function HomePage() {
           </PalmButton>
         </section>
       )}
-      {(world.source === 'seed' || forum.source === 'seed') && <p className="text-xs text-vice-text/60">{SAMPLE_NOTICE}</p>}
     </div>
   );
 }

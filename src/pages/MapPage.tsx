@@ -4,6 +4,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { SunsetBanner } from '../components/layout/ViceShell';
+import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { BottomSheet } from '../components/ui/BottomSheet';
 import { MapCanvas, type MapCanvasHandle, type MapPin, type MapRefOverlay, type MapTracer } from '../components/ui/MapCanvas';
 import { PalmButton } from '../components/ui/PalmButton';
@@ -13,7 +14,7 @@ import {
   entitySlug,
   slugify,
   MAP_LAYERS,
-  SAMPLE_NOTICE,
+  MAP_SCOPE,
   forumCategoryLabel,
   markerLayer,
   useForumData,
@@ -617,7 +618,8 @@ const errText = (e: unknown): string =>
   e instanceof ApiError && ![401, 403, 404].includes(e.status) ? e.message : 'No se pudo completar la acción.';
 
 export default function MapPage({ params }: { params: URLSearchParams }) {
-  const { data, error } = useWorldData();
+  // Solo módulos + marcadores + las fichas del módulo `mapa` (y las referenciadas por algún pin, si hiciera falta).
+  const { data, error, unavailable, retry } = useWorldData(MAP_SCOPE);
   const qc = useQueryClient();
   const items = useProgressStore((s) => s.items);
   const toggle = useProgressStore((s) => s.toggle);
@@ -970,13 +972,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
     />
   );
 
-  const notice = error
-    ? data.source === 'seed'
-      ? 'No se pudo conectar con el servidor: se muestran datos de ejemplo.'
-      : 'No se pudo actualizar desde el servidor.'
-    : data.source === 'seed'
-      ? SAMPLE_NOTICE
-      : null;
+  const notice = error && !unavailable ? 'No se pudo actualizar desde el servidor.' : null;
 
   const card = selected && (
     <MarkerCard
@@ -1000,6 +996,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
 
   return (
     <div ref={wrapRef} className="relative h-full w-full touch-none select-none overflow-hidden">
+      <h1 className="sr-only">Mapa de Leonida</h1>
       <MapCanvas
         ref={canvas}
         pins={pins}
@@ -1026,8 +1023,15 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
         }}
       />
 
+      {/* API caída, 429 o sin servidor: estado honesto con reintento (el mapa base sigue disponible) */}
+      {unavailable && (
+        <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
+          <ApiErrorState compact title="No pudimos cargar los marcadores" message={error ?? ''} onRetry={retry} />
+        </div>
+      )}
+
       {/* Sin resultados: aviso claro con salida directa */}
-      {pins.length === 0 && filtersActive && (
+      {pins.length === 0 && filtersActive && !unavailable && (
         <div role="status" className="pointer-events-none absolute inset-x-3 bottom-28 z-10 flex justify-center md:bottom-10">
           <div className="glass pointer-events-auto flex max-w-sm flex-col items-center gap-3 rounded-2xl p-4 text-center">
             <p className="font-semibold">No hay marcadores con estos filtros.</p>

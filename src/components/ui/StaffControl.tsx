@@ -379,7 +379,7 @@ function ModulesPanel() {
   const { data: world } = useWorldData();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // La config pública incluye también los módulos inactivos; sin API se muestra el seed.
+  // La config pública incluye también los módulos inactivos; si no responde se usan los módulos de /api/modules.
   const modules = (
     cfg.modules ?? world.modules.map((m) => ({ id: m.id, slug: m.slug, nombre: m.nombre, icono: m.icono, orden: m.orden, isActive: m.activo }))
   )

@@ -8,6 +8,7 @@
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { SunsetBanner } from '../components/layout/ViceShell';
 import { AdSlot } from '../components/ui/AdSlot';
+import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { BottomSheet } from '../components/ui/BottomSheet';
 import {
   EntityDetailPanel,
@@ -21,7 +22,6 @@ import {
 import { PalmButton } from '../components/ui/PalmButton';
 import { StatBar } from '../components/ui/StatBar';
 import {
-  SAMPLE_NOTICE,
   STAT_LABELS,
   entitySlug,
   forumCategoryLabel,
@@ -31,6 +31,7 @@ import {
   useEntityDetail,
   useForumData,
   useWorldData,
+  type WorldScope,
 } from '../data/seed';
 import { useAuthStore } from '../store/useAuthStore';
 import { useProgressStore } from '../store/useProgressStore';
@@ -270,9 +271,36 @@ interface CatalogInspectorProps {
   itemSlug: string | undefined;
 }
 
-function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps) {
+/** Guías (para «Guías que la mencionan» en la ficha): solo el módulo `guias`, sin marcadores. */
+const GUIDES_ONLY: WorldScope = { entities: ['guias'], markers: false };
+
+function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: CatalogInspectorProps) {
   const { path } = useLocation();
-  const { data, error } = useWorldData();
+  // Las categorías son slugs en minúsculas: /catalogo/ARMAS se normaliza con replaceState.
+  const categoria = categoriaRaw?.toLowerCase();
+  // /catalogo/mapa no es una categoría del catálogo: el mapa vive en /mapa (?pin=<slug> para un pin concreto).
+  const mapRedirect =
+    categoria === 'mapa' ? (itemSlug ? `/mapa?pin=${encodeURIComponent(itemSlug)}` : '/mapa') : null;
+  useEffect(() => {
+    if (mapRedirect) navigate(mapRedirect, { replace: true });
+    else if (categoriaRaw !== undefined && categoriaRaw !== categoria) {
+      navigate(`/catalogo/${categoria}${itemSlug ? `/${itemSlug}` : ''}${window.location.search}`, { replace: true, keepScroll: true });
+    }
+  }, [mapRedirect, categoriaRaw, categoria, itemSlug]);
+
+  // Solo se piden las fichas del módulo activo (el catálogo completo solo para enlaces heredados ?comparar= / ?entity=).
+  const legacyAll = !categoria && (params.get('comparar') !== null || params.get('entity') !== null);
+  const scopeSlug = categoria ?? params.get('modulo') ?? 'armas';
+  const {
+    data,
+    error,
+    unavailable,
+    loading: worldLoading,
+    retry,
+  } = useWorldData({
+    entities: legacyAll ? 'all' : mapRedirect || categoria === 'guias' ? [] : [scopeSlug],
+    markers: true,
+  });
   const { data: forum } = useForumData();
   const items = useProgressStore((s) => s.items);
   const toggle = useProgressStore((s) => s.toggle);
@@ -339,25 +367,23 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
   const moduleDef = tab ? data.modules.find((m) => m.slug === tab) : undefined;
   const catPath = `/catalogo/${tab ?? categoria ?? ''}`;
 
-  const inTab = (slug: string) => data.entities.filter((e) => modulesById.get(e.module_id)?.slug === slug && matchesQuery(e));
-  const tabEntities = tab ? inTab(tab) : [];
+  const tabEntities = tab ? data.entities.filter((e) => modulesById.get(e.module_id)?.slug === tab && matchesQuery(e)) : [];
   const categories = ['Todas', ...Array.from(new Set(tabEntities.map((e) => e.categoria)))];
   const list = cat === 'Todas' ? tabEntities : tabEntities.filter((e) => e.categoria === cat);
   // Un cambio de categoría (pestaña) restablece el filtro de subcategoría.
   useEffect(() => setCat('Todas'), [tab]);
 
-  // Búsqueda sin resultados en la pestaña activa: salta a la primera con coincidencias (replaceState).
-  const qTab =
-    q && tab && tabEntities.length === 0 && !itemSlug ? tabs.find((t) => inTab(t.slug).length > 0)?.slug : undefined;
-  useEffect(() => {
-    if (qTab) navigate(`/catalogo/${qTab}${buildQuery({ q: qValue })}`, { replace: true, keepScroll: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [qTab]);
 
   // Ítem de la URL (caché del mundo primero, luego API por slug).
   const urlItem = useEntityDetail(tab ?? '', itemSlug ?? '', Boolean(itemSlug && tab));
   const itemEntity = itemSlug && tab ? urlItem.entity : null;
-  const itemMissing = loaded && itemSlug !== undefined && tab !== null && !urlItem.loading && itemEntity === null;
+  const itemMissing =
+    loaded && itemSlug !== undefined && tab !== null && !urlItem.loading && !urlItem.error && itemEntity === null;
+  const failed = unavailable || urlItem.error;
+  const entitiesPending = worldLoading && data.entities.length === 0;
+  const moduleTotal = moduleDef ? data.entities.filter((e) => e.module_id === moduleDef.id).length : 0;
+  // Categoría válida pero sin fichas (p. ej. coleccionables): estado vacío limpio, no indexable.
+  const emptyState = !failed && !entitiesPending && loaded && tab !== null && tabEntities.length === 0 && itemEntity === null;
   const ficha = params.get('vista') === 'ficha' && itemEntity !== null;
   // Sin ítem en la URL, escritorio/tablet muestran el primero de la lista (la URL no cambia).
   const selected = itemSlug ? itemEntity : isDesktop ? (list[0] ?? null) : null;
@@ -446,6 +472,7 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
   // ---- Metadatos dinámicos (title, description, canonical, og:*, JSON-LD, robots) ---------------
   const meta = useMemo<PageMeta>(() => {
     const noindex = 'noindex,nofollow' as const;
+    if (failed) return { title: 'Catálogo de Leonida', robots: noindex };
     if (categoryMissing) return { title: 'Categoría no encontrada', robots: noindex };
     if (itemMissing) return { title: 'Elemento no encontrado', robots: noindex };
     if (!moduleDef || !tab) {
@@ -455,7 +482,7 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
       };
     }
     const origin = window.location.origin;
-    const robots = compare !== null ? noindex : undefined;
+    const robots = compare !== null || (moduleTotal === 0 && !entitiesPending && !itemEntity) ? noindex : undefined;
     const crumbList = (rest: Array<[string, string]>) => ({
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
@@ -494,7 +521,7 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
         ],
       };
     }
-    const count = data.entities.filter((e) => e.module_id === moduleDef.id).length;
+    const count = moduleTotal;
     const description = truncate(
       `${moduleDef.nombre} de Leonida: ${count} ${count === 1 ? 'ficha' : 'fichas'} con estadisticas y detalles en el catalogo de LeonidApp.`,
       160,
@@ -517,7 +544,7 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
         crumbList([[moduleDef.nombre, `/catalogo/${tab}`]]),
       ],
     };
-  }, [categoryMissing, itemMissing, moduleDef, tab, itemEntity, compare, data.entities]);
+  }, [failed, categoryMissing, itemMissing, moduleDef, tab, itemEntity, compare, moduleTotal, entitiesPending]);
   usePageMeta(meta);
 
   const detail = selected && (
@@ -539,13 +566,7 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
     />
   );
 
-  const notice = error
-    ? data.source === 'seed'
-      ? 'No se pudo conectar con el servidor: se muestran datos de ejemplo.'
-      : 'No se pudo actualizar desde el servidor.'
-    : data.source === 'seed'
-      ? SAMPLE_NOTICE
-      : null;
+  const notice = error && !failed ? 'No se pudo actualizar desde el servidor.' : null;
 
   const compareSheet = (
     <BottomSheet
@@ -565,6 +586,23 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
       )}
     </BottomSheet>
   );
+
+  if (mapRedirect) return null;
+
+  if (failed) {
+    return (
+      <div className="flex h-full min-h-0 flex-col px-3 pt-1 md:px-8">
+        <ApiErrorState
+          title="No pudimos cargar el catálogo"
+          message={urlItem.error ? urlItem.errorMessage : (error ?? '')}
+          onRetry={() => {
+            retry();
+            urlItem.retry();
+          }}
+        />
+      </div>
+    );
+  }
 
   if (categoryMissing) {
     return (
@@ -649,6 +687,11 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
         </div>
       )}
 
+      {categories.length <= 2 && entitiesPending && (
+        // Reserva el alto de la fila de subcategorías mientras llegan las fichas (CLS = 0).
+        <div aria-hidden="true" className="h-11 shrink-0 md:h-9" />
+      )}
+
       {itemMissing && !isDesktop && (
         <p role="status" className="glass rounded-xl p-3 text-center text-sm">
           No encontramos este elemento.{' '}
@@ -658,6 +701,31 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
         </p>
       )}
 
+      {emptyState ? (
+        <section
+          aria-label="Selección"
+          role="status"
+          className="glass flex min-h-0 flex-1 items-center justify-center rounded-2xl p-6 text-center"
+        >
+          <div>
+            <p className="font-display text-xl font-bold">
+              {q ? `Sin resultados para «${search.trim()}»` : 'Aún no hay fichas en esta categoría'}
+            </p>
+            <p className="mt-2 text-sm text-vice-text/80">
+              {q ? 'Prueba con otro nombre, categoría o alias.' : 'Estamos preparando este contenido: vuelve pronto.'}
+            </p>
+            {q && (
+              <button
+                type="button"
+                onClick={() => onSearch('')}
+                className="mt-4 min-h-11 rounded-full border border-vice-orange/40 px-5 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+              >
+                Limpiar búsqueda
+              </button>
+            )}
+          </div>
+        </section>
+      ) : (
       <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[minmax(260px,360px)_minmax(0,1fr)_minmax(300px,360px)] md:grid-rows-[minmax(0,1fr)] md:gap-5">
         {/* Rejilla de selección */}
         <section aria-label="Selección" className="glass flex min-h-0 flex-1 flex-col rounded-2xl p-3 md:p-4">
@@ -666,7 +734,9 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
             <span className="text-xs text-vice-text/80">{list.length} en total</span>
           </div>
           {list.length === 0 ? (
-            <p className="p-4 text-vice-text/70">No hay elementos para mostrar.</p>
+            <p role="status" className="p-4 text-vice-text/70">
+              {entitiesPending ? 'Cargando…' : 'No hay elementos para mostrar.'}
+            </p>
           ) : (
             <ul
               ref={gridRef}
@@ -737,6 +807,7 @@ function CatalogInspector({ params, categoria, itemSlug }: CatalogInspectorProps
             </p>
           ))}
       </div>
+      )}
 
       {notice && (
         <p role="status" className="shrink-0 pb-1 text-[11px] text-vice-text/60">
@@ -899,7 +970,8 @@ interface EntityFichaProps {
 }
 
 function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: EntityFichaProps) {
-  const { data } = useWorldData();
+  const { data } = useWorldData({ entities: [modulo], markers: true });
+  const { data: guideData } = useWorldData(GUIDES_ONLY);
   const { data: forum } = useForumData();
   const guest = useAuthStore((s) => s.status !== 'authenticated');
   const items = useProgressStore((s) => s.items);
@@ -917,7 +989,7 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
     .filter((t) => t.entity_id === entity.id || markers.some((m) => m.id === t.marker_id))
     .slice(0, 5);
   const guidesModule = data.modules.find((m) => m.slug === 'guias');
-  const guides = data.entities.filter(
+  const guides = guideData.entities.filter(
     (g) =>
       g.module_id === guidesModule?.id &&
       g.id !== entity.id &&
@@ -1072,7 +1144,6 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
       </section>
 
       <AdSlot position="after-content" className="mt-8" />
-      {data.source === 'seed' && <p className="mt-4 text-[11px] text-vice-text/60">{SAMPLE_NOTICE}</p>}
     </article>
   );
 }

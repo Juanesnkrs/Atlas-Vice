@@ -4,6 +4,7 @@
 // La restricción real la aplica el servidor: aquí solo se evita pedir/mostrar lo que no corresponde.
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo, useState, type FormEvent } from 'react';
+import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { BottomSheet } from '../components/ui/BottomSheet';
 import { Modal } from '../components/ui/Modal';
 import { PalmButton } from '../components/ui/PalmButton';
@@ -11,7 +12,6 @@ import {
   DISCORD_URL,
   entityHref,
   FORUM_CATEGORIES,
-  SAMPLE_NOTICE,
   forumCategoryLabel,
   relativeTime,
   useForumData,
@@ -72,8 +72,10 @@ function LockIcon({ size }: { size: number }) {
 }
 
 export default function ForumPage({ params }: { params: URLSearchParams }) {
-  const { data: forum, error, isPreview } = useForumData();
-  const { data: world } = useWorldData();
+  const { data: forum, error, isPreview, unavailable, retry } = useForumData();
+  // Las fichas solo se descargan si algún hilo (o el enlace) apunta a una; los marcadores y módulos son ligeros.
+  const wantEntities = params.has('entity') || forum.threads.some((t) => t.entity_id !== null);
+  const { data: world } = useWorldData({ entities: wantEntities ? 'all' : [], markers: true });
   const qc = useQueryClient();
   const status = useAuthStore((s) => s.status);
   const user = useAuthStore((s) => s.user);
@@ -81,7 +83,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
 
   const guest = isPreview;
   const canWrite = !guest && status === 'authenticated' && user !== null;
-  const remote = isApiConfigured && forum.source === 'api';
+  const remote = isApiConfigured;
 
   const deepLink = params.has('thread') || params.has('entity') || params.has('marker');
   const [wallRequested, setWallRequested] = useState(deepLink);
@@ -302,24 +304,13 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
     setBusy(true);
     setMessage(null);
     let created: ForumThread;
-    if (remote) {
-      try {
-        const { user_id: _uid, ...payload } = base;
-        created = await apiFetch<ForumThread>('/api/forum/threads', { method: 'POST', json: payload });
-      } catch (err) {
-        setBusy(false);
-        setMessage(`No se pudo publicar: ${err instanceof Error ? err.message : 'error'}`);
-        return;
-      }
-    } else {
-      created = {
-        ...base,
-        id: crypto.randomUUID(),
-        is_pinned: false,
-        upvotes_count: 0,
-        created_at: new Date().toISOString(),
-      };
-      setMessage('Publicado solo en esta sesión: no hay conexión con la API.');
+    try {
+      const { user_id: _uid, ...payload } = base;
+      created = await apiFetch<ForumThread>('/api/forum/threads', { method: 'POST', json: payload });
+    } catch (err) {
+      setBusy(false);
+      setMessage(`No se pudo publicar: ${err instanceof Error ? err.message : 'error'}`);
+      return;
     }
     patchForum((f) => ({ ...f, threads: [created, ...f.threads] }));
     setBusy(false);
@@ -340,18 +331,13 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
     setMessage(null);
     const base = { thread_id: selected.id, user_id: user.id, parent_post_id: replyTo, contenido };
     let created: ForumPost;
-    if (remote) {
-      try {
-        const { user_id: _uid, ...payload } = base;
-        created = await apiFetch<ForumPost>('/api/forum/posts', { method: 'POST', json: payload });
-      } catch (err) {
-        setBusy(false);
-        setMessage(`No se pudo responder: ${err instanceof Error ? err.message : 'error'}`);
-        return;
-      }
-    } else {
-      created = { ...base, id: crypto.randomUUID(), upvotes_count: 0, created_at: new Date().toISOString() };
-      setMessage('Respuesta guardada solo en esta sesión (sin API).');
+    try {
+      const { user_id: _uid, ...payload } = base;
+      created = await apiFetch<ForumPost>('/api/forum/posts', { method: 'POST', json: payload });
+    } catch (err) {
+      setBusy(false);
+      setMessage(`No se pudo responder: ${err instanceof Error ? err.message : 'error'}`);
+      return;
     }
     patchForum((f) => ({ ...f, posts: [...f.posts, created] }));
     setReplyText('');
@@ -366,6 +352,15 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
   };
 
   const votedThread = selected ? myVotes.has(`THREAD:${selected.id}`) : false;
+
+  if (unavailable) {
+    return (
+      <div className="flex h-full min-h-0 flex-col px-3 pt-1 md:px-8">
+        <h1 className="font-display text-2xl font-bold tracking-[0.04em] text-[#FFC09A] md:text-[26px]">COMUNIDAD</h1>
+        <ApiErrorState title="No pudimos cargar el foro" message={error ?? ''} onRetry={retry} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3 px-3 pt-1 md:px-8">
@@ -406,7 +401,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
       )}
 
       <div aria-live="polite" className="text-xs empty:hidden">
-        {error && <p className="text-vice-gold">Sin conexión con el servidor: mostrando los últimos datos guardados.</p>}
+        {error && !unavailable && <p className="text-vice-gold">No se pudo actualizar desde el servidor.</p>}
         {message && (
           <p role="alert" className="text-vice-gold">
             {message}
@@ -469,7 +464,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
           <div className="min-h-0 flex-1 overflow-y-auto px-0 pb-24 md:px-2.5 md:pb-2.5">
             {threads.length === 0 ? (
               <p className="glass rounded-xl p-4 text-vice-text/80">
-                {forum.threads.length === 0 && forum.source === 'api'
+                {forum.threads.length === 0
                   ? 'Aún no hay hilos. Sé la primera persona en abrir uno.'
                   : 'No hay hilos con estos filtros.'}
               </p>
@@ -533,7 +528,6 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
                 })}
               </ul>
             )}
-            {forum.source === 'seed' && <p className="mt-3 px-1 text-[11px] text-vice-text/60">{SAMPLE_NOTICE}</p>}
           </div>
         </section>
 

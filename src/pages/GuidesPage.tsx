@@ -4,9 +4,11 @@
 // (zona editorial con scroll), máx. 2 por página: docs/LeonidApp-Rutas-SEO-Monetizacion.md §6.
 import { useEffect, useMemo, useState } from 'react';
 import { AdSlot } from '../components/ui/AdSlot';
+import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { StatBar } from '../components/ui/StatBar';
 import {
-  SAMPLE_NOTICE,
+  FULL_SCOPE,
+  MODULES_SCOPE,
   entityHref,
   entitySlug,
   forumCategoryLabel,
@@ -16,10 +18,15 @@ import {
   useEntityDetail,
   useForumData,
   useWorldData,
+  type WorldScope,
 } from '../data/seed';
 import { useProgressStore } from '../store/useProgressStore';
 import { usePageMeta } from '../store/useRouteStore';
 import type { Entity } from '../types/database';
+
+/** Guías + marcadores (enlazado cruzado); el catálogo completo solo se pide si una guía referencia fichas de otros módulos. */
+const GUIDES_SCOPE: WorldScope = { entities: ['guias'], markers: true };
+const LIST_SCOPE: WorldScope = { entities: ['guias'], markers: false };
 
 const LINK =
   'flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold';
@@ -79,7 +86,7 @@ function GuideCard({ guide }: { guide: Entity }) {
 }
 
 function GuidesIndex() {
-  const { data, error } = useWorldData();
+  const { data, unavailable, error, retry, loading } = useWorldData(LIST_SCOPE);
   usePageMeta({
     title: 'Guías y misiones',
     description: 'Guías paso a paso de Leonida con progreso verificable: primeros pasos, rutas de tiendas, eventos y misiones.',
@@ -94,12 +101,18 @@ function GuidesIndex() {
       <p className="mt-1 max-w-2xl text-sm text-vice-text/85">
         Sigue cada guía paso a paso y marca lo que ya hiciste: tu avance se guarda en el dispositivo y, con cuenta, se sincroniza.
       </p>
-      {error && (
-        <p role="status" className="mt-2 text-xs text-vice-gold">
-          Sin conexión con el servidor: mostrando los últimos datos guardados.
-        </p>
-      )}
-      {guides.length === 0 ? (
+      {unavailable ? (
+        <ApiErrorState compact title="No pudimos cargar las guías" message={error ?? ''} onRetry={retry} />
+      ) : guides.length === 0 && (loading || data.modules.length === 0) ? (
+        // Esqueleto con el alto aproximado del listado mientras llegan las guías (el pie queda fuera de pantalla: CLS = 0).
+        <div role="status" aria-busy="true" aria-label="Cargando guías">
+          <ul aria-hidden="true" className="mt-5 grid gap-4 md:grid-cols-2">
+            {Array.from({ length: 12 }, (_, i) => (
+              <li key={i} className="glass h-[170px] rounded-[22px]" />
+            ))}
+          </ul>
+        </div>
+      ) : guides.length === 0 ? (
         <p className="glass mt-6 rounded-2xl p-5 text-vice-text/80">Aún no hay guías publicadas.</p>
       ) : (
         <ul className="mt-5 grid gap-4 md:grid-cols-2">
@@ -109,7 +122,6 @@ function GuidesIndex() {
         </ul>
       )}
       <AdSlot position="after-content" className="mt-8" />
-      <p className="mt-4 text-xs text-vice-text/60">{SAMPLE_NOTICE}</p>
     </div>
   );
 }
@@ -118,8 +130,13 @@ function GuidesIndex() {
 // Detalle
 // ---------------------------------------------------------------------------------------------
 function GuideDetail({ slug }: { slug: string }) {
-  const { entity: guide, loading } = useEntityDetail('guias', slug);
-  const { data } = useWorldData();
+  const { entity: guide, loading, error: guideError, errorMessage, retry: retryGuide } = useEntityDetail('guias', slug);
+  const base = useWorldData(GUIDES_SCOPE);
+  const unresolved = guide
+    ? loreRefs(guide).some((id) => !base.data.entities.some((e) => e.id === id) && !base.data.markers.some((m) => m.id === id))
+    : false;
+  const full = useWorldData(unresolved ? FULL_SCOPE : MODULES_SCOPE);
+  const data = unresolved && full.data.entities.length > 0 ? full.data : base.data;
   const { data: forum, isPreview } = useForumData();
   const toggleStep = useProgressStore((s) => s.toggleGuideStep);
   const wide = useWide();
@@ -138,8 +155,16 @@ function GuideDetail({ slug }: { slug: string }) {
           ),
           canonicalPath: `/guias/${slug}`,
         }
-      : { title: loading ? 'Cargando guía' : 'Guía no encontrada', robots: 'noindex,nofollow' },
+      : { title: loading ? 'Cargando guía' : guideError ? 'No pudimos cargar la guía' : 'Guía no encontrada', robots: 'noindex,nofollow' },
   );
+
+  if (!guide && guideError) {
+    return (
+      <div className="mx-auto w-full max-w-3xl px-4 pb-8 pt-4">
+        <ApiErrorState compact title="No pudimos cargar la guía" message={errorMessage} onRetry={retryGuide} />
+      </div>
+    );
+  }
 
   if (!guide) {
     return (
@@ -313,7 +338,6 @@ function GuideDetail({ slug }: { slug: string }) {
         </section>
 
         <AdSlot position="after-content" className="mt-8" />
-        <p className="mt-4 text-xs text-vice-text/60">{SAMPLE_NOTICE}</p>
       </article>
 
       {wide && (

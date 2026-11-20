@@ -1,20 +1,19 @@
-// P03 - Dashboard de Progreso (Hub `/hub` y `/progreso`): avance 100%, rutas sugeridas y novedades.
+// P03 - Dashboard de Progreso (Hub `/hub` y `/progreso`): avance 100% y novedades.
 // Sigue la pestaña Progreso de Mobile.dc.html; las novedades salen solo de la API de noticias oficiales.
 import { useEffect, useRef } from 'react';
+import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { StatBar, type StatAccent } from '../components/ui/StatBar';
 import { TipCard } from '../components/ui/TipCard';
 import {
   NEWS_SOURCES,
-  SAMPLE_NOTICE,
-  SEED_ROUTES,
-  SEED_TIPS,
+  TIPS,
+  describeApiError,
   useModuleGate,
   useOfficialNews,
   useProgressSummary,
   usePublicConfig,
-  useWorldData,
 } from '../data/seed';
-import { isApiConfigured, useAuthStore } from '../store/useAuthStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useProgressStore } from '../store/useProgressStore';
 import { CROPS, CropImg } from './HomePage';
 
@@ -72,13 +71,11 @@ function Ring({ percent }: { percent: number }) {
 }
 
 export default function DashboardPage({ section }: { section: 'hub' | 'progress' }) {
-  const { news, loading: newsLoading, error: newsError } = useOfficialNews('all', 3);
+  const { news, loading: newsLoading, error: newsError, retry: retryNews } = useOfficialNews('all', 3);
   const cfg = usePublicConfig();
   const { isActive, catalogActive } = useModuleGate();
   const quick = QUICK.filter((q) => (q.module === 'catalogo' ? catalogActive : q.module ? isActive(q.module) : true));
   const summary = useProgressSummary();
-  const { data, error } = useWorldData();
-  const items = useProgressStore((s) => s.items);
   const hydrated = useProgressStore((s) => s.hydrated);
   const syncStatus = useProgressStore((s) => s.syncStatus);
   const syncError = useProgressStore((s) => s.syncError);
@@ -91,14 +88,6 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
   useEffect(() => {
     if (section === 'progress') progressRef.current?.scrollIntoView({ block: 'start' });
   }, [section]);
-
-  const markerIds = new Set(data.markers.map((m) => m.id));
-  const routes = SEED_ROUTES.map((r) => {
-    const ids = r.markerIds.filter((id) => markerIds.has(id));
-    const done = ids.filter((id) => items[`marker:${id}`]?.completado).length;
-    const nextId = ids.find((id) => !items[`marker:${id}`]?.completado);
-    return { ...r, total: ids.length, done, nextId };
-  }).filter((r) => r.total > 0);
 
   const authenticated = status === 'authenticated';
   const markers = summary.categories.find((c) => c.id === 'markers');
@@ -120,6 +109,11 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
             <p role="status" className="mt-4 text-vice-text/80">
               Cargando tu progreso local…
             </p>
+          ) : summary.unavailable ? (
+            <ApiErrorState compact title="No pudimos calcular tu avance" message={summary.error ?? describeApiError()} onRetry={() => {
+                summary.retry();
+                retryNews();
+              }} />
           ) : (
             <>
               <div className="mt-4 flex items-center gap-5">
@@ -180,30 +174,8 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
         </section>
 
         <div className="flex flex-col gap-5">
-          <TipCard tips={SEED_TIPS} />
+          <TipCard tips={TIPS} />
         </div>
-
-        {/* Rutas sugeridas */}
-        <section aria-labelledby="rutas-title" className="glass rounded-3xl p-5 md:p-6 lg:col-span-2">
-          <h2 id="rutas-title" className="font-display text-xl font-bold">
-            Rutas sugeridas
-          </h2>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-            {routes.map((r) => (
-              <li key={r.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <h3 className="font-display text-lg font-bold">{r.titulo}</h3>
-                <p className="text-sm text-vice-text/80">{r.descripcion}</p>
-                <StatBar className="mt-3" label="Completado" value={(r.done / r.total) * 100} valueLabel={`${r.done}/${r.total}`} accent="gold" />
-                <a
-                  href={r.nextId ? `/mapa?marker=${r.nextId}` : '/mapa'}
-                  className={`mt-3 inline-flex min-h-11 items-center rounded-full bg-vice-accent px-5 font-bold text-vice-ink ${FOCUS}`}
-                >
-                  {r.nextId ? 'Ir al siguiente punto' : 'Ruta completa · ver mapa'}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
 
         {/* Anuncio global (config pública) */}
         {cfg.announcement && (
@@ -223,14 +195,23 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
               Ver todas
             </a>
           </div>
-          <div aria-live="polite" className="mt-2">
+          <div aria-live="polite" className={newsLoading ? 'mt-2 min-h-[280px] md:min-h-[88px]' : 'mt-2'}>
             {newsLoading ? (
               <p role="status" className="text-sm text-vice-text/80">
                 Cargando noticias oficiales…
               </p>
             ) : newsError || news.length === 0 ? (
               <p className="glass rounded-2xl p-4 text-sm">
-                {newsError ? 'No pudimos cargar las noticias oficiales. ' : 'Aún no hay noticias oficiales. '}
+                {newsError ? (
+                  <>
+                    {newsError}{' '}
+                    <button type="button" onClick={retryNews} className={`inline-flex min-h-11 items-center font-semibold text-vice-orange underline ${FOCUS}`}>
+                      Reintentar
+                    </button>{' '}
+                  </>
+                ) : (
+                  'Aún no hay noticias oficiales. '
+                )}
                 <a
                   href="https://www.rockstargames.com/newswire"
                   target="_blank"
@@ -286,12 +267,6 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
         </nav>
       </div>
 
-      {(error || data.source === 'seed' || !isApiConfigured) && (
-        <p role="status" className="mt-6 text-xs text-vice-text/60">
-          {error ? `No se pudo conectar con el servidor (${error}). ` : ''}
-          {SAMPLE_NOTICE}
-        </p>
-      )}
     </div>
   );
 }

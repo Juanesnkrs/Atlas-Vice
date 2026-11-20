@@ -1,10 +1,10 @@
 // =============================================================================
-// ATLAS VICE - Tipos TypeScript mapeados 1:1 a supabase/schema.sql
-// Formato compatible con `supabase gen types typescript` (supabase-js v2).
-// NO añadir columnas que no existan en schema.sql.
+// LeonidApp - Tipos del cliente: forma de las filas que sirve la API Fastify (MongoDB).
+// Fuente de verdad: docs/LeonidApp-Arquitectura-Datos-MongoDB.md y server/src/models/*.
+// NO añadir campos que la API no devuelva.
 // =============================================================================
 
-export type Json =
+type Json =
   | string
   | number
   | boolean
@@ -13,13 +13,13 @@ export type Json =
   | Json[];
 
 // ---- Dominios CHECK del esquema ---------------------------------------------
-export type ProfileRol = 'USER' | 'ADMIN';
-export type SubmissionTipo = 'MARKER' | 'ENTITY' | 'CORRECTION';
-export type SubmissionEstado = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
+type ProfileRol = 'USER' | 'ADMIN';
+type SubmissionTipo = 'MARKER' | 'ENTITY' | 'CORRECTION';
+type SubmissionEstado = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
 export type ForumCategoria = 'General' | 'Guias/Ayuda' | 'Secretos' | 'Crews';
-export type VoteTargetType = 'THREAD' | 'POST';
+type VoteTargetType = 'THREAD' | 'POST';
 
-export type Database = {
+type Database = {
   public: {
     Tables: {
       profiles: {
@@ -407,7 +407,7 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
-      /** supabase/02_rls_and_triggers.sql - true si auth.uid() tiene rol ADMIN. */
+      /** true si el usuario autenticado tiene rol ADMIN (en la API lo decide el hook de RBAC). */
       is_admin: {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
@@ -420,21 +420,17 @@ export type Database = {
 
 // ---- Helpers de conveniencia ------------------------------------------------
 type PublicTables = Database['public']['Tables'];
-export type TableName = keyof PublicTables;
-export type Tables<T extends TableName> = PublicTables[T]['Row'];
-export type TablesInsert<T extends TableName> = PublicTables[T]['Insert'];
-export type TablesUpdate<T extends TableName> = PublicTables[T]['Update'];
+type TableName = keyof PublicTables;
+type Tables<T extends TableName> = PublicTables[T]['Row'];
 
 export type Profile = Tables<'profiles'>;
 export type Module = Tables<'modules'>;
 export type Entity = Tables<'entities'>;
 export type MapMarker = Tables<'map_markers'>;
-export type UserProgress = Tables<'user_progress'>;
-export type Submission = Tables<'submissions'>;
 /** `replies_count` lo calcula la API (agregacion sobre ForumPost); no se persiste. */
 export type ForumThread = Tables<'forum_threads'> & { replies_count?: number };
 /** Hilo en formato preview (invitado): sin `contenido`. Respuesta de GET /api/forum sin sesion. */
-export type ForumThreadPreview = Omit<Tables<'forum_threads'>, 'contenido'> & { replies_count: number };
+type ForumThreadPreview = Omit<Tables<'forum_threads'>, 'contenido'> & { replies_count: number };
 /** Autor publico reducido que devuelve la API en modo preview. */
 export type ForumProfilePreview = Pick<Tables<'profiles'>, 'id' | 'username' | 'avatar_url'>;
 /** Contrato de GET /api/forum: `preview: true` (sin sesion) o respuesta completa. */
@@ -442,15 +438,14 @@ export type ForumApiResponse =
   | { preview: true; threads: ForumThreadPreview[]; posts: []; profiles: ForumProfilePreview[] }
   | { preview: false; threads: ForumThread[]; posts: ForumPost[]; profiles: ForumProfilePreview[] };
 export type ForumPost = Tables<'forum_posts'>;
-export type ForumVote = Tables<'forum_votes'>;
 
 // =============================================================================
 // LeonidApp (MongoDB) - contratos de API reflejados desde server/src/models/*
 // Fuente: docs/LeonidApp-Arquitectura-Datos-MongoDB.md. No añadir campos nuevos.
 // =============================================================================
-export const SUBMISSION_TYPES = ['marker', 'entity', 'correction', 'contact', 'newsletter'] as const;
-export type SubmissionType = (typeof SUBMISSION_TYPES)[number];
-export type SubmissionStatus = 'pending' | 'approved' | 'rejected';
+const SUBMISSION_TYPES = ['marker', 'entity', 'correction', 'contact', 'newsletter'] as const;
+type SubmissionType = (typeof SUBMISSION_TYPES)[number];
+type SubmissionStatus = 'pending' | 'approved' | 'rejected';
 
 export interface SubmissionDTO {
   id: string;
@@ -464,31 +459,6 @@ export interface SubmissionDTO {
   reviewedBy: string | null; // 'system' en aprobación automática
   promotedTo: { collection: 'MapMarker' | 'Entity'; id: string } | null;
   createdAt: string;
-}
-
-export interface EntityDTO {
-  id: string;
-  module_id: string;
-  slug: string;
-  titulo: string;
-  subtitulo: string | null;
-  categoria: string;
-  imagen_url: string | null;
-  stats_json: Record<string, unknown>;
-  metadata_json: Record<string, unknown>;
-  created_at: string;
-  module_slug?: string; // solo en GET /api/modules/:moduleSlug/entities/:slug
-}
-
-export interface OfficialNewsDTO {
-  id: string;
-  title: string;
-  summary: string;
-  sourceUrl: string;
-  source: 'rockstar-newswire' | 'rockstar-youtube' | 'take-two-ir';
-  imageUrl: string | null;
-  publishedAt: string;
-  slug: string;
 }
 
 export type AdRoute = '/catalogo/:categoria/:itemSlug' | '/guias' | '/guias/:slug' | '/noticias' | '/noticias/:slug' | '/foro';

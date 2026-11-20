@@ -7,9 +7,10 @@
 //   /                       Portada pública (HomePage)
 //   /entrar                 P01+P02  Acceso: OAuth2 PKCE + Magic Link (noindex)
 //   /hub, /progreso         P03      Dashboard (noindex)
-//   /mapa                   P04      Mapa de Leonida (?region= &marker=)
+//   /mapa                   P04      Mapa de Leonida (?region= ?pin=<slug>; ?marker= y ?entity= heredados)
 //   /catalogo               P05      Entrada: replaceState a /catalogo/armas (?q= ?comparar= ?modulo= ?entity= heredados)
-//   /catalogo/:categoria    P05      Inspector NUI de una categoría (Module.slug activo)
+//   /catalogo/:categoria    P05      Inspector NUI de una categoría (Module.slug activo; en minúsculas)
+//   /catalogo/mapa[/:slug]           replaceState a /mapa[?pin=<slug>] (el mapa no es una categoría del catálogo)
 //   /catalogo/:categoria/:itemSlug   Inspector con el ítem preseleccionado (?vista=ficha = ficha completa)
 //   /guias, /guias/:slug             Guías (editorial)
 //   /noticias, /noticias/:slug       Noticias oficiales
