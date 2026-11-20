@@ -59,7 +59,9 @@ export interface PageMeta {
   path: string; // ruta limpia canonica (sin query ni hash)
   type: 'website' | 'article';
   image: string; // URL absoluta
-  robots: 'index,follow' | 'noindex,nofollow';
+  robots: 'index,follow' | 'noindex,follow' | 'noindex,nofollow';
+  /** Sin <link rel=canonical> ni og:url (p. ej. categoria vacia: no se declara una URL canonica engañosa). */
+  noCanonical?: boolean;
   jsonLd: JsonLd[];
   publishedTime?: string;
 }
@@ -280,6 +282,9 @@ async function guidePage(slug: string): Promise<PageMeta> {
 
 const CATALOG_DEFAULT = 'armas';
 
+/** "<Nombre> de Leonida" sin duplicar el sufijo cuando el nombre del modulo ya lo incluye. */
+const withLeonida = (nombre: string): string => (/leonida/i.test(nombre) ? nombre : `${nombre} de Leonida`);
+
 /** Categoria por defecto del catalogo: `armas` si esta activa; si no, la primera activa por `orden` (excluye guias). null sin BD/modulos. */
 export async function defaultCategory(): Promise<string | null> {
   return withDb(async () => {
@@ -299,15 +304,31 @@ async function categoryPage(moduleSlug: string): Promise<Resolved> {
   if (!mod) return { kind: 'page', meta: notFound() };
   const count = await Entity.countDocuments({ module_id: mod._id }).exec();
   const path = `/catalogo/${moduleSlug}`;
+  if (count === 0) {
+    // Categoria activa sin fichas: 200 para la SPA (estado vacio), pero sin indexar y sin canonical ni JSON-LD de lista.
+    return {
+      kind: 'page',
+      meta: base({
+        path,
+        title: `${mod.nombre}: sin fichas por ahora`,
+        description: truncate(
+          `La categoria ${mod.nombre} todavia no tiene fichas en el catalogo de LeonidApp. Explora otras categorias mientras la completamos.`,
+          160,
+        ),
+        robots: 'noindex,follow',
+        noCanonical: true,
+      }),
+    };
+  }
   const description = truncate(
-    `${mod.nombre} de Leonida: ${count} ${count === 1 ? 'ficha' : 'fichas'} con estadisticas y detalles en el catalogo de LeonidApp.`,
+    `${withLeonida(mod.nombre)}: ${count} ${count === 1 ? 'ficha' : 'fichas'} con estadisticas y detalles en el catalogo de LeonidApp.`,
     160,
   );
   return {
     kind: 'page',
     meta: base({
       path,
-      title: `${mod.nombre} de Leonida`,
+      title: withLeonida(mod.nombre),
       description,
       jsonLd: [
         {
@@ -409,6 +430,30 @@ async function catalogRoot(search: URLSearchParams): Promise<Resolved> {
 export async function resolveRoute(pathname: string, search: URLSearchParams): Promise<Resolved> {
   const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
 
+  // /catalogo/mapa[/:slug] (sin distinguir mayusculas): el mapa se explora solo en /mapa.
+  const mapaM = /^\/catalogo\/mapa(?:\/([^/]+))?$/i.exec(path);
+  if (mapaM) {
+    let pin = mapaM[1] ?? '';
+    try {
+      pin = decodeURIComponent(pin);
+    } catch {
+      pin = '';
+    }
+    pin = pin.toLowerCase();
+    return { kind: 'redirect', to: pin && SLUG_RE.test(pin) ? `/mapa?pin=${encodeURIComponent(pin)}` : '/mapa' };
+  }
+
+  // Mayusculas en la ruta: si la version en minusculas existe, 301 a ella (conserva la query); si no, el 404 de siempre.
+  if (/[A-Z]/.test(path)) {
+    const lower = path.toLowerCase();
+    const r = await resolveRoute(lower, search);
+    if (r.kind === 'page' && r.meta.status === 200) {
+      const qs = search.toString();
+      return { kind: 'redirect', to: lower + (qs ? `?${qs}` : '') };
+    }
+    return r.kind === 'page' ? { kind: 'page', meta: notFound() } : r;
+  }
+
   if (path === '/aportes') return { kind: 'redirect', to: '/aportar' };
   if (path === '/') return { kind: 'page', meta: landing() };
   if (NOINDEX_PAGES[path]) {
@@ -487,7 +532,8 @@ export function renderHead(meta: PageMeta): string {
     `<meta name="description" content="${e(desc)}" />`,
     `<meta name="robots" content="${meta.robots}" />`,
   ];
-  if (meta.status === 200) lines.push(`<link rel="canonical" href="${e(url)}" />`);
+  const withUrl = meta.status === 200 && !meta.noCanonical;
+  if (withUrl) lines.push(`<link rel="canonical" href="${e(url)}" />`);
   lines.push(
     `<meta property="og:site_name" content="${SITE_NAME}" />`,
     `<meta property="og:locale" content="es_ES" />`,
@@ -496,7 +542,7 @@ export function renderHead(meta: PageMeta): string {
     `<meta property="og:description" content="${e(desc)}" />`,
     `<meta property="og:image" content="${e(meta.image)}" />`,
   );
-  if (meta.status === 200) lines.push(`<meta property="og:url" content="${e(url)}" />`);
+  if (withUrl) lines.push(`<meta property="og:url" content="${e(url)}" />`);
   if (meta.publishedTime) lines.push(`<meta property="article:published_time" content="${e(meta.publishedTime)}" />`);
   lines.push(
     `<meta name="twitter:card" content="summary_large_image" />`,

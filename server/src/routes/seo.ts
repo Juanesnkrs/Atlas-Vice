@@ -83,7 +83,9 @@ export async function collectUrls(): Promise<UrlEntry[]> {
     '/noticias': maxDate(newsUrls.map((u) => u.lastmod)),
   };
   const statics = STATIC_PATHS.map((p) => ({ loc: p, lastmod: staticLastmod[p] }));
-  return [...statics, ...categories, ...catalog, ...guides, ...newsUrls];
+  // Sin duplicados por URL (la primera aparicion gana).
+  const seen = new Set<string>();
+  return [...statics, ...categories, ...catalog, ...guides, ...newsUrls].filter((u) => !seen.has(u.loc) && !!seen.add(u.loc));
 }
 
 const lm = (d?: Date) => (d ? `<lastmod>${d.toISOString()}</lastmod>` : '');
