@@ -316,3 +316,10 @@ Reglas:
 | `ForumPost` | `thread_id` |
 | `ForumVote` | `{ user_id, target_type, target_id }` único |
 | `AuditLog` | `{ created_at: -1 }` · `{ actor_id, created_at: -1 }` |
+
+## Anexo. Exposición pública y respuestas uniformes
+
+- **Foro público:** la proyección pública de autores expone solo `id`, `username` y `avatar_url` (nunca `rol` ni `email`).
+- **Superficie administrativa:** `/api/admin/*` y los POST/PATCH/DELETE administrativos de catálogo, mapa, roles, configuración y auditoría devuelven un **404 genérico** (idéntico al de una ruta inexistente) a quien no tenga sesión de staff autorizada; el RBAC se evalúa antes que la validación Zod. Lectura de `AuditLog`, cambio de roles y configuración: `SUPER_ADMIN`. Moderación y catálogo: `MODERATOR+`.
+- **`GET /api/entities`:** admite `?limit=&page=` y `?module=`; respuesta comprimida con `Cache-Control`/`ETag`.
+- Cifras vigentes del catálogo: 243 `Entity` (armas 13, vehículos 200, guías 20, mapa 10), 10 `MapMarker`, 1 `OfficialNews`.

@@ -143,6 +143,8 @@ src/
 └── types/             database.ts
 ```
 
+Los módulos de administración (panel oculto `/_staff`: moderación, Control Total, gestión de identidades, editor de pines y panel de catálogo) viven como **archivos** dentro de `src/pages/` y `src/components/ui/`, sin carpetas nuevas; su código se separa solo en el build (chunks en `/_staff/assets/`) y nunca se enlaza desde la UI pública, el dock, el footer ni el Hub.
+
 `HomePage.tsx` (portada `/`), `GuidesPage.tsx` (`/guias`, `/guias/:slug`) y `NewsPage.tsx` (`/noticias`, `/noticias/:slug`) son las únicas páginas nuevas aprobadas; `useRouteStore.ts` es el único store nuevo aprobado. Ninguna otra subcarpeta en `src/`.
 
 ### 6.2 API `server/src/`
@@ -167,7 +169,7 @@ server/src/
 
 ### 6.3 Fuera del árbol, válidos
 
-`server/` (raíz del backend), `supabase/` (legado, no se amplía), `android/`, `ios/`, `public/` (assets, `robots.txt`), `docs/`, `graphify-out/`, `.claude/skills/graphify/`.
+`server/` (raíz del backend), `supabase/` (legado, no se amplía), `android/`, `ios/`, `public/` (assets y `map-tiles/`; el `robots.txt` es dinámico y lo emite Fastify con solo `Disallow: /api/`), `docs/`, `graphify-out/`, `.claude/skills/graphify/`.
 
 ---
 
@@ -182,7 +184,9 @@ Objetivo: una app **al punto y al grano**, con la identidad Vice Sunset NUI. El 
   - Derecha en escritorio: enlaces de texto `Guías` y `Noticias`.
   - Derecha en escritorio y móvil: botón de progreso (`NN%`, enlaza a `/progreso`) y `Entrar` (sin sesión) o el nombre del usuario (con sesión).
   - Se elimina la etiqueta "Local" y cualquier jerga técnica visible.
-- **BottomDock:** idéntico en escritorio y móvil (§3), con Hub, Mapa, Catálogo, Foro y Aportar.
+- **BottomDock:** idéntico en escritorio y móvil (§3), con Hub, Mapa, Catálogo, Foro y Aportar (5 ítems). No contiene accesos a administración. El footer enlaza «Aportar» (no «Aportes y moderación»). `/aportar` es un buzón comunitario público sin menciones a moderación, roles ni administración.
+- **Hub:** la tarjeta «Rutas sugeridas» se oculta mientras no existan rutas reales. **`/entrar`:** máximo 4 botones; los proveedores con `configured:false` se ocultan o muestran «Próximamente».
+- **Fallo de API:** estado de error honesto con botón de reintento; no se muestran datos de ejemplo inventados.
 - **Footer:** un único `RockstarFooter`, solo al final de las páginas con scroll.
   - Se elimina la franja compacta "© LeonidApp ▲" de las pantallas HUD (Mapa, Inspector, Foro en escritorio).
   - El Footer nunca queda debajo del dock ni apilado con él: el contenido reserva al final el alto del dock más `env(safe-area-inset-bottom)`.
@@ -257,6 +261,6 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
 - **Proyección:** las teselas cubren el rectángulo del mundo `x ∈ [249.6, 760.6]`, `y ∈ [13.2, 733.2]` del lienzo 0–1000 × 0–700 (`manifest.json` → `world`), con la misma transformación lineal que los `MapMarker` de MongoDB: `x = (px − 500)·0,2·K + 249,59660`, `y = (py − 650)·0,2·K + 13,17385`, `K = 0,387112` (`px, py` en píxeles del referente).
 - `src/components/ui/mapPaint.ts`: pinta en un `<canvas>` únicamente las teselas visibles del nivel `z` adecuado a la escala (caché en memoria; mientras carga una tesela se dibuja el recorte de su ancestro `z-1`… para evitar huecos). El bitmap se mueve con `translate3d` + `scale` en cada frame de rAF y solo se repinta al cargar teselas, cambiar de nivel `z` o alejarse del bitmap en caché.
 - `src/components/ui/MapCanvas.tsx`: transformación `{ x, y, scale }` en una `ref` aplicada con `requestAnimationFrame`; zoom anclado al cursor, pinch, inercia, límites sobre el contorno de la isla (`ISLAND_BBOX`), clustering por rejilla y *culling*. En SVG quedan **solo** los elementos interactivos: pines, clusters, mira, trazador y calca del Modo Editor.
-- `MapPage.tsx`: filtros AND (capas, región, ocultar completados), buscador con normalización NFD, deep-link `?pin=` y **Modo Editor** (solo `hasRole('ADMIN')`): mira, copiar `(x, y)`, alta/movimiento de marcadores vía `POST`/`PATCH /api/markers`, calca de referencia y trazador SVG.
+- `MapPage.tsx`: filtros AND (capas, región, ocultar completados), buscador con normalización NFD, deep-link `?pin=` y **Modo Editor** (solo en el panel oculto `/_staff` para staff autorizado; no existe en la UI pública): mira, copiar `(x, y)`, alta/movimiento de marcadores vía `POST`/`PATCH /api/markers`, calca de referencia y trazador SVG.
 - **Nitidez en táctil:** el bitmap de teselas usa DPR máx. 2 en escritorio y 2,5 en táctil (límite 6144 px por lado); con DPR 3 el nivel nativo `z=4` se alcanza desde ~4,3 px CSS/unidad en lugar de ~6,2. El contador de completados queda a la izquierda de la barra de zoom.
 - `public/sw.js` (`leonidapp-static-v4`): `/map-tiles/*` con *stale-while-revalidate*.

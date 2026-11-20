@@ -12,7 +12,7 @@
 - Sin librería de router externa: el núcleo (`navigate`, `popstate`, interceptación de `<a href>` internos, `matchRoute`, `usePageMeta`) vive en `src/store/useRouteStore.ts`; la tabla `ruta → vista` y las guardas, en `src/App.tsx`.
 - Fastify es el origen único en producción:
   - Sirve los archivos estáticos compilados de `dist/` (`/assets/*` y demás rutas con extensión) con `node:fs`, sin dependencias nuevas: tipo MIME por extensión, protección contra path traversal (la ruta resuelta debe quedar dentro de `dist/`), `Cache-Control: public, max-age=31536000, immutable` para `/assets/*` y `404` JSON si el archivo no existe.
-  - Sirve `index.html` (con SSR-lite, §3) para toda ruta del cliente que no empiece por `/api/`, no tenga extensión y no sea `/sitemap.xml` ni `/robots.txt` (fallback SPA). Rutas desconocidas → `404` real con `<meta name="robots" content="noindex">`.
+  - Sirve `index.html` (con SSR-lite, §3) para toda ruta del cliente que no empiece por `/api/`, no tenga extensión y no sea `/sitemap.xml` ni `/robots.txt` (fallback SPA). `/_staff` y su carpeta de chunks siguen el comportamiento de §1.5. Rutas desconocidas → `404` real con `<meta name="robots" content="noindex">`.
 - Compatibilidad: el cliente convierte `#/<ruta>` heredado a `/<ruta>` con `history.replaceState` una sola vez al arrancar.
 
 ### 1.1 Mapa oficial de rutas públicas (indexables)
@@ -29,7 +29,7 @@
 | `/noticias` | Listado de noticias oficiales | `OfficialNews` | Sí |
 | `/noticias/:slug` | Noticia oficial (título, extracto, enlace al original) | `OfficialNews.slug` | Sí |
 | `/foro` | P07 Foro (`ForumPage.tsx`) | `ForumThread` | Sí |
-| `/aportar` | P06 Aportes (USER), moderación (MODERATOR+), Control Total (SUPER_ADMIN) | `Submission` | No (`noindex`) |
+| `/aportar` | P06 Aportar: buzón comunitario 100 % público (sugerencias de marcadores, fichas y correcciones; sin referencias a moderación ni administración) | `Submission` | No (`noindex`) |
 
 ### 1.2 Rutas de aplicación (no indexables, `noindex`, fuera del sitemap)
 
@@ -112,6 +112,14 @@ Reglas:
 
 ---
 
+## 1.5 Redirecciones, categorías vacías y ruta oculta
+
+- `/catalogo/mapa` y `/catalogo/mapa/:slug` responden `301` a `/mapa` y `/mapa?pin=<slug>` (el mapa se explora solo en `/mapa`; no hay categoría de catálogo `mapa` ni entradas suyas en el sitemap).
+- `/catalogo/ARMAS` (cualquier mayúscula) se normaliza con `301` a minúsculas.
+- Categorías vacías (hoy `coleccionables`): `noindex`, estado vacío limpio y fuera del sitemap.
+- **Ruta oculta `/_staff`** (cliente y SSR): panel de staff sin enlace público, fuera de robots y sitemap. Sus chunks viven en `/_staff/assets/` y el servidor solo los sirve a sesión de staff autorizada (MODERATOR+ moderación/catálogo; SUPER_ADMIN Control Total, roles, identidades y auditoría); en otro caso responde el mismo 404 que una ruta inexistente. `/api/admin/*` y los POST/PATCH/DELETE administrativos devuelven ese 404 genérico sin sesión de staff autorizada (RBAC antes que Zod). Limitación aceptada: requiere red y mismo origen (no offline ni Capacitor).
+- `GET /api/entities` admite `?limit=&page=` y `?module=`, con compresión y `Cache-Control`/`ETag`. Se emiten CSP y HSTS (HSTS solo en producción).
+
 ## 4. `GET /sitemap.xml` y `robots.txt`
 
 - `GET /sitemap.xml` (Fastify, `server/src/routes/seo.ts`) genera **URLs limpias sin `#`** y sin parámetros de consulta.
@@ -119,7 +127,7 @@ Reglas:
 - `lastmod` real: `Entity.created_at`, `OfficialNews.updatedAt` / `publishedAt`; las estáticas y las categorías usan la fecha máxima de sus fichas. Sin duplicados ni URLs antiguas (`?modulo=`, `?entity=`).
 - Límite 50 000 URLs por archivo; si se supera, `GET /sitemap.xml` devuelve un `sitemapindex` con `/sitemap-<n>.xml`.
 - `Content-Type: application/xml; charset=utf-8`, `Cache-Control: public, max-age=3600`.
-- `robots.txt` (en `public/`): `Allow: /`, `Disallow: /api/`, `Disallow: /aportar`, `Disallow: /hub`, `Disallow: /progreso`, `Disallow: /entrar`, `Sitemap: <PUBLIC_SITE_URL>/sitemap.xml`.
+- `robots.txt` (dinámico en `server/src/routes/seo.ts`): `Allow: /`, **únicamente `Disallow: /api/`**, `Sitemap: <PUBLIC_SITE_URL>/sitemap.xml`. Las rutas privadas (`/aportar`, `/hub`, `/progreso`, `/entrar`) se excluyen con `noindex` por meta, no listándolas en robots. La ruta oculta `/_staff` no aparece ni en robots ni en sitemap.
 
 ---
 
