@@ -53,10 +53,13 @@ export class ApiError extends Error {
   readonly status: number;
   /** Detalle de validación del servidor (árbol de Zod), si lo hay. */
   readonly details: unknown;
-  constructor(status: number, message: string, details?: unknown) {
+  /** Código de negocio opcional del servidor (distingue un 404 de recurso del 404 uniforme de ruta). */
+  readonly code: string | undefined;
+  constructor(status: number, message: string, details?: unknown, code?: string) {
     super(message);
     this.status = status;
     this.details = details;
+    this.code = code;
   }
 }
 
@@ -78,7 +81,7 @@ export async function apiFetch<T>(path: string, init: RequestInit & { json?: unk
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const msg = (data as { error?: string } | null)?.error ?? `Error ${res.status}`;
-    throw new ApiError(res.status, msg, (data as { details?: unknown } | null)?.details);
+    throw new ApiError(res.status, msg, (data as { details?: unknown } | null)?.details, (data as { code?: string } | null)?.code);
   }
   return data as T;
 }

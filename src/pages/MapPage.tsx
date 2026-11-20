@@ -2,16 +2,16 @@
 // filtros combinados sincronizados con la URL, buscador instantáneo, ficha de marcador con check 100%
 // (P04.3), drawer de hilos (P07.3) y Modo Editor de coordenadas para ADMIN+.
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SunsetBanner } from '../components/layout/ViceShell';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { BottomSheet } from '../components/ui/BottomSheet';
+import { EntityPicker, type PickedEntity } from '../components/ui/EntityPicker';
 import { MapCanvas, type MapCanvasHandle, type MapPin, type MapRefOverlay, type MapTracer } from '../components/ui/MapCanvas';
 import { PalmButton } from '../components/ui/PalmButton';
 import { REF_IMAGES } from '../data/leonidaMap';
 import {
   entityHref,
-  entitySlug,
   slugify,
   MAP_LAYERS,
   MAP_SCOPE,
@@ -24,10 +24,11 @@ import {
 import { apiFetch, ApiError, useAuthStore } from '../store/useAuthStore';
 import { navigate } from '../store/useRouteStore';
 import { useProgressStore } from '../store/useProgressStore';
-import type { Entity, MapMarker } from '../types/database';
+import type { MapMarker } from '../types/database';
 
 const LAYER_IDS: ReadonlySet<string> = new Set(MAP_LAYERS.map((l) => l.id));
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 /** Alto aproximado (px) que ocupan buscador y fila de capas en móvil. */
 const MOBILE_CONTROLS_PX = 124;
 const MAX_RESULTS = 8;
@@ -405,9 +406,9 @@ interface EditorPanelProps {
   extra: ReactNode;
   cross: { x: number; y: number } | null;
   selected: MapMarker | null;
-  entities: ReadonlyArray<Entity>;
-  moduleSlug: (moduleId: string) => string;
-  regions: ReadonlyArray<string>;
+  /** Ficha preseleccionada con `?editor=1&entity=` que aún no tiene pin. */
+  preset: PickedEntity | null;
+  regions:ReadonlyArray<string>;
   nearestRegion: (x: number, y: number) => string;
   busy: boolean;
   status: { ok: boolean; text: string } | null;
@@ -420,9 +421,8 @@ interface EditorPanelProps {
 const FIELD =
   'glass min-h-11 w-full rounded-xl px-3 text-sm text-vice-text placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold';
 
-function EditorPanel({ extra, cross, selected, entities, moduleSlug, regions, nearestRegion, busy, status, onCreate, onMoveHere, onCopy, onClose }: EditorPanelProps) {
-  const [entityQuery, setEntityQuery] = useState('');
-  const [picked, setPicked] = useState<Entity | null>(null);
+function EditorPanel({ extra, cross, selected, preset, regions, nearestRegion, busy, status, onCreate, onMoveHere, onCopy, onClose }: EditorPanelProps) {
+  const [picked, setPicked] = useState<PickedEntity | null>(null);
   const [region, setRegion] = useState('');
   const [titulo, setTitulo] = useState('');
   const [slug, setSlug] = useState('');
@@ -433,25 +433,18 @@ function EditorPanel({ extra, cross, selected, entities, moduleSlug, regions, ne
     if (cross && !regionTouched) setRegion(nearestRegion(cross.x, cross.y));
   }, [cross, regionTouched, nearestRegion]);
 
-  const matches = useMemo(() => {
-    const tokens = norm(entityQuery).split(/\s+/).filter(Boolean);
-    if (picked || tokens.length === 0) return [];
-    return entities
-      .filter((e) => {
-        const hay = norm(`${e.titulo} ${entitySlug(e)} ${e.categoria}`);
-        return tokens.every((t) => hay.includes(t));
-      })
-      .slice(0, 6);
-  }, [entities, entityQuery, picked]);
-
-  const pick = (e: Entity | null) => {
+  const pick = useCallback((e: PickedEntity | null) => {
     setPicked(e);
-    setEntityQuery('');
     if (e) {
       setTitulo(e.titulo);
-      setSlug(entitySlug(e));
+      setSlug(e.slug);
     }
-  };
+  }, []);
+
+  // Ficha preseleccionada con `?editor=1&entity=`: queda elegida para crear su pin al tocar el mapa.
+  useEffect(() => {
+    if (preset) pick(preset);
+  }, [preset, pick]);
 
   const slugOk = slug === '' || SLUG_RE.test(slug);
   const canCreate = cross !== null && region.trim() !== '' && titulo.trim() !== '' && slugOk && !busy;
@@ -490,49 +483,7 @@ function EditorPanel({ extra, cross, selected, entities, moduleSlug, regions, ne
       {extra}
 
       <div className="flex flex-col gap-2">
-        <label className="font-semibold" htmlFor="ed-entity">
-          Entidad del catálogo
-        </label>
-        {picked ? (
-          <div className="glass flex min-h-11 items-center justify-between gap-2 rounded-xl px-3">
-            <span className="min-w-0 truncate">
-              {picked.titulo} <span className="text-xs text-vice-orange">· {moduleSlug(picked.module_id)}</span>
-            </span>
-            <button type="button" onClick={() => pick(null)} className="min-h-11 shrink-0 px-2 text-xs font-semibold underline">
-              Quitar
-            </button>
-          </div>
-        ) : (
-          <>
-            <input
-              id="ed-entity"
-              type="search"
-              value={entityQuery}
-              onChange={(e) => setEntityQuery(e.target.value)}
-              placeholder="Buscar en el catálogo… (opcional)"
-              autoComplete="off"
-              className={FIELD}
-            />
-            {matches.length > 0 && (
-              <ul className="glass overflow-hidden rounded-xl" aria-label="Entidades">
-                {matches.map((e) => (
-                  <li key={e.id}>
-                    <button
-                      type="button"
-                      onClick={() => pick(e)}
-                      className="flex min-h-11 w-full flex-col px-3 py-1.5 text-left hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-                    >
-                      <span className="font-semibold">{e.titulo}</span>
-                      <span className="text-xs text-vice-orange">
-                        {moduleSlug(e.module_id)} · {e.categoria}
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
+        <EntityPicker key={picked?.id ?? 'none'} id="ed-entity" defaultValue={picked?.id ?? null} label="Entidad del catálogo" onChange={pick} />
       </div>
 
       <div className="grid grid-cols-1 gap-2">
@@ -675,6 +626,23 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
   useEffect(() => {
     if (editorParam && isAdmin) setEditor(true);
   }, [editorParam, isAdmin]);
+  // En Modo editor, `?entity=<slug|uuid>` preselecciona esa ficha para situar su pin (sin `editor=1` conserva el
+  // significado público de deep-link por uuid).
+  const presetKey = editorParam && isAdmin ? params.get('entity') : null;
+  const presetQuery = useQuery({
+    queryKey: ['entity-preset', presetKey],
+    enabled: presetKey !== null,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const k = presetKey!;
+      const list = await apiFetch<PickedEntity[]>(
+        UUID_RE.test(k) ? `/api/entities?id=${encodeURIComponent(k)}&limit=1` : `/api/entities?q=${encodeURIComponent(k)}&limit=8`,
+      );
+      return list.find((e) => e.id === k || e.slug === k) ?? null;
+    },
+  });
+  const presetEntity = presetQuery.data ?? null;
+  const presetMarker = presetEntity ? (data.markers.find((m) => m.entity_id === presetEntity.id) ?? null) : null;
   const capasParam = params.get('capas');
   const region = params.get('region');
   const hideDone = params.get('ocultar') === '1';
@@ -822,6 +790,16 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paramKey, data.markers]);
 
+  // Ficha preseleccionada que ya tiene pin: se selecciona y se enfoca una sola vez.
+  const presetFocused = useRef<string | null>(null);
+  useEffect(() => {
+    if (!presetMarker || presetFocused.current === presetMarker.id) return;
+    presetFocused.current = presetMarker.id;
+    setSelectedId(presetMarker.id);
+    setCross({ x: presetMarker.coord_x, y: presetMarker.coord_y });
+    focusMarker(presetMarker);
+  }, [presetMarker, focusMarker]);
+
   // ?region=: además de filtrar, encuadra el centro de los marcadores de esa región.
   useEffect(() => {
     if (!region || params.get('pin') || params.get('marker') || params.get('entity')) return;
@@ -941,8 +919,6 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
     [editor, trace],
   );
 
-  const moduleSlug = useCallback((moduleId: string): string => modulesById.get(moduleId)?.slug ?? 'catálogo', [modulesById]);
-
   const editorPanel = (
     <EditorPanel
       extra={
@@ -960,8 +936,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       }
       cross={cross}
       selected={selected}
-      entities={data.entities}
-      moduleSlug={moduleSlug}
+      preset={presetMarker ? null : presetEntity}
       regions={regions}
       nearestRegion={nearestRegion}
       busy={busy}

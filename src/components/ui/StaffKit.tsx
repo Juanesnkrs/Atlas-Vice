@@ -1,8 +1,8 @@
 // Utilidades compartidas de los módulos privados de gestión (chunks `staff-*`). Nada de este archivo
 // se importa desde código público: solo lo cargan StaffPage y los módulos Staff*.
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ApiError, apiFetch, useAuthStore } from '../../store/useAuthStore';
-import { Modal } from './Modal';
+import { hasOpenWork, useStaffStore } from '../../store/useStaffStore';
 
 export type Role = string;
 export const ROLE_ORDER: readonly Role[] = ['USER', 'MODERATOR', 'ADMIN', 'SUPER_ADMIN'];
@@ -11,7 +11,7 @@ export const rankOf = (r: Role | null): number => (r === null ? -1 : ROLE_ORDER.
 export type SubStatus = 'pending' | 'approved' | 'rejected';
 export interface SubmissionDTO {
   id: string;
-  userId: string;
+  userId: string | null;
   moduleSlug: string;
   type: string;
   title: string;
@@ -19,6 +19,10 @@ export interface SubmissionDTO {
   coords: { x: number; y: number } | null;
   status: SubStatus;
   reviewedBy: string | null;
+  /** Documento creado o modificado al aprobar (para «Ver ficha» / «Ver pin»). */
+  promotedTo?: { collection: 'MapMarker' | 'Entity'; id: string } | null;
+  /** Motivo del rechazo (opcional). */
+  reviewNote?: string;
   createdAt?: string;
 }
 
@@ -56,8 +60,26 @@ function flattenDetails(node: unknown, path: string, out: string[]): void {
   (n.items ?? []).forEach((v, i) => flattenDetails(v, `${path}[${i + 1}]`, out));
 }
 
+/** Dependientes de un 409 `HAS_DEPENDENTS`: pines de una ficha o fichas de un módulo, legibles. */
+function dependentsMsg(e: ApiError): string | null {
+  if (e.code !== 'HAS_DEPENDENTS' || e.details === null || typeof e.details !== 'object') return null;
+  const d = e.details as { count?: number; markers?: Array<{ titulo: string }>; entities?: number };
+  if (d.markers) return `${e.message} (${d.count ?? d.markers.length}: ${d.markers.map((m) => `«${m.titulo}»`).join(', ')}).`;
+  if (d.entities !== undefined) return `${e.message} (${d.entities} ficha${d.entities === 1 ? '' : 's'}).`;
+  return null;
+}
+
+/** Todos los mensajes de validación (422/400) de un error de la API, sin recortar; vacío si no los hay. */
+export const errLines = (e: unknown): string[] => {
+  const out: string[] = [];
+  if (e instanceof ApiError && e.details) flattenDetails(e.details, '', out);
+  return out;
+};
+
 export const errMsg = (e: unknown): string => {
   if (e instanceof ApiError && e.details) {
+    const dep = dependentsMsg(e);
+    if (dep) return dep;
     const out: string[] = [];
     flattenDetails(e.details, '', out);
     if (out.length) return out.slice(0, 4).join(' · ');
@@ -65,18 +87,24 @@ export const errMsg = (e: unknown): string => {
   return e instanceof Error ? e.message : 'Error desconocido';
 };
 
+/** El 404 uniforme (ruta inexistente o sin autorización) es el único con este cuerpo y sin `code`. */
+export const isUniform404 = (e: unknown): boolean =>
+  e instanceof ApiError && e.status === 404 && e.code === undefined && e.message === 'No encontrado';
+
 /**
- * Cliente de la API para los módulos de gestión. El servidor responde 404 uniforme con el cuerpo `No encontrado`
- * (y, según el despliegue, 401/403) a quien no tiene acceso: solo eso se trata como «sin acceso» (se descarta el
- * rol local y `/_staff` vuelve a la vista 404 estándar). Un 404 de negocio («Entidad no encontrada») NO expulsa
- * al staff: se muestra como error de la acción.
+ * Cliente de la API para los módulos de gestión. El servidor responde 404 uniforme (cuerpo `No encontrado`, sin
+ * `code`) a quien no tiene acceso; un 404 de recurso a staff autorizado lleva `code: RESOURCE_NOT_FOUND` y NO
+ * expulsa: se muestra como error de la acción. Ante 401 o 404 uniforme: con un formulario abierto se muestra el
+ * modal «Sesión caducada» sin desmontar nada (el trabajo se conserva); sin trabajo abierto se descarta el rol local
+ * y `/_staff` vuelve a la vista 404 estándar.
  */
 export async function staffFetch<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
   try {
     return await apiFetch<T>(path, { cache: 'no-store', ...init });
   } catch (e) {
-    if (e instanceof ApiError && (e.status === 401 || (e.status === 404 && e.message === 'No encontrado'))) {
-      useAuthStore.getState().dropElevatedRole();
+    if (e instanceof ApiError && (e.status === 401 || isUniform404(e))) {
+      if (hasOpenWork()) useStaffStore.getState().setSessionExpired(true);
+      else useAuthStore.getState().dropElevatedRole();
     }
     throw e;
   }
@@ -279,95 +307,6 @@ export function QueryState({
     );
   }
   return empty ? <p className="py-3 text-sm text-vice-text/70">{emptyText}</p> : null;
-}
-
-// ---- Diálogos de formulario y de confirmación de borrado ----------------------------------------
-export function ConfirmDelete({
-  label,
-  pending,
-  onCancel,
-  onConfirm,
-}: {
-  label: string | null;
-  pending: boolean;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <Modal
-      open={label !== null}
-      onClose={onCancel}
-      title="Confirmar borrado"
-      footer={
-        <div className="flex gap-3">
-          <button type="button" onClick={onCancel} className={`${GHOST} flex-1`}>
-            Cancelar
-          </button>
-          <button type="button" disabled={pending} onClick={onConfirm} className={`${BTN} flex-1 bg-vice-rose font-bold text-vice-ink`}>
-            {pending ? 'Borrando…' : 'Borrar'}
-          </button>
-        </div>
-      }
-    >
-      <p className="text-sm">Se borrará «{label}». Esta acción no se puede deshacer.</p>
-    </Modal>
-  );
-}
-
-export function FormModal({
-  open,
-  title,
-  formId,
-  pending,
-  error,
-  onClose,
-  children,
-  onSubmit,
-}: {
-  open: boolean;
-  title: string;
-  formId: string;
-  pending: boolean;
-  error: string | null;
-  onClose: () => void;
-  children: ReactNode;
-  onSubmit: (fd: FormData) => void;
-}) {
-  const submit = (ev: FormEvent<HTMLFormElement>) => {
-    ev.preventDefault();
-    onSubmit(new FormData(ev.currentTarget));
-  };
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={title}
-      footer={
-        <div className="flex flex-col gap-2">
-          {/* El error vive en la zona fija: nunca queda oculto bajo el scroll del formulario. */}
-          <div aria-live="assertive" className="text-sm">
-            {error && (
-              <p role="alert" className="text-vice-gold">
-                {error}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-3">
-            <button type="button" onClick={onClose} className={`${GHOST} flex-1`}>
-              Cancelar
-            </button>
-            <button type="submit" form={formId} disabled={pending} className={`${PRIMARY} flex-1`}>
-              {pending ? 'Guardando…' : 'Guardar'}
-            </button>
-          </div>
-        </div>
-      }
-    >
-      <form id={formId} onSubmit={submit} className="flex flex-col gap-3" noValidate>
-        {children}
-      </form>
-    </Modal>
-  );
 }
 
 export const formGet = (fd: FormData) => ({

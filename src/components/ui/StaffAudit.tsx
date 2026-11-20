@@ -1,8 +1,11 @@
-// Bloque «Auditoría y salud» de Control Total (chunk `staff-ctl-*`, solo SUPER_ADMIN): bitácora filtrable de cambios
-// administrativos y métricas reales del servicio (MongoDB, proceso, worker y caché).
+// Bloques «Auditoría» y «Salud» de Control Total (chunk `staff-ctl-*`, solo SUPER_ADMIN): bitácora filtrable de cambios
+// administrativos con diff legible y restauración de borrados, y métricas reales del servicio (MongoDB, proceso, worker y caché).
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Block, errMsg, GHOST, INPUT, Pager, QueryState, SELECT, SMALL_BTN, staffFetch, SubTabs, toast } from './StaffKit';
+import { Modal } from './Modal';
+import { Block, BTN, errMsg, GHOST, INPUT, Pager, QueryState, SELECT, SMALL_BTN, staffFetch, toast } from './StaffKit';
+import { DiffView } from './StaffHistory';
+import { useBlockFilters } from './StaffNav';
 
 interface AuditEntry {
   id: string;
@@ -13,6 +16,10 @@ interface AuditEntry {
   target_type: string;
   target_id: string | null;
   metadata: Record<string, unknown>;
+  /** Hay una copia completa que permite reinsertar el objeto borrado. */
+  restorable: boolean;
+  /** Ya se restauró a partir de esta entrada. */
+  restored: boolean;
   ip: string | null;
   created_at: string;
 }
@@ -42,47 +49,57 @@ interface Health {
 
 const dayStart = (d: string): string => new Date(`${d}T00:00:00`).toISOString();
 const dayEnd = (d: string): string => new Date(`${d}T23:59:59.999`).toISOString();
+/** Nombre legible del objeto de una entrada (título, slug o id corto). */
+const labelOf = (l: AuditEntry): string => String(l.metadata['titulo'] ?? l.metadata['slug'] ?? l.target_id?.slice(0, 8) ?? l.target_type);
 
-function AuditLog() {
-  const [action, setAction] = useState('');
-  const [target, setTarget] = useState('');
-  const [actor, setActor] = useState<{ id: string; name: string } | null>(null);
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [page, setPage] = useState(1);
+export default function StaffAudit() {
+  const qc = useQueryClient();
+  const { f, set, page, setPage } = useBlockFilters('auditoria', { action: '', tipo: '', actor: '', desde: '', hasta: '', p: '1' });
+  const [restoring, setRestoring] = useState<AuditEntry | null>(null);
 
   const qs = new URLSearchParams({ limit: '25', page: String(page) });
-  if (action) qs.set('action', action);
-  if (target) qs.set('target_type', target);
-  if (actor) qs.set('actor_id', actor.id);
-  if (from) qs.set('from', dayStart(from));
-  if (to) qs.set('to', dayEnd(to));
+  if (f.action) qs.set('action', f.action);
+  if (f.tipo) qs.set('target_type', f.tipo);
+  if (f.actor) qs.set('actor_id', f.actor);
+  if (f.desde) qs.set('from', dayStart(f.desde));
+  if (f.hasta) qs.set('to', dayEnd(f.hasta));
   const logs = useQuery({
     queryKey: ['staff', 'audit', qs.toString()],
     placeholderData: keepPreviousData,
     queryFn: () => staffFetch<AuditPage>(`/api/admin/audit-logs?${qs.toString()}`),
   });
-  const reset = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
-    setPage(1);
-  };
   const rows = logs.data?.logs ?? [];
-  const f = logs.data?.facets;
+  const facets = logs.data?.facets;
+  const actorName = rows.find((r) => r.actor_id === f.actor)?.actor_name ?? f.actor.slice(0, 8);
+
+  const restore = useMutation({
+    mutationFn: (id: string) => staffFetch<{ restored: { type: string; id: string } }>(`/api/admin/audit-logs/${id}/restore`, { method: 'POST', json: {} }),
+    onSuccess: (r) => {
+      toast.ok(`Restaurado (${r.restored.type}) con su identificador original.`);
+      for (const key of ['staff', 'world', 'entity', 'config']) void qc.invalidateQueries({ queryKey: [key] });
+    },
+    onError: (e) => toast.err(`No se pudo restaurar: ${errMsg(e)}`),
+    onSettled: () => setRestoring(null),
+  });
 
   return (
-    <Block id="blk-audit" title="Bitácora de auditoría" controls="nada directamente: registra quién cambió qué en la app pública (catálogo, mapa, foro, configuración, roles)." >
+    <Block
+      id="blk-audit"
+      title="Bitácora de auditoría"
+      controls="nada directamente: registra quién cambió qué en la app pública (catálogo, mapa, foro, configuración, roles). Los borrados se pueden restaurar."
+    >
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <select aria-label="Acción" value={action} onChange={(e) => reset(setAction)(e.target.value)} className={SELECT}>
+        <select aria-label="Acción" value={f.action} onChange={(e) => set({ action: e.target.value, p: '1' })} className={SELECT}>
           <option value="">Todas las acciones</option>
-          {(f?.actions ?? []).map((a) => (
+          {(facets?.actions ?? []).map((a) => (
             <option key={a} value={a}>
               {a}
             </option>
           ))}
         </select>
-        <select aria-label="Tipo de objetivo" value={target} onChange={(e) => reset(setTarget)(e.target.value)} className={SELECT}>
+        <select aria-label="Tipo de objetivo" value={f.tipo} onChange={(e) => set({ tipo: e.target.value, p: '1' })} className={SELECT}>
           <option value="">Todos los objetivos</option>
-          {(f?.targetTypes ?? []).map((t) => (
+          {(facets?.targetTypes ?? []).map((t) => (
             <option key={t} value={t}>
               {t}
             </option>
@@ -90,28 +107,17 @@ function AuditLog() {
         </select>
         <label className="flex items-center gap-2 text-sm">
           Desde
-          <input type="date" value={from} onChange={(e) => reset(setFrom)(e.target.value)} className={INPUT} />
+          <input type="date" value={f.desde} onChange={(e) => set({ desde: e.target.value, p: '1' })} className={INPUT} />
         </label>
         <label className="flex items-center gap-2 text-sm">
           Hasta
-          <input type="date" value={to} onChange={(e) => reset(setTo)(e.target.value)} className={INPUT} />
+          <input type="date" value={f.hasta} onChange={(e) => set({ hasta: e.target.value, p: '1' })} className={INPUT} />
         </label>
       </div>
-      {(actor || action || target || from || to) && (
+      {(f.actor || f.action || f.tipo || f.desde || f.hasta) && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
-          {actor && <span>Actor: {actor.name}</span>}
-          <button
-            type="button"
-            onClick={() => {
-              setAction('');
-              setTarget('');
-              setActor(null);
-              setFrom('');
-              setTo('');
-              setPage(1);
-            }}
-            className={SMALL_BTN}
-          >
+          {f.actor && <span>Actor: {actorName}</span>}
+          <button type="button" onClick={() => set({ action: '', tipo: '', actor: '', desde: '', hasta: '', p: '1' })} className={SMALL_BTN}>
             Quitar filtros
           </button>
         </div>
@@ -134,28 +140,56 @@ function AuditLog() {
               {l.actor_name ?? l.actor_id.slice(0, 8)} · {l.actor_role} · {l.target_type}
               {l.target_id ? `:${l.target_id.slice(0, 8)}` : ''}
               {l.actor_id !== 'system' && (
-                <button type="button" onClick={() => reset(setActor)({ id: l.actor_id, name: l.actor_name ?? l.actor_id.slice(0, 8) })} className="ml-2 underline">
+                <button type="button" onClick={() => set({ actor: l.actor_id, p: '1' })} className="ml-2 inline-flex min-h-11 items-center underline">
                   Filtrar por este actor
                 </button>
               )}
             </p>
             {Object.keys(l.metadata ?? {}).length > 0 && (
               <details className="mt-1">
-                <summary className="cursor-pointer text-xs text-vice-gold">Detalle</summary>
-                <pre className="mt-1 max-h-48 overflow-auto whitespace-pre-wrap break-words rounded-lg bg-black/30 p-2 text-xs">{JSON.stringify(l.metadata, null, 2)}</pre>
+                <summary className="inline-flex min-h-11 cursor-pointer items-center text-xs text-vice-gold">Detalle</summary>
+                <div className="mt-1 rounded-lg bg-black/30 p-2">
+                  <DiffView metadata={l.metadata} />
+                </div>
               </details>
+            )}
+            {l.restored && <p className="mt-1 inline-block rounded-full bg-vice-cyan px-2 py-0.5 text-xs font-bold text-vice-ink">Restaurado</p>}
+            {l.restorable && !l.restored && (
+              <button type="button" onClick={() => setRestoring(l)} className={`${SMALL_BTN} mt-1`}>
+                Restaurar
+              </button>
             )}
           </li>
         ))}
       </ul>
       {logs.data && logs.data.total > 0 && <Pager page={logs.data.page} pages={logs.data.pages} total={logs.data.total} onPage={setPage} />}
+
+      <Modal
+        open={restoring !== null}
+        onClose={() => setRestoring(null)}
+        title="Restaurar objeto borrado"
+        footer={
+          <div className="flex gap-3">
+            <button type="button" onClick={() => setRestoring(null)} className={`${GHOST} flex-1`}>
+              Cancelar
+            </button>
+            <button type="button" disabled={restore.isPending} onClick={() => restoring && restore.mutate(restoring.id)} className={`${BTN} flex-1 bg-vice-accent font-bold text-vice-ink`}>
+              {restore.isPending ? 'Restaurando…' : 'Restaurar'}
+            </button>
+          </div>
+        }
+      >
+        <p className="text-sm">
+          Se reinsertará «{restoring ? labelOf(restoring) : ''}» ({restoring?.target_type}) con el mismo identificador. Si ese identificador o su slug ya existen, el servidor lo rechazará.
+        </p>
+      </Modal>
     </Block>
   );
 }
 
 const fmtUptime = (s: number): string => (s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.floor((s % 3600) / 60)} min` : `${Math.floor(s / 60)} min ${s % 60} s`);
 
-function HealthPanel() {
+export function HealthPanel() {
   const qc = useQueryClient();
   const health = useQuery({ queryKey: ['staff', 'health'], queryFn: () => staffFetch<Health>('/api/admin/health') });
   const clear = useMutation({
@@ -212,21 +246,5 @@ function HealthPanel() {
         </div>
       )}
     </Block>
-  );
-}
-
-type Sub = 'auditoria' | 'salud';
-const SUBS: ReadonlyArray<{ id: Sub; label: string }> = [
-  { id: 'auditoria', label: 'Bitácora' },
-  { id: 'salud', label: 'Salud' },
-];
-
-export default function StaffAudit() {
-  const [sub, setSub] = useState<Sub>('auditoria');
-  return (
-    <div className="flex flex-col gap-4">
-      <SubTabs label="Auditoría y salud" tabs={SUBS} value={sub} onChange={setSub} />
-      {sub === 'auditoria' ? <AuditLog /> : <HealthPanel />}
-    </div>
   );
 }

@@ -4,7 +4,8 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { useState } from 'react';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Modal } from './Modal';
-import { Block, BTN, errMsg, GHOST, INPUT, Pager, QueryState, ROLE_ORDER, ROW, SELECT, SMALL_BTN, staffFetch, toast, useDebounced, type Role } from './StaffKit';
+import { Block, BTN, errMsg, GHOST, INPUT, Pager, QueryState, ROLE_ORDER, ROW, SELECT, SMALL_BTN, staffFetch, toast, type Role } from './StaffKit';
+import { useBlockFilters } from './StaffNav';
 
 interface AdminUser {
   id: string;
@@ -24,17 +25,14 @@ interface UserPage {
 export default function StaffIdentity() {
   const qc = useQueryClient();
   const meId = useAuthStore((s) => s.user?.id ?? null);
-  const [text, setText] = useState('');
-  const term = useDebounced(text.trim(), 250);
-  const [rol, setRol] = useState('');
-  const [page, setPage] = useState(1);
+  const { f, set, search, page, setPage } = useBlockFilters('identidades', { q: '', rol: '', p: '1' });
   const [roleChange, setRoleChange] = useState<{ user: AdminUser; to: Role } | null>(null);
   const [revoking, setRevoking] = useState<AdminUser | null>(null);
 
   const users = useQuery({
-    queryKey: ['staff', 'users', term, rol, page],
+    queryKey: ['staff', 'users', f.q, f.rol, page],
     placeholderData: keepPreviousData,
-    queryFn: () => staffFetch<UserPage>(`/api/admin/users?limit=25&page=${page}${term ? `&q=${encodeURIComponent(term)}` : ''}${rol ? `&rol=${rol}` : ''}`),
+    queryFn: () => staffFetch<UserPage>(`/api/admin/users?limit=25&page=${page}${f.q ? `&q=${encodeURIComponent(f.q)}` : ''}${f.rol ? `&rol=${f.rol}` : ''}`),
   });
   const refresh = () => void qc.invalidateQueries({ queryKey: ['staff', 'users'] });
 
@@ -75,20 +73,13 @@ export default function StaffIdentity() {
           type="search"
           aria-label="Buscar usuario por nombre o correo"
           placeholder="Nombre o correo…"
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            setPage(1);
-          }}
+          {...search}
           className={`${INPUT} min-w-0 flex-1`}
         />
         <select
           aria-label="Filtrar por rol"
-          value={rol}
-          onChange={(e) => {
-            setRol(e.target.value);
-            setPage(1);
-          }}
+          value={f.rol}
+          onChange={(e) => set({ rol: e.target.value, p: '1' })}
           className={`${SELECT} sm:w-48`}
         >
           <option value="">Todos los roles</option>

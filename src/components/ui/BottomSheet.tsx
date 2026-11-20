@@ -68,6 +68,8 @@ export interface BottomSheetProps {
   closeLabel?: string;
   /** 'sheet' (defecto) o 'dialog': el Modal usa 'dialog' para quedar sobre otras hojas y el dock. */
   layer?: 'sheet' | 'dialog';
+  /** false = el clic en el fondo no cierra (formularios con datos por perder). Por defecto cierra. */
+  dismissOnBackdrop?: boolean;
   className?: string;
 }
 
@@ -80,6 +82,7 @@ export function BottomSheet({
   modal = true,
   closeLabel = 'Cerrar',
   layer = 'sheet',
+  dismissOnBackdrop = true,
   className = '',
 }: BottomSheetProps) {
   const titleId = useId();
@@ -127,7 +130,7 @@ export function BottomSheet({
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-[#1a0a22]/60"
-          onClick={onClose}
+          onClick={dismissOnBackdrop ? onClose : undefined}
         />
       )}
       <div

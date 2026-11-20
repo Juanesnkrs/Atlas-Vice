@@ -24,12 +24,10 @@ const stripLocalRefs = (): Plugin => ({
  */
 const staffChunk = (id: string): string | undefined => {
   const p = id.replace(/\\/g, '/');
-  if (/\/components\/ui\/(StaffControl|StaffIdentity|StaffAudit)\.tsx$/.test(p)) return 'staff-ctl-panel';
-  if (
-    /\/(components\/ui\/(StaffKit|StaffModeration|StaffCommunity|StaffContent|StaffEditorial)|pages\/StaffPage)\.tsx$/.test(p)
-  ) {
-    return 'staff-panel';
-  }
+  // Nivel maximo (solo se sirve a SUPER_ADMIN): Control Total, configuracion, monetizacion, identidades y auditoria.
+  if (/\/components\/ui\/(StaffControl|StaffConfig|StaffMonetization|StaffIdentity|StaffAudit)\.tsx$/.test(p)) return 'staff-ctl-panel';
+  // Resto del panel (MODERATOR+): cualquier otro Staff*.tsx, la pagina y su estado en memoria.
+  if (/\/(components\/ui\/Staff[A-Za-z]+|pages\/StaffPage)\.tsx$|\/store\/useStaffStore\.ts$/.test(p)) return 'staff-panel';
   // Las dependencias compartidas van a un chunk publico propio: sin esto el bundler las aloja en un chunk staff-*.
   if (p.includes('/node_modules/')) return 'vendor';
   if (/\/src\/(data|store|types|components\/layout)\//.test(p)) return 'core';

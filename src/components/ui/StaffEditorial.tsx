@@ -1,7 +1,7 @@
 // Sección «Editorial y automatización» del panel de gestión (ADMIN+): worker de noticias oficiales y guías publicadas.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { relativeTime } from '../../data/seed';
-import { CatalogManager } from './StaffContent';
+import { CatalogManager } from './StaffCatalog';
 import { Block, errMsg, PRIMARY, QueryState, ROW, staffFetch, toast } from './StaffKit';
 
 interface NewsStatus {

@@ -12,6 +12,8 @@ export interface ModalProps {
   footer?: ReactNode;
   /** Texto accesible del botón de cierre (por defecto "Cerrar"). */
   closeLabel?: string;
+  /** false = el clic en el fondo no cierra el diálogo (formularios con datos por perder). Por defecto cierra. */
+  dismissOnBackdrop?: boolean;
 }
 
 const MOBILE_QUERY = '(max-width: 767.98px)';
@@ -30,14 +32,14 @@ function useIsMobile(): boolean {
   );
 }
 
-function DesktopDialog({ onClose, title, children, footer, closeLabel }: Omit<ModalProps, 'open'> & { closeLabel: string }) {
+function DesktopDialog({ onClose, title, children, footer, closeLabel, dismissOnBackdrop }: Omit<ModalProps, 'open'> & { closeLabel: string; dismissOnBackdrop: boolean }) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogFocus(true, panelRef, onClose, true);
 
   return createPortal(
     <div className="z-dialog fixed inset-0 flex items-center justify-center p-6">
-      <div aria-hidden="true" className="absolute inset-0 bg-[#1a0a22]/70" onClick={onClose} />
+      <div aria-hidden="true" className="absolute inset-0 bg-[#1a0a22]/70" onClick={dismissOnBackdrop ? onClose : undefined} />
       <div
         ref={panelRef}
         role="dialog"
@@ -74,19 +76,19 @@ function DesktopDialog({ onClose, title, children, footer, closeLabel }: Omit<Mo
  * Siempre en un portal a <body>, en la capa `.z-dialog` (sobre el dock y las hojas), con foco atrapado,
  * Esc y clic en el fondo para cerrar, y foco devuelto al disparador.
  */
-export function Modal({ open, onClose, title, children, footer, closeLabel = 'Cerrar' }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, closeLabel = 'Cerrar', dismissOnBackdrop = true }: ModalProps) {
   const mobile = useIsMobile();
   if (!open) return null;
   if (mobile) {
     return (
-      <BottomSheet open onClose={onClose} title={title} closeLabel={closeLabel} layer="dialog">
+      <BottomSheet open onClose={onClose} title={title} closeLabel={closeLabel} layer="dialog" dismissOnBackdrop={dismissOnBackdrop}>
         {children}
         {footer && <div className="mt-4 border-t border-white/10 pt-3">{footer}</div>}
       </BottomSheet>
     );
   }
   return (
-    <DesktopDialog onClose={onClose} title={title} footer={footer} closeLabel={closeLabel}>
+    <DesktopDialog onClose={onClose} title={title} footer={footer} closeLabel={closeLabel} dismissOnBackdrop={dismissOnBackdrop}>
       {children}
     </DesktopDialog>
   );
