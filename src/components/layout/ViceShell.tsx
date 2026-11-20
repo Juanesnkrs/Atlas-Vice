@@ -246,7 +246,7 @@ export function ViceShell({
   const withFooter = footer && !lockScroll;
   return (
     <div
-      className={`bg-sunset relative flex w-screen flex-col font-body text-vice-text ${
+      className={`bg-sunset relative flex w-full flex-col font-body text-vice-text ${
         lockScroll ? 'h-dvh overflow-hidden' : 'min-h-dvh'
       } ${className}`}
     >
@@ -276,7 +276,7 @@ export function ViceShell({
         )}
 
         <main
-          className={`relative min-h-0 flex-1 ${lockScroll ? 'overflow-hidden' : 'overflow-y-auto'} ${
+          className={`relative min-h-0 flex-1 ${lockScroll ? 'overflow-hidden' : 'min-h-dvh overflow-y-auto'} ${
             dock && lockScroll ? 'pb-[var(--dock-reserve)]' : ''
           }`}
         >
