@@ -136,6 +136,8 @@ Mongoose: `monetization: { type: Schema.Types.Mixed, default: { ads_enabled: fal
 | `media_url` | String \| null | `.nullable().optional()` | |
 | `created_at` | Date | — | |
 
+**Δ Índice `{ entity_id: 1 }` (no es un campo nuevo):** acelera «¿qué pines cuelgan de esta ficha?» (conexión Ficha ↔ Pin del panel `/_staff`, resumen de pines huérfanos y comprobación de dependientes al borrar una `Entity`).
+
 **Δ Marco de coordenadas de `coord`:** el lienzo 0–1000 × 0–700 coincide con la pirámide de teselas recoloreadas de `public/map-tiles/` (`manifest.json` → `world`; ver DesignSpec §6.4). Los 10 `MapMarker` base están calibrados sobre esas teselas y cualquier alta o movimiento (Modo Editor) usa ese mismo marco. No hay cambios de esquema.
 
 El DTO aplana `coord` a `coord_x` / `coord_y` y expone `slug` (`null` si no existe). `GET /api/markers` admite `?region=` y `?bbox=x1,y1,x2,y2` (consulta `$geoWithin: { $box }` sobre `coord`) y responde con `ETag` y `Cache-Control: public, max-age=60, must-revalidate`.
@@ -181,6 +183,7 @@ Escritura exclusiva del worker `server/src/workers/officialNewsWorker.ts`.
 | `coords` | `{ x, y } \| null` | `z.object({x,y}).nullable()` | Obligatorio si `type = 'marker'`. |
 | `status` | `'pending' \| 'approved' \| 'rejected'` | `submissionStatusSchema` | Índice `{ status, createdAt: -1 }`. |
 | `reviewedBy` | String \| null | `z.uuid().nullable()` | `'system'` en aprobación automática. |
+| **Δ** `reviewNote` | String (opcional, sin valor por defecto) | `z.string().trim().max(500).optional()` | Motivo del rechazo, visible solo en moderación (`/_staff`). Se guarda solo al rechazar (`PATCH /api/admin/submissions/:id` con `{ status: 'rejected', reviewNote? }`) y se expone en el DTO como `reviewNote`. |
 | **Δ** `promotedTo` | `{ collection: 'MapMarker' \| 'Entity', id: string } \| null` | `z.object(...).nullable()` | Resultado de la promoción (§5). |
 | `createdAt` | Date | — | |
 
@@ -220,7 +223,14 @@ Escritura exclusiva del worker `server/src/workers/officialNewsWorker.ts`.
 | `ip` | String \| null | |
 | `created_at` | Date | Índices `{ created_at: -1 }`, `{ actor_id, created_at: -1 }`. |
 
-Inmutable: solo `insert` mediante `services/audit.ts#writeAudit`. Se escribe en toda acción ADMIN+ y en toda promoción de `Submission`.
+Inmutable: solo `insert` mediante `services/audit.ts#writeAudit`. Se escribe en toda acción ADMIN+ y en toda promoción de `Submission`. `models/AuditLog.ts` exporta además `auditLogSchema` (Zod) con la misma forma.
+
+**Δ Convención de `metadata` (sin campos nuevos; `metadata` sigue siendo `Mixed`):**
+
+- **Actualizaciones** (`entity.update`, `module.update`, `marker.update`, `config.update`, `forum.thread.update`): `metadata = { before, after }` con **solo los campos que cambian** (mismas claves en ambos). Los textos de más de 500 caracteres se truncan (`…[+N]`) y los objetos/arrays cuyo JSON supera 4000 caracteres se sustituyen por `"[valor extenso: N caracteres]"`. Se excluyen siempre secretos, tokens, hashes y correos de terceros: ninguno de esos campos existe en los diffs de catálogo, mapa, módulos, configuración ni foro, y `User` nunca se difunde en `before`/`after`.
+- **Borrados** (`entity.delete`, `module.delete`, `marker.delete`, `forum.thread.delete`): `metadata = { snapshot, … }`, con el documento completo tal como estaba (para `forum.thread.delete`: `{ thread, posts[], votes[] }`, es decir, también los hijos del borrado en cascada). Si el snapshot serializado supera 8 MB solo se guarda `{ thread }` y la entrada lleva `snapshot_truncated: true` (no restaurable).
+- **Restauración** (`entity.restore`, `module.restore`, `marker.restore`, `forum.thread.restore`): solo `SUPER_ADMIN`, `POST /api/admin/audit-logs/:id/restore`. Reinserta el `snapshot` **con el mismo `_id`** en una transacción (en MongoDB sin réplica degrada a escritura sin atomicidad, como `promote()`); responde `409` si el `_id` o el `slug` único ya existen, si esa entrada ya se restauró o si la dependencia (módulo de la ficha) no existe. Escribe su propia entrada con `metadata = { restored_from: <id de la entrada de borrado> }`.
+- Las entradas anteriores a esta convención (`metadata.patch`) siguen siendo legibles y el panel las muestra tal cual.
 
 ---
 
@@ -310,18 +320,20 @@ Reglas:
 | `AppConfig` | `key` único |
 | `Module` | `slug` único |
 | `Entity` | `{ module_id, categoria }` · **Δ** `{ module_id, slug }` único |
-| `MapMarker` | `{ coord: '2d' }` (min 0, max 1000) · `{ region }` · **Δ** `{ slug }` único *sparse* |
+| `MapMarker` | `{ coord: '2d' }` (min 0, max 1000) · `{ region }` · **Δ** `{ slug }` único *sparse* · **Δ** `{ entity_id }` |
 | `UserProgress` | `{ user_id, target_type, target_id }` único |
 | `OfficialNews` | `sourceUrl` único · `publishedAt: -1` · **Δ** `slug` único |
 | `Submission` | `userId` · `{ status, createdAt: -1 }` |
 | `ForumThread` | `{ categoria, created_at: -1 }` · `entity_id` parcial |
 | `ForumPost` | `thread_id` |
 | `ForumVote` | `{ user_id, target_type, target_id }` único |
-| `AuditLog` | `{ created_at: -1 }` · `{ actor_id, created_at: -1 }` |
+| `AuditLog` | `{ created_at: -1 }` · `{ actor_id, created_at: -1 }` · **Δ** `{ target_type, target_id, created_at: -1 }` (historial de un objeto) |
 
 ## Anexo. Exposición pública y respuestas uniformes
 
 - **Foro público:** la proyección pública de autores expone solo `id`, `username` y `avatar_url` (nunca `rol` ni `email`).
 - **Superficie administrativa:** `/api/admin/*` y los POST/PATCH/DELETE administrativos de catálogo, mapa, roles, configuración y auditoría devuelven un **404 genérico** (idéntico al de una ruta inexistente) a quien no tenga sesión de staff autorizada; el RBAC se evalúa antes que la validación Zod. Lectura de `AuditLog`, cambio de roles, revocación de sesiones, configuración, salud del sistema y caché: `SUPER_ADMIN`. Moderación de aportes y foro: `MODERATOR+`. Catálogo, mapa, módulos y estado/ejecución del worker de noticias: `ADMIN+`.
+- **Panel `/_staff` (resumen, historial, restauración, dependientes):** `GET /api/admin/overview` (Resumen Operativo, `MODERATOR+`, `Cache-Control: private, no-store`; contenido filtrado por rol: MODERATOR ve los aportes de moderación —sin contact/newsletter— y sus propias acciones; ADMIN+ añade worker de noticias, cobertura del catálogo y pines huérfanos; SUPER_ADMIN ve las últimas 10 acciones de todos), `GET /api/admin/submissions/pending-count` (`MODERATOR+`, insignia de pendientes), `GET /api/admin/dependents/:type/:id` (`type ∈ thread|entity|marker|module`; `thread` MODERATOR+, el resto ADMIN+; recuentos y títulos para la confirmación de borrado), `GET /api/admin/history?target_type&target_id` (`MODERATOR+`; SUPER_ADMIN ve todo el historial del objeto, el resto solo sus propias entradas y sin `snapshot`) y `POST /api/admin/audit-logs/:id/restore` (`SUPER_ADMIN`). Todos devuelven el 404 uniforme a quien no corresponda.
+- **404 de negocio vs 404 uniforme:** el 404 uniforme (ruta inexistente o sin autorización de staff) lleva el cuerpo exacto `{"error":"No encontrado"}` y es indistinguible de una ruta inexistente. Un 404 de recurso que solo ve un staff ya autorizado lleva además `code: "RESOURCE_NOT_FOUND"` (p. ej. `{"error":"Entidad no encontrada","code":"RESOURCE_NOT_FOUND"}`); el cliente del panel solo se considera «sin acceso» ante el 404 **sin** `code`. Un borrado con dependientes responde `409` con `code: "HAS_DEPENDENTS"` y `details` (recuento y títulos). Nunca se emite un código distinto de 404 a quien no es staff.
 - **`GET /api/entities`:** admite `?limit=&page=`, `?module=` y `?q=` (búsqueda por título o slug); respuesta comprimida con `Cache-Control`/`ETag`.
 - Cifras vigentes del catálogo: 243 `Entity` (armas 13, vehículos 200, guías 20, mapa 10), 10 `MapMarker`, 1 `OfficialNews`.
