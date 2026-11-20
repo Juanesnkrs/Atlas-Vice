@@ -612,7 +612,9 @@ const ZOOM_BTN =
   'flex h-11 w-11 items-center justify-center text-xl hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold';
 
 const keyOf = (p: URLSearchParams): string => `${p.get('pin')}|${p.get('marker')}|${p.get('entity')}`;
-const errText = (e: unknown): string => (e instanceof ApiError ? e.message : 'No se pudo completar la acción.');
+// 401/403/404 (el servidor responde 404 uniforme a quien no tiene acceso): mensaje neutro, sin hablar de permisos.
+const errText = (e: unknown): string =>
+  e instanceof ApiError && ![401, 403, 404].includes(e.status) ? e.message : 'No se pudo completar la acción.';
 
 export default function MapPage({ params }: { params: URLSearchParams }) {
   const { data, error } = useWorldData();
@@ -620,7 +622,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
   const items = useProgressStore((s) => s.items);
   const toggle = useProgressStore((s) => s.toggle);
   const guest = useAuthStore((s) => s.status !== 'authenticated');
-  const isAdmin = useAuthStore((s) => s.hasRole('ADMIN'));
+  const isAdmin = useAuthStore((s) => s.isStaff());
   const isDesktop = useIsDesktop();
 
   // Con el mapa en pantalla, el cristal (backdrop-filter) se vuelve opaco en móvil: desenfocar el fondo en cada

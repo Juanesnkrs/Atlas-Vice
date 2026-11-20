@@ -440,7 +440,7 @@ export type ForumProfilePreview = Pick<Tables<'profiles'>, 'id' | 'username' | '
 /** Contrato de GET /api/forum: `preview: true` (sin sesion) o respuesta completa. */
 export type ForumApiResponse =
   | { preview: true; threads: ForumThreadPreview[]; posts: []; profiles: ForumProfilePreview[] }
-  | { preview: false; threads: ForumThread[]; posts: ForumPost[]; profiles: Profile[] };
+  | { preview: false; threads: ForumThread[]; posts: ForumPost[]; profiles: ForumProfilePreview[] };
 export type ForumPost = Tables<'forum_posts'>;
 export type ForumVote = Tables<'forum_votes'>;
 

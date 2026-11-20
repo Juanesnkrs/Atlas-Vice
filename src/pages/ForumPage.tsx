@@ -104,7 +104,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
   const [replyText, setReplyText] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const canModerate = useAuthStore((s) => s.hasRole('MODERATOR'));
+  const canModerate = useAuthStore((s) => s.isStaff());
   const [confirmDel, setConfirmDel] = useState<{ kind: 'thread' | 'post'; id: string } | null>(null);
 
   // Contexto (P07.3): hilos de una entidad o de un marcador (solo con sesión).
@@ -201,7 +201,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
   const patchForum = (fn: (d: ForumData) => ForumData) =>
     qc.setQueryData<ForumData>(['forum'], (d) => (d ? fn(d) : d));
 
-  // Moderación (MODERATOR+): el servidor decide; la UI solo oculta los botones.
+  // Gestión de hilos (cuentas con permisos elevados): el servidor decide; la UI solo oculta los botones.
   const moderate = async (fn: () => Promise<void>, okMsg: string) => {
     setBusy(true);
     setMessage(null);
@@ -210,7 +210,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
       setMessage(okMsg);
       void qc.invalidateQueries({ queryKey: ['forum'] });
     } catch (err) {
-      setMessage(`No se pudo moderar: ${err instanceof Error ? err.message : 'error'}`);
+      setMessage('No se pudo completar la acción.');
     } finally {
       setBusy(false);
     }
@@ -595,7 +595,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
                   </button>
                 </div>
                 {canModerate && remote && (
-                  <div role="group" aria-label="Moderación del hilo" className="mt-2 flex flex-wrap gap-2">
+                  <div role="group" aria-label="Gestión del hilo" className="mt-2 flex flex-wrap gap-2">
                     <button
                       type="button"
                       disabled={busy}

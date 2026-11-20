@@ -17,8 +17,35 @@ const stripLocalRefs = (): Plugin => ({
   },
 });
 
+/**
+ * Los modulos privados de gestion salen en `dist/_staff/assets/` con prefijo `staff-` (moderacion y catalogo)
+ * o `staff-ctl-` (nivel maximo). Se cargan con import() dinamico solo tras confirmar el rol; el servidor
+ * protege la ruta `/_staff/assets/*`. Los modulos compartidos con el resto de la app NO se agrupan aqui.
+ */
+const staffChunk = (id: string): string | undefined => {
+  const p = id.replace(/\\/g, '/');
+  if (p.endsWith('/components/ui/StaffControl.tsx')) return 'staff-ctl-panel';
+  if (
+    /\/(components\/ui\/(StaffKit|StaffModeration|CatalogAdminPanel)|pages\/StaffPage)\.tsx$/.test(p)
+  ) {
+    return 'staff-panel';
+  }
+  // Las dependencias compartidas van a un chunk publico propio: sin esto el bundler las aloja en un chunk staff-*.
+  if (p.includes('/node_modules/')) return 'vendor';
+  if (/\/src\/(data|store|types|components\/layout)\//.test(p)) return 'core';
+  return undefined;
+};
+
 export default defineConfig({
   plugins: [react(), tailwindcss(), stripLocalRefs()],
+  build: {
+    rollupOptions: {
+      output: {
+        advancedChunks: { includeDependenciesRecursively: false, groups: [{ name: (id: string) => staffChunk(id) ?? null }] },
+        chunkFileNames: (chunk) => (chunk.name.startsWith('staff-') ? '_staff/assets/[name]-[hash].js' : 'assets/[name]-[hash].js'),
+      },
+    },
+  },
   // `pnpm preview` (4173) reenvia la API y el SEO a Fastify (3000), igual que `pnpm dev`.
   preview: {
     port: 4173,

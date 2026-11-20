@@ -4,7 +4,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { usePublicConfig, useWorldData, type EntityWithSlug } from '../../data/seed';
-import { apiFetch, isApiConfigured } from '../../store/useAuthStore';
+import { isApiConfigured } from '../../store/useAuthStore';
+import { staffFetch } from './StaffKit';
 import type { MapMarker } from '../../types/database';
 import { Modal } from './Modal';
 
@@ -84,7 +85,7 @@ export function CatalogAdminPanel() {
 
   const save = useMutation({
     mutationFn: (v: { path: string; id: string | null; body: Record<string, unknown> }) =>
-      apiFetch(v.id ? `${v.path}/${v.id}` : v.path, { method: v.id ? 'PATCH' : 'POST', json: v.body }),
+      staffFetch(v.id ? `${v.path}/${v.id}` : v.path, { method: v.id ? 'PATCH' : 'POST', json: v.body }),
     onSuccess: (_d, v) => {
       setMsg({ ok: true, text: v.id ? 'Cambios guardados.' : 'Creado correctamente.' });
       setEditing(null);
@@ -94,7 +95,7 @@ export function CatalogAdminPanel() {
   });
 
   const remove = useMutation({
-    mutationFn: (d: Deleting) => apiFetch(`/api/${d.kind === 'entidades' ? 'entities' : 'markers'}/${d.id}`, { method: 'DELETE' }),
+    mutationFn: (d: Deleting) => staffFetch(`/api/${d.kind === 'entidades' ? 'entities' : 'markers'}/${d.id}`, { method: 'DELETE' }),
     onSuccess: () => {
       setMsg({ ok: true, text: 'Elemento borrado.' });
       setDeleting(null);

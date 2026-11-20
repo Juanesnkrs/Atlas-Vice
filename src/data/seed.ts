@@ -18,7 +18,7 @@ import type {
   MapMarker,
   Module,
   MonetizationConfig,
-  Profile,
+  ForumProfilePreview,
   PublicConfigDTO,
 } from '../types/database';
 
@@ -44,12 +44,12 @@ export const forumCategoryLabel = (value: ForumCategoria): string =>
   FORUM_CATEGORIES.find((c) => c.value === value)?.label ?? value;
 
 // ---- Perfiles (autores de ejemplo) -------------------------------------------
-export const SEED_PROFILES: Profile[] = [
-  { id: uid(901), username: 'NeonRider', avatar_url: null, discord_id: null, rol: 'ADMIN', created_at: T0 },
-  { id: uid(902), username: 'PalmaDorada', avatar_url: null, discord_id: null, rol: 'USER', created_at: T0 },
-  { id: uid(903), username: 'KeysCaptain', avatar_url: null, discord_id: null, rol: 'USER', created_at: T0 },
-  { id: uid(904), username: 'LuzDeOcean', avatar_url: null, discord_id: null, rol: 'USER', created_at: T0 },
-  { id: uid(905), username: 'TurboMiami', avatar_url: null, discord_id: null, rol: 'USER', created_at: T0 },
+export const SEED_PROFILES: ForumProfilePreview[] = [
+  { id: uid(901), username: 'NeonRider', avatar_url: null },
+  { id: uid(902), username: 'PalmaDorada', avatar_url: null },
+  { id: uid(903), username: 'KeysCaptain', avatar_url: null },
+  { id: uid(904), username: 'LuzDeOcean', avatar_url: null },
+  { id: uid(905), username: 'TurboMiami', avatar_url: null },
 ];
 
 // ---- Módulos ---------------------------------------------------------------------
@@ -434,7 +434,7 @@ export interface ForumData {
   /** En modo preview `contenido` llega vacio y `posts` es []. */
   threads: ForumThread[];
   posts: ForumPost[];
-  profiles: Profile[];
+  profiles: ForumProfilePreview[];
   source: DataSource;
   /** true cuando la API respondio en formato preview (sin sesion). */
   preview?: boolean;
@@ -497,7 +497,7 @@ async function fetchForum(): Promise<ForumData> {
       preview: true,
       posts: [],
       threads: f.threads.map((t) => ({ ...t, contenido: '' })),
-      profiles: f.profiles.map((p) => ({ ...p, discord_id: null, rol: 'USER', created_at: '' })),
+      profiles: f.profiles,
     };
   }
   return { ...f, source: 'api' };

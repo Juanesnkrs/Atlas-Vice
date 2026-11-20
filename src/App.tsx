@@ -14,7 +14,7 @@
 //   /guias, /guias/:slug             Guías (editorial)
 //   /noticias, /noticias/:slug       Noticias oficiales
 //   /foro                   P07      Foro (?hilo= &entity= &marker=)
-//   /aportar                P06      Aportes, moderación (ADMIN), Control Total (SUPER_ADMIN) (noindex)
+//   /aportar                P06      Buzón de la comunidad (noindex)
 //   /aportes                         Redirige a /aportar
 // La guarda de UI es cosmética: el servidor decide (RBAC en hooks Fastify).
 // =============================================================================
@@ -30,7 +30,7 @@ import { installRouter, matchRoute, navigate, useLocation, usePageMeta, type Pag
 installRouter();
 
 // Code-splitting por ruta: solo la portada (HomePage) va en el bundle inicial.
-const AdminSubmitPage = lazy(() => import('./pages/AdminSubmitPage'));
+const AportarPage = lazy(() => import('./pages/AportarPage'));
 const CatalogPage = lazy(() => import('./pages/CatalogPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ForumPage = lazy(() => import('./pages/ForumPage'));
@@ -38,6 +38,8 @@ const GuidesPage = lazy(() => import('./pages/GuidesPage'));
 const LandingAuthPage = lazy(() => import('./pages/LandingAuthPage'));
 const MapPage = lazy(() => import('./pages/MapPage'));
 const NewsPage = lazy(() => import('./pages/NewsPage'));
+// Módulo privado: solo se importa tras confirmar el rol (ver App). Su chunk sale de /assets (ver vite.config.ts).
+const StaffPage = lazy(() => import('./pages/StaffPage'));
 
 /** Fallback de carga: bloque de altura fija y sin contenido (no reflota) para no provocar saltos (CLS = 0). */
 function PageFallback() {
@@ -57,7 +59,8 @@ type RouteId =
   | 'newsItem'
   | 'forum'
   | 'contribute'
-  | 'legacyContribute';
+  | 'legacyContribute'
+  | 'staff';
 
 const ROUTES: ReadonlyArray<readonly [string, RouteId]> = [
   ['/', 'landing'],
@@ -76,6 +79,7 @@ const ROUTES: ReadonlyArray<readonly [string, RouteId]> = [
   ['/foro', 'forum'],
   ['/aportar', 'contribute'],
   ['/aportes', 'legacyContribute'],
+  ['/_staff', 'staff'],
 ];
 
 const NOINDEX = 'noindex,nofollow' as const;
@@ -247,7 +251,11 @@ export default function App() {
   const dock = useDock();
 
   const match = matchRoute(ROUTES, path);
-  const route: RouteId | 'notfound' = match?.id ?? 'notfound';
+  const ready = useAuthStore((s) => s.ready);
+  const staffConfirmed = useAuthStore((s) => s.status === 'authenticated' && s.isStaff());
+  let route: RouteId | 'notfound' = match?.id ?? 'notfound';
+  // Ruta reservada: sin rol confirmado es indistinguible de una ruta inexistente (vista 404 estándar).
+  if (route === 'staff' && ready && !staffConfirmed) route = 'notfound';
 
   // Metadatos por ruta (guías, noticias y catálogo los gestionan ellas mismas).
   const meta: PageMeta | null = route === 'notfound' ? null : (STATIC_META[route] ?? null);
@@ -259,6 +267,8 @@ export default function App() {
   }, [route]);
 
   if (route === 'legacyContribute') return null;
+  // Antes de resolver la sesión: lienzo neutro, sin texto ni panel (evita parpadeos).
+  if (route === 'staff' && !ready) return <div className="min-h-[100dvh] w-full" aria-hidden="true" />;
   if (route === 'login') {
     return (
       <Suspense fallback={<PageFallback />}>
@@ -321,9 +331,12 @@ export default function App() {
     case 'contribute':
       page = (
         <RequireAccount next="/aportar">
-          <AdminSubmitPage />
+          <AportarPage />
         </RequireAccount>
       );
+      break;
+    case 'staff':
+      page = <StaffPage />;
       break;
     default:
       page = <Unavailable title="Página no encontrada" text="La ruta que buscas no existe en LeonidApp." />;
