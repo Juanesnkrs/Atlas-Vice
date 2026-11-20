@@ -393,6 +393,7 @@ const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 /** Cache en memoria por ruta (TTL 5 min). Solo se cachean respuestas 200. */
 const cache = new Map<string, { exp: number; meta: PageMeta }>();
 export const clearSsrCache = (): void => cache.clear();
+export const ssrCacheSize = (): number => cache.size;
 
 /** `/catalogo`: `?entity` -> URL limpia del item; `?q`/`?comparar` sirven la shell; sin query o `?modulo` -> 301 a la categoria. */
 async function catalogRoot(search: URLSearchParams): Promise<Resolved> {

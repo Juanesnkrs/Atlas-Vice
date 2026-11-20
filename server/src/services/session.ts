@@ -20,10 +20,12 @@ export async function signSession(userId: string, ttlSeconds: number = SESSION_T
     .sign(key);
 }
 
-export async function verifySession(token: string): Promise<string | null> {
+/** Devuelve el usuario y el instante de emision (ms) de una sesion valida, o null. */
+export async function verifySession(token: string): Promise<{ userId: string; issuedAtMs: number } | null> {
   try {
     const { payload } = await jwtVerify(token, key, { issuer: ISSUER, algorithms: ['HS256'] });
-    return payload['typ'] === 'session' && typeof payload.sub === 'string' ? payload.sub : null;
+    if (payload['typ'] !== 'session' || typeof payload.sub !== 'string') return null;
+    return { userId: payload.sub, issuedAtMs: (payload.iat ?? 0) * 1000 };
   } catch {
     return null;
   }

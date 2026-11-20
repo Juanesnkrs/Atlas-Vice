@@ -92,6 +92,8 @@ El panel se organiza por **módulo público que gobierna**, no por tecnología. 
 
 Reglas transversales del panel: toda mutación escribe `AuditLog`; el cliente solo trata como «sin acceso» el 404 con cuerpo `No encontrado` (un 404 de negocio como `Entidad no encontrada` no expulsa al staff); los datos de las pestañas se leen sin caché pública (`no-cache`/`no-store`) para reflejar al instante los cambios; márgenes inferiores `pb-28` + `env(safe-area-inset-bottom)` para que el dock no tape acciones; toasts de éxito/error en cada acción. Sin campos nuevos salvo `User.sessions_revoked_at` y `ForumThread.is_locked` (ver Arquitectura §2.1 y §2.9); no hay estado «borrador» en `Entity` ni `MapMarker` (limitación documentada). Los chunks `staff-*` sirven a MODERATOR+ y `staff-ctl-*` solo a SUPER_ADMIN.
 
+Componentes (carpeta `src/components/ui/`): chunk `staff-panel` = `StaffKit`, `StaffContent`, `StaffCommunity`, `StaffModeration`, `StaffEditorial` y `pages/StaffPage.tsx`; chunk `staff-ctl-panel` = `StaffControl`, `StaffIdentity`, `StaffAudit`. `StaffContent.tsx` sustituye a `CatalogAdminPanel.tsx` (retirado). Sesiones: `lv_session` se invalida si su emisión es anterior a `User.sessions_revoked_at`. Las respuestas a un hilo cerrado devuelven 409 y la UI pública lo muestra con el hilo en solo lectura.
+
 ### 0.6 Alcance de `/aportar`
 
 Buzón comunitario 100 % público para enviar sugerencias (marcadores, fichas, correcciones). No menciona moderación, roles, administración ni endpoints internos. El dock mantiene 5 ítems (Hub, Mapa, Catálogo, Foro, Aportar) y el footer dice «Aportar» (no «Aportes y moderación»). La revisión y promoción de aportes ocurre solo en el panel oculto (§0.5).

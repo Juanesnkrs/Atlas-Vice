@@ -44,8 +44,11 @@ export default fp(async function authPlugin(app: FastifyInstance) {
     req.authUser = null;
     const raw = req.cookies[SESSION_COOKIE];
     if (!raw) return;
-    const userId = await verifySession(raw);
-    if (!userId) return;
-    req.authUser = await User.findById(userId).lean<UserDoc>();
+    const session = await verifySession(raw);
+    if (!session) return;
+    const user = await User.findById(session.userId).lean<UserDoc>();
+    // Revocacion: la `iat` del JWT es en segundos, por eso se compara truncando la fecha de revocacion al segundo.
+    const revoked = user?.sessions_revoked_at ? Math.floor(user.sessions_revoked_at.getTime() / 1000) * 1000 : 0;
+    req.authUser = user && session.issuedAtMs >= revoked ? user : null;
   });
 }, { name: 'auth' });

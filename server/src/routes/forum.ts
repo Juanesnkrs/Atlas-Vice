@@ -69,7 +69,9 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
 
   app.post('/api/forum/posts', write, async (req, reply) => {
     const { id, ...body } = parse(forumPostSchema, req.body);
-    if (!(await ForumThread.exists({ _id: body.thread_id }))) throw new HttpError(422, 'thread_id inexistente');
+    const thread = await ForumThread.findById(body.thread_id).select('is_locked').lean<{ is_locked?: boolean }>();
+    if (!thread) throw new HttpError(422, 'thread_id inexistente');
+    if (thread.is_locked) throw new HttpError(409, 'Este hilo esta cerrado: no admite mas respuestas');
     if (body.parent_post_id) {
       const parent = await ForumPost.exists({ _id: body.parent_post_id, thread_id: body.thread_id });
       if (!parent) throw new HttpError(422, 'parent_post_id inexistente en este hilo');

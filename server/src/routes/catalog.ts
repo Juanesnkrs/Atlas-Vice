@@ -80,6 +80,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
 
   app.delete('/api/modules/:id', admin, async (req, reply) => {
     const { id } = parse(idParamsSchema, req.params);
+    if (await Entity.exists({ module_id: id })) throw new HttpError(409, 'El modulo tiene fichas: muevelas o borralas antes');
     const doc = await Module.findByIdAndDelete(id).lean<ModuleDoc>();
     if (!doc) throw new HttpError(404, 'Modulo no encontrado');
     await writeAudit(req, 'module.delete', 'Module', id, { slug: doc.slug });
@@ -99,6 +100,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
         module: z.string().min(1).max(60).optional(), // slug o id de modulo
         module_id: z.uuid().optional(),
         categoria: z.string().max(80).optional(),
+        q: z.string().trim().min(1).max(80).optional(), // busqueda por titulo o slug (sin distinguir mayusculas)
         limit: z.coerce.number().int().min(1).max(ENTITIES_MAX_LIMIT).default(ENTITIES_DEFAULT_LIMIT),
         page: z.coerce.number().int().min(1).max(100_000).default(1),
         envelope: z.enum(['1']).optional(),
@@ -108,6 +110,10 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const filter: Record<string, unknown> = {};
     if (q.module_id) filter.module_id = q.module_id;
     if (q.categoria) filter.categoria = q.categoria;
+    if (q.q) {
+      const rx = new RegExp(q.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+      filter.$or = [{ titulo: rx }, { slug: rx }];
+    }
     if (q.module) {
       const mod = await Module.findOne({ $or: [{ _id: q.module }, { slug: q.module }] })
         .select('_id')

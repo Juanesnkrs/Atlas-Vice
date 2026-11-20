@@ -27,6 +27,7 @@ export interface ForumThreadDoc {
   contenido: string;
   is_spoiler: boolean;
   is_pinned: boolean;
+  is_locked?: boolean;
   upvotes_count: number;
   created_at: Date;
 }
@@ -42,6 +43,7 @@ const s = new Schema<ForumThreadDoc>(
     contenido: { type: String, required: true },
     is_spoiler: { type: Boolean, default: false },
     is_pinned: { type: Boolean, default: false },
+    is_locked: { type: Boolean, default: false },
     upvotes_count: { type: Number, default: 0 },
   },
   { timestamps: createdOnly, versionKey: false },
@@ -62,6 +64,7 @@ export const toThreadDTO = (t: ForumThreadDoc) => ({
   contenido: t.contenido,
   is_spoiler: t.is_spoiler,
   is_pinned: t.is_pinned,
+  is_locked: t.is_locked ?? false,
   upvotes_count: t.upvotes_count,
   created_at: t.created_at?.toISOString(),
 });

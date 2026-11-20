@@ -34,6 +34,37 @@ export const monetizationSchema = z.object({
 });
 export type MonetizationDTO = z.infer<typeof monetizationSchema>;
 
+/** Posiciones permitidas por ruta (Rutas-SEO-Monetizacion §6.1). */
+export const AD_ALLOWED_POSITIONS: Record<(typeof AD_ROUTES)[number], readonly (typeof AD_POSITIONS)[number][]> = {
+  '/catalogo/:categoria/:itemSlug': ['after-content'],
+  '/guias': ['after-content'],
+  '/guias/:slug': ['in-article', 'after-content', 'sidebar'],
+  '/noticias': ['after-content'],
+  '/noticias/:slug': ['after-content'],
+  '/foro': ['after-content'],
+};
+
+/** Validacion estricta al GUARDAR (la lectura publica sigue usando `monetizationSchema`, tolerante). */
+export const monetizationWriteSchema = monetizationSchema.superRefine((m, ctx) => {
+  const ids = new Set<string>();
+  const perRoute = new Map<string, number>();
+  m.slots.forEach((s, i) => {
+    if (ids.has(s.id)) ctx.addIssue({ code: 'custom', path: ['slots', i, 'id'], message: 'Id de slot duplicado' });
+    ids.add(s.id);
+    if (!AD_ALLOWED_POSITIONS[s.route].includes(s.position)) {
+      ctx.addIssue({ code: 'custom', path: ['slots', i, 'position'], message: `Posicion no permitida en ${s.route}` });
+    }
+    if (s.enabled) {
+      const n = (perRoute.get(s.route) ?? 0) + 1;
+      perRoute.set(s.route, n);
+      if (n > 2) ctx.addIssue({ code: 'custom', path: ['slots', i, 'route'], message: `Maximo 2 slots activos en ${s.route}` });
+    }
+  });
+  if (m.ads_enabled && m.provider === 'adsense' && !m.publisher_id?.trim()) {
+    ctx.addIssue({ code: 'custom', path: ['publisher_id'], message: 'AdSense requiere un publisher_id' });
+  }
+});
+
 export const DEFAULT_MONETIZATION: MonetizationDTO = {
   ads_enabled: false,
   provider: 'none',
@@ -52,7 +83,20 @@ export const appConfigSchema = z.object({
   monetization: monetizationSchema,
 });
 export type AppConfigDTO = z.infer<typeof appConfigSchema>;
-export const appConfigUpdateSchema = appConfigSchema.partial();
+/** Escritura (PATCH): de 1 a 4 proveedores sin repetir, flags con nombre simple y monetizacion estricta. */
+export const appConfigUpdateSchema = appConfigSchema
+  .extend({
+    enabled_auth_providers: z
+      .array(z.enum(['google', 'discord', 'apple', 'magic-link']))
+      .min(1, 'Debe quedar al menos un proveedor de acceso')
+      .max(4)
+      .refine((l) => new Set(l).size === l.length, 'Proveedores repetidos'),
+    feature_flags: z
+      .record(z.string().regex(/^[a-zA-Z0-9_.-]{1,40}$/, 'Nombre de flag invalido'), z.boolean())
+      .refine((f) => Object.keys(f).length <= 50, 'Maximo 50 flags'),
+    monetization: monetizationWriteSchema,
+  })
+  .partial();
 
 export interface AppConfigDoc extends AppConfigDTO {
   key: 'global';

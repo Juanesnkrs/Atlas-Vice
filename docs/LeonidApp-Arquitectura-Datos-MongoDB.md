@@ -323,5 +323,5 @@ Reglas:
 
 - **Foro público:** la proyección pública de autores expone solo `id`, `username` y `avatar_url` (nunca `rol` ni `email`).
 - **Superficie administrativa:** `/api/admin/*` y los POST/PATCH/DELETE administrativos de catálogo, mapa, roles, configuración y auditoría devuelven un **404 genérico** (idéntico al de una ruta inexistente) a quien no tenga sesión de staff autorizada; el RBAC se evalúa antes que la validación Zod. Lectura de `AuditLog`, cambio de roles, revocación de sesiones, configuración, salud del sistema y caché: `SUPER_ADMIN`. Moderación de aportes y foro: `MODERATOR+`. Catálogo, mapa, módulos y estado/ejecución del worker de noticias: `ADMIN+`.
-- **`GET /api/entities`:** admite `?limit=&page=` y `?module=`; respuesta comprimida con `Cache-Control`/`ETag`.
+- **`GET /api/entities`:** admite `?limit=&page=`, `?module=` y `?q=` (búsqueda por título o slug); respuesta comprimida con `Cache-Control`/`ETag`.
 - Cifras vigentes del catálogo: 243 `Entity` (armas 13, vehículos 200, guías 20, mapa 10), 10 `MapMarker`, 1 `OfficialNews`.

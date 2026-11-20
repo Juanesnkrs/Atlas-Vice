@@ -8,6 +8,7 @@ import { existsSync } from 'node:fs';
 import { ZodError } from 'zod';
 import { env, isProd } from './config/env.js';
 import authPlugin from './plugins/auth.js';
+import { registerAdminRoutes } from './routes/admin.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerCatalogRoutes } from './routes/catalog.js';
 import { registerNewsRoutes } from './routes/news.js';
@@ -125,6 +126,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.get('/api/health', async () => ({ ok: true }));
 
   await registerConfigRoutes(app);
+  await registerAdminRoutes(app);
   await registerAuthRoutes(app);
   await registerCatalogRoutes(app);
   await registerProgressRoutes(app);
