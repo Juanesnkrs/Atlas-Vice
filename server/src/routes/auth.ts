@@ -53,6 +53,13 @@ async function finishLogin(reply: FastifyReply, user: UserDoc, native: boolean, 
   return reply.redirect(`${env.PUBLIC_SITE_URL}${next ?? '/?auth=ok'}`);
 }
 
+/** Parametros del callback (query GET o body form_post de Apple); se toleran claves extra (p. ej. `user`). */
+const callbackInputSchema = z.object({
+  state: z.string().max(512).optional(),
+  code: z.string().max(4096).optional(),
+  error: z.string().max(256).optional(),
+});
+
 function failRedirect(reply: FastifyReply, native: boolean, reason: string): FastifyReply {
   const base = native ? env.APP_DEEPLINK : `${env.PUBLIC_SITE_URL}/`;
   return reply.redirect(`${base}${base.includes('?') ? '&' : '?'}auth_error=${encodeURIComponent(reason)}`);
@@ -95,7 +102,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
 
   const callback = async (req: FastifyRequest, reply: FastifyReply): Promise<FastifyReply> => {
     const { provider } = parse(providerParams, req.params);
-    const input = (req.method === 'POST' ? req.body : req.query) as Record<string, string | undefined> | undefined;
+    const rawInput = req.method === 'POST' ? req.body : req.query;
 
     const raw = req.cookies[OAUTH_COOKIE];
     const un = raw ? req.unsignCookie(raw) : null;
@@ -107,13 +114,16 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
     } catch {
       return failRedirect(reply, false, 'sesion_oauth_invalida');
     }
-    if (pkce.provider !== provider || !input?.state || input.state !== pkce.state) {
+    const parsedInput = callbackInputSchema.safeParse(rawInput ?? {});
+    if (!parsedInput.success) return failRedirect(reply, pkce.native, 'state_invalido');
+    const input = parsedInput.data;
+    if (pkce.provider !== provider || !input.state || input.state !== pkce.state) {
       return failRedirect(reply, pkce.native, 'state_invalido');
     }
-    if (input['error'] || !input['code']) return failRedirect(reply, pkce.native, 'acceso_denegado');
+    if (input.error || !input.code) return failRedirect(reply, pkce.native, 'acceso_denegado');
 
     try {
-      const identity = await exchangeCode(provider, input['code'], pkce.verifier);
+      const identity = await exchangeCode(provider, input.code, pkce.verifier);
       const user = await findOrCreateUser(identity);
       return await finishLogin(reply, user, pkce.native, sanitizeNext(pkce.next));
     } catch (err) {

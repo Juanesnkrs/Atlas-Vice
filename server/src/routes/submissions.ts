@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { requireAuth, requireRole } from '../plugins/auth.js';
+import { requireAuth, requireStaffRole } from '../plugins/auth.js';
 import {
   Submission,
   submissionCreateSchema,
@@ -31,7 +31,7 @@ export async function registerSubmissionRoutes(app: FastifyInstance): Promise<vo
     return rows.map(toSubmissionDTO);
   });
 
-  const moderation = { preHandler: requireRole('MODERATOR') };
+  const moderation = { onRequest: requireStaffRole('MODERATOR') };
 
   app.get('/api/admin/submissions', moderation, async (req) => {
     const q = parse(

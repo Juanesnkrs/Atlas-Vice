@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest, onRequestAsyncHookHandler, preHandlerAsyncHookHandler } from 'fastify';
 import fp from 'fastify-plugin';
 import { ROLE_RANK, User, type Role, type UserDoc } from '../models/User.js';
 import { HttpError } from '../services/validate.js';
@@ -20,6 +20,18 @@ export function requireRole(...roles: Role[]): preHandlerAsyncHookHandler {
   return async (req: FastifyRequest, _reply: FastifyReply) => {
     if (!req.authUser) throw new HttpError(401, 'Sesion requerida');
     if (ROLE_RANK[req.authUser.rol] < min) throw new HttpError(403, 'Permisos insuficientes');
+  };
+}
+
+/**
+ * Ruta administrativa oculta: hook `onRequest` (corre antes de parsear el cuerpo y de Zod).
+ * Sin sesion o con rol insuficiente responde el MISMO 404 que una ruta inexistente
+ * (el notFound handler devuelve `{"error":"No encontrado"}`), sin revelar que la ruta existe.
+ */
+export function requireStaffRole(role: Role): onRequestAsyncHookHandler {
+  const min = ROLE_RANK[role];
+  return async (req: FastifyRequest, _reply: FastifyReply) => {
+    if (!req.authUser || ROLE_RANK[req.authUser.rol] < min) throw new HttpError(404, 'No encontrado');
   };
 }
 

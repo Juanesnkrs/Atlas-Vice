@@ -42,10 +42,7 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
           return rest;
         }),
         posts: [],
-        profiles: users.map((u) => {
-          const { id, username, avatar_url } = toPublicUserDTO(u);
-          return { id, username, avatar_url };
-        }),
+        profiles: users.map(toPublicUserDTO),
       };
     }
     return {

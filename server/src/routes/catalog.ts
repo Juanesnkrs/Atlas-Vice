@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { requireRole } from '../plugins/auth.js';
+import { requireStaffRole } from '../plugins/auth.js';
 import { Entity, entitySchema, entityUpdateSchema, toEntityDTO, type EntityDoc } from '../models/Entity.js';
 import { MapMarker, mapMarkerSchema, mapMarkerUpdateSchema, toMarkerDTO, type MapMarkerDoc } from '../models/MapMarker.js';
 import { Module, moduleSchema, moduleUpdateSchema, toModuleDTO, type ModuleDoc } from '../models/Module.js';
@@ -9,7 +9,7 @@ import { clearSsrCache } from '../services/ssrLite.js';
 import { writeAudit } from '../services/audit.js';
 import { HttpError, idParamsSchema, parse } from '../services/validate.js';
 
-const admin = { preHandler: requireRole('ADMIN') };
+const admin = { onRequest: requireStaffRole('ADMIN') };
 
 const markerToDoc = (m: Partial<z.infer<typeof mapMarkerSchema>>): Record<string, unknown> => {
   const { coord_x, coord_y, id, slug, ...rest } = m;

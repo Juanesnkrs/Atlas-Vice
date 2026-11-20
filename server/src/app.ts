@@ -15,6 +15,7 @@ import { registerContactRoutes } from './routes/contact.js';
 import { registerConfigRoutes } from './routes/config.js';
 import { registerForumRoutes } from './routes/forum.js';
 import { registerProgressRoutes } from './routes/progress.js';
+import { API_POLICY, buildHtmlCsp } from './services/csp.js';
 import { HttpError } from './services/validate.js';
 
 /** Origenes con credenciales: web + WebView de Capacitor (iOS/Android). */
@@ -28,6 +29,8 @@ const allowedOrigins = new Set([
   'http://localhost',
   'https://localhost',
 ]);
+
+const OAUTH_CALLBACK_RE = /^\/api\/auth\/(google|discord|apple)\/callback$/;
 
 /** Carga modulos del agente de workers/SEO solo si existen (compilados o en fuente). */
 async function optionalModule<T>(relative: string): Promise<T | null> {
@@ -57,7 +60,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   // Defensa CSRF adicional para sesiones por cookie: mutaciones solo desde origenes propios.
   app.addHook('onRequest', async (req) => {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return;
-    if (req.url.startsWith('/api/auth/') && req.url.includes('/callback')) return; // Apple form_post
+    // Apple form_post: exencion unicamente para el callback exacto de los 3 proveedores OAuth (path sin query).
+    if (OAUTH_CALLBACK_RE.test(req.url.split('?')[0] ?? '')) return;
     const origin = req.headers.origin;
     if (origin && !allowedOrigins.has(origin)) throw new HttpError(403, 'Origen no permitido');
   });
@@ -81,6 +85,14 @@ export async function buildApp(): Promise<FastifyInstance> {
     reply.header('X-Frame-Options', 'DENY');
     reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
     reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    // CSP: el SSR-lite fija la suya (con hashes) para HTML. La API (JSON/XML/texto) recibe la cerrada. Los scripts
+    // estaticos (sw.js, workers) heredan su politica de la respuesta: llevan la de la app (sin hashes), no la cerrada.
+    if (!reply.hasHeader('Content-Security-Policy')) {
+      const ct = String(reply.getHeader('content-type') ?? '');
+      if (/javascript/i.test(ct)) reply.header('Content-Security-Policy', buildHtmlCsp(''));
+      else if (/json|xml|text\/plain/i.test(ct)) reply.header('Content-Security-Policy', API_POLICY);
+    }
+    if (isProd) reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
     return payload;
   });
 

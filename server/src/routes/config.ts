@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { requireRole } from '../plugins/auth.js';
+import { requireStaffRole } from '../plugins/auth.js';
 import {
   AppConfig,
   appConfigUpdateSchema,
@@ -10,10 +10,15 @@ import {
 } from '../models/AppConfig.js';
 import { Module, type ModuleDoc } from '../models/Module.js';
 import { AuditLog } from '../models/AuditLog.js';
-import { roleSchema, toPublicUserDTO, toSelfUserDTO, User, type UserDoc } from '../models/User.js';
+import { roleSchema, toSelfUserDTO, User, type UserDoc } from '../models/User.js';
 import { clearSsrCache } from '../services/ssrLite.js';
 import { writeAudit } from '../services/audit.js';
 import { HttpError, idParamsSchema, parse } from '../services/validate.js';
+
+/** PATCH de configuracion: sin claves desconocidas y al menos una clave. */
+const configPatchSchema = appConfigUpdateSchema
+  .strict()
+  .refine((v) => Object.keys(v).length > 0, { message: 'Se requiere al menos una clave' });
 
 export async function registerConfigRoutes(app: FastifyInstance): Promise<void> {
   const publicConfig = async (_req: unknown, reply: { header: (k: string, v: string) => unknown }) => {
@@ -41,8 +46,8 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
   app.get('/api/config', publicConfig);
   app.get('/api/config/public', publicConfig);
 
-  app.patch('/api/admin/config', { preHandler: requireRole('SUPER_ADMIN') }, async (req) => {
-    const patch = parse(appConfigUpdateSchema, req.body);
+  app.patch('/api/admin/config', { onRequest: requireStaffRole('SUPER_ADMIN') }, async (req) => {
+    const patch = parse(configPatchSchema, req.body);
     await getGlobalConfig();
     const updated = await AppConfig.findOneAndUpdate({ key: 'global' }, { $set: patch }, { returnDocument: 'after' }).lean();
     await writeAudit(req, 'config.update', 'AppConfig', 'global', { patch });
@@ -50,7 +55,7 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
     return updated;
   });
 
-  app.get('/api/admin/users', { preHandler: requireRole('SUPER_ADMIN') }, async (req) => {
+  app.get('/api/admin/users', { onRequest: requireStaffRole('SUPER_ADMIN') }, async (req) => {
     const q = parse(
       z.object({ limit: z.coerce.number().int().min(1).max(200).default(50), q: z.string().max(80).optional() }),
       req.query,
@@ -61,7 +66,7 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
     return { users: users.map(toSelfUserDTO) };
   });
 
-  app.patch('/api/admin/users/:id/role', { preHandler: requireRole('SUPER_ADMIN') }, async (req) => {
+  app.patch('/api/admin/users/:id/role', { onRequest: requireStaffRole('SUPER_ADMIN') }, async (req) => {
     const { id } = parse(idParamsSchema, req.params);
     const { rol } = parse(z.object({ rol: roleSchema }), req.body);
     const target = await User.findById(id).lean<UserDoc>();
@@ -72,10 +77,10 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
     }
     const updated = await User.findByIdAndUpdate(id, { $set: { rol } }, { returnDocument: 'after' }).lean<UserDoc>();
     await writeAudit(req, 'user.role.update', 'User', id, { from: target.rol, to: rol });
-    return { user: updated ? toPublicUserDTO(updated) : null };
+    return { user: updated ? toSelfUserDTO(updated) : null };
   });
 
-  app.get('/api/admin/audit-logs', { preHandler: requireRole('SUPER_ADMIN') }, async (req) => {
+  app.get('/api/admin/audit-logs', { onRequest: requireStaffRole('SUPER_ADMIN') }, async (req) => {
     const q = parse(
       z.object({
         limit: z.coerce.number().int().min(1).max(200).default(50),
