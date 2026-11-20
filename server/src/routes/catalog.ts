@@ -104,6 +104,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
       z.object({
         module: z.string().min(1).max(60).optional(), // slug o id de modulo
         module_id: z.uuid().optional(),
+        id: z.uuid().optional(), // una ficha concreta (selector de fichas del panel)
         categoria: z.string().max(80).optional(),
         q: z.string().trim().min(1).max(80).optional(), // busqueda por titulo o slug (sin distinguir mayusculas)
         limit: z.coerce.number().int().min(1).max(ENTITIES_MAX_LIMIT).default(ENTITIES_DEFAULT_LIMIT),
@@ -114,6 +115,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     );
     const filter: Record<string, unknown> = {};
     if (q.module_id) filter.module_id = q.module_id;
+    if (q.id) filter._id = q.id;
     if (q.categoria) filter.categoria = q.categoria;
     if (q.q) {
       const rx = new RegExp(q.q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
