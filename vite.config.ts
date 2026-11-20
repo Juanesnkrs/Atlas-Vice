@@ -24,9 +24,9 @@ const stripLocalRefs = (): Plugin => ({
  */
 const staffChunk = (id: string): string | undefined => {
   const p = id.replace(/\\/g, '/');
-  if (p.endsWith('/components/ui/StaffControl.tsx')) return 'staff-ctl-panel';
+  if (/\/components\/ui\/(StaffControl|StaffIdentity|StaffAudit)\.tsx$/.test(p)) return 'staff-ctl-panel';
   if (
-    /\/(components\/ui\/(StaffKit|StaffModeration|CatalogAdminPanel)|pages\/StaffPage)\.tsx$/.test(p)
+    /\/(components\/ui\/(StaffKit|StaffModeration|StaffCommunity|StaffContent|StaffEditorial)|pages\/StaffPage)\.tsx$/.test(p)
   ) {
     return 'staff-panel';
   }

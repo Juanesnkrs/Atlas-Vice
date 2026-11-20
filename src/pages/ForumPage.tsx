@@ -323,6 +323,10 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
     e.preventDefault();
     if (!selected || !requireAccount() || !user) return;
     const contenido = replyText.trim();
+    if (selected.is_locked) {
+      setMessage('Este hilo está cerrado y no admite más respuestas.');
+      return;
+    }
     if (contenido.length < 2) {
       setMessage('Escribe una respuesta.');
       return;
@@ -707,7 +711,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
               >
                 <div className="min-w-0 flex-1 basis-full md:basis-0">
                   <label htmlFor="reply" className="mb-1 flex items-center text-xs text-vice-text/80">
-                    {replyTarget ? `Respondiendo a ${nameOf(replyTarget.user_id)}` : 'Respuesta rápida'}
+                    {selected.is_locked ? 'Hilo cerrado: no admite más respuestas' : replyTarget ? `Respondiendo a ${nameOf(replyTarget.user_id)}` : 'Respuesta rápida'}
                     {replyTarget && (
                       <button type="button" onClick={() => setReplyTo(null)} className="ml-2 min-h-11 text-vice-orange underline">
                         Cancelar
@@ -718,6 +722,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
                     id="reply"
                     value={replyText}
                     onChange={(e) => setReplyText(e.target.value)}
+                    disabled={selected.is_locked === true}
                     rows={2}
                     placeholder="Escribe tu respuesta…"
                     className="w-full resize-none rounded-2xl border border-vice-orange/30 bg-white/[0.07] px-4 py-3 text-sm text-white placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold"

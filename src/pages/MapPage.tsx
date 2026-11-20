@@ -670,6 +670,11 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
 
   // ---- Filtros: la URL es la fuente de verdad (?capas= ?region= ?ocultar=1) ---------------------------------------
   const paramKey = params.toString();
+  // `?editor=1` abre directamente el Modo editor (solo si el servidor confirma el rol; el RBAC real sigue en la API).
+  const editorParam = params.get('editor') === '1';
+  useEffect(() => {
+    if (editorParam && isAdmin) setEditor(true);
+  }, [editorParam, isAdmin]);
   const capasParam = params.get('capas');
   const region = params.get('region');
   const hideDone = params.get('ocultar') === '1';

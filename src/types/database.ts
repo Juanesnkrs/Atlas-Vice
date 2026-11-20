@@ -428,7 +428,7 @@ export type Module = Tables<'modules'>;
 export type Entity = Tables<'entities'>;
 export type MapMarker = Tables<'map_markers'>;
 /** `replies_count` lo calcula la API (agregacion sobre ForumPost); no se persiste. */
-export type ForumThread = Tables<'forum_threads'> & { replies_count?: number };
+export type ForumThread = Tables<'forum_threads'> & { replies_count?: number; is_locked?: boolean };
 /** Hilo en formato preview (invitado): sin `contenido`. Respuesta de GET /api/forum sin sesion. */
 type ForumThreadPreview = Omit<Tables<'forum_threads'>, 'contenido'> & { replies_count: number };
 /** Autor publico reducido que devuelve la API en modo preview. */

@@ -51,9 +51,12 @@ export const isApiConfigured = API_URL !== '';
 
 export class ApiError extends Error {
   readonly status: number;
-  constructor(status: number, message: string) {
+  /** Detalle de validación del servidor (árbol de Zod), si lo hay. */
+  readonly details: unknown;
+  constructor(status: number, message: string, details?: unknown) {
     super(message);
     this.status = status;
+    this.details = details;
   }
 }
 
@@ -75,7 +78,7 @@ export async function apiFetch<T>(path: string, init: RequestInit & { json?: unk
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const msg = (data as { error?: string } | null)?.error ?? `Error ${res.status}`;
-    throw new ApiError(res.status, msg);
+    throw new ApiError(res.status, msg, (data as { details?: unknown } | null)?.details);
   }
   return data as T;
 }
