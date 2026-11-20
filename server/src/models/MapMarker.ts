@@ -52,6 +52,7 @@ const s = new Schema<MapMarkerDoc>(
 );
 s.index({ coord: '2d' }, { min: 0, max: MAP_WIDTH });
 s.index({ region: 1 });
+s.index({ entity_id: 1 });
 s.index({ slug: 1 }, { unique: true, sparse: true });
 
 export const MapMarker: Model<MapMarkerDoc> = model<MapMarkerDoc>('MapMarker', s);

@@ -6,9 +6,9 @@ import { ForumPost, toPostDTO, type ForumPostDoc } from '../models/ForumPost.js'
 import { FORUM_CATEGORIES, ForumThread, toThreadDTO, type ForumThreadDoc } from '../models/ForumThread.js';
 import { OfficialNews } from '../models/OfficialNews.js';
 import { toPublicUserDTO, User, type UserDoc } from '../models/User.js';
-import { writeAudit } from '../services/audit.js';
+import { diffFields, writeAudit } from '../services/audit.js';
 import { clearSsrCache, ssrCacheSize } from '../services/ssrLite.js';
-import { HttpError, idParamsSchema, parse } from '../services/validate.js';
+import { HttpError, idParamsSchema, parse, resourceNotFound } from '../services/validate.js';
 import { getNewsWorkerStatus, runOfficialNewsIngest } from '../workers/officialNewsWorker.js';
 
 const escapeRx = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -89,7 +89,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     void reply.header('Cache-Control', 'private, no-store');
     const { id } = parse(idParamsSchema, req.params);
     const thread = await ForumThread.findById(id).lean<ForumThreadDoc>();
-    if (!thread) throw new HttpError(404, 'Hilo no encontrado');
+    if (!thread) throw resourceNotFound('Hilo no encontrado');
     const posts = await ForumPost.find({ thread_id: id }).sort({ created_at: 1 }).limit(500).lean<ForumPostDoc[]>();
     const users = await User.find({ _id: { $in: [...new Set([thread.user_id, ...posts.map((p) => p.user_id)])] } }).lean<UserDoc[]>();
     return { thread: toThreadDTO(thread), posts: posts.map(toPostDTO), profiles: users.map(toPublicUserDTO) };
@@ -98,9 +98,11 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   app.patch('/api/admin/forum/threads/:id', moderation, async (req) => {
     const { id } = parse(idParamsSchema, req.params);
     const patch = parse(threadPatchSchema, req.body);
+    const prev = await ForumThread.findById(id).lean<ForumThreadDoc>();
+    if (!prev) throw resourceNotFound('Hilo no encontrado');
     const t = await ForumThread.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after' }).lean<ForumThreadDoc>();
-    if (!t) throw new HttpError(404, 'Hilo no encontrado');
-    await writeAudit(req, 'forum.thread.update', 'ForumThread', id, { patch: { ...patch, contenido: patch.contenido === undefined ? undefined : '[editado]' } });
+    if (!t) throw resourceNotFound('Hilo no encontrado');
+    await writeAudit(req, 'forum.thread.update', 'ForumThread', id, diffFields(prev as unknown as Record<string, unknown>, patch));
     clearSsrCache();
     return toThreadDTO(t);
   });
@@ -109,7 +111,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     const { id } = parse(idParamsSchema, req.params);
     const { contenido } = parse(z.object({ contenido: z.string().trim().min(1).max(10000) }).strict(), req.body);
     const p = await ForumPost.findByIdAndUpdate(id, { $set: { contenido } }, { returnDocument: 'after' }).lean<ForumPostDoc>();
-    if (!p) throw new HttpError(404, 'Respuesta no encontrada');
+    if (!p) throw resourceNotFound('Respuesta no encontrada');
     await writeAudit(req, 'forum.post.update', 'ForumPost', id, {});
     clearSsrCache();
     return toPostDTO(p);

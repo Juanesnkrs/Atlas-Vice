@@ -5,9 +5,9 @@ import { Entity, entitySchema, entityUpdateSchema, toEntityDTO, type EntityDoc }
 import { MapMarker, mapMarkerSchema, mapMarkerUpdateSchema, toMarkerDTO, type MapMarkerDoc } from '../models/MapMarker.js';
 import { Module, moduleSchema, moduleUpdateSchema, toModuleDTO, type ModuleDoc } from '../models/Module.js';
 import { clearSsrCache } from '../services/ssrLite.js';
-import { writeAudit } from '../services/audit.js';
+import { diffFields, toSnapshot, writeAudit } from '../services/audit.js';
 import { sendPublicJson } from '../services/httpCache.js';
-import { HttpError, idParamsSchema, parse } from '../services/validate.js';
+import { HttpError, idParamsSchema, parse, resourceNotFound } from '../services/validate.js';
 
 /** Paginacion de GET /api/entities: el catalogo actual (~250 fichas) cabe en una pagina por defecto. */
 const ENTITIES_DEFAULT_LIMIT = 500;
@@ -71,19 +71,24 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
   app.patch('/api/modules/:id', admin, async (req) => {
     const { id } = parse(idParamsSchema, req.params);
     const { id: _ignored, ...patch } = parse(moduleUpdateSchema, req.body);
+    const prev = await Module.findById(id).lean<ModuleDoc>();
+    if (!prev) throw resourceNotFound('Modulo no encontrado');
     const doc = await Module.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after' }).lean<ModuleDoc>();
-    if (!doc) throw new HttpError(404, 'Modulo no encontrado');
-    await writeAudit(req, 'module.update', 'Module', id, { patch });
+    if (!doc) throw resourceNotFound('Modulo no encontrado');
+    await writeAudit(req, 'module.update', 'Module', id, diffFields(prev as unknown as Record<string, unknown>, patch));
     clearSsrCache();
     return toModuleDTO(doc);
   });
 
   app.delete('/api/modules/:id', admin, async (req, reply) => {
     const { id } = parse(idParamsSchema, req.params);
-    if (await Entity.exists({ module_id: id })) throw new HttpError(409, 'El modulo tiene fichas: muevelas o borralas antes');
+    const entities = await Entity.countDocuments({ module_id: id });
+    if (entities > 0) {
+      throw new HttpError(409, 'El modulo tiene fichas: muevelas o borralas antes', { entities }, 'HAS_DEPENDENTS');
+    }
     const doc = await Module.findByIdAndDelete(id).lean<ModuleDoc>();
-    if (!doc) throw new HttpError(404, 'Modulo no encontrado');
-    await writeAudit(req, 'module.delete', 'Module', id, { slug: doc.slug });
+    if (!doc) throw resourceNotFound('Modulo no encontrado');
+    await writeAudit(req, 'module.delete', 'Module', id, { slug: doc.slug, snapshot: toSnapshot(doc) });
     clearSsrCache();
     return reply.code(204).send();
   });
@@ -159,18 +164,29 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
   app.patch('/api/entities/:id', admin, async (req) => {
     const { id } = parse(idParamsSchema, req.params);
     const { id: _ignored, ...patch } = parse(entityUpdateSchema, req.body);
+    const prev = await Entity.findById(id).lean<EntityDoc>();
+    if (!prev) throw resourceNotFound('Entidad no encontrada');
     const doc = await Entity.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after' }).lean<EntityDoc>();
-    if (!doc) throw new HttpError(404, 'Entidad no encontrada');
-    await writeAudit(req, 'entity.update', 'Entity', id, { patch });
+    if (!doc) throw resourceNotFound('Entidad no encontrada');
+    await writeAudit(req, 'entity.update', 'Entity', id, diffFields(prev as unknown as Record<string, unknown>, patch));
     clearSsrCache();
     return toEntityDTO(doc);
   });
 
   app.delete('/api/entities/:id', admin, async (req, reply) => {
     const { id } = parse(idParamsSchema, req.params);
+    const pins = await MapMarker.find({ entity_id: id }).select('titulo').lean<Array<{ _id: string; titulo: string }>>();
+    if (pins.length > 0) {
+      throw new HttpError(
+        409,
+        'La ficha tiene pines en el mapa: borralos o desvinculalos antes',
+        { count: pins.length, markers: pins.map((p) => ({ id: p._id, titulo: p.titulo })) },
+        'HAS_DEPENDENTS',
+      );
+    }
     const doc = await Entity.findByIdAndDelete(id).lean<EntityDoc>();
-    if (!doc) throw new HttpError(404, 'Entidad no encontrada');
-    await writeAudit(req, 'entity.delete', 'Entity', id, { titulo: doc.titulo });
+    if (!doc) throw resourceNotFound('Entidad no encontrada');
+    await writeAudit(req, 'entity.delete', 'Entity', id, { titulo: doc.titulo, slug: doc.slug, snapshot: toSnapshot(doc) });
     clearSsrCache();
     return reply.code(204).send();
   });
@@ -213,9 +229,11 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     if ((body.coord_x === undefined) !== (body.coord_y === undefined)) {
       throw new HttpError(400, 'coord_x y coord_y deben enviarse juntas');
     }
+    const prev = await MapMarker.findById(id).lean<MapMarkerDoc>();
+    if (!prev) throw resourceNotFound('Marcador no encontrado');
     const doc = await MapMarker.findByIdAndUpdate(id, { $set: markerToDoc({ ...body, id: undefined }) }, { returnDocument: 'after' }).lean<MapMarkerDoc>();
-    if (!doc) throw new HttpError(404, 'Marcador no encontrado');
-    await writeAudit(req, 'marker.update', 'MapMarker', id, { patch: body });
+    if (!doc) throw resourceNotFound('Marcador no encontrado');
+    await writeAudit(req, 'marker.update', 'MapMarker', id, diffFields(toMarkerDTO(prev), body as Record<string, unknown>));
     clearSsrCache();
     return toMarkerDTO(doc);
   });
@@ -223,8 +241,8 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
   app.delete('/api/markers/:id', admin, async (req, reply) => {
     const { id } = parse(idParamsSchema, req.params);
     const doc = await MapMarker.findByIdAndDelete(id).lean<MapMarkerDoc>();
-    if (!doc) throw new HttpError(404, 'Marcador no encontrado');
-    await writeAudit(req, 'marker.delete', 'MapMarker', id, { titulo: doc.titulo });
+    if (!doc) throw resourceNotFound('Marcador no encontrado');
+    await writeAudit(req, 'marker.delete', 'MapMarker', id, { titulo: doc.titulo, snapshot: toSnapshot(doc) });
     clearSsrCache();
     return reply.code(204).send();
   });

@@ -9,6 +9,7 @@ import { ZodError } from 'zod';
 import { env, isProd } from './config/env.js';
 import authPlugin from './plugins/auth.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerAdminPanelRoutes } from './routes/adminPanel.js';
 import { registerAuthRoutes } from './routes/auth.js';
 import { registerCatalogRoutes } from './routes/catalog.js';
 import { registerNewsRoutes } from './routes/news.js';
@@ -95,7 +96,11 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   app.setErrorHandler((err, _req, reply) => {
     if (err instanceof HttpError) {
-      return reply.code(err.statusCode).send({ error: err.message, ...(err.details ? { details: err.details } : {}) });
+      return reply.code(err.statusCode).send({
+        error: err.message,
+        ...(err.code ? { code: err.code } : {}),
+        ...(err.details ? { details: err.details } : {}),
+      });
     }
     if ((err as { code?: unknown }).code === 11000) {
       return reply.code(409).send({ error: 'Conflicto: el slug o identificador ya existe' });
@@ -127,6 +132,7 @@ export async function buildApp(): Promise<FastifyInstance> {
 
   await registerConfigRoutes(app);
   await registerAdminRoutes(app);
+  await registerAdminPanelRoutes(app);
   await registerAuthRoutes(app);
   await registerCatalogRoutes(app);
   await registerProgressRoutes(app);

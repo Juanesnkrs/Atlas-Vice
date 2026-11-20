@@ -6,6 +6,7 @@ import {
   submissionCreateSchema,
   submissionReviewSchema,
   submissionStatusSchema,
+  submissionTypeSchema,
   toSubmissionDTO,
   type SubmissionDoc,
 } from '../models/Submission.js';
@@ -33,26 +34,53 @@ export async function registerSubmissionRoutes(app: FastifyInstance): Promise<vo
 
   const moderation = { onRequest: requireStaffRole('MODERATOR') };
 
-  app.get('/api/admin/submissions', moderation, async (req) => {
+  /** La bandeja contact/newsletter es solo ADMIN+: un MODERATOR nunca la ve (ni la cuenta). */
+  const visibleTypes = (rol: string): Record<string, unknown> =>
+    rol === 'ADMIN' || rol === 'SUPER_ADMIN' ? {} : { type: { $nin: ['contact', 'newsletter'] } };
+
+  /**
+   * Cola de moderacion. Sin `envelope` devuelve un array (limit hasta 200); con `envelope=1` pagina de verdad
+   * y responde { items, total, page, pages } (filtros: status, type).
+   */
+  app.get('/api/admin/submissions', moderation, async (req, reply) => {
+    void reply.header('Cache-Control', 'private, no-store');
     const q = parse(
-      z.object({ status: submissionStatusSchema.optional(), limit: z.coerce.number().int().min(1).max(200).default(50) }),
+      z.object({
+        status: submissionStatusSchema.optional(),
+        type: submissionTypeSchema.optional(),
+        limit: z.coerce.number().int().min(1).max(200).default(50),
+        page: z.coerce.number().int().min(1).max(10_000).default(1),
+        envelope: z.enum(['1']).optional(),
+      }),
       req.query,
     );
-    // La bandeja contact/newsletter es solo ADMIN+.
-    const isAdmin = req.authUser!.rol === 'ADMIN' || req.authUser!.rol === 'SUPER_ADMIN';
-    const filter: Record<string, unknown> = q.status ? { status: q.status } : {};
-    if (!isAdmin) filter['type'] = { $nin: ['contact', 'newsletter'] };
-    const rows = await Submission.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(q.limit)
-      .lean<SubmissionDoc[]>();
-    return rows.map(toSubmissionDTO);
+    const filter: Record<string, unknown> = { ...(q.status ? { status: q.status } : {}), ...visibleTypes(req.authUser!.rol) };
+    if (q.type) {
+      const hidden = (visibleTypes(req.authUser!.rol).type as { $nin: string[] } | undefined)?.$nin ?? [];
+      filter['type'] = hidden.includes(q.type) ? '__none__' : q.type;
+    }
+    const [total, rows] = await Promise.all([
+      Submission.countDocuments(filter),
+      Submission.find(filter)
+        .sort({ createdAt: -1, _id: 1 })
+        .skip((q.page - 1) * q.limit)
+        .limit(q.limit)
+        .lean<SubmissionDoc[]>(),
+    ]);
+    const items = rows.map(toSubmissionDTO);
+    return q.envelope ? { items, total, page: q.page, pages: Math.max(1, Math.ceil(total / q.limit)) } : items;
+  });
+
+  /** Insignia de pendientes de la pestana de moderacion (consulta ligera, sin cuerpo de aportes). */
+  app.get('/api/admin/submissions/pending-count', moderation, async (req, reply) => {
+    void reply.header('Cache-Control', 'private, no-store');
+    return { pending: await Submission.countDocuments({ status: 'pending', ...visibleTypes(req.authUser!.rol) }) };
   });
 
   app.patch('/api/admin/submissions/:id', moderation, async (req) => {
     const { id } = parse(idParamsSchema, req.params);
-    const { status } = parse(submissionReviewSchema, req.body);
-    const updated = await reviewSubmission(id, status, req.authUser!, req.ip);
+    const { status, reviewNote } = parse(submissionReviewSchema, req.body);
+    const updated = await reviewSubmission(id, status, req.authUser!, req.ip, reviewNote);
     return toSubmissionDTO(updated);
   });
 }

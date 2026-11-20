@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { requireAuth, requireStaffRole } from '../plugins/auth.js';
 import { ForumPost, forumPostSchema, toPostDTO, type ForumPostDoc } from '../models/ForumPost.js';
 import { ForumThread, forumThreadSchema, toThreadDTO, type ForumThreadDoc } from '../models/ForumThread.js';
-import { ForumVote, forumVoteSchema } from '../models/ForumVote.js';
+import type { QueryFilter } from 'mongoose';
+import { ForumVote, forumVoteSchema, type ForumVoteDoc } from '../models/ForumVote.js';
 import { toPublicUserDTO, User, type UserDoc } from '../models/User.js';
-import { writeAudit } from '../services/audit.js';
+import { MAX_SNAPSHOT_BYTES, toSnapshot, writeAudit } from '../services/audit.js';
 import { clearSsrCache } from '../services/ssrLite.js';
-import { HttpError, idParamsSchema, parse } from '../services/validate.js';
+import { HttpError, idParamsSchema, parse, resourceNotFound } from '../services/validate.js';
 
 export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
   /**
@@ -118,22 +119,30 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
   app.delete('/api/forum/threads/:id', mod, async (req, reply) => {
     const { id } = parse(idParamsSchema, req.params);
     const t = await ForumThread.findByIdAndDelete(id).lean<ForumThreadDoc>();
-    if (!t) throw new HttpError(404, 'Hilo no encontrado');
-    const posts = await ForumPost.find({ thread_id: id }, { _id: 1 }).lean<Array<{ _id: string }>>();
+    if (!t) throw resourceNotFound('Hilo no encontrado');
+    const posts = await ForumPost.find({ thread_id: id }).lean<ForumPostDoc[]>();
     const postIds = posts.map((p) => p._id);
-    await Promise.all([
-      ForumPost.deleteMany({ thread_id: id }),
-      ForumVote.deleteMany({ $or: [{ target_type: 'THREAD', target_id: id }, { target_type: 'POST', target_id: { $in: postIds } }] }),
-    ]);
+    const voteFilter: QueryFilter<ForumVoteDoc> = { $or: [{ target_type: 'THREAD', target_id: id }, { target_type: 'POST', target_id: { $in: postIds } }] };
+    const votes = await ForumVote.find(voteFilter).lean();
+    // Snapshot ANTES de borrar los hijos (Arquitectura §2.10): hilo + respuestas + votos, para poder restaurarlos.
+    const full = { thread: toSnapshot(t), posts: toSnapshot(posts), votes: toSnapshot(votes) };
+    const tooBig = JSON.stringify(full).length > MAX_SNAPSHOT_BYTES;
+    await Promise.all([ForumPost.deleteMany({ thread_id: id }), ForumVote.deleteMany(voteFilter)]);
     clearSsrCache();
-    await writeAudit(req, 'forum.thread.delete', 'ForumThread', id, { titulo: t.titulo, author: t.user_id });
+    await writeAudit(req, 'forum.thread.delete', 'ForumThread', id, {
+      titulo: t.titulo,
+      author: t.user_id,
+      replies: posts.length,
+      snapshot: tooBig ? { thread: full.thread } : full,
+      ...(tooBig ? { snapshot_truncated: true } : {}),
+    });
     return reply.code(204).send();
   });
 
   app.delete('/api/forum/posts/:id', mod, async (req, reply) => {
     const { id } = parse(idParamsSchema, req.params);
     const p = await ForumPost.findByIdAndDelete(id).lean<ForumPostDoc>();
-    if (!p) throw new HttpError(404, 'Respuesta no encontrada');
+    if (!p) throw resourceNotFound('Respuesta no encontrada');
     await ForumVote.deleteMany({ target_type: 'POST', target_id: id });
     clearSsrCache();
     await writeAudit(req, 'forum.post.delete', 'ForumPost', id, { author: p.user_id });
@@ -144,7 +153,7 @@ export async function registerForumRoutes(app: FastifyInstance): Promise<void> {
     const { id } = parse(idParamsSchema, req.params);
     const { is_pinned } = parse(z.object({ is_pinned: z.boolean() }), req.body);
     const t = await ForumThread.findByIdAndUpdate(id, { $set: { is_pinned } }, { returnDocument: 'after' }).lean<ForumThreadDoc>();
-    if (!t) throw new HttpError(404, 'Hilo no encontrado');
+    if (!t) throw resourceNotFound('Hilo no encontrado');
     await writeAudit(req, 'forum.thread.pin', 'ForumThread', id, { is_pinned });
     return toThreadDTO(t);
   });

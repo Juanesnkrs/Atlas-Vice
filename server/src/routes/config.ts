@@ -13,8 +13,9 @@ import { Module, type ModuleDoc } from '../models/Module.js';
 import { AuditLog } from '../models/AuditLog.js';
 import { roleSchema, toSelfUserDTO, User, type UserDoc } from '../models/User.js';
 import { clearSsrCache } from '../services/ssrLite.js';
-import { writeAudit } from '../services/audit.js';
-import { HttpError, idParamsSchema, parse } from '../services/validate.js';
+import { diffFields, toSnapshot, writeAudit } from '../services/audit.js';
+import { isRestorable, restoredSet } from '../services/restore.js';
+import { HttpError, idParamsSchema, parse, resourceNotFound } from '../services/validate.js';
 
 /** PATCH de configuracion: sin claves desconocidas y al menos una clave. */
 const configPatchSchema = appConfigUpdateSchema
@@ -51,9 +52,9 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
 
   app.patch('/api/admin/config', { onRequest: requireStaffRole('SUPER_ADMIN') }, async (req) => {
     const patch = parse(configPatchSchema, req.body);
-    await getGlobalConfig();
+    const prev = await getGlobalConfig();
     const updated = await AppConfig.findOneAndUpdate({ key: 'global' }, { $set: patch }, { returnDocument: 'after' }).lean();
-    await writeAudit(req, 'config.update', 'AppConfig', 'global', { patch });
+    await writeAudit(req, 'config.update', 'AppConfig', 'global', diffFields(toSnapshot(prev), patch));
     clearSsrCache();
     return updated;
   });
@@ -94,7 +95,7 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
     const { id } = parse(idParamsSchema, req.params);
     const { rol } = parse(z.object({ rol: roleSchema }), req.body);
     const target = await User.findById(id).lean<UserDoc>();
-    if (!target) throw new HttpError(404, 'Usuario no encontrado');
+    if (!target) throw resourceNotFound('Usuario no encontrado');
     if (target.rol === 'SUPER_ADMIN' && rol !== 'SUPER_ADMIN') {
       const supers = await User.countDocuments({ rol: 'SUPER_ADMIN' });
       if (supers <= 1) throw new HttpError(409, 'No se puede degradar al ultimo SUPER_ADMIN');
@@ -109,7 +110,7 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
     const { id } = parse(idParamsSchema, req.params);
     const at = new Date();
     const updated = await User.findByIdAndUpdate(id, { $set: { sessions_revoked_at: at } }, { returnDocument: 'after' }).lean<UserDoc>();
-    if (!updated) throw new HttpError(404, 'Usuario no encontrado');
+    if (!updated) throw resourceNotFound('Usuario no encontrado');
     await writeAudit(req, 'user.sessions.revoke', 'User', id, { username: updated.username });
     return { revoked_at: at.toISOString() };
   });
@@ -146,8 +147,20 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
       .select('username')
       .lean<Array<{ _id: string; username: string }>>();
     const names = new Map(actors.map((a) => [a._id, a.username]));
+    const restored = await restoredSet(logs.map((l) => l._id));
     return {
-      logs: logs.map((l) => ({ ...l, id: l._id, actor_name: names.get(l.actor_id) ?? (l.actor_id === 'system' ? 'system' : null) })),
+      // El snapshot (documento completo) no viaja en el listado: solo se indica si la entrada es restaurable.
+      logs: logs.map(({ metadata, ...l }) => {
+        const { snapshot: _snapshot, ...meta } = metadata;
+        return {
+          ...l,
+          metadata: meta,
+          id: l._id,
+          actor_name: names.get(l.actor_id) ?? (l.actor_id === 'system' ? 'system' : null),
+          restorable: isRestorable({ action: l.action, metadata }) && !restored.has(l._id),
+          restored: restored.has(l._id),
+        };
+      }),
       total,
       page: q.page,
       pages: pagesOf(total, q.limit),
