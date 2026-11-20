@@ -66,11 +66,31 @@ El catálogo se alimenta de lotes editoriales 100 % originales en `server/data/*
 Cero exposición pública: ni UI pública, ni dock, ni footer, ni Hub, ni `robots.txt`, ni `sitemap.xml`.
 
 1. **Ruta oculta `/_staff`** (cliente y SSR). No se enlaza desde ninguna página pública.
-2. **Chunks aislados:** el código del panel sale del build en `/_staff/assets/`. El servidor **solo** sirve esos archivos a una sesión de staff autorizada: MODERATOR+ para moderación y catálogo; SUPER_ADMIN para Control Total, roles, identidades y auditoría. En cualquier otro caso responde un **404 uniforme**, idéntico al de una ruta inexistente.
+2. **Chunks aislados:** el código del panel sale del build en `/_staff/assets/`. El servidor **solo** sirve esos archivos a una sesión de staff autorizada: MODERATOR+ para moderación; ADMIN+ para contenido público y editorial; SUPER_ADMIN para Control Total, roles, identidades y auditoría. En cualquier otro caso responde un **404 uniforme**, idéntico al de una ruta inexistente.
 3. **API administrativa:** `/api/admin/*` y los POST/PATCH/DELETE administrativos de catálogo, mapa, roles, configuración y auditoría devuelven ese mismo **404 genérico** a quien no tenga sesión de staff autorizada. El RBAC real se evalúa **antes** que la validación Zod (no se distingue 401/403/400 hacia fuera).
 4. **Cliente:** trata un 404 de esos endpoints como «sin acceso».
 5. **Verificación de build:** ningún chunk público contiene las cadenas `SUPER_ADMIN`, `Control Total` ni `/api/admin/`.
 6. **Limitación documentada y aceptada:** el panel requiere red y el mismo origen web; no funciona offline ni en Capacitor.
+
+#### 0.5.1 Arquitectura funcional del panel `/_staff` (mapa de la app pública)
+
+El panel se organiza por **módulo público que gobierna**, no por tecnología. Cada bloque muestra «Qué controla en la app pública» y un enlace a esa vista pública (`target="_blank" rel="noopener"`). Las cuatro secciones aparecen según el rol; el servidor decide siempre (404 uniforme a quien no corresponda).
+
+| Sección (rol mínimo) | Bloque | Qué controla en la app pública | Vista pública | Endpoints `/api` que consume (rol) |
+| --- | --- | --- | --- | --- |
+| **Contenido público** (ADMIN+) | Catálogo | Las 243 fichas de `armas`, `vehiculos`, `coleccionables`, `guias` y `mapa`: filtro por módulo, buscador por nombre/slug (`?q=`), paginación del servidor, alta/edición/borrado | `/catalogo`, `/catalogo/:categoria/:itemSlug` | `GET /api/entities?module&q&page&limit&envelope=1` (público); `POST/PATCH/DELETE /api/entities` (ADMIN) |
+| | Mapa interactivo | Los 10 marcadores de `/mapa` (coordenadas, región, entidad vinculada). Un marcador existente está publicado (no hay borradores: `MapMarker` no tiene estado). Acceso directo al Modo Editor (`/mapa?editor=1`) | `/mapa` | `GET /api/markers` (público); `POST/PATCH/DELETE /api/markers` (ADMIN) |
+| | Módulos del catálogo | Los 7 módulos: activación (oculta/muestra navegación y rutas), orden y metadatos (nombre, icono, slug). No se borra un módulo con fichas | Dock y `/catalogo` | `GET /api/modules?all=1` (ADMIN, `no-store`); `POST/PATCH/DELETE /api/modules` (ADMIN) |
+| **Comunidad y moderación** (MODERATOR+) | Aportes | Bandeja de `/aportar`: revisar, aprobar (crea/actualiza la entidad o el marcador con auditoría) o rechazar. Contacto y suscripciones solo para ADMIN+ | `/aportar` | `GET /api/admin/submissions?status&limit` y `PATCH /api/admin/submissions/:id` (MODERATOR) |
+| | Foro | Hilos y respuestas: fijar, cerrar (`is_locked`), editar título/contenido/categoría/spoiler, eliminar (con sus votos) | `/foro` | `GET /api/admin/forum/threads?q&categoria&page`, `GET /api/admin/forum/threads/:id`, `PATCH /api/admin/forum/threads/:id`, `PATCH /api/admin/forum/posts/:id`, `DELETE /api/forum/threads/:id`, `DELETE /api/forum/posts/:id` (todos MODERATOR) |
+| **Editorial y automatización** (ADMIN+) | Worker de noticias | Estado del worker de noticias oficiales (fuentes en lista blanca, último ciclo, resultado por fuente, próximo ciclo, noticias por fuente) y ejecución manual (una a la vez, 409 si ya corre, limitada por cuota) | `/noticias` | `GET /api/admin/news/status`, `POST /api/admin/news/sync` (ADMIN) |
+| | Guías | Guías publicadas (módulo `guias`): lista, edición y enlace a su página pública con `HowTo`/`Article` | `/guias`, `/guias/:slug` | los de Catálogo con `module=guias` |
+| **Control Total** (SUPER_ADMIN) | Configuración | `announcement` (Hub), `maintenance_mode` (aviso en acceso), proveedores de acceso (1 a 4, sin duplicados), `feature_flags`, redes sociales (footer) | `/`, `/hub`, footer | `GET /api/config`; `PATCH /api/admin/config` |
+| | Monetización | `AppConfig.monetization`: interruptor global, proveedor, `publisher_id`, hasta 20 slots; el servidor valida ruta/posición permitidas (Rutas §6.1), máximo 2 slots activos por ruta, ids únicos y `publisher_id` si AdSense está activo. Verificación de cada ruta contra una página real (`HEAD`) | `/guias`, `/noticias`, `/catalogo/:categoria/:itemSlug`, `/foro` | `PATCH /api/admin/config` |
+| | Identidades y roles | Listado paginado con búsqueda y filtro por rol; cambio de rol `USER/MODERATOR/ADMIN/SUPER_ADMIN` (no degrada al último SUPER_ADMIN); revocación de sesiones (`User.sessions_revoked_at`) | — (interno) | `GET /api/admin/users?q&rol&page`, `PATCH /api/admin/users/:id/role`, `POST /api/admin/users/:id/revoke-sessions` |
+| | Auditoría y salud | Bitácora filtrable (acción, tipo de objetivo, actor, fechas, paginada) y salud: ping y conteos de MongoDB, proceso, worker, caché SSR/ETag; vaciado de caché SSR | — (interno) | `GET /api/admin/audit-logs`, `GET /api/admin/health`, `POST /api/admin/cache/clear` |
+
+Reglas transversales del panel: toda mutación escribe `AuditLog`; el cliente solo trata como «sin acceso» el 404 con cuerpo `No encontrado` (un 404 de negocio como `Entidad no encontrada` no expulsa al staff); los datos de las pestañas se leen sin caché pública (`no-cache`/`no-store`) para reflejar al instante los cambios; márgenes inferiores `pb-28` + `env(safe-area-inset-bottom)` para que el dock no tape acciones; toasts de éxito/error en cada acción. Sin campos nuevos salvo `User.sessions_revoked_at` y `ForumThread.is_locked` (ver Arquitectura §2.1 y §2.9); no hay estado «borrador» en `Entity` ni `MapMarker` (limitación documentada). Los chunks `staff-*` sirven a MODERATOR+ y `staff-ctl-*` solo a SUPER_ADMIN.
 
 ### 0.6 Alcance de `/aportar`
 

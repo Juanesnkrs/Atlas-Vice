@@ -48,6 +48,7 @@ Sustituye a `profiles` + `auth.users` del DER legado.
 | `discord_id` | String \| null | `z.string().nullable().optional()` | Índice único parcial. |
 | `rol` | String enum `ROLES`, default `USER` | `roleSchema` | Ver §3. `GUEST` nunca se persiste. |
 | `identities` | `[{ provider, subject }]` | `z.array(...)` | `provider ∈ AUTH_PROVIDERS`. Índice `{ 'identities.provider', 'identities.subject' }`. |
+| `sessions_revoked_at` | Date \| null, default `null` | `z.coerce.date().nullable().optional()` | Revocación de sesiones (solo SUPER_ADMIN, desde Identidades): una cookie `lv_session` emitida antes de esta fecha deja de ser válida. Nunca en DTO público. |
 | `created_at` | Date | `z.coerce.date().optional()` | |
 
 DTO: `toPublicUserDTO` (sin email) y `toSelfUserDTO` (con email, solo `/api/auth/me`).
@@ -198,6 +199,7 @@ Escritura exclusiva del worker `server/src/workers/officialNewsWorker.ts`.
 | `contenido` | String | `.min(1).max(10000)` |
 | `is_spoiler` | Boolean | `default(false)` |
 | `is_pinned` | Boolean | solo MODERATOR+ |
+| `is_locked` | Boolean, default `false` | solo MODERATOR+; un hilo cerrado rechaza respuestas nuevas (409) y sigue siendo legible |
 | `upvotes_count` | Number | contador desnormalizado |
 | `created_at` | Date | índice `{ categoria, created_at: -1 }` |
 
@@ -320,6 +322,6 @@ Reglas:
 ## Anexo. Exposición pública y respuestas uniformes
 
 - **Foro público:** la proyección pública de autores expone solo `id`, `username` y `avatar_url` (nunca `rol` ni `email`).
-- **Superficie administrativa:** `/api/admin/*` y los POST/PATCH/DELETE administrativos de catálogo, mapa, roles, configuración y auditoría devuelven un **404 genérico** (idéntico al de una ruta inexistente) a quien no tenga sesión de staff autorizada; el RBAC se evalúa antes que la validación Zod. Lectura de `AuditLog`, cambio de roles y configuración: `SUPER_ADMIN`. Moderación y catálogo: `MODERATOR+`.
+- **Superficie administrativa:** `/api/admin/*` y los POST/PATCH/DELETE administrativos de catálogo, mapa, roles, configuración y auditoría devuelven un **404 genérico** (idéntico al de una ruta inexistente) a quien no tenga sesión de staff autorizada; el RBAC se evalúa antes que la validación Zod. Lectura de `AuditLog`, cambio de roles, revocación de sesiones, configuración, salud del sistema y caché: `SUPER_ADMIN`. Moderación de aportes y foro: `MODERATOR+`. Catálogo, mapa, módulos y estado/ejecución del worker de noticias: `ADMIN+`.
 - **`GET /api/entities`:** admite `?limit=&page=` y `?module=`; respuesta comprimida con `Cache-Control`/`ETag`.
 - Cifras vigentes del catálogo: 243 `Entity` (armas 13, vehículos 200, guías 20, mapa 10), 10 `MapMarker`, 1 `OfficialNews`.
