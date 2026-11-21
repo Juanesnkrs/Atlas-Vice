@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import mongoose from 'mongoose';
@@ -581,11 +581,26 @@ const clientIndexFile = (): string =>
 export const clientDistDir = (): string => dirname(clientIndexFile());
 
 let templateCache: string | null | undefined;
+let templateMtime = 0;
 
-/** Lee dist/index.html del cliente una vez. null si aun no esta compilado (dev). */
+/**
+ * Lee dist/index.html del cliente y lo vuelve a leer si cambia en disco (p. ej. tras `pnpm build`): un indice en
+ * memoria con los hashes de un build anterior apuntaria a chunks que ya no existen (pagina en blanco y sin conexion
+ * hasta reiniciar el servidor). null si aun no esta compilado (dev).
+ */
 export function loadTemplate(): string | null {
-  if (templateCache !== undefined && templateCache !== null) return templateCache;
   const file = clientIndexFile();
-  templateCache = existsSync(file) ? readFileSync(file, 'utf8') : null;
+  let mtime = 0;
+  try {
+    mtime = statSync(file).mtimeMs;
+  } catch {
+    templateCache = null;
+    templateMtime = 0;
+    return null;
+  }
+  if (templateCache === undefined || templateCache === null || mtime !== templateMtime) {
+    templateCache = readFileSync(file, 'utf8');
+    templateMtime = mtime;
+  }
   return templateCache;
 }
