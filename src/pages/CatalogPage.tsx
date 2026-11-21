@@ -5,7 +5,7 @@
 //   /catalogo/:categoria/:itemSlug   -> Inspector con el ítem preseleccionado (sheet móvil abierto)
 //   ...?vista=ficha                  -> ficha completa del ítem (misma URL canónica)
 //   ?comparar=a,b[,c]  comparador sobre la URL vigente · ?q= búsqueda · ?modulo= / ?entity= heredados
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AdSlot } from '../components/ui/AdSlot';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { BottomSheet } from '../components/ui/BottomSheet';
@@ -295,6 +295,139 @@ function CatalogNotFound({ title, text }: { title: string; text: string }) {
           </PalmButton>
         </div>
       </section>
+    </div>
+  );
+}
+
+/**
+ * Fila de chips de una sola linea que se recorre de forma evidente en escritorio y tableta (>= 768 px):
+ * flechas a los lados (solo si hay mas contenido en esa direccion), borde difuminado, arrastre con el raton y la
+ * rueda del raton recorre la fila. En movil los chips van en un bloque que se despliega con el boton «Filtros».
+ */
+function ChipScroller({
+  id,
+  label,
+  mobileOpen,
+  itemsKey,
+  activeKey,
+  children,
+}: {
+  id: string;
+  label: string;
+  mobileOpen: boolean;
+  /** Cambia cuando cambia el conjunto de chips (recalcula flechas y difuminado). */
+  itemsKey: string;
+  /** Chip activo: al cambiar, se desplaza para quedar a la vista. */
+  activeKey: string;
+  children: ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+  const drag = useRef({ down: false, moved: false, startX: 0, startLeft: 0 });
+
+  const update = (): void => {
+    const el = ref.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 2);
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  };
+
+  useLayoutEffect(() => {
+    update();
+    const el = ref.current;
+    if (!el) return undefined;
+    const onWheel = (ev: WheelEvent): void => {
+      // La rueda vertical recorre la fila mientras haya donde ir; al llegar al borde la pagina vuelve a hacer scroll.
+      if (el.scrollWidth <= el.clientWidth + 2 || Math.abs(ev.deltaY) <= Math.abs(ev.deltaX)) return;
+      const atStart = el.scrollLeft <= 0 && ev.deltaY < 0;
+      const atEnd = el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 && ev.deltaY > 0;
+      if (atStart || atEnd) return;
+      ev.preventDefault();
+      el.scrollLeft += ev.deltaY;
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    window.addEventListener('resize', update);
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      ro.disconnect();
+      window.removeEventListener('resize', update);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsKey]);
+
+  // El chip activo siempre queda a la vista (p. ej. tras elegir una categoria lejana o al cambiar de pestana).
+  useEffect(() => {
+    ref.current?.querySelector<HTMLElement>('[aria-pressed="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
+  }, [activeKey, itemsKey]);
+
+  const page = (dir: 1 | -1): void => {
+    const el = ref.current;
+    if (el) el.scrollBy({ left: dir * Math.max(160, el.clientWidth * 0.7), behavior: 'smooth' });
+  };
+  const fade = (l: boolean, r: boolean): string | undefined =>
+    l || r ? `linear-gradient(to right, ${l ? 'transparent 0, #000 48px' : '#000 0'}, ${r ? '#000 calc(100% - 48px), transparent 100%' : '#000 100%'})` : undefined;
+  const arrow =
+    'glass absolute top-1/2 z-10 hidden h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full text-vice-text hover:brightness-125 focus-visible:outline-2 focus-visible:outline-vice-gold md:flex';
+
+  return (
+    <div className="relative md:min-w-0">
+      {canLeft && (
+        <button type="button" aria-label="Ver categorías anteriores" onClick={() => page(-1)} className={`${arrow} left-0`}>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 6l-6 6 6 6" />
+          </svg>
+        </button>
+      )}
+      <div
+        id={id}
+        ref={ref}
+        role="group"
+        aria-label={label}
+        onScroll={update}
+        onPointerDown={(ev) => {
+          if (ev.pointerType !== 'mouse' || ev.button !== 0 || !ref.current) return;
+          drag.current = { down: true, moved: false, startX: ev.clientX, startLeft: ref.current.scrollLeft };
+        }}
+        onPointerMove={(ev) => {
+          const d = drag.current;
+          const el = ref.current;
+          if (!d.down || !el) return;
+          const dx = ev.clientX - d.startX;
+          if (!d.moved && Math.abs(dx) > 4) {
+            d.moved = true;
+            el.setPointerCapture(ev.pointerId);
+          }
+          if (d.moved) el.scrollLeft = d.startLeft - dx;
+        }}
+        onPointerUp={() => {
+          drag.current.down = false;
+        }}
+        onPointerCancel={() => {
+          drag.current.down = false;
+        }}
+        // Si hubo arrastre, el clic que sigue al soltar no debe activar un chip.
+        onClickCapture={(ev) => {
+          if (drag.current.moved) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            drag.current.moved = false;
+          }
+        }}
+        style={{ maskImage: fade(canLeft, canRight), WebkitMaskImage: fade(canLeft, canRight) }}
+        className={`scrollbar-none ${mobileOpen ? 'flex flex-wrap' : 'hidden'} gap-1 md:flex md:flex-nowrap md:cursor-grab md:overflow-x-auto md:overscroll-x-contain md:select-none md:active:cursor-grabbing`}
+      >
+        {children}
+      </div>
+      {canRight && (
+        <button type="button" aria-label="Ver más categorías" onClick={() => page(1)} className={`${arrow} right-0`}>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
@@ -726,12 +859,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
       )}
 
       {categories.length > 2 && (
-        <div
-          id="cat-filtros"
-          role="group"
-          aria-label="Filtrar por categoría"
-          className={`scrollbar-none ${filtersOpen ? 'flex flex-wrap' : 'hidden'} gap-1 md:flex md:flex-nowrap md:overflow-x-auto`}
-        >
+        <ChipScroller id="cat-filtros" label="Filtrar por categoría" mobileOpen={filtersOpen} itemsKey={categories.join('|')} activeKey={cat}>
           {categories.map((c) => (
             <button
               key={c}
@@ -745,7 +873,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
               {c}
             </button>
           ))}
-        </div>
+        </ChipScroller>
       )}
 
       {categories.length <= 2 && entitiesPending && (
