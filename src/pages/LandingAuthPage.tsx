@@ -43,7 +43,7 @@ const PROVIDERS: ReadonlyArray<{ id: ProviderId; label: string; soon: string }> 
   { id: 'google', label: 'Continuar con Google', soon: 'Google · Próximamente' },
   { id: 'discord', label: 'Continuar con Discord', soon: 'Discord · Próximamente' },
   { id: 'apple', label: 'Continuar con Apple', soon: 'Apple · Próximamente' },
-  { id: 'magic-link', label: 'Correo / Magic Link', soon: 'Correo · Próximamente' },
+  { id: 'magic-link', label: 'Continuar con correo', soon: 'Correo · Próximamente' },
 ];
 
 interface ProvidersResponse {
@@ -89,8 +89,8 @@ function MagicLinkDialog({ open, onClose, next }: { open: boolean; onClose: () =
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Entrar con Magic Link">
-      <p className="text-sm text-vice-text/85">Te enviamos un enlace de un solo uso. Sin contraseñas.</p>
+    <Modal open={open} onClose={onClose} title="Entrar con tu correo">
+      <p className="text-sm text-vice-text/85">Te enviamos un enlace de acceso a tu correo. Es de un solo uso y no necesitas contraseña.</p>
       {sent ? (
         <p role="status" className="mt-4 text-vice-cyan">
           Si el correo es válido, recibirás el enlace en unos minutos. Revisa también el spam.
