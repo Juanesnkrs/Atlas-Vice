@@ -134,7 +134,7 @@ function useDock() {
 
 // ---- Cabecera: enlaces editoriales, progreso y sesión --------------------------------------
 const HEADER_PILL =
-  'glass flex min-h-11 items-center rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold';
+  'glass flex min-h-11 items-center rounded-full px-3 text-sm min-[400px]:px-4 font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold';
 
 function HeaderEnd() {
   const status = useAuthStore((s) => s.status);
@@ -165,7 +165,7 @@ function HeaderEnd() {
         className={`${HEADER_PILL} gap-2`}
         aria-label={`Mi avance: ${summary.percent}%. Abrir mi avance`}
       >
-        <span className="text-xs font-medium text-vice-text/85">Mi avance</span>
+        <span className="hidden text-xs font-medium text-vice-text/85 min-[400px]:inline">Mi avance</span>
         <span className="font-display text-vice-orange">{summary.percent}%</span>
       </a>
       {authenticated ? (

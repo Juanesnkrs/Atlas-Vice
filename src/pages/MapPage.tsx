@@ -1106,7 +1106,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           )}
         </div>
 
-        <div className="pointer-events-auto flex items-center gap-2 md:hidden">
+        <div className="pointer-events-auto flex flex-wrap items-center gap-2 md:hidden">
           <button
             type="button"
             aria-expanded={layersOpen}

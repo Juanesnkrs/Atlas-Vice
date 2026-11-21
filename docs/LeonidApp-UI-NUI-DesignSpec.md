@@ -291,7 +291,7 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
 
 ### 7.11 Transversal: cabecera, espaciado y vocabulario
 
-- **Cabecera:** etiqueta «Mi avance» junto al porcentaje y botón de cuenta con **icono de perfil** y «Salir» (el nombre solo desde `md`); áreas táctiles ≥ 44 px.
+- **Cabecera:** etiqueta «Mi avance» junto al porcentaje y botón de cuenta con **icono de perfil** y «Salir» (el nombre solo desde `md`); áreas táctiles ≥ 44 px. **Pantallas estrechas:** por debajo de 400 px la etiqueta «Mi avance» se oculta (queda solo el porcentaje) y las píldoras reducen su relleno, para que la cabecera quepa en teléfonos de 320-360 px sin ensanchar la página. **Tableta vertical (768 px):** el foro usa una lista de 280-360 px y el panel del hilo ocupa el resto (desde `lg` vuelve a 340-500 px); las pestañas de categoría de Foro y Catálogo se atenúan en el borde derecho en móvil para indicar que deslizan, y en móvil «Próximamente» se abrevia a «Pronto» en la pestaña. El control de capas del mapa (móvil) pasa a varias filas si no cabe.
 - **Espaciado inferior:** las vistas con scroll usan `pb-[calc(7rem+env(safe-area-inset-bottom))]` (o el espaciador del shell) para que el dock nunca tape botones ni enlaces.
 - **Glosario público** (una palabra por concepto; no cambia rutas, claves de API ni campos):
 

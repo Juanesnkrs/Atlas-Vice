@@ -372,7 +372,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
       {/* Cabecera del foro: título, categorías y "+ Hilo" */}
       <div className={`flex flex-wrap items-center gap-x-5 gap-y-2 ${mobileDetail && !guest ? 'max-md:hidden' : ''}`}>
         <h1 className="font-display text-2xl font-bold tracking-[0.04em] text-[#FFC09A] md:text-[26px]">COMUNIDAD</h1>
-        <div role="tablist" aria-label="Categorías del foro" className="order-last flex w-full gap-2 overflow-x-auto pr-6 [scrollbar-width:none] max-md:[mask-image:linear-gradient(to_right,#000_88%,transparent)] md:order-none md:w-auto">
+        <div role="tablist" aria-label="Categorías del foro" className="order-last flex w-full gap-2 overflow-x-auto [scrollbar-width:none] max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,#000_88%,transparent)] md:order-none md:w-auto">
           {([{ value: 'all', label: 'Todos' }, ...FORUM_CATEGORIES] as const).map((c) => {
             const on = (guest ? 'all' : cat) === c.value;
             return (
@@ -414,7 +414,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
         )}
       </div>
 
-      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[minmax(340px,500px)_1fr]">
+      <div className="grid min-h-0 flex-1 gap-4 md:grid-cols-[minmax(280px,360px)_1fr] lg:grid-cols-[minmax(340px,500px)_1fr]">
         {/* P07.1 Lista de hilos */}
         <section
           aria-label="Lista de hilos"

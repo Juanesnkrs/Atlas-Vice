@@ -677,7 +677,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
           {tabDef.label}
           {cat !== 'Todas' && <span className="text-vice-orange"> // {cat}</span>}
         </h1>
-        <div role="tablist" aria-label="Categorías del catálogo" className="scrollbar-none flex max-w-full gap-2 overflow-x-auto">
+        <div role="tablist" aria-label="Categorías del catálogo" className="scrollbar-none flex max-w-full gap-2 overflow-x-auto max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,#000_90%,transparent)]">
           {tabs.map((t) => (
             <button
               key={t.slug}
@@ -691,7 +691,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
               }`}
             >
               {t.label}
-              {comingSoon(t.slug) && <span className="ml-2 text-[11px] font-semibold text-vice-gold">Próximamente</span>}
+              {comingSoon(t.slug) && <span className="ml-2 text-[11px] font-semibold text-vice-gold"><span className="md:hidden">Pronto</span><span className="hidden md:inline">Próximamente</span></span>}
             </button>
           ))}
         </div>
