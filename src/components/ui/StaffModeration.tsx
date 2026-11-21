@@ -322,6 +322,8 @@ export default function StaffModeration() {
   const [summary, setSummary] = useState<string | null>(null);
   const [reject, setReject] = useState<RejectTarget | null>(null);
   const [running, setRunning] = useState(false);
+  /** Coordenadas escritas al aprobar un lugar que llegó sin ubicación (se envían con la aprobación). */
+  const [pinXY, setPinXY] = useState<Readonly<Record<string, { x: string; y: string }>>>({});
 
   const queue = useQuery({
     queryKey: ['staff', 'submissions', st, f.ty, page],
@@ -341,6 +343,14 @@ export default function StaffModeration() {
       return next;
     });
 
+  const coordsBody = (id: string): { coords?: { x: number; y: number } } => {
+    const c = pinXY[id];
+    if (!c || c.x.trim() === '' || c.y.trim() === '') return {};
+    const x = Number(c.x);
+    const y = Number(c.y);
+    return Number.isFinite(x) && Number.isFinite(y) ? { coords: { x, y } } : {};
+  };
+
   /** Revisa un aporte: solo bloquea su fila; el error 422 queda junto al aporte. */
   const reviewOne = async (id: string, status: Verdict, note: string): Promise<SubmissionDTO | null> => {
     toggleBusy(id, true);
@@ -348,7 +358,7 @@ export default function StaffModeration() {
     try {
       return await staffFetch<SubmissionDTO>(`/api/admin/submissions/${id}`, {
         method: 'PATCH',
-        json: status === 'rejected' && note ? { status, reviewNote: note } : { status },
+        json: status === 'rejected' ? (note ? { status, reviewNote: note } : { status }) : { status, ...coordsBody(id) },
       });
     } catch (e) {
       const lines = errLines(e);
@@ -546,6 +556,25 @@ export default function StaffModeration() {
                 </button>
                 <PromotedLinks sub={s} />
               </div>
+              {s.status === 'pending' && s.type === 'marker' && s.coords === null && (
+                <div className="mt-2 grid max-w-sm grid-cols-2 gap-2">
+                  <p className="col-span-2 text-sm text-vice-text/85">Este lugar llegó sin ubicación. Indica dónde va el pin para aprobarlo.</p>
+                  {(['x', 'y'] as const).map((axis) => (
+                    <label key={axis} className="text-xs font-medium">
+                      {axis === 'x' ? 'Coordenada X (0-1000)' : 'Coordenada Y (0-700)'}
+                      <input
+                        type="number"
+                        step="0.0001"
+                        min="0"
+                        max={axis === 'x' ? 1000 : 700}
+                        value={pinXY[s.id]?.[axis] ?? ''}
+                        onChange={(e) => setPinXY((prev) => ({ ...prev, [s.id]: { x: prev[s.id]?.x ?? '', y: prev[s.id]?.y ?? '', [axis]: e.target.value } }))}
+                        className={`${INPUT} mt-1`}
+                      />
+                    </label>
+                  ))}
+                </div>
+              )}
               {expanded && (
                 <div id={`sub-${s.id}`} className="mt-1 text-sm">
                   <Detail s={s} />

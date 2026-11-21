@@ -102,7 +102,7 @@ export async function promote(submissionId: string, reviewer: Actor): Promise<Su
   }>;
 
   if (sub.type === 'marker') {
-    if (!sub.coords) throw new HttpError(422, 'coords obligatorio para marker');
+    if (!sub.coords) throw new HttpError(422, 'Falta ubicar el pin: indica las coordenadas X (0-1000) e Y (0-700) para aprobar este aporte.');
     const r = markerPayloadSchema.safeParse(sub.payload);
     if (!r.success) throw unprocessable(r.error);
     const coords = sub.coords;
@@ -239,7 +239,8 @@ export async function createUserSubmission(
 ): Promise<SubmissionDoc> {
   const created = await Submission.create({ ...body, userId: user._id, status: 'pending', reviewedBy: null, promotedTo: null });
   const doc = created.toObject() as SubmissionDoc;
-  if (ROLE_RANK[user.rol] >= ROLE_RANK.MODERATOR) {
+  // Un marcador sin coordenadas espera a que el equipo ubique el pin: no se autopromueve.
+  if (ROLE_RANK[user.rol] >= ROLE_RANK.MODERATOR && !(doc.type === 'marker' && doc.coords === null)) {
     return promote(doc._id, { ...SYSTEM, ip: ip ?? null });
   }
   return doc;
@@ -252,6 +253,7 @@ export async function reviewSubmission(
   reviewer: { _id: string; rol: Role },
   ip?: string | null,
   reviewNote?: string,
+  coords?: { x: number; y: number },
 ): Promise<SubmissionDoc> {
   const sub = await Submission.findById(id).lean<SubmissionDoc>();
   if (!sub) throw resourceNotFound('Aporte no encontrado');
@@ -261,7 +263,11 @@ export async function reviewSubmission(
     throw new HttpError(403, 'Permisos insuficientes');
   }
 
-  if (status === 'approved' && !isFooterType(sub.type)) return promote(id, actor);
+  if (status === 'approved' && !isFooterType(sub.type)) {
+    // El aporte publico de ubicacion llega sin coordenadas: quien aprueba las completa aqui.
+    if (coords && sub.type === 'marker' && !sub.promotedTo) await Submission.updateOne({ _id: id }, { $set: { coords } });
+    return promote(id, actor);
+  }
 
   if (status === 'rejected' && sub.promotedTo) throw new HttpError(409, 'Aporte ya promovido');
   const updated = await Submission.findByIdAndUpdate(

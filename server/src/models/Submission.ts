@@ -23,12 +23,9 @@ const submissionBase = z.object({
   coords: coordsSchema.nullable().default(null),
 });
 
-const markerNeedsCoords = (v: { type: string; coords: unknown }): boolean => v.type !== 'marker' || v.coords !== null;
-
 /** Entrada de usuarios con sesion (POST /api/submissions): solo aportes, no Footer. */
 export const submissionCreateSchema = submissionBase
-  .refine((v) => !isFooterType(v.type), { message: 'Tipo no permitido', path: ['type'] })
-  .refine(markerNeedsCoords, { message: 'coords obligatorio para marker', path: ['coords'] });
+  .refine((v) => !isFooterType(v.type), { message: 'Tipo no permitido', path: ['type'] });
 export type SubmissionCreate = z.infer<typeof submissionCreateSchema>;
 
 /** Esquema completo del documento: userId null solo para contact/newsletter. */
@@ -48,13 +45,13 @@ export const submissionSchema = submissionBase
   .refine((v) => v.userId !== null || isFooterType(v.type), {
     message: 'userId solo puede ser null en contact/newsletter',
     path: ['userId'],
-  })
-  .refine(markerNeedsCoords, { message: 'coords obligatorio para marker', path: ['coords'] });
+  });
 export type SubmissionDTO = z.infer<typeof submissionSchema>;
-/** reviewNote (motivo de rechazo) solo aplica a `rejected`. */
+/** reviewNote (motivo de rechazo) solo aplica a `rejected`; coords (ubicacion del pin) solo a `approved`. */
 export const submissionReviewSchema = z
-  .object({ status: z.enum(['approved', 'rejected']), reviewNote: z.string().trim().max(500).optional() })
-  .refine((v) => v.status === 'rejected' || v.reviewNote === undefined, { message: 'reviewNote solo se admite al rechazar', path: ['reviewNote'] });
+  .object({ status: z.enum(['approved', 'rejected']), reviewNote: z.string().trim().max(500).optional(), coords: coordsSchema.optional() })
+  .refine((v) => v.status === 'rejected' || v.reviewNote === undefined, { message: 'reviewNote solo se admite al rechazar', path: ['reviewNote'] })
+  .refine((v) => v.status === 'approved' || v.coords === undefined, { message: 'coords solo se admite al aprobar', path: ['coords'] });
 
 export interface SubmissionDoc {
   _id: string;

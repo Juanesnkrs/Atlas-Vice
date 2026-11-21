@@ -468,7 +468,7 @@ export function useProgressSummary(): ProgressSummary {
   });
   const slugById = new Map(data.modules.map((m) => [m.id, m.slug]));
   const defs: Array<{ id: ProgressCategory['id']; label: string; slug?: string }> = [
-    { id: 'markers', label: 'Marcadores del mapa' },
+    { id: 'markers', label: 'Lugares del mapa' },
     { id: 'armas', label: 'Armas', slug: 'armas' },
     { id: 'vehiculos', label: 'Vehículos', slug: 'vehiculos' },
     { id: 'coleccionables', label: 'Coleccionables', slug: 'coleccionables' },

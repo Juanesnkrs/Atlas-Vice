@@ -26,14 +26,31 @@ const ACCENTS: Record<string, StatAccent> = {
   coleccionables: 'lilac',
 };
 
+/** Hora relativa corta en español («hace 2 min»). */
+function relativeTime(iso: string, now = Date.now()): string {
+  const min = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60_000));
+  if (min < 1) return 'hace un momento';
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.round(h / 24);
+  return `hace ${d} ${d === 1 ? 'día' : 'días'}`;
+}
+
+const START: ReadonlyArray<{ href: string; label: string; module?: string }> = [
+  { href: '/mapa', label: 'Explorar el mapa', module: 'mapa' },
+  { href: '/guias', label: 'Abrir guías', module: 'guias' },
+  { href: '/foro', label: 'Ver hilos recientes', module: 'foro' },
+];
+
 const SOURCE_LABEL: Record<string, string> = Object.fromEntries(NEWS_SOURCES.map((s) => [s.value, s.label]));
 
 /** `module`: slug del módulo que debe estar activo para mostrar el acceso (los inactivos no se muestran). */
 const QUICK: ReadonlyArray<{ href: string; title: string; text: string; crop: keyof typeof CROPS; module?: string }> = [
-  { href: '/guias', title: 'Guías', text: 'Pasos verificables y rutas.', crop: 'guias', module: 'guias' },
+  { href: '/guias', title: 'Guías', text: 'Pasos claros para cada reto.', crop: 'guias', module: 'guias' },
   { href: '/noticias', title: 'Noticias oficiales', text: 'Rockstar Games y Take-Two.', crop: 'noticias' },
-  { href: '/aportar', title: 'Aportar', text: 'Envía hallazgos con tu cuenta.', crop: 'coleccionables' },
-  { href: '/mapa', title: 'Mapa de Leonida', text: 'Pines, capas y check 100%.', crop: 'mapa', module: 'mapa' },
+  { href: '/aportar', title: 'Aportar', text: 'Comparte lugares y correcciones.', crop: 'coleccionables' },
+  { href: '/mapa', title: 'Mapa de Leonida', text: 'Lugares, capas y tu avance.', crop: 'mapa', module: 'mapa' },
   { href: '/catalogo', title: 'Catálogo', text: 'Armas, vehículos y coleccionables.', crop: 'vehiculos', module: 'catalogo' },
   { href: '/foro', title: 'Foro', text: 'Hilos, votos y spoilers.', crop: 'armas', module: 'foro' },
 ];
@@ -91,13 +108,37 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
 
   const authenticated = status === 'authenticated';
   const markers = summary.categories.find((c) => c.id === 'markers');
+  const start = START.filter((s) => !s.module || isActive(s.module));
+  const visibleCats = summary.categories.filter((c) => c.total > 0);
+  const catalogCats = visibleCats.filter((c) => c.id !== 'markers');
+  const catalogDone = catalogCats.reduce((a, c) => a + c.done, 0);
+  const catalogTotal = catalogCats.reduce((a, c) => a + c.total, 0);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-8 pt-2 md:px-8">
+    <div className="mx-auto w-full max-w-6xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-2 md:px-8">
       <h1 className="font-display text-3xl font-bold text-[#FFC09A] md:text-4xl">Mi avance</h1>
       <p className="mt-1 text-sm text-vice-text/90">
         Hola, {username ?? 'invitado'}. Así va tu 100% de Leonida.
       </p>
+
+      {start.length > 0 && (
+        <nav aria-label="Para empezar" className="mt-4">
+          <ul className="flex flex-col gap-2 sm:flex-row">
+            {start.map((s, i) => (
+              <li key={s.href} className="sm:flex-1">
+                <a
+                  href={s.href}
+                  className={`flex min-h-12 items-center justify-center rounded-2xl px-4 text-center font-bold ${FOCUS} ${
+                    i === 0 ? 'bg-vice-accent text-vice-ink' : 'glass hover:border-vice-orange'
+                  }`}
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
 
       <div className="mt-5 grid gap-5 lg:grid-cols-3">
         {/* Avance total y por categoría */}
@@ -122,13 +163,22 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
                   <span className="font-semibold text-white">
                     {markers?.done ?? 0} de {markers?.total ?? 0}
                   </span>{' '}
-                  marcadores completados.
+                  lugares del mapa completados.
+                  {catalogTotal > 0 && (
+                    <>
+                      <br />
+                      <span className="font-semibold text-white">
+                        {catalogDone} de {catalogTotal}
+                      </span>{' '}
+                      fichas del catálogo ({catalogCats.map((c) => c.label.toLowerCase()).join(', ')}).
+                    </>
+                  )}
                   <br />
-                  {summary.done} de {summary.total} elementos en total.
+                  <span className="text-vice-text/70">Las guías no suman al porcentaje.</span>
                 </p>
               </div>
               <div className="mt-5 flex flex-col gap-4">
-                {summary.categories.map((c) => (
+                {visibleCats.map((c) => (
                   <StatBar
                     key={c.id}
                     label={c.label}
@@ -145,29 +195,30 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
               <>
                 <span>
                   {syncStatus === 'syncing'
-                    ? 'Sincronizando…'
+                    ? 'Guardando…'
                     : syncStatus === 'error'
-                      ? `Error de sincronización: ${syncError ?? 'desconocido'}`
+                      ? `No se pudo guardar tu avance${syncError ? `: ${syncError}` : '.'}`
                       : lastSyncedAt
-                        ? `Sincronizado con tu cuenta · ${new Date(lastSyncedAt).toLocaleString('es')}`
-                        : 'Pendiente de sincronizar'}
+                        ? `Todo guardado · ${relativeTime(lastSyncedAt)}`
+                        : 'Todo guardado'}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => void syncWithCloud()}
-                  disabled={syncStatus === 'syncing'}
-                  className={`glass min-h-11 rounded-full px-4 font-semibold disabled:opacity-50 ${FOCUS}`}
-                >
-                  Reintentar sincronización
-                </button>
+                {syncStatus === 'error' && (
+                  <button
+                    type="button"
+                    onClick={() => void syncWithCloud()}
+                    className={`glass min-h-11 rounded-full px-4 font-semibold ${FOCUS}`}
+                  >
+                    Reintentar
+                  </button>
+                )}
               </>
             ) : (
               <span>
-                Tu progreso se guarda en este dispositivo.{' '}
+                Tu avance se guarda en este dispositivo.{' '}
                 <a href="/entrar" className={`inline-flex min-h-11 items-center text-vice-orange underline ${FOCUS}`}>
                   Inicia sesión
                 </a>{' '}
-                para sincronizarlo.
+                para guardarlo en tu cuenta.
               </span>
             )}
           </div>

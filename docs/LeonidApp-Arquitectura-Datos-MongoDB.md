@@ -180,7 +180,7 @@ Escritura exclusiva del worker `server/src/workers/officialNewsWorker.ts`.
 | `type` | String | **Δ** `z.enum(SUBMISSION_TYPES)` | `SUBMISSION_TYPES = ['marker', 'entity', 'correction', 'contact', 'newsletter']`. |
 | `title` | String | `.min(3).max(160)` | |
 | `payload` | Mixed | `jsonRecordSchema` | Campos destino (ver §5). En `newsletter`: `{ email, locale }`. En `contact`: `{ email, message }`. |
-| `coords` | `{ x, y } \| null` | `z.object({x,y}).nullable()` | Obligatorio si `type = 'marker'`. |
+| `coords` | `{ x, y } \| null` | `z.object({x,y}).nullable()` | Un aporte público `marker` se guarda con `coords: null` (el visitante no conoce el sistema 0-1000 × 0-700); quien lo aprueba debe aportarlas (ver §5). |
 | `status` | `'pending' \| 'approved' \| 'rejected'` | `submissionStatusSchema` | Índice `{ status, createdAt: -1 }`. |
 | `reviewedBy` | String \| null | `z.uuid().nullable()` | `'system'` en aprobación automática. |
 | **Δ** `reviewNote` | String (opcional, sin valor por defecto) | `z.string().trim().max(500).optional()` | Motivo del rechazo, visible solo en moderación (`/_staff`). Se guarda solo al rechazar (`PATCH /api/admin/submissions/:id` con `{ status: 'rejected', reviewNote? }`) y se expone en el DTO como `reviewNote`. |
@@ -290,14 +290,14 @@ PROHIBIDO tokens en `localStorage`, `sessionStorage`, IndexedDB o en la URL. El 
 
 **Disparadores** (cualquiera de los dos):
 
-- **A. Revisión manual:** `PATCH /api/admin/submissions/:id { status: 'approved' }` por `MODERATOR+`.
+- **A. Revisión manual:** `PATCH /api/admin/submissions/:id { status: 'approved', coords? }` por `MODERATOR+` (`coords` solo al aprobar; se escribe en la Submission `marker` antes de promover).
 - **B. Autor de confianza:** al crear (`POST /api/submissions`), si el autor tiene rango `≥ MODERATOR`, el servidor la marca `approved` con `reviewedBy: 'system'` y ejecuta la promoción en la misma petición.
 
 **Promoción** (servicio `services/submissions.ts#promote`, en una transacción Mongo):
 
 | `type` | Validación previa | Resultado |
 | --- | --- | --- |
-| `marker` | `coords` no nulo; `payload` valida con `mapMarkerSchema` (`region`, `titulo`, `descripcion?`, `entity_id?`, `media_url?`) | `MapMarker.create({ ...payload, coord: coords })` |
+| `marker` | `coords` no nulo (al aprobar, `PATCH /api/admin/submissions/:id` admite `coords: {x,y}` en el cuerpo para ubicar el pin; sin ellas responde 422 «Falta ubicar el pin…» y el aporte sigue `pending`); `payload` valida con `mapMarkerSchema` (`region`, `titulo`, `descripcion?`, `entity_id?`, `media_url?`) | `MapMarker.create({ ...payload, coord: coords })` |
 | `entity` | `moduleSlug` existe y `activo`; `payload` valida con `entitySchema` (sin `module_id`, que se resuelve desde `moduleSlug`) | `Entity.create({ ...payload, module_id })` |
 | `correction` | `payload = { target: 'Entity' \| 'MapMarker', id, patch }`; `patch` valida con el schema `.partial()` | `updateOne` del documento destino |
 | `contact`, `newsletter` | — | **Nunca se promueven.** Solo bandeja ADMIN; `approved` = atendido. |

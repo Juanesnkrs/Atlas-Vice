@@ -256,6 +256,25 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
 - **SSR-lite de `/foro`:** sin contenido de hilos en meta ni JSON-LD.
 - **Móvil con sesión (claridad para personas nuevas):** al abrir un hilo se oculta la cabecera del foro (título y categorías) para dar todo el alto al hilo; el botón de volver dice «Volver a los hilos»; el envío dice «Publicar respuesta» (a ancho completo) y el botón «Discord oficial» solo se muestra en escritorio. Las tarjetas muestran el voto con la etiqueta «votos» y un extracto de dos líneas del contenido (salvo spoilers); la fila de categorías se atenúa en el borde para indicar que desliza; el formulario de hilo lleva textos de ayuda y las respuestas vacías muestran un aviso explícito.
 
+### 7.6 Aportar (`/aportar`)
+
+- **Introducción** de tres líneas: qué se puede compartir (lugares, fichas nuevas, correcciones), que el equipo revisa cada aporte y que, si procede, se publica, y dónde ver el estado («Mis aportes»). Sin mencionar moderación interna, roles ni administración.
+- **Campos según el tipo elegido** («Un lugar del mapa», «Una ficha nueva», «Corregir un dato»). Un lugar pide nombre, zona o región, descripción e imagen opcional: **no** pide coordenadas; el aporte se guarda con `coords: null` y el equipo ubica el pin al aprobarlo (contrato en Arquitectura §2.8 y §5). La ficha nueva añade sección y categoría; la corrección, el dato a corregir.
+- **Tras enviar** se sustituye el formulario por una confirmación («¡Aporte enviado!…») con el botón «Enviar otro aporte».
+- **Margen inferior** `pb-[calc(7rem+env(safe-area-inset-bottom))]`: el dock no tapa el formulario ni el botón de envío.
+
+### 7.7 Hub (`/hub`)
+
+- Arriba, antes de las estadísticas, tres accesos para empezar: «Explorar el mapa» (`/mapa`), «Abrir guías» (`/guias`) y «Ver hilos recientes» (`/foro`), respetando los módulos activos.
+- Estado de guardado: «Todo guardado · hace 2 min» (hora relativa). «Reintentar» aparece solo si hay un error real de guardado.
+- Las barras de categorías sin elementos (total 0) no se muestran. El resumen distingue «X de Y lugares del mapa completados» y «X de Y fichas del catálogo (armas, vehículos…)», con datos reales de la API; las guías no suman al porcentaje y así se indica.
+
+### 7.8 Noticias (`/noticias`)
+
+- El resumen se muestra sin el encabezado de agencia (p. ej. `NEW YORK --(BUSINESS WIRE)--Jun. 24, 2026--`); es solo de presentación, los datos en MongoDB no cambian.
+- Etiqueta discreta «Fuente en inglés» cuando el texto es claramente inglés (heurística de palabras frecuentes; ante la duda no se muestra).
+- Con menos de 3 noticias aparece un aviso amable con enlace a las Guías. El contenedor mantiene su alto mínimo (CLS < 0.05).
+
 ### 6.4 Mapa interactivo (P04) — teselas del referente + capa interactiva SVG
 
 - **Base cartográfica:** el área cartográfica (sin la columna derecha de leyenda, créditos, frames ni interiores) del mapa comunitario de Leonida (`public/ref Leonida map/The final version of Commnunity map.jpeg`, recorte 6600 × 9300 px en `x=500, y=650`) con **sus colores y textos originales, sin recolorear ni retocar**, publicado como **pirámide de teselas WebP** en `public/map-tiles/{z}/{x}/{y}.webp` (512 px, `z=0..4`, `z=4` = resolución nativa 1:1, WebP calidad 86, ~7,6 MB en total y solo se descargan las visibles) con `manifest.json`. El relleno fuera del recorte y el fondo del lienzo usan el océano del referente (`WATER = #2C68A6`). La app **no** dibuja rótulos propios encima. La versión de la pirámide es `manifest.json` → `v`; las teselas se piden como `?v=<v>` y `sw.js` descarta las de otra versión. Es obra derivada de un mapa de terceros, autorizada por el propietario (ver `CLAUDE.md` §2) (por decisión del propietario la app no muestra texto de atribución sobre el mapa). El original sigue en `.gitignore` y fuera de `dist/`.

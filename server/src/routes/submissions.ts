@@ -79,8 +79,8 @@ export async function registerSubmissionRoutes(app: FastifyInstance): Promise<vo
 
   app.patch('/api/admin/submissions/:id', moderation, async (req) => {
     const { id } = parse(idParamsSchema, req.params);
-    const { status, reviewNote } = parse(submissionReviewSchema, req.body);
-    const updated = await reviewSubmission(id, status, req.authUser!, req.ip, reviewNote);
+    const { status, reviewNote, coords } = parse(submissionReviewSchema, req.body);
+    const updated = await reviewSubmission(id, status, req.authUser!, req.ip, reviewNote, coords);
     return toSubmissionDTO(updated);
   });
 }

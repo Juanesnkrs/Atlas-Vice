@@ -1630,7 +1630,7 @@ Riesgos (severidad = juicio del redactor):
 
 | Tipo | Quién lo crea | ¿Se promueve? | Qué hace al promoverse |
 |---|---|---|---|
-| `marker` | USER+ (`POST /api/submissions`) | Sí | Crea un `MapMarker` (exige `coords`) |
+| `marker` | USER+ (`POST /api/submissions`) | Sí | Crea un `MapMarker` (exige `coords` al aprobar; el aporte público las deja en `null` y el equipo las indica en la bandeja) |
 | `entity` | USER+ | Sí | Crea una `Entity` en el módulo de `moduleSlug` |
 | `correction` | USER+ | Sí | Aplica un `patch` a una `Entity` o `MapMarker` existente |
 | `contact` | Público (`POST /api/contact`) | **Nunca** | Solo bandeja ADMIN; `approved` = atendido |
@@ -1946,10 +1946,10 @@ Solo lectura; escribe únicamente el worker (§16.7).
 
 | Método y ruta | Guarda | Rate | Entrada | Salida | Errores / efectos |
 |---|---|---|---|---|---|
-| POST `/api/submissions` | USER+ | 20/hora | `moduleSlug` 1-60, `type` ∈ marker/entity/correction (contact/newsletter → `Tipo no permitido`), `title` 3-160, `payload` (def. {}), `coords {x,y}` (obligatorio si marker) | 201 `SubmissionDTO` | 400. Crea `pending`; si el autor es MODERATOR+ se promueve en la misma petición como actor `SYSTEM` (`reviewedBy:'system'`). Si la promoción falla (422) la Submission ya creada queda `pending` y la petición responde 422. No valida que `moduleSlug` exista al crear |
+| POST `/api/submissions` | USER+ | 20/hora | `moduleSlug` 1-60, `type` ∈ marker/entity/correction (contact/newsletter → `Tipo no permitido`), `title` 3-160, `payload` (def. {}), `coords {x,y}` (opcional; el aporte público `marker` va con `coords: null` y el equipo lo completa al aprobar) | 201 `SubmissionDTO` | 400. Crea `pending`; si el autor es MODERATOR+ se promueve en la misma petición como actor `SYSTEM` (`reviewedBy:'system'`). Si la promoción falla (422) la Submission ya creada queda `pending` y la petición responde 422. No valida que `moduleSlug` exista al crear |
 | GET `/api/submissions/mine` | USER+ | global | — | `SubmissionDTO[]` (máx. 100, `createdAt` desc) | — |
 | GET `/api/admin/submissions` | MODERATOR+ | global | query `status`?, `limit` 1-200 (def. 50) | `SubmissionDTO[]` | MODERATOR no ve `contact` ni `newsletter`; ADMIN+ sí |
-| PATCH `/api/admin/submissions/:id` | MODERATOR+ | global | `{status: approved\|rejected}` | `SubmissionDTO` | 404; 403 si tipo contact/newsletter y rol < ADMIN; 409 si ya promovida y `rejected`; promoción 422/409. Auditoría `submission.<status>` + `marker.created\|entity.created\|entity.updated\|marker.updated`; limpia caché SSR al promover |
+| PATCH `/api/admin/submissions/:id` | MODERATOR+ | global | `{status: approved, coords?: {x,y} (coords solo con approved: ubica el pin de un marker sin coordenadas); status: approved\|rejected}` | `SubmissionDTO` | 404; 403 si tipo contact/newsletter y rol < ADMIN; 409 si ya promovida y `rejected`; promoción 422/409. Auditoría `submission.<status>` + `marker.created\|entity.created\|entity.updated\|marker.updated`; limpia caché SSR al promover |
 
 Regla completa de promoción en §13.
 

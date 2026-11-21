@@ -1,5 +1,6 @@
-// P06 - Buzón de la comunidad: envío de sugerencias (marcador, ficha o corrección) y «Mis aportes».
+// P06 - Aportar: envío de aportes (lugar, ficha o corrección) y «Mis aportes».
 // Vista 100 % pública (requiere cuenta para enviar). No incluye herramientas de gestión.
+// El aporte de un lugar no pide coordenadas: el equipo ubica el pin al revisarlo.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { useWorldData } from '../data/seed';
@@ -14,10 +15,10 @@ interface SubmissionDTO {
   createdAt?: string;
 }
 
-const TIPOS: ReadonlyArray<{ value: string; label: string }> = [
-  { value: 'marker', label: 'Marcador / ubicación' },
-  { value: 'entity', label: 'Ficha (arma, vehículo, coleccionable, guía)' },
-  { value: 'correction', label: 'Corrección de un dato' },
+const TIPOS: ReadonlyArray<{ value: string; label: string; hint: string }> = [
+  { value: 'marker', label: 'Un lugar del mapa', hint: 'Cuéntanos qué hay y en qué zona está. El equipo coloca el punto en el mapa al revisarlo.' },
+  { value: 'entity', label: 'Una ficha nueva (arma, vehículo, coleccionable o guía)', hint: 'Propón una ficha que falte en el catálogo.' },
+  { value: 'correction', label: 'Corregir un dato', hint: 'Elige la ficha o el lugar y escribe el dato correcto.' },
 ];
 const STATUS_LABEL: Record<SubStatus, string> = { pending: 'Recibido', approved: 'Publicado', rejected: 'No publicado' };
 const STATUS_TONE: Record<SubStatus, string> = {
@@ -47,7 +48,8 @@ function Buzon() {
   const user = useAuthStore((s) => s.user);
   const { data: world } = useWorldData();
   const [tipo, setTipo] = useState('marker');
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
   const online = isApiConfigured;
 
   const mine = useQuery({
@@ -61,33 +63,29 @@ function Buzon() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['submissions'] }),
   });
 
+  const slugs = world.modules.filter((m) => m.activo && MODULES_WITH_PAGE.has(m.slug)).map((m) => ({ slug: m.slug, nombre: m.nombre }));
+
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMsg(null);
-    const form = e.currentTarget;
-    const fd = new FormData(form);
+    const fd = new FormData(e.currentTarget);
     const get = (k: string): string => String(fd.get(k) ?? '').trim();
     const title = get('title');
     const descripcion = get('descripcion');
     if (title.length < 3 || descripcion.length < 10) {
-      setMsg({ ok: false, text: 'Indica un título (3+) y una descripción (10+ caracteres).' });
-      return;
+      return setMsg('Escribe un título (mínimo 3 letras) y una descripción (mínimo 10).');
     }
     const media = get('media_url');
-    if (media && !/^https?:\/\//i.test(media)) return setMsg({ ok: false, text: 'La imagen debe ser una URL http(s).' });
+    if (media && !/^https?:\/\//i.test(media)) return setMsg('La imagen debe ser un enlace que empiece por http o https.');
     // El payload debe cumplir los esquemas de promoción del servidor (marker, entity o correction).
     let payload: Record<string, unknown>;
-    let coords: { x: number; y: number } | null = null;
+    let moduleSlug = 'mapa';
     if (tipo === 'marker') {
-      const x = Number(get('coord_x'));
-      const y = Number(get('coord_y'));
-      if (!get('region') || !Number.isFinite(x) || !Number.isFinite(y) || x < 0 || x > 1000 || y < 0 || y > 700) {
-        return setMsg({ ok: false, text: 'Indica región y coordenadas válidas (X 0-1000, Y 0-700).' });
-      }
+      if (!get('region')) return setMsg('Indica la zona o región del lugar.');
       payload = { titulo: title, region: get('region'), descripcion, ...(media ? { media_url: media } : {}) };
-      coords = { x, y };
     } else if (tipo === 'entity') {
-      if (!get('categoria')) return setMsg({ ok: false, text: 'Indica una categoría.' });
+      if (!get('categoria')) return setMsg('Indica una categoría.');
+      moduleSlug = get('moduleSlug') || slugs[0]?.slug || 'armas';
       payload = {
         titulo: title,
         categoria: get('categoria'),
@@ -96,24 +94,23 @@ function Buzon() {
       };
     } else {
       const [kind, id] = get('objetivo').split(':');
-      if (!id) return setMsg({ ok: false, text: 'Elige el dato a corregir.' });
+      if (!id) return setMsg('Elige el dato a corregir.');
       if (kind === 'entity') {
-        if (descripcion.length > 240) return setMsg({ ok: false, text: 'La corrección de una ficha admite hasta 240 caracteres.' });
+        if (descripcion.length > 240) return setMsg('La corrección de una ficha admite hasta 240 caracteres.');
         payload = { target: 'Entity', id, patch: { subtitulo: descripcion, ...(media ? { imagen_url: media } : {}) } };
       } else {
         payload = { target: 'MapMarker', id, patch: { descripcion, ...(media ? { media_url: media } : {}) } };
       }
     }
     try {
-      await send.mutateAsync({ moduleSlug: get('moduleSlug') || 'mapa', type: tipo, title, payload, coords });
-      form.reset();
-      setMsg({ ok: true, text: 'Aporte enviado. Gracias por compartir tus hallazgos con la comunidad.' });
+      await send.mutateAsync({ moduleSlug, type: tipo, title, payload, coords: null });
+      setSent(true);
     } catch (err) {
-      setMsg({ ok: false, text: `No se pudo enviar: ${errMsg(err)}` });
+      setMsg(`No se pudo enviar: ${errMsg(err)}`);
     }
   };
 
-  const slugs = world.modules.filter((m) => m.activo && MODULES_WITH_PAGE.has(m.slug)).map((m) => ({ slug: m.slug, nombre: m.nombre }));
+  const hint = TIPOS.find((t) => t.value === tipo)?.hint;
 
   return (
     <div className="grid gap-5 lg:grid-cols-2">
@@ -121,50 +118,81 @@ function Buzon() {
         <h2 id="form-title" className="font-display text-xl font-bold">
           Nuevo aporte
         </h2>
-        <form onSubmit={(e) => void onSubmit(e)} className="mt-3 flex flex-col gap-3">
-          <div>
-            <label htmlFor="ap-tipo" className="mb-1 block text-sm font-medium">
-              Tipo de aporte
-            </label>
-            <select id="ap-tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} className={SELECT}>
-              {TIPOS.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
+        {sent ? (
+          <div role="status" className="mt-3 flex flex-col gap-3">
+            <p className="font-semibold text-vice-cyan">¡Aporte enviado! Gracias por compartirlo.</p>
+            <p className="text-sm text-vice-text/85">
+              Lo recibimos y lo revisará el equipo. Verás su estado en «Mis aportes».
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSent(false);
+                setMsg(null);
+              }}
+              className={PRIMARY}
+            >
+              Enviar otro aporte
+            </button>
           </div>
-          <div>
-            <label htmlFor="ap-mod" className="mb-1 block text-sm font-medium">
-              Módulo
-            </label>
-            <select id="ap-mod" name="moduleSlug" className={SELECT} defaultValue="mapa">
-              <option value="mapa">Mapa</option>
-              {slugs.map((m) => (
-                <option key={m.slug} value={m.slug}>
-                  {m.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="ap-titulo" className="mb-1 block text-sm font-medium">
-              Título
-            </label>
-            <input id="ap-titulo" name="title" required minLength={3} maxLength={160} className={INPUT} />
-          </div>
-          <div>
-            <label htmlFor="ap-desc" className="mb-1 block text-sm font-medium">
-              Descripción
-            </label>
-            <textarea id="ap-desc" name="descripcion" required rows={4} className={`${INPUT} py-2`} />
-          </div>
-
-          {tipo === 'marker' && (
-            <>
+        ) : (
+          <form onSubmit={(e) => void onSubmit(e)} className="mt-3 flex flex-col gap-3">
+            <div>
+              <label htmlFor="ap-tipo" className="mb-1 block text-sm font-medium">
+                ¿Qué quieres compartir?
+              </label>
+              <select id="ap-tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} className={SELECT}>
+                {TIPOS.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              {hint && <p className="mt-1 text-xs text-vice-text/75">{hint}</p>}
+            </div>
+            {tipo === 'entity' && (
+              <div>
+                <label htmlFor="ap-mod" className="mb-1 block text-sm font-medium">
+                  Sección
+                </label>
+                <select id="ap-mod" name="moduleSlug" className={SELECT}>
+                  {slugs.map((m) => (
+                    <option key={m.slug} value={m.slug}>
+                      {m.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {tipo === 'correction' && (
+              <div>
+                <label htmlFor="ap-obj" className="mb-1 block text-sm font-medium">
+                  Dato a corregir
+                </label>
+                <select id="ap-obj" name="objetivo" className={SELECT}>
+                  {world.entities.map((en) => (
+                    <option key={en.id} value={`entity:${en.id}`}>
+                      {en.titulo}
+                    </option>
+                  ))}
+                  {world.markers.map((m) => (
+                    <option key={m.id} value={`marker:${m.id}`}>
+                      Lugar: {m.titulo}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div>
+              <label htmlFor="ap-titulo" className="mb-1 block text-sm font-medium">
+                {tipo === 'marker' ? 'Nombre del lugar' : 'Título'}
+              </label>
+              <input id="ap-titulo" name="title" required minLength={3} maxLength={160} className={INPUT} />
+            </div>
+            {tipo === 'marker' && (
               <div>
                 <label htmlFor="ap-region" className="mb-1 block text-sm font-medium">
-                  Región
+                  Zona o región
                 </label>
                 <input id="ap-region" name="region" list="ap-regions" required className={INPUT} />
                 <datalist id="ap-regions">
@@ -173,66 +201,39 @@ function Buzon() {
                   ))}
                 </datalist>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="ap-x" className="mb-1 block text-sm font-medium">
-                    Coordenada X (0-1000)
-                  </label>
-                  <input id="ap-x" name="coord_x" type="number" step="0.0001" min="0" max="1000" required className={INPUT} />
-                </div>
-                <div>
-                  <label htmlFor="ap-y" className="mb-1 block text-sm font-medium">
-                    Coordenada Y (0-700)
-                  </label>
-                  <input id="ap-y" name="coord_y" type="number" step="0.0001" min="0" max="700" required className={INPUT} />
-                </div>
-              </div>
-            </>
-          )}
-          {tipo === 'entity' && (
-            <div>
-              <label htmlFor="ap-cat" className="mb-1 block text-sm font-medium">
-                Categoría
-              </label>
-              <input id="ap-cat" name="categoria" required placeholder="Ej.: Rifles, Deportivos…" className={INPUT} />
-            </div>
-          )}
-          {tipo === 'correction' && (
-            <div>
-              <label htmlFor="ap-obj" className="mb-1 block text-sm font-medium">
-                Dato a corregir
-              </label>
-              <select id="ap-obj" name="objetivo" className={SELECT}>
-                {world.entities.map((e) => (
-                  <option key={e.id} value={`entity:${e.id}`}>
-                    {e.titulo}
-                  </option>
-                ))}
-                {world.markers.map((m) => (
-                  <option key={m.id} value={`marker:${m.id}`}>
-                    Marcador: {m.titulo}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div>
-            <label htmlFor="ap-media" className="mb-1 block text-sm font-medium">
-              Imagen (URL, opcional)
-            </label>
-            <input id="ap-media" name="media_url" type="url" placeholder="https://…" className={INPUT} />
-          </div>
-          <button type="submit" disabled={send.isPending || !online} className={PRIMARY}>
-            {send.isPending ? 'Enviando…' : 'Enviar aporte'}
-          </button>
-          <div aria-live="polite" className="min-h-[1.25rem] text-sm">
-            {msg && (
-              <p role={msg.ok ? 'status' : 'alert'} className={msg.ok ? 'text-vice-cyan' : 'text-vice-gold'}>
-                {msg.text}
-              </p>
             )}
-          </div>
-        </form>
+            {tipo === 'entity' && (
+              <div>
+                <label htmlFor="ap-cat" className="mb-1 block text-sm font-medium">
+                  Categoría
+                </label>
+                <input id="ap-cat" name="categoria" required placeholder="Ej.: Rifles, Deportivos…" className={INPUT} />
+              </div>
+            )}
+            <div>
+              <label htmlFor="ap-desc" className="mb-1 block text-sm font-medium">
+                {tipo === 'correction' ? 'Dato correcto' : 'Descripción'}
+              </label>
+              <textarea id="ap-desc" name="descripcion" required rows={4} className={`${INPUT} py-2`} />
+            </div>
+            <div>
+              <label htmlFor="ap-media" className="mb-1 block text-sm font-medium">
+                Imagen (enlace, opcional)
+              </label>
+              <input id="ap-media" name="media_url" type="url" placeholder="https://…" className={INPUT} />
+            </div>
+            <button type="submit" disabled={send.isPending || !online} className={PRIMARY}>
+              {send.isPending ? 'Enviando…' : 'Enviar aporte'}
+            </button>
+            <div aria-live="polite" className="min-h-[1.25rem] text-sm">
+              {msg && (
+                <p role="alert" className="text-vice-gold">
+                  {msg}
+                </p>
+              )}
+            </div>
+          </form>
+        )}
       </section>
 
       <section aria-labelledby="mine-title" className="glass rounded-2xl p-5">
@@ -274,9 +275,15 @@ function Buzon() {
 
 export default function AportarPage() {
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-8 pt-2 md:px-8">
-      <h1 className="font-display text-3xl font-bold">Buzón de la comunidad</h1>
-      <p className="mt-1 mb-4 text-sm text-vice-text/80">Gracias por compartir tus hallazgos con la comunidad.</p>
+    <div className="mx-auto w-full max-w-6xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-2 md:px-8">
+      <h1 className="font-display text-3xl font-bold">Aportar</h1>
+      <p className="mt-1 mb-4 max-w-2xl text-sm leading-relaxed text-vice-text/85">
+        Comparte lugares del mapa, fichas nuevas o correcciones de datos que veas mal.
+        <br />
+        Cada aporte lo revisa el equipo y, si procede, se publica en la app.
+        <br />
+        Puedes seguir su estado más abajo, en «Mis aportes».
+      </p>
       {!isApiConfigured && (
         <p role="status" className="glass mb-4 rounded-xl px-4 py-2 text-sm text-vice-gold">
           Sin conexión con el servidor: el envío no está disponible por ahora.
