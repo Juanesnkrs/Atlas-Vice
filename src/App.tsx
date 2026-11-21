@@ -94,7 +94,7 @@ const STATIC_META: Partial<Record<RouteId, PageMeta>> = {
     robots: 'index,follow',
     canonicalPath: '/',
   },
-  login: { title: 'Entrar', description: 'Accede a LeonidApp con Google, Discord, Apple o Magic Link.', robots: NOINDEX },
+  login: { title: 'Entrar', description: 'Accede a LeonidApp con Google, Discord, Apple o tu correo.', robots: NOINDEX },
   hub: { title: 'Hub', robots: NOINDEX },
   progress: { title: 'Mi avance', robots: NOINDEX },
   map: {
@@ -210,7 +210,7 @@ function RequireAccount({ next, children }: { next: string; children: ReactNode 
         </h1>
         <p className="mt-3 text-vice-text/85">
           Como Invitado puedes explorar el mapa, el catálogo y el foro en lectura. Para aportar o
-          publicar inicia sesión con Google, Discord, Apple o Magic Link.
+          publicar inicia sesión con Google, Discord, Apple o tu correo.
         </p>
         {!isApiConfigured && (
           <p className="mt-3 text-sm text-vice-gold">

@@ -137,7 +137,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
   // --- Magic Link --------------------------------------------------------------
   app.post('/api/auth/magic/request', { config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } }, async (req, reply) => {
     const body = parse(z.object({ email: z.email(), native: z.boolean().optional(), next: z.string().max(512).optional() }), req.body);
-    if (!mailerConfigured()) throw new HttpError(503, 'Magic Link no configurado (SMTP)');
+    if (!mailerConfigured()) throw new HttpError(503, 'El acceso por correo no está disponible por ahora.');
     const email = body.email.toLowerCase();
     const token = await signPurposeToken('magic', { email, native: body.native === true, ...(sanitizeNext(body.next) ? { next: sanitizeNext(body.next) } : {}) }, 15 * 60);
     await sendMagicLink(email, `${env.API_PUBLIC_URL}/api/auth/magic/verify?token=${encodeURIComponent(token)}`);

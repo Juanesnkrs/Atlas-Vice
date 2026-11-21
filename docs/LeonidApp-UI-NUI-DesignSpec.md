@@ -223,7 +223,7 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
   - Tarjeta flotante "Tip del día" sobre el artwork.
   - Versión y estado al pie del panel.
 - Replica `MobileHero.dc.html` en móvil.
-- **Pestaña Entrar:** los 4 botones de proveedor (Google, Discord, Apple, Magic Link; este último con su campo de email). **Sin contraseña** ni "¿Olvidaste tu contraseña?" (decisión de seguridad: solo OAuth2 + PKCE y Magic Link).
+- **Pestaña Entrar:** los 4 botones de proveedor (Google, Discord, Apple y «Continuar con correo»; este último con su campo de email. En la interfaz nunca se escribe «Magic Link»; el identificador interno `magic-link` de la API y de la configuración no cambia). **Sin contraseña** ni "¿Olvidaste tu contraseña?" (decisión de seguridad: solo OAuth2 + PKCE y Magic Link).
 - **Pestaña Explorar:** las 3 ventajas del diseño y "Continuar como invitado" (`/hub`).
 - Respeta `?next=` tras el login.
 
@@ -307,6 +307,7 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
 | Categoría del catálogo | categoría | módulo (en textos visibles) |
 | Cada pantalla del carrusel del Hero | diapositiva | slide, banner |
 | Pantalla de inicio pública | portada (Hero) | home, landing |
+| Acceso sin contraseña con enlace al correo | «correo» («Continuar con correo», «Entrar con tu correo») | Magic Link, enlace mágico |
 
 ### 7.12 Carrusel del Hero de la portada y su módulo en el panel (2026-11-21)
 
