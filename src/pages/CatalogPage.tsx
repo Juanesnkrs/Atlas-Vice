@@ -410,6 +410,25 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
 
   const tabEntities = tab ? data.entities.filter((e) => modulesById.get(e.module_id)?.slug === tab && matchesQuery(e)) : [];
   const categories = ['Todas', ...Array.from(new Set(tabEntities.map((e) => e.categoria)))];
+
+  // Escritorio: los chips de subcategoria se pliegan a UNA fila y un boton «Ver todas» los despliega (sin barra
+  // oculta ni flechas del teclado). `chipsOverflow` indica si hay chips que no caben en la fila plegada.
+  const [chipsExpanded, setChipsExpanded] = useState(false);
+  const [chipsOverflow, setChipsOverflow] = useState(false);
+  const chipsRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = chipsRef.current;
+    if (!el) return undefined;
+    const measure = (): void => {
+      // Plegado: una fila alta (40px). Si el contenido es mas alto, hay chips ocultos.
+      if (!chipsExpanded) setChipsOverflow(el.scrollHeight > el.clientHeight + 1);
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [categories.length, chipsExpanded, tab]);
+  // Al cambiar de categoria principal (Armas/Vehiculos) los chips vuelven a plegarse.
+  useEffect(() => setChipsExpanded(false), [tab]);
   const list = cat === 'Todas' ? tabEntities : tabEntities.filter((e) => e.categoria === cat);
   // Un cambio de categoría (pestaña) restablece el filtro de subcategoría.
   useEffect(() => setCat('Todas'), [tab]);
@@ -726,11 +745,13 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
       )}
 
       {categories.length > 2 && (
+        <div className="md:flex md:items-start md:gap-2">
         <div
           id="cat-filtros"
+          ref={chipsRef}
           role="group"
           aria-label="Filtrar por categoría"
-          className={`scrollbar-none ${filtersOpen ? 'flex flex-wrap' : 'hidden'} gap-1 md:flex md:flex-nowrap md:overflow-x-auto`}
+          className={`${filtersOpen ? 'flex flex-wrap' : 'hidden'} gap-1 md:min-w-0 md:flex-1 md:flex md:flex-wrap md:overflow-hidden md:py-0.5 ${chipsExpanded ? '' : 'md:max-h-10'}`}
         >
           {categories.map((c) => (
             <button
@@ -745,6 +766,21 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
               {c}
             </button>
           ))}
+        </div>
+        {(chipsOverflow || chipsExpanded) && (
+          <button
+            type="button"
+            aria-expanded={chipsExpanded}
+            aria-controls="cat-filtros"
+            onClick={() => setChipsExpanded((o) => !o)}
+            className="glass hidden min-h-9 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-4 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold md:flex"
+          >
+            {chipsExpanded ? 'Ver menos' : `Ver todas (${categories.length})`}
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className={chipsExpanded ? 'rotate-180' : ''}>
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+        )}
         </div>
       )}
 
