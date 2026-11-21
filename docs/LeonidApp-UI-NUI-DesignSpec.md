@@ -135,6 +135,7 @@ src/
 │   ├── layout/        ViceShell.tsx · BottomDock.tsx · Footer.tsx (RockstarFooter)
 │   └── ui/            PalmButton.tsx · TipCard.tsx · StatBar.tsx · BottomSheet.tsx · EntityDetailPanel.tsx · AdSlot.tsx · Modal.tsx
 │                      MapCanvas.tsx (motor del mapa: pan/zoom/inercia/clustering sobre SVG + rAF) · mapPaint.ts (pintor <canvas> de la pirámide de teselas del referente)
+│                      HeroCarousel.tsx (carrusel del Hero, §7.12) · StaffHero.tsx + StaffHeroImage.tsx (módulo «Portada (Hero)» del panel oculto: gestor y subida de imagen)
 ├── data/              seed.ts (capa offline-first y fallback) · leonidaMap.ts (marco de coordenadas, `MARKER_SPOTS` y metadatos de las teselas)
 ├── pages/             HomePage.tsx · LandingAuthPage.tsx · DashboardPage.tsx · MapPage.tsx · CatalogPage.tsx
 │                      ForumPage.tsx · AdminSubmitPage.tsx · GuidesPage.tsx · NewsPage.tsx
@@ -156,11 +157,11 @@ server/src/
 ├── config/     db.ts · env.ts
 ├── models/     common.ts · index.ts · User.ts · AppConfig.ts · Module.ts · Entity.ts · MapMarker.ts
 │               UserProgress.ts · OfficialNews.ts · Submission.ts · ForumThread.ts · ForumPost.ts
-│               ForumVote.ts · AuditLog.ts
+│               ForumVote.ts · AuditLog.ts · MediaAsset.ts
 ├── routes/     auth.ts · catalog.ts · config.ts · forum.ts · news.ts · progress.ts · seo.ts
-│               submissions.ts · contact.ts
+│               submissions.ts · contact.ts · hero.ts (GET /api/hero, GET/PUT /api/admin/hero) · media.ts (POST /api/admin/media, GET /media/:id)
 ├── plugins/    auth.ts
-├── services/   audit.ts · mailer.ts · oauth.ts · session.ts · users.ts · validate.ts · submissions.ts · ssrLite.ts
+├── services/   imageProbe.ts (firma y dimensiones WebP/JPEG sin librerías) · audit.ts · mailer.ts · oauth.ts · session.ts · users.ts · validate.ts · submissions.ts · ssrLite.ts
 ├── workers/    officialNewsWorker.ts · sources.ts
 └── scripts/    seed.ts · seedData.json
 ```
@@ -203,6 +204,7 @@ En este orden:
    - Kicker corto y H1 de 8 palabras como máximo.
    - Una sola línea de descripción.
    - CTA primario `PalmButton` "Abrir el mapa" (`/mapa`) y secundario "Crear cuenta gratis" (`/entrar`).
+   - Desde el 2026-11-21 el Hero es un **carrusel editable** (§7.12): lo anterior es la diapositiva por defecto.
 2. **"Explora Leonida":** rejilla de tarjetas con imagen, título y contador real, y la tarjeta entera como enlace. 3–4 columnas en escritorio y 2 en móvil.
    - Tarjetas: Mapa interactivo, Armas, Vehículos, Coleccionables, Guías, Noticias oficiales.
    - Imágenes: las de `docs/referencias-ui/design/assets/` o `public/assets/`, siempre con `alt` descriptivo.
@@ -303,6 +305,21 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
 | Avance del jugador | avance («Mi avance») | progreso |
 | Guardar en la cuenta | «Todo guardado» / guardar | sincronizar, sincronización |
 | Categoría del catálogo | categoría | módulo (en textos visibles) |
+| Cada pantalla del carrusel del Hero | diapositiva | slide, banner |
+| Pantalla de inicio pública | portada (Hero) | home, landing |
+
+### 7.12 Carrusel del Hero de la portada y su módulo en el panel (2026-11-21)
+
+**Público (`HeroCarousel.tsx`, en `HomePage.tsx`).** Misma estructura del Hero actual: texto informativo y descriptivo a la izquierda (kicker, H1, descripción, botón primario y, solo a invitados, el secundario), imagen a la derecha y, en móvil, texto arriba e imagen abajo como hoy.
+- Datos: `GET /api/hero` (diapositivas activas ordenadas). Sin diapositivas activas, o mientras llegan los datos, se muestra la **diapositiva por defecto** (contenido actual y `public/assets/hero-gas-station.jpg`) sin parpadeo ni salto de layout.
+- Con una sola diapositiva no hay controles. Con varias: avance automático cada ~6 s que se **pausa** con hover, foco o toque y se desactiva con `prefers-reduced-motion`; botones anterior/siguiente (≥ 44 px), indicadores (puntos) con etiqueta, deslizamiento táctil y flechas de teclado; transición de opacidad suave.
+- Accesibilidad: `role="region"`, `aria-roledescription="carrusel"`, nombre accesible, `aria-live="polite"` solo cuando la persona navega (no en el avance automático).
+- **CLS = 0:** imagen en contenedor 16:9 fijo y alto de texto reservado; la primera imagen con `fetchpriority="high"` y sin lazy, las demás `loading="lazy"`; `decoding="async"`; si una imagen falla (`onError`) se vuelve a la diapositiva por defecto.
+
+**Panel (`/_staff` → Contenido público → «Portada (Hero)», ADMIN+, chunk `staff-panel`).** Sigue el patrón de los demás gestores (lista, formulario modal con borrador, confirmación de borrado escribiendo un identificador corto, avisos, `pb-28`/safe-area, bloque «Qué controla en la app pública» y enlace a `/`).
+- Lista con miniatura, título, estado (Activa/Pausada), subir/bajar, editar y borrar; «Añadir diapositiva» (máx. 6; mínimo 1 activa, o el Hero vuelve a la diapositiva por defecto) y vista previa del Hero tal como se verá.
+- Formulario: kicker (≤ 60), título (≤ 90), descripción (≤ 220), texto y enlace del botón (≤ 30; ruta interna `/…` o `https://…`), botón secundario opcional, imagen y texto alternativo (≤ 140, obligatorio).
+- **Imagen:** tamaño estándar visible y exigido **1600 × 900 px (16:9), WebP o JPG, ≤ 400 KB**. Subida hecha en el navegador sin librerías: `<input type="file" accept="image/*">` → `<canvas>` → recorte centrado «cover» a 1600×900 → `toBlob('image/webp')` con calidad descendente hasta ≤ 400 KB (JPEG si no hay WebP) → vista previa con guía de encuadre → envío binario a `POST /api/admin/media` al guardar. Se rechaza lo que no es imagen, pesa > 15 MB de origen o mide menos de 800×450 («La imagen es demasiado pequeña»); si no es 16:9 se avisa de que se recortará. Alternativa: pegar un enlace `https://…` (con vista previa y aviso de usar solo imágenes propias o con licencia; no se re-procesa ni se valida su tamaño).
 
 ### 6.4 Mapa interactivo (P04) — teselas del referente + capa interactiva SVG
 

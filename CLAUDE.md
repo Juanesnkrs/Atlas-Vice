@@ -11,7 +11,7 @@
 
 Toda decisión de arquitectura, esquemas, rutas, SEO, monetización y diseño está definida exclusivamente en estos 3 documentos maestros temáticos de `/docs/`, más un cuarto documento maestro de consulta (`docs/LeonidApp-Documentacion-Completa.md`, ver abajo):
 
-- `docs/LeonidApp-Arquitectura-Datos-MongoDB.md` — las 10 colecciones Mongoose + Zod, RBAC (`GUEST` < `USER` < `MODERATOR` < `ADMIN` < `SUPER_ADMIN`), OAuth2 + PKCE con cookies HttpOnly y aprobación automática de `Submission`.
+- `docs/LeonidApp-Arquitectura-Datos-MongoDB.md` — las 11 colecciones Mongoose + Zod, RBAC (`GUEST` < `USER` < `MODERATOR` < `ADMIN` < `SUPER_ADMIN`), OAuth2 + PKCE con cookies HttpOnly y aprobación automática de `Submission`.
 - `docs/LeonidApp-Rutas-SEO-Monetizacion.md` — rutas limpias con History API, SSR-lite (meta + JSON-LD `HowTo`/`Article`/`SearchAction`) en Fastify, `sitemap.xml`, enlazado cruzado, comparador NUI y reglas de `<AdSlot/>` + consentimiento.
 - `docs/LeonidApp-UI-NUI-DesignSpec.md` — tokens Vice Sunset NUI, fidelidad a `docs/referencias-ui/design/` (`Mobile.dc.html`, `MobileHero.dc.html`, `Inspector.dc.html`, `Forum.dc.html`), Rediseño v2 (§7), `<RockstarFooter/>` y árbol exacto de carpetas (§6).
 

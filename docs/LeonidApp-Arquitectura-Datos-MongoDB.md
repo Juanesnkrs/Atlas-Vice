@@ -20,9 +20,9 @@
 
 ---
 
-## 2. Las 10 colecciones
+## 2. Las 11 colecciones
 
-Las colecciones aprobadas son 10 grupos lógicos (el grupo Foro se compone de 3 modelos):
+Las colecciones aprobadas son 11 grupos lógicos (el grupo Foro se compone de 3 modelos):
 
 1. `User`
 2. `AppConfig`
@@ -34,6 +34,7 @@ Las colecciones aprobadas son 10 grupos lógicos (el grupo Foro se compone de 3 
 8. `Submission`
 9. Foro: `ForumThread` / `ForumPost` / `ForumVote`
 10. `AuditLog`
+11. **Δ** `MediaAsset` (imágenes subidas desde el panel, §2.11; aprobada por el propietario el 2026-11-21)
 
 ### 2.1 `User` — `models/User.ts`
 
@@ -55,7 +56,7 @@ DTO: `toPublicUserDTO` (sin email) y `toSelfUserDTO` (con email, solo `/api/auth
 
 ### 2.2 `AppConfig` — `models/AppConfig.ts`
 
-Singleton con `key: 'global'` (unique). Lectura con `getGlobalConfig()` (upsert). Solo `SUPER_ADMIN` escribe.
+Singleton con `key: 'global'` (unique). Lectura con `getGlobalConfig()` (upsert). Solo `SUPER_ADMIN` escribe con `PATCH /api/admin/config`; la única excepción es `hero_slides`, que escribe `ADMIN+` con `PUT /api/admin/hero` (contenido público, no configuración del sistema) y que `PATCH /api/admin/config` rechaza.
 
 | Campo | Tipo | Zod | Notas |
 | --- | --- | --- | --- |
@@ -66,6 +67,7 @@ Singleton con `key: 'global'` (unique). Lectura con `getGlobalConfig()` (upsert)
 | `enabled_auth_providers` | `[String]` | `z.array(z.enum([...AUTH_PROVIDERS])).max(4)` | Máximo 4 (§4). |
 | `social_links` | `[{ platform, url }]` | `.max(12)` | Consumido por el Footer. |
 | **Δ** `monetization` | Subdocumento (abajo) | `monetizationSchema` | Reglas de colocación en `LeonidApp-Rutas-SEO-Monetizacion.md` §6. |
+| **Δ** `hero_slides` | `[Mixed]`, default `[]` | `z.array(heroSlideSchema).max(6)` | Carrusel del Hero de `/` (abajo). Vacío o sin diapositivas activas = el Hero muestra la diapositiva por defecto del cliente. |
 | `updatedAt` | Date | — | Solo `updatedAt`. |
 
 Bloque **Δ** `monetization`:
@@ -91,7 +93,35 @@ export const monetizationSchema = z.object({
 ```
 
 Mongoose: `monetization: { type: Schema.Types.Mixed, default: { ads_enabled: false, provider: 'none', publisher_id: null, require_consent: true, slots: [] } }`.
-`GET /api/config` expone `monetization` sin campos internos; `PATCH /api/admin/config` (SUPER_ADMIN) valida con `appConfigUpdateSchema`.
+`GET /api/config` expone `monetization` sin campos internos; `PATCH /api/admin/config` (SUPER_ADMIN) valida con `appConfigUpdateSchema` (que **omite** `hero_slides`).
+
+Bloque **Δ** `hero_slides` (carrusel del Hero de la portada `/`, gestionado desde `/_staff` → Contenido público → Portada (Hero), ADMIN+):
+
+```ts
+const internalPath = z.string().regex(/^\/(?!\/)[^\s\]*$/);       // "/mapa", "/guias?x=1"; nunca "//", esquemas ni espacios
+const httpsUrl = z.url({ protocol: /^https$/ });                    // solo https; rechaza javascript:, data:, http:
+export const heroSlideSchema = z.object({
+  id: z.uuid(),
+  activa: z.boolean(),
+  orden: z.number().int().min(0).max(99),                           // el servidor lo normaliza a la posición 0..n-1 al guardar
+  kicker: z.string().trim().max(60).default(''),                    // opcional ('' = sin kicker)
+  titulo: z.string().trim().min(1).max(90),
+  descripcion: z.string().trim().min(1).max(220),
+  boton_texto: z.string().trim().min(1).max(30),
+  boton_enlace: z.union([internalPath, httpsUrl]),
+  boton_secundario_texto: z.string().trim().min(1).max(30).nullable().default(null),    // opcional: ambos o ninguno
+  boton_secundario_enlace: z.union([internalPath, httpsUrl]).nullable().default(null),  // solo se muestra a invitados («Crear cuenta gratis»)
+  imagen_url: z.union([z.string().regex(/^\/media\/[0-9a-f-]{36}$/), httpsUrl]),        // imagen propia (§2.11) o enlace https
+  imagen_alt: z.string().trim().min(1).max(140),                    // accesibilidad (obligatorio)
+});
+```
+
+- Máximo 6 diapositivas e `id` únicos (validación estricta al guardar con `PUT /api/admin/hero`; la lectura pública es tolerante y descarta las que no validan).
+- Con 0 diapositivas activas el cliente muestra la **diapositiva por defecto** (texto, botones «Abrir el mapa» y «Crear cuenta gratis» e imagen `public/assets/hero-gas-station.jpg` actuales); es contenido del cliente, no se persiste.
+- Imagen estándar: **1600 × 900 px (16:9), WebP o JPG, ≤ 400 KB**. Si `imagen_url` es `/media/<id>` se subió con el panel y cumple esa medida (validada en el servidor); si es un enlace `https://` no se valida su tamaño (recomendación 1600×900; el equipo responde de su licencia).
+- Al borrar una diapositiva o reemplazar su imagen, el servidor elimina el `MediaAsset` propio (`/media/<id>`) que quede sin referencias (best effort) y lo audita (`media.delete`).
+- Auditoría: `hero.update` (`target_type: 'AppConfig'`, `target_id: 'global'`, `metadata: { before, after }` de `hero_slides`, truncado según §2.10).
+- `GET /api/hero` (público) devuelve solo las diapositivas **activas** ordenadas, sin `activa` ni `orden`.
 
 ### 2.3 `Module` — `models/Module.ts`
 
@@ -232,6 +262,24 @@ Inmutable: solo `insert` mediante `services/audit.ts#writeAudit`. Se escribe en 
 - **Restauración** (`entity.restore`, `module.restore`, `marker.restore`, `forum.thread.restore`): solo `SUPER_ADMIN`, `POST /api/admin/audit-logs/:id/restore`. Reinserta el `snapshot` **con el mismo `_id`** en una transacción (en MongoDB sin réplica degrada a escritura sin atomicidad, como `promote()`); responde `409` si el `_id` o el `slug` único ya existen, si esa entrada ya se restauró o si la dependencia (módulo de la ficha) no existe. Escribe su propia entrada con `metadata = { restored_from: <id de la entrada de borrado> }`.
 - Las entradas anteriores a esta convención (`metadata.patch`) siguen siendo legibles y el panel las muestra tal cual.
 
+### 2.11 `MediaAsset` — `models/MediaAsset.ts`
+
+Imágenes subidas desde el panel (solo las diapositivas del Hero, §2.2). Se guardan en MongoDB como binario: sin disco, sin servicio externo y sin librerías.
+
+| Campo | Tipo Mongoose | Zod | Notas |
+| --- | --- | --- | --- |
+| `_id` | String (UUID) | `z.uuid()` | Identificador público: `GET /media/:id`. |
+| `mime` | String enum | `z.enum(['image/webp', 'image/jpeg'])` | Solo estos dos tipos. |
+| `width` / `height` | Number | `z.literal(1600)` / `z.literal(900)` | Leídos de la cabecera real del archivo. |
+| `bytes` | Number | `z.number().int().positive().max(409600)` | ≤ 400 KB. |
+| `data` | Buffer | `z.instanceof(Buffer)` | Contenido binario; nunca viaja en JSON. |
+| `created_by` | String (UUID de `User`) | `z.uuid()` | Quién la subió. |
+| `created_at` | Date | `z.coerce.date().optional()` | Solo creación. |
+
+- Subida: `POST /api/admin/media` (ADMIN+, 404 uniforme sin staff) con cuerpo **binario** (`Content-Type: image/webp` o `image/jpeg`, sin multipart; parser de cuerpo crudo propio solo en esa ruta, `bodyLimit` 600 KB). El servidor valida tipo, **firma mágica real** (WebP `RIFF…WEBP`; JPEG `FFD8FF`), tamaño ≤ 400 KB y dimensiones exactas 1600×900 leídas de la cabecera (JPEG: marcador SOF; WebP: VP8 / VP8L / VP8X), con código propio. Rate-limit 20/min por IP. Auditoría `media.upload`. Responde `201 { id, url: '/media/<id>', mime, width, height, bytes }`.
+- Lectura pública: `GET /media/:id` (solo imágenes; `Content-Type` correcto, `X-Content-Type-Options: nosniff`, `Cache-Control: public, max-age=31536000, immutable`, `ETag`; 404 `text/plain` si no existe). **Sin listados ni enumeración** y fuera de `sitemap.xml`.
+- Orfandad: el `MediaAsset` se borra al eliminar la diapositiva o reemplazar su imagen (best effort, solo si nadie más lo referencia). Una subida cuyo guardado posterior falla puede quedar huérfana; limitación aceptada.
+
 ---
 
 ## 3. RBAC — jerarquía de roles
@@ -243,7 +291,7 @@ Inmutable: solo `insert` mediante `services/audit.ts#writeAudit`. Se escribe en 
 | `GUEST` | No (ausencia de sesión; `req.authUser === null`) | — | Lectura pública de mapa, catálogo, guías y noticias. Del **foro**, solo la lista en vivo en formato *preview* (sin contenido, respuestas, filtros, búsqueda ni votos: `LeonidApp-UI-NUI-DesignSpec.md` §7.5). Progreso solo local (IndexedDB). Puede enviar `contact` y `newsletter`. |
 | `USER` | Sí (default) | 0 | Progreso sincronizado, crear hilos/posts, votar, crear `Submission` (`marker`, `entity`, `correction`). |
 | `MODERATOR` | Sí | 1 | Lo anterior + fijar/ocultar hilos, revisar `Submission`. Sus propios aportes se aprueban automáticamente (§5). |
-| `ADMIN` | Sí | 2 | Lo anterior + CRUD de `Module`, `Entity`, `MapMarker`; bandeja `contact`. |
+| `ADMIN` | Sí | 2 | Lo anterior + CRUD de `Module`, `Entity`, `MapMarker`; bandeja `contact`; carrusel del Hero (`AppConfig.hero_slides`) y subida de `MediaAsset`. |
 | `SUPER_ADMIN` | Sí | 3 | Lo anterior + panel **Control Total**: cambio de roles, `AppConfig` (incluido `monetization` y proveedores de auth), fuentes de noticias, lectura de `AuditLog`. |
 
 Reglas:
@@ -327,10 +375,12 @@ Reglas:
 | `ForumThread` | `{ categoria, created_at: -1 }` · `entity_id` parcial |
 | `ForumPost` | `thread_id` |
 | `ForumVote` | `{ user_id, target_type, target_id }` único |
+| `MediaAsset` | solo `_id` |
 | `AuditLog` | `{ created_at: -1 }` · `{ actor_id, created_at: -1 }` · **Δ** `{ target_type, target_id, created_at: -1 }` (historial de un objeto) |
 
 ## Anexo. Exposición pública y respuestas uniformes
 
+- **Hero y medios:** `GET /api/hero` (público, `Cache-Control: public, max-age=30`, ETag débil) solo expone las diapositivas activas sin `activa` ni `orden`; `GET /api/admin/hero` y `PUT /api/admin/hero` (ADMIN+) y `POST /api/admin/media` (ADMIN+) devuelven el 404 uniforme sin sesión de staff (RBAC antes que Zod y antes del parser binario). `GET /media/:id` es público, sin listados, con `nosniff` y caché inmutable; un id inexistente responde 404 `text/plain`.
 - **Foro público:** la proyección pública de autores expone solo `id`, `username` y `avatar_url` (nunca `rol` ni `email`).
 - **Superficie administrativa:** `/api/admin/*` y los POST/PATCH/DELETE administrativos de catálogo, mapa, roles, configuración y auditoría devuelven un **404 genérico** (idéntico al de una ruta inexistente) a quien no tenga sesión de staff autorizada; el RBAC se evalúa antes que la validación Zod. Lectura de `AuditLog`, cambio de roles, revocación de sesiones, configuración, salud del sistema y caché: `SUPER_ADMIN`. Moderación de aportes y foro: `MODERATOR+`. Catálogo, mapa, módulos y estado/ejecución del worker de noticias: `ADMIN+`.
 - **Panel `/_staff` (resumen, historial, restauración, dependientes):** `GET /api/admin/overview` (Resumen Operativo, `MODERATOR+`, `Cache-Control: private, no-store`; contenido filtrado por rol: MODERATOR ve los aportes de moderación —sin contact/newsletter— y sus propias acciones; ADMIN+ añade worker de noticias, cobertura del catálogo y pines huérfanos; SUPER_ADMIN ve las últimas 10 acciones de todos), `GET /api/admin/submissions/pending-count` (`MODERATOR+`, insignia de pendientes), `GET /api/admin/dependents/:type/:id` (`type ∈ thread|entity|marker|module`; `thread` MODERATOR+, el resto ADMIN+; recuentos y títulos para la confirmación de borrado), `GET /api/admin/history?target_type&target_id` (`MODERATOR+`; SUPER_ADMIN ve todo el historial del objeto, el resto solo sus propias entradas y sin `snapshot`) y `POST /api/admin/audit-logs/:id/restore` (`SUPER_ADMIN`). Todos devuelven el 404 uniforme a quien no corresponda.

@@ -43,7 +43,7 @@ Cifras vigentes (verificadas contando `server/data/*-editorial.json`):
 | `mapmarkers` | **10** | uno por ficha de mapa (bloque `marker` del lote editorial) |
 | `officialnews` | **1** | `take-two-ir` (únicamente fuentes oficiales Rockstar / Take-Two) |
 
-El catálogo se alimenta de lotes editoriales 100 % originales en `server/data/*-editorial.json`, importados con `pnpm --dir server import:catalog <archivo.json> --apply --source editorial`. Las 10 colecciones y sus campos siguen cerrados según `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`.
+El catálogo se alimenta de lotes editoriales 100 % originales en `server/data/*-editorial.json`, importados con `pnpm --dir server import:catalog <archivo.json> --apply --source editorial`. Las 11 colecciones (las 10 originales más `MediaAsset`, aprobada el 2026-11-21 para las imágenes del carrusel del Hero) y sus campos siguen cerrados según `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`.
 
 ### 0.3 Mapa (`/mapa`)
 
@@ -81,6 +81,7 @@ El panel se organiza por **módulo público que gobierna**, no por tecnología. 
 | **Resumen operativo** (MODERATOR+, pantalla de entrada) | Resumen | Tarjetas accionables que enlazan a su sección: aportes pendientes por tipo y antigüedad del más viejo; estado real del worker de noticias y último error por fuente (o «sin errores registrados»); cobertura del catálogo por módulo; pines sin ficha y fichas del módulo `mapa` sin pin; últimas 10 acciones de auditoría (SUPER_ADMIN todas, el resto solo las propias). Contenido filtrado por rol: MODERATOR solo ve aportes de moderación (sin contact/newsletter) y sus propias acciones; ADMIN+ añade worker, cobertura y pines | — (interno) | `GET /api/admin/overview` (MODERATOR, `Cache-Control: private, no-store`); `GET /api/admin/submissions/pending-count` (MODERATOR; insignia dinámica de la pestaña «Comunidad y moderación», refetch cada 60 s con la pestaña visible) |
 | **Contenido público** (ADMIN+) | Catálogo | Las 243 fichas de `armas`, `vehiculos`, `coleccionables`, `guias` y `mapa`: filtro por módulo, buscador por nombre/slug (`?q=`), paginación del servidor, alta/edición/borrado | `/catalogo`, `/catalogo/:categoria/:itemSlug` | `GET /api/entities?module&q&page&limit&envelope=1` (público); `POST/PATCH/DELETE /api/entities` (ADMIN). Columna «Pin» por ficha (estado del pin vinculado) y acceso a `/mapa?editor=1&entity=<slug>`; borrar una ficha con pines devuelve `409 HAS_DEPENDENTS` con recuento y títulos |
 | | Mapa interactivo | Los 10 marcadores de `/mapa` (coordenadas, región, entidad vinculada con selector de búsqueda remota y enlace «Abrir ficha»). Un marcador existente está publicado (no hay borradores: `MapMarker` no tiene estado). Acceso directo al Modo Editor (`/mapa?editor=1`) | `/mapa` | `GET /api/markers` (público); `POST/PATCH/DELETE /api/markers` (ADMIN) |
+| | Portada (Hero) | Diapositivas del carrusel del Hero de `/` (máx. 6): miniatura, título, estado Activa/Pausada, orden, edición y borrado con confirmación; kicker, título, descripción, botón (texto y enlace), botón secundario opcional para invitados, imagen (subida 1600×900 o enlace https) y texto alternativo; vista previa. Sin diapositivas activas se muestra la diapositiva por defecto | `/` | `GET /api/hero` (público); `GET/PUT /api/admin/hero` y `POST /api/admin/media` (ADMIN); `GET /media/:id` (público) |
 | | Módulos del catálogo | Los 7 módulos: activación (oculta/muestra navegación y rutas), orden y metadatos (nombre, icono, slug). No se borra un módulo con fichas | Dock y `/catalogo` | `GET /api/modules?all=1` (ADMIN, `no-store`); `POST/PATCH/DELETE /api/modules` (ADMIN) |
 | **Comunidad y moderación** (MODERATOR+) | Aportes | Bandeja de `/aportar`: revisar, aprobar (crea/actualiza la entidad o el marcador con auditoría) o rechazar. Contacto y suscripciones solo para ADMIN+ | `/aportar` | `GET /api/admin/submissions?status&limit` y `PATCH /api/admin/submissions/:id` (MODERATOR) |
 | | Foro | Hilos y respuestas: fijar, cerrar (`is_locked`), editar título/contenido/categoría/spoiler, eliminar (con sus votos) | `/foro` | `GET /api/admin/forum/threads?q&categoria&page`, `GET /api/admin/forum/threads/:id`, `PATCH /api/admin/forum/threads/:id`, `PATCH /api/admin/forum/posts/:id`, `DELETE /api/forum/threads/:id`, `DELETE /api/forum/posts/:id` (todos MODERATOR). Los aportes muestran el payload formateado, tabla Actual vs Propuesto en correcciones, errores 422 desglosados, rechazo con motivo (`Submission.reviewNote`), selección múltiple con cola de 3 peticiones concurrentes y enlace «Ver ficha»/«Ver pin» (`promotedTo`). Aprobar un aporte `entity` con `payload.marker` crea en la misma transacción el `MapMarker` vinculado |
@@ -103,6 +104,7 @@ Buzón comunitario 100 % público para enviar sugerencias (marcadores, fichas, c
 
 - `robots.txt`: únicamente `Disallow: /api/` (más `Allow: /` y `Sitemap:`). Las páginas privadas se protegen con `noindex` por meta, no listándolas en robots (así no se revelan rutas ocultas).
 - `GET /api/entities`: paginación (`?limit=&page=`) y filtro `?module=`, compresión y `Cache-Control`/`ETag`.
+- **Carrusel del Hero (2026-11-21):** `AppConfig.hero_slides` (máx. 6, campos y límites en Arquitectura §2.2), editable por ADMIN+ en `/_staff` → Contenido público → «Portada (Hero)» con `GET/PUT /api/admin/hero`; lectura pública `GET /api/hero`; subida de imágenes `POST /api/admin/media` (cuerpo binario WebP/JPEG, validado por firma real y dimensiones exactas **1600 × 900 px, ≤ 400 KB**, guardado en `MediaAsset`) y lectura pública `GET /media/:id` (caché inmutable, sin listado). El Hero actual es la diapositiva por defecto cuando no hay ninguna activa. La CSP abre `img-src` a `https:` (decisión del propietario: enlaces a imágenes de cualquier dominio https; riesgo: fuga de IP/Referer al host de la imagen y contenido externo mutable).
 - Cabeceras: CSP y HSTS (HSTS solo en producción), además de `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` y `Permissions-Policy`; cookies `Secure` bajo https.
 - Si la API falla, el cliente muestra un **fallback honesto con reintento**: no se inventan datos de ejemplo.
 - `/entrar`: máximo 4 botones; los proveedores con `configured:false` se ocultan o se marcan «Próximamente».
@@ -261,7 +263,7 @@ Ningún módulo está en 🟢: el producto es una **pre-alfa funcional** (primer
 | Nombre de producto | LeonidApp (wordmark heredado "ATLAS VICE" ya no visible); paquete cliente `atlas-vice` v0.1.0; servidor `leonidapp-server` v0.1.0 |
 | Tipo | SPA + API REST, repositorio único (cliente en raíz, servidor en `server/`); ambos `"type": "module"` |
 | Gestor de paquetes | pnpm (scripts `pnpm --dir server ...`) |
-| Persistencia | MongoDB (único motor), 10 colecciones lógicas (12 archivos de modelo); local en `127.0.0.1:27017`, base `leonidapp` |
+| Persistencia | MongoDB (único motor), 11 colecciones lógicas (13 archivos de modelo con `MediaAsset`); local en `127.0.0.1:27017`, base `leonidapp` |
 | Tiempo de ejecución servidor | Node.js (usa `--env-file-if-exists` y `--watch`); ES2023, `module: NodeNext` |
 | TypeScript | `^7.0.2` en cliente y servidor; `strict`, `noUncheckedIndexedAccess`, `noUnusedLocals/Parameters` |
 | Enrutado del cliente | Propio, sobre History API + Zustand (`src/store/useRouteStore.ts`); sin react-router |
@@ -363,7 +365,7 @@ flowchart LR
   end
 
   subgraph Datos["MongoDB"]
-    DB[("leonidapp: 10 colecciones")]
+    DB[("leonidapp: 11 colecciones")]
   end
 
   subgraph Worker["Worker de noticias (node-cron cada 15 min)"]
@@ -857,7 +859,7 @@ Resumen (detalle por colección en §10): `Entity {module_id, categoria}` y `{mo
 
 ### 8.1 Colecciones reales
 
-Hay **12 modelos Mongoose** (12 archivos de entidad en `server/src/models/`, más `common.ts` e `index.ts`). El documento maestro los agrupa en **10 colecciones lógicas** porque cuenta el foro (`ForumThread`, `ForumPost`, `ForumVote`) como una sola. Físicamente hay 12 colecciones en MongoDB.
+Hay **12 modelos Mongoose** (12 archivos de entidad en `server/src/models/`, más `common.ts` e `index.ts`). El documento maestro los agrupa en **11 colecciones lógicas** (la undécima, `MediaAsset`, se añadió el 2026-11-21; el recuento de 12 modelos y de archivos de este párrafo es anterior y pasa a 13) porque cuenta el foro (`ForumThread`, `ForumPost`, `ForumVote`) como una sola. Físicamente hay 12 colecciones en MongoDB.
 
 > ⚠️ **Brecha (conteo):** el inventario del backend habla de "11 modelos"; el recuento de archivos y de llamadas a `model<>()` da 12. Aquí se documenta 12.
 
@@ -1153,9 +1155,14 @@ Singleton: un único documento con `key:'global'` (`getGlobalConfig()` lo crea p
 | `enabled_auth_providers` | [String] | array de enum google/discord/apple/magic-link, máx 4 | No | los 4 | — | Proveedores visibles en la pantalla de acceso (máx. 4 botones). |
 | `social_links` | Mixed | array máx 12 de `{platform 1-30, url}` | No | `[]` | — | Redes del footer; Mongoose no valida el contenido. |
 | `monetization` | Mixed | `monetizationSchema`: `ads_enabled`, `provider` none/adsense, `publisher_id` ≤60 nullable, `require_consent` literal `true`, `slots` máx 20 `{id 1-40, route, position, width, height, enabled}` | No | `{ads_enabled:false, provider:'none', publisher_id:null, require_consent:true, slots:[]}` | — | Ver §18. Estado actual: anuncios desactivados, sin slots. |
+| `hero_slides` | [Mixed] | `z.array(heroSlideSchema).max(6)` | No | `[]` | — | Carrusel del Hero (2026-11-21): `{id uuid, activa, orden, kicker ≤60, titulo ≤90, descripcion ≤220, boton_texto ≤30, boton_enlace (ruta `/…` o https), boton_secundario_texto/enlace (opcionales), imagen_url (`/media/<id>` o https), imagen_alt ≤140}`. Escribe ADMIN+ con `PUT /api/admin/hero`; `PATCH /api/admin/config` la rechaza. |
 | `updatedAt` | Date (solo actualización) | — | — | — | — | — |
 
 Regla: `PATCH /api/admin/config` hace `$set` del parche; si se envía `monetization`, se **reemplaza entero**.
+
+#### MediaAsset (`mediaassets`, 2026-11-21)
+
+Imagen subida desde el panel (solo Hero): `_id` UUID, `mime` (`image/webp` | `image/jpeg`), `width` 1600, `height` 900, `bytes` ≤ 409600, `data` Buffer, `created_by` UUID de `User`, `created_at`. Servida en `GET /media/:id`. Detalle y reglas en Arquitectura §2.11.
 
 ### 10.3 Module (`modules`)
 
@@ -1882,6 +1889,11 @@ Constante `strict` = 15 peticiones/min (`auth.ts:55`). Cookies: `lv_oauth` (PKCE
 |---|---|---|---|---|---|
 | GET `/api/config` y GET `/api/config/public` | pública | — | `{maintenance_mode, announcement, feature_flags, enabled_auth_providers, social_links, monetization, modules:[{id,slug,nombre,icono,orden,isActive}]}`; `Cache-Control: public, max-age=30` | 500 | `getGlobalConfig()` hace upsert del singleton. Expone TODOS los módulos (activos e inactivos, con `isActive`). Si `monetization` no valida, devuelve el valor por defecto del schema |
 | PATCH `/api/admin/config` | SUPER_ADMIN | `appConfigUpdateSchema` = `appConfigSchema.partial()`: `maintenance_mode` bool; `announcement` ≤500 nullable; `feature_flags` record de bool; `enabled_auth_providers` ≤4 de google/discord/apple/magic-link; `social_links` ≤12 `{platform 1-30, url}`; `monetization` | `AppConfig` completo | 400 | `$set` del patch (reemplaza `monetization` entero si se envía); auditoría `config.update`; NO limpia caché SSR |
+| GET `/api/hero` | pública | cubo `read` | — | `{slides:[{id,kicker,titulo,descripcion,boton_texto,boton_enlace,boton_secundario_texto,boton_secundario_enlace,imagen_url,imagen_alt}]}` solo activas y ordenadas | — | `Cache-Control: public, max-age=30`, ETag débil |
+| GET `/api/admin/hero` | ADMIN+ | global | — | `{slides: HeroSlide[], max: 6}` (todas, ordenadas) | 404 uniforme sin staff | `no-store` |
+| PUT `/api/admin/hero` | ADMIN+ | global | `{slides: HeroSlide[]}` (máx. 6, ids únicos, enlaces e imagen validados) | `{slides}` | 400; 404 uniforme sin staff | Reemplaza `AppConfig.hero_slides` (normaliza `orden`), borra los `MediaAsset` propios huérfanos, audita `hero.update`/`media.delete`, limpia caché SSR |
+| POST `/api/admin/media` | ADMIN+ | 20/min | cuerpo binario `image/webp` o `image/jpeg` ≤ 400 KB, 1600×900, firma real | `201 {id,url,mime,width,height,bytes}` | 400 legible; 404 uniforme sin staff; 429 | Crea `MediaAsset`; audita `media.upload` |
+| GET `/media/:id` | pública | cubo `page` | `id` uuid | binario con `Content-Type` real, `nosniff`, `Cache-Control: public, max-age=31536000, immutable`, ETag | 404 `text/plain` | Sin listados |
 | GET `/api/admin/users` | SUPER_ADMIN | query `limit` 1-200 (def. 50), `q` ≤80 | `{users: SelfUserDTO[]}` (incluye email) | 400 | Búsqueda: `username` por regex escapado (i) o `email` exacto en minúsculas; orden `created_at` desc |
 | PATCH `/api/admin/users/:id/role` | SUPER_ADMIN | `id` uuid; `{rol: USER/MODERATOR/ADMIN/SUPER_ADMIN}` | `{user: PublicUserDTO}` | 404; 409 `No se puede degradar al ultimo SUPER_ADMIN` | Auditoría `user.role.update {from,to}` |
 | GET `/api/admin/audit-logs` | ADMIN | query `limit` 1-200 (def. 50), `before` fecha, `actor_id` uuid | `{logs:[…AuditLog]}` por `created_at` desc | 400 | — |
