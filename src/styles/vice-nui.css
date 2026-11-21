@@ -45,6 +45,21 @@ body,
   -webkit-font-smoothing: antialiased;
 }
 
+/* Listas desplegables nativas (select): fondo oscuro y texto claro en cada opción. Sin esto, en Windows/Android
+   las opciones salen blanco sobre blanco y solo se leen al pasar el cursor. */
+select {
+  color-scheme: dark;
+}
+select option,
+select optgroup {
+  background-color: #1a0f2a;
+  color: var(--vice-text);
+}
+select option:checked {
+  background-color: #7b2c6f;
+  color: var(--vice-text);
+}
+
 h1,
 h2,
 h3 {
