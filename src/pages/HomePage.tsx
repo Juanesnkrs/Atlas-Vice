@@ -2,17 +2,18 @@
 // guías, foro en vivo (§7.5) y franja de registro. Cabecera, dock y Footer los pone App.tsx.
 import { useMemo, useRef, useState } from 'react';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
+import { HeroCarousel } from '../components/ui/HeroCarousel';
 import { Modal } from '../components/ui/Modal';
 import { PalmButton } from '../components/ui/PalmButton';
 import { StatBar } from '../components/ui/StatBar';
 import {
-  HERO_IMAGE,
   NEWS_SOURCES,
   entitySlug,
   forumCategoryLabel,
   guideSteps,
   relativeTime,
   useForumData,
+  useHeroSlides,
   useModuleGate,
   useOfficialNews,
   useWorldData,
@@ -103,55 +104,6 @@ function RegisterWall({ open, onClose }: { open: boolean; onClose: () => void })
 }
 
 // ---- Bloques ---------------------------------------------------------------------------------
-function Hero({ guest }: { guest: boolean }) {
-  const [failed, setFailed] = useState(false);
-  return (
-    <section
-      aria-labelledby="hero-title"
-      className="glass relative isolate flex flex-col overflow-hidden rounded-3xl md:min-h-[52vh] md:max-h-[60vh] md:flex-row md:items-center"
-    >
-      <div className="relative z-10 flex max-w-xl flex-col items-start gap-3 px-6 pb-4 pt-8 md:w-[55%] md:px-10 md:py-10">
-        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-vice-orange">Guía comunitaria de Leonida</p>
-        <h1 id="hero-title" className="font-display text-4xl font-bold leading-tight md:text-5xl">
-          Todo Leonida, en un solo mapa
-        </h1>
-        <p className="text-base text-vice-text/90 md:text-lg">Mapa, catálogo, guías y foro. Marca lo que ya encontraste.</p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <PalmButton as="a" href="/mapa">
-            Abrir el mapa
-          </PalmButton>
-          {guest && (
-            <a
-              href="/entrar"
-              className={`glass inline-flex min-h-11 items-center rounded-full px-5 text-[15px] font-semibold hover:bg-white/10 ${FOCUS}`}
-            >
-              Crear cuenta gratis
-            </a>
-          )}
-        </div>
-      </div>
-      <div
-        aria-hidden={failed || undefined}
-        className="relative h-44 w-full md:absolute md:inset-y-0 md:right-0 md:h-full md:w-[55%]"
-        style={{
-          WebkitMaskImage: 'linear-gradient(90deg, transparent 0, #000 28%)',
-          maskImage: 'linear-gradient(90deg, transparent 0, #000 28%)',
-        }}
-      >
-        {!failed && (
-          <img
-            src={HERO_IMAGE}
-            alt="Lucía y Jason con pañuelos sobre el rostro frente a una gasolinera al atardecer"
-            className="absolute bottom-0 right-0 h-full w-full max-w-none object-cover object-[50%_100%]"
-            onError={() => setFailed(true)}
-          />
-        )}
-        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#2E1A47] to-transparent md:hidden" />
-      </div>
-    </section>
-  );
-}
-
 interface ExploreCard {
   href: string;
   title: string;
@@ -382,6 +334,7 @@ export default function HomePage() {
   const { data: world, unavailable: worldDown, error: worldError, retry: retryWorld } = useWorldData(HOME_SCOPE);
   const { isActive, catalogActive } = useModuleGate();
   const { retry: retryForum } = useForumData();
+  const heroSlides = useHeroSlides();
   const { news, loading: newsLoading, error: newsError, retry: retryNews } = useOfficialNews('all', 50);
 
   const retryAll = (): void => {
@@ -405,7 +358,7 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-10 pt-2 md:gap-12 md:px-8">
-      <Hero guest={!authenticated} />
+      <HeroCarousel slides={heroSlides} guest={!authenticated} />
       <ExploreSection cards={cards} />
       {worldDown && <ApiErrorState compact title="No pudimos cargar el catálogo" message={worldError ?? ''} onRetry={retryAll} />}
       <NewsSection news={news} loading={newsLoading} error={newsError} onRetry={retryAll} />

@@ -1,16 +1,18 @@
-// Sección «Contenido público» del panel de gestión (ADMIN+): Catálogo, Mapa interactivo y Módulos.
-// Cascarón: cada gestor vive en su archivo (StaffCatalog, StaffMap, StaffModules).
+// Sección «Contenido público» del panel de gestión (ADMIN+): Catálogo, Mapa interactivo, Módulos y Portada (Hero).
+// Cascarón: cada gestor vive en su archivo (StaffCatalog, StaffMap, StaffModules, StaffHero).
 import { CatalogManager } from './StaffCatalog';
+import { HeroManager } from './StaffHero';
 import { Block, SubTabs } from './StaffKit';
 import { MapManager } from './StaffMap';
 import { useBlockTab } from './StaffNav';
 import { ModulesManager } from './StaffModules';
 
-type Sub = 'catalogo' | 'mapa' | 'modulos';
+type Sub = 'catalogo' | 'mapa' | 'modulos' | 'hero';
 const SUBS: ReadonlyArray<{ id: Sub; label: string }> = [
   { id: 'catalogo', label: 'Catálogo' },
   { id: 'mapa', label: 'Mapa interactivo' },
   { id: 'modulos', label: 'Módulos' },
+  { id: 'hero', label: 'Portada (Hero)' },
 ];
 
 export default function StaffContent() {
@@ -49,6 +51,17 @@ export default function StaffContent() {
           linkLabel="Ver la navegación"
         >
           <ModulesManager />
+        </Block>
+      )}
+      {sub === 'hero' && (
+        <Block
+          id="blk-hero"
+          title="Portada (Hero)"
+          controls="las diapositivas del carrusel de la portada: texto, botones, imagen, orden y cuáles se publican. Sin ninguna activa se muestra la diapositiva por defecto."
+          href="/"
+          linkLabel="Ver la portada"
+        >
+          <HeroManager />
         </Block>
       )}
     </div>

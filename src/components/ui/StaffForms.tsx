@@ -190,7 +190,7 @@ export function FormModal({
 // ---- Borrado seguro --------------------------------------------------------------------------------
 export type DependentsType = 'thread' | 'entity' | 'marker' | 'module';
 export interface DeleteTarget {
-  type: DependentsType | 'post';
+  type: DependentsType | 'post' | 'slide';
   id: string;
   /** Nombre legible del objeto. */
   label: string;
@@ -253,16 +253,18 @@ function SafeDeleteDialog({
   onConfirm: () => void;
 }) {
   const [typed, setTyped] = useState('');
+  // Las respuestas del foro y las diapositivas del Hero no tienen dependientes que consultar.
+  const noDeps = target.type === 'post' || target.type === 'slide';
   const deps = useQuery({
     queryKey: ['staff', 'dependents', target.type, target.id],
-    enabled: target.type !== 'post',
+    enabled: !noDeps,
     queryFn: () => staffFetch<Dependents>(`/api/admin/dependents/${target.type}/${target.id}`),
     gcTime: 0,
   });
   const summary = deps.data ? dependentsSummary(deps.data) : { lines: [], blocked: null };
   const needsText = target.confirmText !== null;
   const matches = !needsText || typed === target.confirmText;
-  const ready = matches && !summary.blocked && (target.type === 'post' || deps.isSuccess);
+  const ready = matches && !summary.blocked && (noDeps || deps.isSuccess);
 
   return (
     <Modal
@@ -283,10 +285,10 @@ function SafeDeleteDialog({
     >
       <div className="flex flex-col gap-3 text-sm">
         <p>
-          Se borrará «{target.label}». {target.type === 'post' ? 'Esta acción no se puede deshacer.' : 'Quedará una copia en la auditoría y el nivel máximo podrá restaurarla.'}
+          Se borrará «{target.label}». {noDeps ? 'Esta acción no se puede deshacer.' : 'Quedará una copia en la auditoría y el nivel máximo podrá restaurarla.'}
         </p>
-        {target.type !== 'post' && deps.isLoading && <p role="status">Comprobando dependientes…</p>}
-        {target.type !== 'post' && deps.error && (
+        {!noDeps && deps.isLoading && <p role="status">Comprobando dependientes…</p>}
+        {!noDeps && deps.error && (
           <p role="alert" className="text-vice-gold">
             No se pudieron comprobar los dependientes: {errMsg(deps.error)}
           </p>

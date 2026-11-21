@@ -480,3 +480,34 @@ export interface PublicConfigDTO {
   monetization: MonetizationConfig;
   modules: Array<{ id: string; slug: string; nombre: string; icono: string; orden: number; isActive: boolean }>;
 }
+
+// ---- Carrusel del Hero (docs/LeonidApp-Arquitectura-Datos-MongoDB.md §2.2 `hero_slides`) ----
+/** Diapositiva pública (`GET /api/hero`): solo activas, ya ordenadas, sin `activa` ni `orden`. */
+export interface HeroSlide {
+  id: string;
+  kicker: string;
+  titulo: string;
+  descripcion: string;
+  boton_texto: string;
+  boton_enlace: string;
+  boton_secundario_texto: string | null;
+  boton_secundario_enlace: string | null;
+  imagen_url: string;
+  imagen_alt: string;
+}
+
+/** Diapositiva de gestión (`/api/admin/hero`): añade estado y posición. */
+export interface HeroSlideAdmin extends HeroSlide {
+  activa: boolean;
+  orden: number;
+}
+
+/** Respuesta de `POST /api/admin/media` (§2.11). */
+export interface MediaUploadDTO {
+  id: string;
+  url: string;
+  mime: string;
+  width: number;
+  height: number;
+  bytes: number;
+}

@@ -18,6 +18,7 @@ import type {
   Module,
   MonetizationConfig,
   ForumProfilePreview,
+  HeroSlide,
   PublicConfigDTO,
 } from '../types/database';
 
@@ -416,6 +417,31 @@ export function useOfficialNews(source: NewsSource | 'all' = 'all', limit = 12) 
     error: !isApiConfigured || q.error ? describeApiError(q.error) : null,
     retry: () => void q.refetch(),
   };
+}
+
+/** Diapositiva por defecto del Hero: contenido del cliente (no se persiste); se usa sin diapositivas activas, al cargar y si una imagen falla. */
+export const DEFAULT_HERO_SLIDE: HeroSlide = {
+  id: 'default',
+  kicker: 'Guía comunitaria de Leonida',
+  titulo: 'Todo Leonida, en un solo mapa',
+  descripcion: 'Mapa, catálogo, guías y foro. Marca lo que ya encontraste.',
+  boton_texto: 'Abrir el mapa',
+  boton_enlace: '/mapa',
+  boton_secundario_texto: 'Crear cuenta gratis',
+  boton_secundario_enlace: '/entrar',
+  imagen_url: HERO_IMAGE,
+  imagen_alt: 'Lucía y Jason con pañuelos sobre el rostro frente a una gasolinera al atardecer',
+};
+
+/** Diapositivas activas del Hero (`GET /api/hero`). Vacío si no hay API o aún no llegan: el carrusel usa la diapositiva por defecto. */
+export function useHeroSlides(): HeroSlide[] {
+  const q = useQuery({
+    queryKey: ['hero', 'public'],
+    enabled: isApiConfigured,
+    staleTime: 30_000,
+    queryFn: () => apiFetch<{ slides: HeroSlide[] }>('/api/hero'),
+  });
+  return q.data?.slides ?? [];
 }
 
 export function usePublicConfig(): PublicConfig {
