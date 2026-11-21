@@ -366,8 +366,9 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
     );
   }
 
+  // Alto propio (viewport menos cabecera y dock): las listas conservan su scroll interno y el Footer queda debajo.
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 px-3 pt-1 md:px-8">
+    <div className="flex h-[calc(100dvh-5rem-var(--dock-reserve))] min-h-[30rem] flex-col gap-3 px-3 pt-1 md:px-8">
       {/* Cabecera del foro: título, categorías y "+ Hilo" */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <h1 className="font-display text-2xl font-bold tracking-[0.04em] text-[#FFC09A] md:text-[26px]">COMUNIDAD</h1>

@@ -223,7 +223,7 @@ function RequireAccount({ next, children }: { next: string; children: ReactNode 
   );
 }
 
-const LOCKED: ReadonlySet<RouteId> = new Set<RouteId>(['map', 'catalog', 'forum']);
+const LOCKED: ReadonlySet<RouteId> = new Set<RouteId>(['map', 'catalog']);
 
 function Unavailable({ title, text }: { title: string; text: string }) {
   usePageMeta({ title, robots: NOINDEX });

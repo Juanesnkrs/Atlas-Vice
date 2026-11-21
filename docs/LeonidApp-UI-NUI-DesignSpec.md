@@ -57,7 +57,7 @@ Definidos como variables CSS en `src/styles/vice-nui.css` y expuestos en `tailwi
 
 | Plataforma | Regla |
 | --- | --- |
-| Escritorio | HUD flotante `100vw × 100vh` **sin scroll vertical** en Mapa (P04) e Inspector (P05). Páginas editoriales (`/`, `/hub`, `/guias`, `/noticias`, fichas, `/aportar`) sí hacen scroll y terminan en el Footer. |
+| Escritorio | HUD flotante `100vw × 100vh` **sin scroll vertical** en Mapa (P04) e Inspector (P05). Páginas editoriales (`/`, `/hub`, `/guias`, `/noticias`, `/foro`, fichas, `/aportar`) sí hacen scroll y terminan en el Footer. |
 | Escritorio y móvil | `BottomDock` **idéntico en todas las plataformas**, 5 ítems en este orden: `Hub` (`/hub`), `Mapa` (`/mapa`), `Catálogo` (`/catalogo`), `Foro` (`/foro`), `Aportar` (`/aportar`). En escritorio es la píldora flotante centrada de `Map.dc.html`; en móvil, la barra de `Mobile.dc.html`. El Progreso se abre desde el botón de % de la cabecera (`/progreso`). Paneles secundarios en móvil como `BottomSheet` deslizables. |
 | Táctil | Área mínima `44 × 44px`; `env(safe-area-inset-*)` en Dock, Sheets y cabeceras. |
 
