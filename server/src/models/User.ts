@@ -21,6 +21,7 @@ export const userSchema = z.object({
   identities: z
     .array(z.object({ provider: z.enum(AUTH_PROVIDERS), subject: z.string() }))
     .default([]),
+  sessions_revoked_at: z.coerce.date().nullable().optional(),
   created_at: z.coerce.date().optional(),
 });
 export type UserDTO = z.infer<typeof userSchema>;
@@ -33,6 +34,7 @@ export interface UserDoc {
   discord_id?: string | null;
   rol: Role;
   identities: Array<{ provider: AuthProvider; subject: string }>;
+  sessions_revoked_at?: Date | null;
   created_at: Date;
 }
 
@@ -48,6 +50,7 @@ const userMongoSchema = new Schema<UserDoc>(
       type: [new Schema({ provider: { type: String, enum: AUTH_PROVIDERS }, subject: String }, { _id: false })],
       default: [],
     },
+    sessions_revoked_at: { type: Date, default: null },
   },
   { timestamps: createdOnly, versionKey: false },
 );
@@ -58,15 +61,18 @@ userMongoSchema.index({ 'identities.provider': 1, 'identities.subject': 1 });
 export const User: Model<UserDoc> = model<UserDoc>('User', userMongoSchema);
 export default User;
 
-/** Vista publica (sin email) para listados como autores del foro. */
+/** Vista publica minima (autores del foro): solo id, username y avatar. Sin rol ni fecha de alta. */
 export const toPublicUserDTO = (u: UserDoc) => ({
   id: u._id,
   username: u.username,
   avatar_url: u.avatar_url ?? null,
+});
+
+/** Vista propia/administrativa (incluye email y rol): solo /api/auth/me y /api/admin/users. */
+export const toSelfUserDTO = (u: UserDoc) => ({
+  ...toPublicUserDTO(u),
   discord_id: null,
   rol: u.rol,
   created_at: u.created_at?.toISOString(),
+  email: u.email ?? null,
 });
-
-/** Vista propia (incluye email) para /api/auth/me. */
-export const toSelfUserDTO = (u: UserDoc) => ({ ...toPublicUserDTO(u), email: u.email ?? null });

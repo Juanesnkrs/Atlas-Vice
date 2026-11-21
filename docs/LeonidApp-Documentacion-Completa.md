@@ -1,6 +1,6 @@
 # LeonidApp — Documentación completa del proyecto
 
-> **Estado del documento:** documento de consulta derivado. Se generó el 2026-11-18 contrastando los documentos del proyecto con el **código real, la base de datos y la aplicación en ejecución**. Si este documento y los tres documentos maestros de `docs/` (`LeonidApp-Arquitectura-Datos-MongoDB.md`, `LeonidApp-Rutas-SEO-Monetizacion.md`, `LeonidApp-UI-NUI-DesignSpec.md`) difieren, **mandan los maestros**, salvo que aquí se marque expresamente una brecha entre lo documentado y lo implementado.
+> **Estado del documento:** documento de consulta derivado (cuarto documento maestro de consulta). **La sección §0 es el estado objetivo vigente (FASE 1) y prevalece sobre cualquier cifra o descripción histórica del resto del texto** (instantánea del 2026-11-18, conservada solo como contexto). Se generó el 2026-11-18 contrastando los documentos del proyecto con el **código real, la base de datos y la aplicación en ejecución**. Si este documento y los tres documentos maestros de `docs/` (`LeonidApp-Arquitectura-Datos-MongoDB.md`, `LeonidApp-Rutas-SEO-Monetizacion.md`, `LeonidApp-UI-NUI-DesignSpec.md`) difieren, **mandan los maestros**, salvo que aquí se marque expresamente una brecha entre lo documentado y lo implementado.
 
 ## Cómo leer este documento
 
@@ -21,10 +21,101 @@
 
 **Límites del documento.** No contiene costos ni fechas de lanzamiento, porque con los datos disponibles no se pueden estimar; §23 y §32 indican qué información haría falta. No contiene valores de claves, tokens ni variables de entorno (solo sus nombres). Los conteos de páginas del sitio de referencia son medidas externas del 2026-11-18 que no se verificaron contra el sitio.
 
+## 0. Estado objetivo consolidado (vigente)
+
+Esta sección recoge la arquitectura consolidada y las decisiones aprobadas por el propietario. Si un apartado posterior (instantánea histórica del 2026-11-18: «138 fichas», «0 marcadores», «lienzo SVG genérico», «datos de ejemplo», «AdSlot sin script», etc.) la contradice, **manda esta sección** y el apartado debe leerse como historia.
+
+### 0.1 Stack
+
+| Capa | Tecnología |
+|---|---|
+| Cliente | Vite + React + TypeScript (strict) + Tailwind CSS + Zustand + TanStack Query + idb-keyval (offline-first). Sin librería de router, de UI ni de mapas: el enrutado usa History API propia y el mapa es un canvas propio. **No se usa Leaflet.** |
+| Servidor | Node.js + **Fastify** + Mongoose + Zod. **No se usa Express.** MongoDB es el único motor de persistencia. |
+| Nativo | Capacitor (`com.leonidapp.companion`, `leonidapp://`). |
+
+### 0.2 Datos (MongoDB)
+
+Cifras vigentes (verificadas contando `server/data/*-editorial.json`):
+
+| Colección | Documentos | Detalle |
+|---|---|---|
+| `entities` | **243** | armas **13**, vehículos **200**, guías **20**, mapa **10**, coleccionables 0 |
+| `mapmarkers` | **10** | uno por ficha de mapa (bloque `marker` del lote editorial) |
+| `officialnews` | **1** | `take-two-ir` (únicamente fuentes oficiales Rockstar / Take-Two) |
+
+El catálogo se alimenta de lotes editoriales 100 % originales en `server/data/*-editorial.json`, importados con `pnpm --dir server import:catalog <archivo.json> --apply --source editorial`. Las 11 colecciones (las 10 originales más `MediaAsset`, aprobada el 2026-11-21 para las imágenes del carrusel del Hero) y sus campos siguen cerrados según `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`.
+
+### 0.3 Mapa (`/mapa`)
+
+- Base cartográfica HD en `public/map-tiles/`: pirámide de teselas WebP, manifiesto vigente `v: 7`, **5 niveles (z = 0..4)**, `tileSize` 512, nivel z4 nativo **6600 x 9300** px, cargada bajo demanda (fuera del bundle JS).
+- Render: **canvas** para las teselas (decodificadas como `ImageBitmap`) más una **capa SVG de marcadores** superpuesta. Sin rótulos SVG de lugares sobre la base y sin Leaflet.
+- **Sin atribución visible** sobre el mapa, por decisión del propietario.
+- Deep link `/mapa?pin=<slug>`. El Modo Editor de pines pertenece al panel oculto (§0.5), no a la UI pública.
+
+### 0.4 Catálogo, guías, foro y noticias
+
+- Catálogo: `/catalogo/:categoria` y `/catalogo/:categoria/:itemSlug` con SSR-lite y JSON-LD (`CollectionPage`, `CreativeWork`, `BreadcrumbList`); la navegación se sincroniza con la URL. En móvil, **Bottom Sheet master-detail** que reutiliza `EntityDetailPanel`.
+- `/catalogo/mapa` y `/catalogo/mapa/:slug` responden **301** a `/mapa` y `/mapa?pin=<slug>`. `/catalogo/ARMAS` (mayúsculas) se normaliza con **301** a minúsculas.
+- Categorías vacías (hoy `coleccionables`): `noindex`, estado vacío limpio y fuera del `sitemap.xml`.
+- Guías: `/guias` y `/guias/:slug` (`HowTo` cuando `metadata_json.steps` existe, si no `Article`), máximo 2 `AdSlot`.
+- Foro: público en lectura; la API pública expone de cada autor **solo `id`, `username` y `avatar_url`** (nunca el rol).
+- Noticias oficiales: `/noticias` y `/noticias/:slug`; ingesta por worker solo de hosts oficiales en lista blanca.
+
+### 0.5 Política de invisibilidad de Gestión de Identidades y Panel Oculto
+
+Cero exposición pública: ni UI pública, ni dock, ni footer, ni Hub, ni `robots.txt`, ni `sitemap.xml`.
+
+1. **Ruta oculta `/_staff`** (cliente y SSR). No se enlaza desde ninguna página pública.
+2. **Chunks aislados:** el código del panel sale del build en `/_staff/assets/`. El servidor **solo** sirve esos archivos a una sesión de staff autorizada: MODERATOR+ para moderación; ADMIN+ para contenido público y editorial; SUPER_ADMIN para Control Total, roles, identidades y auditoría. En cualquier otro caso responde un **404 uniforme**, idéntico al de una ruta inexistente.
+3. **API administrativa:** `/api/admin/*` y los POST/PATCH/DELETE administrativos de catálogo, mapa, roles, configuración y auditoría devuelven ese mismo **404 genérico** a quien no tenga sesión de staff autorizada. El RBAC real se evalúa **antes** que la validación Zod (no se distingue 401/403/400 hacia fuera).
+4. **Cliente:** trata como «sin acceso» solo el 404 uniforme (cuerpo exacto `{"error":"No encontrado"}`, sin `code`); un 404 de recurso a staff autorizado lleva `code:"RESOURCE_NOT_FOUND"` y no expulsa. Con trabajo abierto, el panel muestra el modal «Sesión caducada» en lugar de desmontarse.
+5. **Verificación de build:** ningún chunk público contiene las cadenas `SUPER_ADMIN`, `Control Total` ni `/api/admin/`.
+6. **Limitación documentada y aceptada:** el panel requiere red y el mismo origen web; no funciona offline ni en Capacitor.
+
+#### 0.5.1 Arquitectura funcional del panel `/_staff` (mapa de la app pública)
+
+El panel se organiza por **módulo público que gobierna**, no por tecnología. Cada bloque muestra «Qué controla en la app pública» y un enlace a esa vista pública (`target="_blank" rel="noopener"`). Las cuatro secciones aparecen según el rol; el servidor decide siempre (404 uniforme a quien no corresponda).
+
+| Sección (rol mínimo) | Bloque | Qué controla en la app pública | Vista pública | Endpoints `/api` que consume (rol) |
+| --- | --- | --- | --- | --- |
+| **Resumen operativo** (MODERATOR+, pantalla de entrada) | Resumen | Tarjetas accionables que enlazan a su sección: aportes pendientes por tipo y antigüedad del más viejo; estado real del worker de noticias y último error por fuente (o «sin errores registrados»); cobertura del catálogo por módulo; pines sin ficha y fichas del módulo `mapa` sin pin; últimas 10 acciones de auditoría (SUPER_ADMIN todas, el resto solo las propias). Contenido filtrado por rol: MODERATOR solo ve aportes de moderación (sin contact/newsletter) y sus propias acciones; ADMIN+ añade worker, cobertura y pines | — (interno) | `GET /api/admin/overview` (MODERATOR, `Cache-Control: private, no-store`); `GET /api/admin/submissions/pending-count` (MODERATOR; insignia dinámica de la pestaña «Comunidad y moderación», refetch cada 60 s con la pestaña visible) |
+| **Contenido público** (ADMIN+) | Catálogo | Las 243 fichas de `armas`, `vehiculos`, `coleccionables`, `guias` y `mapa`: filtro por módulo, buscador por nombre/slug (`?q=`), paginación del servidor, alta/edición/borrado | `/catalogo`, `/catalogo/:categoria/:itemSlug` | `GET /api/entities?module&q&page&limit&envelope=1` (público); `POST/PATCH/DELETE /api/entities` (ADMIN). Columna «Pin» por ficha (estado del pin vinculado) y acceso a `/mapa?editor=1&entity=<slug>`; borrar una ficha con pines devuelve `409 HAS_DEPENDENTS` con recuento y títulos |
+| | Mapa interactivo | Los 10 marcadores de `/mapa` (coordenadas, región, entidad vinculada con selector de búsqueda remota y enlace «Abrir ficha»). Un marcador existente está publicado (no hay borradores: `MapMarker` no tiene estado). Acceso directo al Modo Editor (`/mapa?editor=1`) | `/mapa` | `GET /api/markers` (público); `POST/PATCH/DELETE /api/markers` (ADMIN) |
+| | Portada (Hero) | Diapositivas del carrusel del Hero de `/` (máx. 6): miniatura, título, estado Activa/Pausada, orden, edición y borrado con confirmación; kicker, título, descripción, botón (texto y enlace), botón secundario opcional para invitados, imagen (subida 1600×900 o enlace https) y texto alternativo; vista previa. Sin diapositivas activas se muestra la diapositiva por defecto | `/` | `GET /api/hero` (público); `GET/PUT /api/admin/hero` y `POST /api/admin/media` (ADMIN); `GET /media/:id` (público) |
+| | Módulos del catálogo | Los 7 módulos: activación (oculta/muestra navegación y rutas), orden y metadatos (nombre, icono, slug). No se borra un módulo con fichas | Dock y `/catalogo` | `GET /api/modules?all=1` (ADMIN, `no-store`); `POST/PATCH/DELETE /api/modules` (ADMIN) |
+| **Comunidad y moderación** (MODERATOR+) | Aportes | Bandeja de `/aportar`: revisar, aprobar (crea/actualiza la entidad o el marcador con auditoría) o rechazar. Contacto y suscripciones solo para ADMIN+ | `/aportar` | `GET /api/admin/submissions?status&limit` y `PATCH /api/admin/submissions/:id` (MODERATOR) |
+| | Foro | Hilos y respuestas: fijar, cerrar (`is_locked`), editar título/contenido/categoría/spoiler, eliminar (con sus votos) | `/foro` | `GET /api/admin/forum/threads?q&categoria&page`, `GET /api/admin/forum/threads/:id`, `PATCH /api/admin/forum/threads/:id`, `PATCH /api/admin/forum/posts/:id`, `DELETE /api/forum/threads/:id`, `DELETE /api/forum/posts/:id` (todos MODERATOR). Los aportes muestran el payload formateado, tabla Actual vs Propuesto en correcciones, errores 422 desglosados, rechazo con motivo (`Submission.reviewNote`), selección múltiple con cola de 3 peticiones concurrentes y enlace «Ver ficha»/«Ver pin» (`promotedTo`). Aprobar un aporte `entity` con `payload.marker` crea en la misma transacción el `MapMarker` vinculado |
+| **Editorial y automatización** (ADMIN+) | Worker de noticias | Estado del worker de noticias oficiales (fuentes en lista blanca, último ciclo, resultado por fuente, próximo ciclo, noticias por fuente) y ejecución manual (una a la vez, 409 si ya corre, limitada por cuota) | `/noticias` | `GET /api/admin/news/status`, `POST /api/admin/news/sync` (ADMIN) |
+| | Guías | Guías publicadas (módulo `guias`): lista, edición y enlace a su página pública con `HowTo`/`Article` | `/guias`, `/guias/:slug` | los de Catálogo con `module=guias` |
+| **Control Total** (SUPER_ADMIN) | Configuración | `announcement` (Hub), `maintenance_mode` (aviso en acceso), proveedores de acceso (1 a 4, sin duplicados), `feature_flags`, redes sociales (footer) | `/`, `/hub`, footer | `GET /api/config`; `PATCH /api/admin/config` |
+| | Monetización | `AppConfig.monetization`: interruptor global, proveedor, `publisher_id`, hasta 20 slots; el servidor valida ruta/posición permitidas (Rutas §6.1), máximo 2 slots activos por ruta, ids únicos y `publisher_id` si AdSense está activo. Verificación de cada ruta contra una página real (`HEAD`) | `/guias`, `/noticias`, `/catalogo/:categoria/:itemSlug`, `/foro` | `PATCH /api/admin/config` |
+| | Identidades y roles | Listado paginado con búsqueda y filtro por rol; cambio de rol `USER/MODERATOR/ADMIN/SUPER_ADMIN` (no degrada al último SUPER_ADMIN); revocación de sesiones (`User.sessions_revoked_at`) | — (interno) | `GET /api/admin/users?q&rol&page`, `PATCH /api/admin/users/:id/role`, `POST /api/admin/users/:id/revoke-sessions` |
+| | Auditoría y salud | Bitácora filtrable (acción, tipo de objetivo, actor, fechas, paginada) y salud: ping y conteos de MongoDB, proceso, worker, caché SSR/ETag; vaciado de caché SSR | — (interno) | `GET /api/admin/audit-logs`, `GET /api/admin/health`, `POST /api/admin/cache/clear`, `POST /api/admin/audit-logs/:id/restore` (restaura lo borrado; SUPER_ADMIN). Historial «de este objeto» en `GET /api/admin/history?target_type&target_id` (MODERATOR+; ADMIN y MODERATOR solo ven sus propias entradas, SUPER_ADMIN todas) |
+
+Reglas transversales del panel: toda mutación escribe `AuditLog` (actualizaciones con `before`/`after` de los campos cambiados; borrados con `snapshot` completo, incluidos los hijos de un hilo; convención y política de tamaño en Arquitectura §2.10); el 404 uniforme lleva el cuerpo exacto `{"error":"No encontrado"}` y un 404 de recurso solo visible a staff autorizado añade `code:"RESOURCE_NOT_FOUND"` (el cliente expulsa únicamente ante el 404 sin `code`; nunca se emite un código distinto de 404 a quien no es staff); **prevención de errores humanos:** borrar ficha, pin, módulo o hilo exige escribir el `slug` exacto (o id/título corto si no hay slug) y muestra los dependientes (`GET /api/admin/dependents/:type/:id`), la auditoría ofrece «Restaurar» solo a SUPER_ADMIN (`*.restore`, mismo `_id`, 409 si el `_id` o el `slug` ya existen), los modales del panel no se cierran con el clic en el fondo, avisan de cambios sin guardar y conservan un borrador en memoria (Zustand, clave tipo+id; nunca `localStorage`), y un 401 o un 404 uniforme con trabajo abierto muestra el modal «Sesión caducada» sin desmontar el panel ni el formulario; la URL del panel (`/_staff?s=&b=&q=&m=&p=`) refleja sección, bloque y filtros (History API, solo dentro de `/_staff`); atajos `/` (enfoca el buscador del bloque, si el foco no está en un campo) y `Esc` (cierra detalle/modal); los datos de las pestañas se leen sin caché pública (`no-cache`/`no-store`) para reflejar al instante los cambios; márgenes inferiores `pb-28` + `env(safe-area-inset-bottom)` para que el dock no tape acciones; toasts de éxito/error en cada acción. Sin campos nuevos salvo `User.sessions_revoked_at`, `ForumThread.is_locked` y `Submission.reviewNote` (ver Arquitectura §2.1, §2.8 y §2.9) más el índice `MapMarker { entity_id }` (§2.5); no hay estado «borrador» en `Entity` ni `MapMarker` (limitación documentada). Los chunks `staff-*` sirven a MODERATOR+ y `staff-ctl-*` solo a SUPER_ADMIN.
+
+Componentes (carpeta `src/components/ui/`): chunk `staff-panel` = `StaffKit`, `StaffContent`, `StaffCommunity`, `StaffModeration`, `StaffEditorial` y `pages/StaffPage.tsx`; chunk `staff-ctl-panel` = `StaffControl`, `StaffIdentity`, `StaffAudit`. `StaffContent.tsx` sustituye a `CatalogAdminPanel.tsx` (retirado). Sesiones: `lv_session` se invalida si su emisión es anterior a `User.sessions_revoked_at`. Las respuestas a un hilo cerrado devuelven 409 y la UI pública lo muestra con el hilo en solo lectura.
+
+### 0.6 Alcance de `/aportar`
+
+Buzón comunitario 100 % público para enviar sugerencias (marcadores, fichas, correcciones). No menciona moderación, roles, administración ni endpoints internos. El dock mantiene 5 ítems (Hub, Mapa, Catálogo, Foro, Aportar) y el footer dice «Aportar» (no «Aportes y moderación»). La revisión y promoción de aportes ocurre solo en el panel oculto (§0.5).
+
+### 0.7 SEO, API y seguridad
+
+- `robots.txt`: únicamente `Disallow: /api/` (más `Allow: /` y `Sitemap:`). Las páginas privadas se protegen con `noindex` por meta, no listándolas en robots (así no se revelan rutas ocultas).
+- `GET /api/entities`: paginación (`?limit=&page=`) y filtro `?module=`, compresión y `Cache-Control`/`ETag`.
+- **Carrusel del Hero (2026-11-21):** `AppConfig.hero_slides` (máx. 6, campos y límites en Arquitectura §2.2), editable por ADMIN+ en `/_staff` → Contenido público → «Portada (Hero)» con `GET/PUT /api/admin/hero`; lectura pública `GET /api/hero`; subida de imágenes `POST /api/admin/media` (cuerpo binario WebP/JPEG, validado por firma real y dimensiones exactas **1600 × 900 px, ≤ 400 KB**, guardado en `MediaAsset`) y lectura pública `GET /media/:id` (caché inmutable, sin listado). El Hero actual es la diapositiva por defecto cuando no hay ninguna activa. La CSP abre `img-src` a `https:` (decisión del propietario: enlaces a imágenes de cualquier dominio https; riesgo: fuga de IP/Referer al host de la imagen y contenido externo mutable).
+- Cabeceras: CSP y HSTS (HSTS solo en producción), además de `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` y `Permissions-Policy`; cookies `Secure` bajo https.
+- Si la API falla, el cliente muestra un **fallback honesto con reintento**: no se inventan datos de ejemplo.
+- `/entrar`: máximo 4 botones; los proveedores con `configured:false` se ocultan o se marcan «Próximamente».
+- Hub: «Rutas sugeridas» permanece oculta mientras no existan rutas reales.
+- Monetización: `AdSlot` condicionado a `leonidapp_consent` (Marketing), carga diferida con `IntersectionObserver`, CLS = 0, nunca en `/mapa`, `/hub`, `/progreso`, `/aportar`, `/entrar` ni en Capacitor.
+
 ## Índice
 
 **Parte I — Producto, requisitos y procesos**
 
+- [§0. Estado objetivo consolidado (vigente)](#0-estado-objetivo-consolidado-vigente)
 - [§1. Resumen ejecutivo y estado actual](#1-resumen-ejecutivo-y-estado-actual)
 - [§2. Especificación técnica y arquitectura del sistema](#2-especificación-técnica-y-arquitectura-del-sistema)
 - [§3. Requisitos funcionales y no funcionales](#3-requisitos-funcionales-y-no-funcionales)
@@ -84,19 +175,21 @@
 
 | Para quién | Valor que el sistema ya ofrece (verificado) | Valor que el diseño promete y aún no existe |
 |---|---|---|
-| Jugador sin cuenta | Entrar y usar mapa, catálogo, guías y progreso sin registro; el progreso queda en IndexedDB (`src/store/useProgressStore.ts`) | Mapa con pines reales (hoy 0 marcadores) |
+| Jugador sin cuenta | Entrar y usar mapa, catálogo, guías y progreso sin registro; el progreso queda en IndexedDB (`src/store/useProgressStore.ts`) | Mapa con pines reales (resuelto: 10 marcadores, §0.3) |
 | Jugador con cuenta | Progreso fusionado y sincronizado entre dispositivos (`PUT /api/progress`, last-write-wins); foro completo; aportes | Notificaciones/racha de regreso diario; login nativo por deep link |
-| Comunidad | Aportes (marcador, ficha, corrección) con revisión y promoción automática al catálogo | Subida de imágenes propias (solo URL), "reportar mensajes" |
-| Equipo editorial | Panel de administración (CRUD catálogo/mapa/módulos, moderación, roles, configuración, auditoría) e importador de catálogo desde grabaciones | Gestión de fuentes de noticias desde el panel |
+| Comunidad | Buzón público `/aportar` (marcador, ficha, corrección); la revisión ocurre solo en el panel oculto | Subida de imágenes propias (solo URL), "reportar mensajes" |
+| Equipo editorial | Panel oculto de staff en `/_staff` (CRUD catálogo/mapa/módulos, moderación, roles, configuración, auditoría; §0.5) e importador de catálogo desde grabaciones | Gestión de fuentes de noticias desde el panel |
 | Negocio / SEO | Páginas con metadatos, JSON-LD, `sitemap.xml` y `robots.txt` generados por el servidor; hueco publicitario (`AdSlot`) | Ingresos: el `AdSlot` no carga ningún script de anuncios (ver §3, RF-12) |
 
-### 1.3 Estado real HOY (2026-11-18)
+### 1.3 Estado real (instantánea histórica 2026-11-18; superada por §0)
+
+> **Vigencia:** las cifras y brechas de §1.3 a §1.5 (227 entidades, 138 fichas de mapa, 0 marcadores, lienzo SVG genérico, avisos de «datos de ejemplo») son históricas. El estado vigente es §0: 243 entidades (armas 13, vehículos 200, guías 20, mapa 10), 10 `MapMarker`, 1 noticia oficial y mapa HD por teselas.
 
 **Qué funciona (verificado en código y/o ejecución):** `pnpm typecheck` y `pnpm build` del cliente y del servidor pasan sin errores (el inventario de infraestructura); API Fastify activa en el puerto 3000 con MongoDB local; 13 rutas de cliente con History API; Invitado y progreso local; sincronización de progreso; foro con muro de registro para invitados; aportes y promoción automática; panel de administración por rol; SSR-lite (meta, canonical, Open Graph, JSON-LD), `sitemap.xml` y `robots.txt` dinámicos; Footer legal con Contact/Subscribe persistidos y modal de cookies; worker de noticias cada 15 min.
 
 **Qué no funciona o no está completo:**
 
-- **Mapa sin pines:** la base tiene 0 marcadores. Las 138 fichas del módulo "mapa" son *entidades* (ciudades, barrios, negocios, puntos de interés...) con categoría, pero no son marcadores con coordenadas; el lienzo del mapa es un SVG vectorial propio (1000x700), no un mapa de alta resolución.
+- **Mapa (histórico, resuelto):** entonces la base tenía 0 marcadores y el lienzo era un SVG vectorial propio (1000x700). Hoy hay 10 `MapMarker` sobre la pirámide de teselas HD (§0.3).
 - **Monetización inoperante:** `AdSlot` solo reserva un hueco; no inyecta AdSense ni lee el consentimiento; `ads_enabled=false` y 0 slots configurados.
 - **App nativa no lista:** proyectos Android/iOS generados pero con `appId` `com.atlasvice.app` y nombre "ATLAS VICE"; sin esquema `leonidapp://`, sin plugin `@capacitor/app`; el retorno por deep link no está cableado; la web embebida en `android/` es una compilación antigua.
 - **Login real sin verificar de extremo a extremo:** los 4 botones dependen de credenciales de proveedores (Google, Discord, Apple) y SMTP, que son opcionales en `server/src/config/env.ts` (sin ellas el servidor responde 503). Sus valores no se verificaron (❓). OAuth pierde el parámetro `?next` tras el login (`server/src/routes/auth.ts:46`).
@@ -112,7 +205,7 @@
 
 | Conjunto | Origen | Naturaleza |
 |---|---|---|
-| 225 fichas importadas (armas 12, vehículos 20, mapa 138, guías 55) | `catalogo_grabaciones.json` (166 KB, versionado en `server/data/`): análisis por fotogramas de grabaciones de stream, con evidencia `fecha_sesión: t_NNNN@cuadrante ~ hh:mm:ss` y confianza (alta 154, media 63, baja 8) | Dato **derivado de grabaciones**, no oficial. El proceso de extracción no está en el repositorio (❓ no verificado). Estadísticas 0-10 del juego guardadas exactas en `metadata_json.stats_juego` y escaladas a 0-100 en `stats_json` |
+| (Histórico) 225 fichas importadas de grabación (armas 12, vehículos 20, mapa 138, guías 55); sustituidas por el lote editorial vigente (§0.2) | `catalogo_grabaciones.json` (166 KB, versionado en `server/data/`): análisis por fotogramas de grabaciones de stream, con evidencia `fecha_sesión: t_NNNN@cuadrante ~ hh:mm:ss` y confianza (alta 154, media 63, baja 8) | Dato **derivado de grabaciones**, no oficial. El proceso de extracción no está en el repositorio (❓ no verificado). Estadísticas 0-10 del juego guardadas exactas en `metadata_json.stats_juego` y escaladas a 0-100 en `stats_json` |
 | 2 guías "Basicos" | Semilla del servidor | Ejemplo |
 | 6 hilos de foro y 9 posts | Semilla | Ejemplo |
 | 5 usuarios (4 USER, 1 ADMIN) | Semilla/pruebas | Ejemplo |
@@ -126,8 +219,8 @@ El catálogo aún muestra el aviso "Datos de ejemplo..." en ficha y guías (`Cat
 
 | Colección | Documentos | Detalle |
 |---|---|---|
-| `entities` | **227** | mapa 138 (Negocios 43, Ciudades y Barrios 25, Puntos de Interés 22, Islas y Cayos 18, Aguas 16, Condados 14), guías 57 (55 de grabación + 2 semilla; Sistemas 15, Personajes 14, Misión Principal 11, Teléfono y Apps 8, Actividades 3, Tiendas 2, Talleres 2), vehículos 20, armas 12, coleccionables 0 |
-| `mapmarkers` | 0 | — |
+| `entities` | **227** (histórico; vigente: 243, ver §0.2) | mapa 138 (Negocios 43, Ciudades y Barrios 25, Puntos de Interés 22, Islas y Cayos 18, Aguas 16, Condados 14), guías 57 (55 de grabación + 2 semilla; Sistemas 15, Personajes 14, Misión Principal 11, Teléfono y Apps 8, Actividades 3, Tiendas 2, Talleres 2), vehículos 20, armas 12, coleccionables 0 |
+| `mapmarkers` | 0 (histórico; vigente: 10) | — |
 | `forumthreads` / `forumposts` / `forumvotes` | 6 / 9 / 0 | Hilos: General 2, Guías/Ayuda 2, Secretos 1, Crews 1 |
 | `users` | 5 | USER 4, ADMIN 1, SUPER_ADMIN 0 |
 | `modules` | 7 | mapa, armas, vehiculos, coleccionables, guias, foro activos; radio inactivo |
@@ -170,7 +263,7 @@ Ningún módulo está en 🟢: el producto es una **pre-alfa funcional** (primer
 | Nombre de producto | LeonidApp (wordmark heredado "ATLAS VICE" ya no visible); paquete cliente `atlas-vice` v0.1.0; servidor `leonidapp-server` v0.1.0 |
 | Tipo | SPA + API REST, repositorio único (cliente en raíz, servidor en `server/`); ambos `"type": "module"` |
 | Gestor de paquetes | pnpm (scripts `pnpm --dir server ...`) |
-| Persistencia | MongoDB (único motor), 10 colecciones lógicas (12 archivos de modelo); local en `127.0.0.1:27017`, base `leonidapp` |
+| Persistencia | MongoDB (único motor), 11 colecciones lógicas (13 archivos de modelo con `MediaAsset`); local en `127.0.0.1:27017`, base `leonidapp` |
 | Tiempo de ejecución servidor | Node.js (usa `--env-file-if-exists` y `--watch`); ES2023, `module: NodeNext` |
 | TypeScript | `^7.0.2` en cliente y servidor; `strict`, `noUncheckedIndexedAccess`, `noUnusedLocals/Parameters` |
 | Enrutado del cliente | Propio, sobre History API + Zustand (`src/store/useRouteStore.ts`); sin react-router |
@@ -272,7 +365,7 @@ flowchart LR
   end
 
   subgraph Datos["MongoDB"]
-    DB[("leonidapp: 10 colecciones")]
+    DB[("leonidapp: 11 colecciones")]
   end
 
   subgraph Worker["Worker de noticias (node-cron cada 15 min)"]
@@ -374,7 +467,7 @@ Leyenda: ✅ implementado · 🟡 parcial · ⚠️ divergente · ❌ no impleme
 |---|---|---|---|---|
 | **RF-01** Acceso híbrido | El usuario explora sin cuenta (progreso en IndexedDB, nunca en `localStorage` ni con tokens en el cliente) o inicia sesión con **4 proveedores como máximo** (Google, Discord, Apple, Magic Link) por OAuth2 + PKCE y cookie HttpOnly, para sincronizar entre dispositivos | (a) Desde `/entrar`, "Continuar como invitado" lleva a `/hub` sin bloqueo; (b) hay 4 botones como máximo; (c) tras login el progreso local y el de la nube quedan fusionados; (d) ningún token en `localStorage`/`sessionStorage` | 🟡 | Invitado ✅ (`LandingAuthPage.tsx:288`), sin tokens en almacenamiento ✅ (`useAuthStore.ts:262-267`), fusión ✅ (`routes/progress.ts:12`). Brecha: tras login siempre se redirige a `/?auth=ok` y se pierde `?next` (`routes/auth.ts:46`); botones dependen de credenciales/SMTP no verificados (❓); regex rota en el diálogo de Magic Link (`LandingAuthPage.tsx:52`) |
 | **RF-02** Mapa interactivo | Mapa con zoom (rueda, pinch, botones), filtros por capas, búsqueda y marcado de puntos completados | (a) 7 capas conmutables con conteo; (b) búsqueda devuelve hasta 6 resultados; (c) tocar un pin abre ficha con "Marcar como completado" y el % global cambia; (d) `?marker=`, `?entity=`, `?region=` centran el mapa | 🟡 | Mecánica ✅ (`MapPage.tsx:262-404`). Brecha: **0 marcadores en BD**, no hay pines que probar; lienzo SVG vectorial, no mapa de alta resolución; capas/zoom no se reflejan en la URL |
-| **RF-03** Catálogo e Inspector | Rejilla de selección, barras de estadísticas, vista previa, filtro por categoría, comparador y ficha con URL propia | (a) pestañas por módulo activo; (b) `StatBar` por stat; (c) `?comparar=a,b,c` abre comparador; (d) `/catalogo/:modulo/:slug` indexable | ✅ | `CatalogPage.tsx:28-31,403-440`, `StatBar.tsx`. Menor: comparador en `BottomSheet` también en escritorio; coleccionables vacío; fidelidad visual a `Inspector.dc.html` ❓ |
+| **RF-03** Catálogo e Inspector | Rejilla de selección, barras de estadísticas, vista previa, filtro por categoría, comparador y ficha con URL propia | (a) pestañas por módulo activo; (b) `StatBar` por stat; (c) `?comparar=a,b,c` abre comparador; (d) `/catalogo/:categoria/:itemSlug` indexable | ✅ | `CatalogPage.tsx:28-31,403-440`, `StatBar.tsx`. Menor: comparador en `BottomSheet` también en escritorio; coleccionables vacío; fidelidad visual a `Inspector.dc.html` ❓ |
 | **RF-04** Tracker y retención | % global y por categoría, "Tip del día" rotativo, checklists y rutas sugeridas para incentivar el regreso | (a) anillo de % y barras en `/progreso`; (b) tip rotativo; (c) rutas con "Ir al siguiente punto"; (d) mecanismo de regreso diario | 🟡 | `DashboardPage.tsx:183-189`, `TipCard.tsx`. Brecha: sin racha ni notificaciones; checklists solo en guías; rutas vienen de `SEED_ROUTES` y con 0 marcadores quedan vacías (inferido); los 3 tips son de semilla |
 | **RF-05** Guías y aportes | Consultar guías paso a paso con checklist y enviar hallazgos (marcador, ficha, corrección) con estado `pending`/`approved`/`rejected` | (a) guía con barra "N/M pasos"; (b) el formulario valida y crea aporte `pending`; (c) "Mis aportes" lista estados | ✅ | `GuidesPage.tsx`, `AdminSubmitPage.tsx`, `routes/submissions.ts:14-58`. Brecha: 0 aportes reales; imagen solo por URL |
 | **RF-06** Módulos escalables | Activar/desactivar secciones por configuración sin tocar el núcleo | (a) alternar un módulo en el panel lo quita del dock y de las rutas; (b) la ruta de un módulo inactivo muestra "desactivado temporalmente" | ✅ | `routes/catalog.ts:114-164`, `App.tsx:286-297,457-478`. `radio` está inactivo |
@@ -711,7 +804,7 @@ Consecuencia: una "ficha de mapa" (lugar), una "guía" y un "arma" son el mismo 
 1. Crear el `Module` (`POST /api/modules`, rol ADMIN, o desde el panel de administración): `slug`, `nombre`, `icono`, `activo`, `orden`. ✅ (`routes/catalog.ts:50`)
 2. Crear las fichas: `POST /api/entities` (ADMIN), por aportes aprobados (`Submission` tipo `entity`, ver §13) o con el importador (`import:catalog`, ver §14). Basta con elegir `categoria` y las claves de `stats_json`/`metadata_json`. ✅
 3. El cliente muestra los módulos de `GET /api/config/public` (con `isActive`) y las fichas de `GET /api/entities`. ✅ (`routes/config.ts:40`, `routes/catalog.ts:76`)
-4. El sitemap (§17) incluye las entidades de módulos activos (`/catalogo/:modulo/:slug`; el módulo `guias` va en `/guias/:slug`). ✅ (`routes/seo.ts`)
+4. El sitemap (§17) incluye las entidades de módulos activos (`/catalogo/:categoria/:itemSlug`; el módulo `guias` va en `/guias/:slug`). ✅ (`routes/seo.ts`)
 
 No hay migraciones: Mongo no impone esquema y Mongoose solo valida los campos declarados.
 
@@ -766,7 +859,7 @@ Resumen (detalle por colección en §10): `Entity {module_id, categoria}` y `{mo
 
 ### 8.1 Colecciones reales
 
-Hay **12 modelos Mongoose** (12 archivos de entidad en `server/src/models/`, más `common.ts` e `index.ts`). El documento maestro los agrupa en **10 colecciones lógicas** porque cuenta el foro (`ForumThread`, `ForumPost`, `ForumVote`) como una sola. Físicamente hay 12 colecciones en MongoDB.
+Hay **12 modelos Mongoose** (12 archivos de entidad en `server/src/models/`, más `common.ts` e `index.ts`). El documento maestro los agrupa en **11 colecciones lógicas** (la undécima, `MediaAsset`, se añadió el 2026-11-21; el recuento de 12 modelos y de archivos de este párrafo es anterior y pasa a 13) porque cuenta el foro (`ForumThread`, `ForumPost`, `ForumVote`) como una sola. Físicamente hay 12 colecciones en MongoDB.
 
 > ⚠️ **Brecha (conteo):** el inventario del backend habla de "11 modelos"; el recuento de archivos y de llamadas a `model<>()` da 12. Aquí se documenta 12.
 
@@ -1062,9 +1155,14 @@ Singleton: un único documento con `key:'global'` (`getGlobalConfig()` lo crea p
 | `enabled_auth_providers` | [String] | array de enum google/discord/apple/magic-link, máx 4 | No | los 4 | — | Proveedores visibles en la pantalla de acceso (máx. 4 botones). |
 | `social_links` | Mixed | array máx 12 de `{platform 1-30, url}` | No | `[]` | — | Redes del footer; Mongoose no valida el contenido. |
 | `monetization` | Mixed | `monetizationSchema`: `ads_enabled`, `provider` none/adsense, `publisher_id` ≤60 nullable, `require_consent` literal `true`, `slots` máx 20 `{id 1-40, route, position, width, height, enabled}` | No | `{ads_enabled:false, provider:'none', publisher_id:null, require_consent:true, slots:[]}` | — | Ver §18. Estado actual: anuncios desactivados, sin slots. |
+| `hero_slides` | [Mixed] | `z.array(heroSlideSchema).max(6)` | No | `[]` | — | Carrusel del Hero (2026-11-21): `{id uuid, activa, orden, kicker ≤60, titulo ≤90, descripcion ≤220, boton_texto ≤30, boton_enlace (ruta `/…` o https), boton_secundario_texto/enlace (opcionales), imagen_url (`/media/<id>` o https), imagen_alt ≤140}`. Escribe ADMIN+ con `PUT /api/admin/hero`; `PATCH /api/admin/config` la rechaza. |
 | `updatedAt` | Date (solo actualización) | — | — | — | — | — |
 
 Regla: `PATCH /api/admin/config` hace `$set` del parche; si se envía `monetization`, se **reemplaza entero**.
+
+#### MediaAsset (`mediaassets`, 2026-11-21)
+
+Imagen subida desde el panel (solo Hero): `_id` UUID, `mime` (`image/webp` | `image/jpeg`), `width` 1600, `height` 900, `bytes` ≤ 409600, `data` Buffer, `created_by` UUID de `User`, `created_at`. Servida en `GET /media/:id`. Detalle y reglas en Arquitectura §2.11.
 
 ### 10.3 Module (`modules`)
 
@@ -1100,7 +1198,7 @@ Regla: `PATCH /api/admin/config` hace `$set` del parche; si se envía `monetizat
 | Campo | Mongoose | Zod (`mapMarkerSchema`) | Req. | Default | Índice | Descripción y reglas |
 |---|---|---|---|---|---|---|
 | `_id` | String UUID | `id` opcional | Sí | `randomUUID` | PK | — |
-| `entity_id` | String (ref Entity) | uuid nullable, opcional | No | `null` | — | Ficha asociada; sin validación de existencia. |
+| `entity_id` | String (ref Entity) | uuid nullable, opcional | No | `null` | `{entity_id}` | Ficha asociada; sin validación de existencia. |
 | `region` | String | 1-80 | Sí | — | `{region}` | Región/zona (filtro `GET /api/markers?region=`). |
 | `titulo` | String | 1-160 | Sí | — | — | Título del pin. |
 | `descripcion` | String | ≤2000 | No | `null` | — | — |
@@ -1152,6 +1250,7 @@ Inserción con `$setOnInsert` y upsert por `sourceUrl`: una noticia **no se actu
 | `coords` | Mixed | `{x,y}` nullable; obligatorio si `marker` | No | `null` | — | Posición del marcador propuesto. |
 | `status` | String enum `pending/approved/rejected` | enum | No | `pending` | `{status, createdAt:-1}` | En contact/newsletter, `approved` = atendido. |
 | `reviewedBy` | String | uuid o `'system'` nullable | No | `null` | — | Revisor; `'system'` en auto-aprobación. |
+| `reviewNote` | String | `.trim().max(500).optional()` | No | — | — | Motivo del rechazo (solo moderación). |
 | `promotedTo` | Mixed | `{collection: MapMarker|Entity, id}` nullable | No | `null` | — | Documento creado/modificado; marca de idempotencia. |
 | `createdAt` | Date (solo creación) | coerce | — | now | — | camelCase. |
 
@@ -1199,13 +1298,13 @@ Inserción con `$setOnInsert` y upsert por `sourceUrl`: una noticia **no se actu
 
 | Campo | Mongoose | Zod | Req. | Default | Índice | Descripción y reglas |
 |---|---|---|---|---|---|---|
-| `_id` | String UUID | — (no existe schema Zod) | Sí | `randomUUID` | PK | — |
+| `_id` | String UUID | `auditLogSchema` | Sí | `randomUUID` | PK | — |
 | `actor_id` | String | — | Sí | — | `{actor_id, created_at:-1}` | Quien actuó; `'system'` posible. |
 | `actor_role` | String | — | Sí | — | — | Rol en el momento. |
 | `action` | String | — | Sí | — | — | Ver acciones abajo. |
 | `target_type` | String | — | Sí | — | — | Tipo de objeto afectado. |
 | `target_id` | String | — | No | `null` | — | Id afectado (polimórfico). |
-| `metadata` | Mixed | — | No | `{}` | — | Detalle (parche, from/to de rol, título…). |
+| `metadata` | Mixed | — | No | `{}` | — | Detalle. Convención: `{before, after}` (solo campos cambiados, sin secretos), `{snapshot}` en borrados y `{restored_from}` en `*.restore` (Arquitectura §2.10). |
 | `ip` | String | — | No | `null` | — | `req.ip`. |
 | `created_at` | Date | — | — | now | `{created_at:-1}` | — |
 
@@ -1215,7 +1314,7 @@ Acciones emitidas: `module.create|update|delete`, `entity.create|update|delete`,
 
 Claves **reales** de `server/data/catalogo_grabaciones.json` (225 fichas; el importador convierte `stats_juego` 0-10 en `stats_json` 0-100 y deja el valor exacto en `metadata_json.stats_juego`, ver §14) y del seed. Entre paréntesis, el número de fichas que la traen.
 
-#### Armas (12 fichas)
+#### Armas (13 fichas vigentes; el desglose siguiente es de la instantánea histórica de 12)
 
 | Bolsa | Claves |
 |---|---|
@@ -1224,7 +1323,7 @@ Claves **reales** de `server/data/catalogo_grabaciones.json` (225 fichas; el imp
 
 Ejemplo (Girardi ES9, Pistolas): `stats_juego {dano 4.2, precision 5.2, manejo 8.4, alcance 4.4}` → `stats_json {dano 42, precision 52, manejo 84, alcance 44}`; `metadata {slot:"Arma auxiliar", municion_inicial_hud:"15 / 57 (cargador / reserva)", descripcion:"…", alias:["Pistola (icono de rueda)"]}`.
 
-#### Vehículos (20 fichas)
+#### Vehículos (200 fichas vigentes; el desglose siguiente es de la instantánea histórica de 20)
 
 | Bolsa | Claves |
 |---|---|
@@ -1235,7 +1334,7 @@ Ejemplo (Vapid Ganado 1970, Pickups): `stats_juego {velocidad 4.7, aceleracion 5
 
 > ⚠️ **Brecha:** el seed de ejemplo usaba otras claves (`cadencia`, `frenado`, `manejo` en vehículos; `rareza` en coleccionables) que no coinciden con las reales (`velocidad/aceleracion/maniobrabilidad_*/fuerza` y `dano/precision/manejo/alcance`). ❓ No se auditó si el cliente acepta las claves reales (ver §29).
 
-#### Mapa (138 fichas, sin estadísticas)
+#### Mapa (10 fichas vigentes con `marker`; el desglose siguiente es de la instantánea histórica de 138, sin estadísticas)
 
 | Bolsa | Claves |
 |---|---|
@@ -1244,7 +1343,7 @@ Ejemplo (Vapid Ganado 1970, Pickups): `stats_juego {velocidad 4.7, aceleracion 5
 
 Ejemplo (Leónida, Condados): `metadata {descripcion:"Nombre del estado en letras grandes…", alias:["Leonida"]}`. Son **fichas de lugares sin coordenadas** (sin `MapMarker` asociado).
 
-#### Guías (55 de grabación + 2 de seed "Basicos")
+#### Guías (20 fichas vigentes; el desglose siguiente es de la instantánea histórica 55 + 2)
 
 | Bolsa | Claves |
 |---|---|
@@ -1538,7 +1637,7 @@ Riesgos (severidad = juicio del redactor):
 
 | Tipo | Quién lo crea | ¿Se promueve? | Qué hace al promoverse |
 |---|---|---|---|
-| `marker` | USER+ (`POST /api/submissions`) | Sí | Crea un `MapMarker` (exige `coords`) |
+| `marker` | USER+ (`POST /api/submissions`) | Sí | Crea un `MapMarker` (exige `coords` al aprobar; el aporte público las deja en `null` y el equipo las indica en la bandeja) |
 | `entity` | USER+ | Sí | Crea una `Entity` en el módulo de `moduleSlug` |
 | `correction` | USER+ | Sí | Aplica un `patch` a una `Entity` o `MapMarker` existente |
 | `contact` | Público (`POST /api/contact`) | **Nunca** | Solo bandeja ADMIN; `approved` = atendido |
@@ -1669,7 +1768,9 @@ Comando: `pnpm --dir server import:catalog <archivo.json> [--apply]` (`server/sr
 
 > ⚠️ **Brecha:** el uso del script con `catalogo_grabaciones.json` es lo que indican los conteos (225 fichas importadas, `fuente='grabacion'` en la base); el inventario lo marca como inferencia (❓).
 
-### 14.4 Conteos actuales
+### 14.4 Conteos (instantánea histórica 2026-11-18)
+
+> **Vigencia:** conteos vigentes en §0.2: 243 entidades (armas 13, vehículos 200, guías 20, mapa 10) y 10 `MapMarker`. La tabla siguiente se conserva como historia del lote de grabaciones.
 
 Fuentes: el inventario de infraestructura y análisis del JSON.
 
@@ -1704,7 +1805,9 @@ Otros datos de hoy: 0 marcadores, 6 hilos de foro (semilla: General 2, Guías/Ay
 | guias | 44 | 11 | 0 | 55 |
 | **Total** | **154** | **63** | **8** | **225** |
 
-### 14.5 Qué quedó fuera
+### 14.5 Qué quedó fuera (histórico)
+
+> **Vigencia:** el mapa ya tiene 10 marcadores; la ausencia de pines descrita abajo es histórica.
 
 | Elemento | Estado | Detalle |
 |---|---|---|
@@ -1786,6 +1889,11 @@ Constante `strict` = 15 peticiones/min (`auth.ts:55`). Cookies: `lv_oauth` (PKCE
 |---|---|---|---|---|---|
 | GET `/api/config` y GET `/api/config/public` | pública | — | `{maintenance_mode, announcement, feature_flags, enabled_auth_providers, social_links, monetization, modules:[{id,slug,nombre,icono,orden,isActive}]}`; `Cache-Control: public, max-age=30` | 500 | `getGlobalConfig()` hace upsert del singleton. Expone TODOS los módulos (activos e inactivos, con `isActive`). Si `monetization` no valida, devuelve el valor por defecto del schema |
 | PATCH `/api/admin/config` | SUPER_ADMIN | `appConfigUpdateSchema` = `appConfigSchema.partial()`: `maintenance_mode` bool; `announcement` ≤500 nullable; `feature_flags` record de bool; `enabled_auth_providers` ≤4 de google/discord/apple/magic-link; `social_links` ≤12 `{platform 1-30, url}`; `monetization` | `AppConfig` completo | 400 | `$set` del patch (reemplaza `monetization` entero si se envía); auditoría `config.update`; NO limpia caché SSR |
+| GET `/api/hero` | pública | cubo `read` | — | `{slides:[{id,kicker,titulo,descripcion,boton_texto,boton_enlace,boton_secundario_texto,boton_secundario_enlace,imagen_url,imagen_alt}]}` solo activas y ordenadas | — | `Cache-Control: public, max-age=30`, ETag débil |
+| GET `/api/admin/hero` | ADMIN+ | global | — | `{slides: HeroSlide[], max: 6}` (todas, ordenadas) | 404 uniforme sin staff | `no-store` |
+| PUT `/api/admin/hero` | ADMIN+ | global | `{slides: HeroSlide[]}` (máx. 6, ids únicos, enlaces e imagen validados) | `{slides}` | 400; 404 uniforme sin staff | Reemplaza `AppConfig.hero_slides` (normaliza `orden`), borra los `MediaAsset` propios huérfanos, audita `hero.update`/`media.delete`, limpia caché SSR |
+| POST `/api/admin/media` | ADMIN+ | 20/min | cuerpo binario `image/webp` o `image/jpeg` ≤ 400 KB, 1600×900, firma real | `201 {id,url,mime,width,height,bytes}` | 400 legible (tamaño, firma, tipo, dimensiones); 404 uniforme sin staff; 413 > 600 KB; 415 tipo no admitido; 429 | Crea `MediaAsset`; audita `media.upload` |
+| GET `/media/:id` | pública | cubo `read` | `id` uuid | binario con `Content-Type` real, `nosniff`, `Cache-Control: public, max-age=31536000, immutable`, ETag | 404 `text/plain` | Sin listados |
 | GET `/api/admin/users` | SUPER_ADMIN | query `limit` 1-200 (def. 50), `q` ≤80 | `{users: SelfUserDTO[]}` (incluye email) | 400 | Búsqueda: `username` por regex escapado (i) o `email` exacto en minúsculas; orden `created_at` desc |
 | PATCH `/api/admin/users/:id/role` | SUPER_ADMIN | `id` uuid; `{rol: USER/MODERATOR/ADMIN/SUPER_ADMIN}` | `{user: PublicUserDTO}` | 404; 409 `No se puede degradar al ultimo SUPER_ADMIN` | Auditoría `user.role.update {from,to}` |
 | GET `/api/admin/audit-logs` | ADMIN | query `limit` 1-200 (def. 50), `before` fecha, `actor_id` uuid | `{logs:[…AuditLog]}` por `created_at` desc | 400 | — |
@@ -1850,10 +1958,10 @@ Solo lectura; escribe únicamente el worker (§16.7).
 
 | Método y ruta | Guarda | Rate | Entrada | Salida | Errores / efectos |
 |---|---|---|---|---|---|
-| POST `/api/submissions` | USER+ | 20/hora | `moduleSlug` 1-60, `type` ∈ marker/entity/correction (contact/newsletter → `Tipo no permitido`), `title` 3-160, `payload` (def. {}), `coords {x,y}` (obligatorio si marker) | 201 `SubmissionDTO` | 400. Crea `pending`; si el autor es MODERATOR+ se promueve en la misma petición como actor `SYSTEM` (`reviewedBy:'system'`). Si la promoción falla (422) la Submission ya creada queda `pending` y la petición responde 422. No valida que `moduleSlug` exista al crear |
+| POST `/api/submissions` | USER+ | 20/hora | `moduleSlug` 1-60, `type` ∈ marker/entity/correction (contact/newsletter → `Tipo no permitido`), `title` 3-160, `payload` (def. {}), `coords {x,y}` (opcional; el aporte público `marker` va con `coords: null` y el equipo lo completa al aprobar) | 201 `SubmissionDTO` | 400. Crea `pending`; si el autor es MODERATOR+ se promueve en la misma petición como actor `SYSTEM` (`reviewedBy:'system'`). Si la promoción falla (422) la Submission ya creada queda `pending` y la petición responde 422. No valida que `moduleSlug` exista al crear |
 | GET `/api/submissions/mine` | USER+ | global | — | `SubmissionDTO[]` (máx. 100, `createdAt` desc) | — |
 | GET `/api/admin/submissions` | MODERATOR+ | global | query `status`?, `limit` 1-200 (def. 50) | `SubmissionDTO[]` | MODERATOR no ve `contact` ni `newsletter`; ADMIN+ sí |
-| PATCH `/api/admin/submissions/:id` | MODERATOR+ | global | `{status: approved\|rejected}` | `SubmissionDTO` | 404; 403 si tipo contact/newsletter y rol < ADMIN; 409 si ya promovida y `rejected`; promoción 422/409. Auditoría `submission.<status>` + `marker.created\|entity.created\|entity.updated\|marker.updated`; limpia caché SSR al promover |
+| PATCH `/api/admin/submissions/:id` | MODERATOR+ | global | `{status: approved, coords?: {x,y} (coords solo con approved: ubica el pin de un marker sin coordenadas); status: approved\|rejected}` | `SubmissionDTO` | 404; 403 si tipo contact/newsletter y rol < ADMIN; 409 si ya promovida y `rejected`; promoción 422/409. Auditoría `submission.<status>` + `marker.created\|entity.created\|entity.updated\|marker.updated`; limpia caché SSR al promover |
 
 Regla completa de promoción en §13.
 
@@ -1876,7 +1984,7 @@ Datos con formato inválido sí devuelven 400. No se envía correo de confirmaci
 | GET `/sitemap-:n.xml` | pública | trozo de URLs | 404 si no existe el índice |
 | GET `/robots.txt` | pública | texto, `max-age=86400` | Ver §17.6 |
 | `setNotFoundHandler` | — | — | No GET/HEAD o ruta `/api/*` → 404 JSON `{error:'No encontrado'}`. Rutas con extensión (1-8 caracteres) → estático desde la carpeta de `dist/index.html`. `/assets/*` sin extensión → 404. Resto → fallback SPA con SSR-lite (301, 200 o 404 con `injectHead`; `Cache-Control: public, max-age=60` si 200, `no-store` si 404). Si no existe `dist/index.html` → 404 JSON `Cliente no compilado…` |
-| `sendStatic` | — | archivo | Decodifica la ruta, rechaza `\0`, resuelve y exige que quede dentro de la raíz (anti path traversal), solo ficheros. Caché `public, max-age=31536000, immutable` para `/assets/`, `max-age=3600` el resto. MIME por extensión (js, css, html, json, svg, png, jpg, jpeg, webp, gif, ico, woff, woff2, txt, xml, webm, mp4; otro → octet-stream) |
+| `sendStatic` | — | archivo | Decodifica la ruta, rechaza `\0`, resuelve y exige que quede dentro de la raíz (anti path traversal), solo ficheros. Caché `public, max-age=31536000, immutable` para `/assets/`; `no-cache` para `index.html`, `sw.js` y el HTML de las páginas (200); `max-age=3600` el resto. Un `/assets/*` inexistente (hash de un despliegue anterior) responde `404` `text/plain` («No encontrado», `no-store`), nunca JSON; el área `/_staff/` conserva su 404 JSON uniforme. **Recuperación tras un despliegue:** `public/sw.js` (cache `leonidapp-static-v9`, Network-First para navegación, `skipWaiting` + `clients.claim`, purga de cachés antiguas) y `src/main.tsx` (`vite:preloadError` y rechazos «Failed to fetch dynamically imported module» recargan la página una sola vez, con un indicador en `sessionStorage` que no contiene datos de sesión y se retira a los 10 s). Nota: las afirmaciones anteriores de «sin service worker» de este documento están obsoletas: el SW existe (`public/sw.js`). MIME por extensión (js, css, html, json, svg, png, jpg, jpeg, webp, gif, ico, woff, woff2, txt, xml, webm, mp4; otro → octet-stream) |
 
 > 🟡 **Nota:** no hay `@fastify/static`; la API sirve el cliente compilado (`dist/`) ella misma. En desarrollo el cliente corre en Vite y la API no sirve la SPA.
 
@@ -2017,8 +2125,10 @@ No hay renderizado de React en servidor. El servidor Fastify lee una vez `dist/i
 | `/mapa`, `/catalogo`, `/guias`, `/noticias`, `/foro` | index | `CollectionPage` + `BreadcrumbList` |
 | `/noticias/:slug` | index (200) o 404 noindex | `NewsArticle` (`isBasedOn` = `sourceUrl`) + breadcrumb |
 | `/guias/:slug` | idem | `HowTo` con `HowToStep` si `metadata_json.steps` tiene pasos con título; si no, `Article`; + breadcrumb |
-| `/catalogo/:modulo/:slug` | idem | `CreativeWork` (`isPartOf` CollectionPage) + breadcrumb |
+| `/catalogo/:categoria/:itemSlug` | idem | `CreativeWork` (`isPartOf` CollectionPage) + breadcrumb |
 | `/hub`, `/progreso`, `/entrar`, `/aportar` | noindex,nofollow | — |
+| `/catalogo/:categoria` vacía (p. ej. `coleccionables`) | noindex (fuera del sitemap) | — |
+| `/catalogo/mapa`, `/catalogo/mapa/:slug`, `/catalogo/ARMAS` | 301 a `/mapa`, `/mapa?pin=<slug>` y minúsculas respectivamente | — |
 | `/catalogo?comparar=…` | noindex | — |
 | Cualquier otra ruta | HTTP 404, noindex,nofollow | — |
 
@@ -2040,11 +2150,11 @@ El cliente actualiza `title` y canonical al navegar (`src/store/useRouteStore.ts
 
 ### 17.5 Sitemap
 
-`GET /sitemap.xml`: URLs estáticas (`/`, `/mapa`, `/catalogo`, `/guias`, `/noticias`, `/foro`), entidades de módulos activos (módulo `guias` → `/guias/:slug`; resto → `/catalogo/:modulo/:slug`) y noticias (`/noticias/:slug`). `lastmod`: entidades `created_at`; noticias `updatedAt`/`publishedAt`; estáticas = máximo de sus hijos; `/mapa` y `/foro` sin `lastmod`. Si hay más de 50 000 URLs devuelve `sitemapindex` con `/sitemap-N.xml`. Segmentos con `encodeURIComponent` y XML escapado; las consultas están envueltas en `safe()` (error de BD → lista vacía). `Cache-Control: public, max-age=3600`.
+`GET /sitemap.xml`: URLs estáticas (`/`, `/mapa`, `/catalogo`, `/guias`, `/noticias`, `/foro`), entidades de módulos activos (módulo `guias` → `/guias/:slug`; resto → `/catalogo/:categoria/:itemSlug`) y noticias (`/noticias/:slug`). `lastmod`: entidades `created_at`; noticias `updatedAt`/`publishedAt`; estáticas = máximo de sus hijos; `/mapa` y `/foro` sin `lastmod`. Si hay más de 50 000 URLs devuelve `sitemapindex` con `/sitemap-N.xml`. Segmentos con `encodeURIComponent` y XML escapado; las consultas están envueltas en `safe()` (error de BD → lista vacía). `Cache-Control: public, max-age=3600`.
 
 ### 17.6 robots.txt
 
-Dinámico (`routes/seo.ts`): `Allow: /`; `Disallow: /api/ /aportar /hub /progreso /entrar`; `Sitemap: <PUBLIC_SITE_URL>/sitemap.xml`; caché 24 h. No existe `public/robots.txt` estático (el documento de rutas §4 lo mencionaba).
+Dinámico (`routes/seo.ts`): `Allow: /`; **solo `Disallow: /api/`**; `Sitemap: <PUBLIC_SITE_URL>/sitemap.xml`; caché 24 h. Las páginas privadas (`/hub`, `/progreso`, `/entrar`, `/aportar`) se excluyen del índice con `noindex` por meta, no listándolas en robots; la ruta oculta `/_staff` no aparece ni en robots ni en sitemap (§0.5).
 
 ### 17.7 Estado de implementación
 
@@ -2088,7 +2198,7 @@ Estado actual en BD: `ads_enabled:false`, `provider:'none'`, sin slots. Existe u
 | `/guias` | `after-content` |
 | `/guias/:slug` | `in-article` (tras el 2.º bloque, máx. 1), `after-content`, `sidebar` (solo ≥ 1280 px) |
 | `/noticias`, `/noticias/:slug` | `after-content` |
-| `/catalogo/:modulo/:slug` | `after-content` (nunca en el Inspector HUD) |
+| `/catalogo/:categoria/:itemSlug` | `after-content` (nunca en el Inspector HUD) |
 | `/foro` | `after-content` (tras la lista de hilos) |
 
 Máximo 2 AdSlot por página. Nunca en `/mapa`, Inspector HUD ni comparador, BottomDock/safe-area, `/`, `/entrar`, `/hub`, `/progreso`, `/aportar`, modales, Auth ni Footer; nunca como intersticial, sticky o vídeo con autoplay. Reglas técnicas: espacio fijo (CLS 0), consentimiento Marketing antes de cargar scripts de terceros, carga diferida (IntersectionObserver, margen 200 px), `ads_enabled=false` → `null` sin reservar espacio, etiqueta «Publicidad», desactivado en Capacitor nativo, no presentar como oficial.
@@ -2136,7 +2246,7 @@ Máximo 2 AdSlot por página. Nunca en `/mapa`, Inspector HUD ni comparador, Bot
 | Control | Estado | Detalle |
 |---|---|---|
 | Cabeceras de seguridad (helmet, X-Frame-Options, nosniff, HSTS) | ❌ | Sin `@fastify/helmet` ni cabeceras fijas (verificado por búsqueda); solo cabeceras de caché por ruta |
-| CSP | ❌ | No definida |
+| CSP | 🟡 | Estado objetivo: CSP y HSTS (solo producción) según §0.7; el texto de esta tabla es la instantánea histórica |
 | Rate limit | 🟡 | Global 200/min; auth 15/min; magic request 5/10 min; contacto y suscripción 5/h; foro (hilos, posts, votos) 20/min; aportes 20/h. Sin límite propio en `PUT /api/progress` ni en endpoints admin. Estado en memoria por instancia (❓ store compartido no verificado) |
 | Validación de entrada | ✅ | Zod 4 en todas las rutas, `z.uuid()` en parámetros, cuerpo ≤1 MiB. Las salidas no se validan con Zod |
 | Hash de contraseñas | n/a | No hay contraseñas: acceso solo por OAuth o enlace mágico |
@@ -2457,7 +2567,7 @@ LeonidApp
 ├─ P04 Mapa                            /mapa              (HUD 100vh)
 ├─ P05 Catálogo (Inspector)            /catalogo          (HUD 100vh)
 │   ├─ Comparador (hoja)               /catalogo?comparar=a,b[,c]
-│   └─ Ficha de entidad                /catalogo/:modulo/:slug   (con scroll y footer)
+│   └─ Ficha de entidad                /catalogo/:categoria/:itemSlug   (con scroll y footer)
 ├─ P06 Guías                           /guias
 │   └─ Guía                            /guias/:slug
 ├─ Noticias                            /noticias
@@ -2470,7 +2580,7 @@ LeonidApp
     └─ Control Total      (SUPER_ADMIN)
 ```
 
-Redirecciones: `/aportes` → `/aportar` (replace); `/noticias?item=slug` → `/noticias/slug`; `/catalogo?entity=<uuid>` → `/catalogo/:modulo/:slug`; `/catalogo/guias/:slug` → `/guias/:slug`; `#/ruta` heredado → `/ruta` (`useRouteStore.ts:396-401`); `/foro?hilo=` es alias de `thread` (`App.tsx:306-317`).
+Redirecciones: `/aportes` → `/aportar` (replace); `/noticias?item=slug` → `/noticias/slug`; `/catalogo?entity=<uuid>` → `/catalogo/:categoria/:itemSlug`; `/catalogo/guias/:slug` → `/guias/:slug`; `#/ruta` heredado → `/ruta` (`useRouteStore.ts:396-401`); `/foro?hilo=` es alias de `thread` (`App.tsx:306-317`).
 
 ### 24.3 Tabla completa de rutas reales
 
@@ -2484,7 +2594,7 @@ Fuente: `src/App.tsx:55-70` e inventario del cliente. "Indexable" = meta `robots
 | `/progreso` | `DashboardPage section=progress` | Invitado | No | Igual que Hub; hace scroll a `#progreso` | — |
 | `/mapa` | `MapPage` | Invitado | Sí (canonical = path) | mundo (marcadores, regiones, capas), progreso, foro (hilos relacionados) | `mapa` |
 | `/catalogo` | `CatalogPage` (Inspector) | Invitado | Sí; con `?comparar` pasa a `noindex` y canonical `/catalogo` | mundo, foro, progreso | alguno de armas/vehículos/coleccionables/guías |
-| `/catalogo/:modulo/:slug` | `CatalogPage detail` (`EntityDetail`) | Invitado | Sí (título y description por ficha; no encontrada → `noindex`) | `useEntityDetail` (caché del mundo, si no `GET /api/modules/:m/entities/:slug`), foro, guías | `:modulo` activo |
+| `/catalogo/:categoria/:itemSlug` | `CatalogPage detail` (`EntityDetail`) | Invitado | Sí (título y description por ficha; no encontrada → `noindex`) | `useEntityDetail` (caché del mundo, si no `GET /api/modules/:m/entities/:slug`), foro, guías | `:modulo` activo |
 | `/guias` | `GuidesPage` | Invitado | Sí | mundo (entidades de guías), `guideSteps` | `guias` |
 | `/guias/:slug` | `GuidesPage slug` | Invitado | Sí (no encontrada → `noindex`) | entidad de guía, hilos del foro, marcadores, config de anuncios | `guias` |
 | `/noticias` | `NewsPage` | Invitado | Sí | `GET /api/news?limit=&source=` | — |
@@ -2891,7 +3001,7 @@ Móvil: título, pestañas de módulo con scroll horizontal, chips de categoría
 
 Estados: "No hay elementos para mostrar." / "Sin elementos en esta categoría."; elementos sin imagen usan silueta SVG o banner sunset.
 
-### 27.6 Ficha de entidad `/catalogo/:modulo/:slug`
+### 27.6 Ficha de entidad `/catalogo/:categoria/:itemSlug`
 
 Escritorio:
 
@@ -3203,7 +3313,7 @@ Convención: "Invitado" = sin sesión; "USER+" = autenticado; ver §11 para el R
 | Offline | Semilla (23 entidades) o último mundo en memoria |
 | Defectos | Sin footer (`lockScroll`); coleccionables = 0 en la base; solo 12 armas y 20 vehículos reales; sin buscador; entidades de `mapa` no navegables aquí |
 
-### 29.6 Ficha de entidad `/catalogo/:modulo/:slug`
+### 29.6 Ficha de entidad `/catalogo/:categoria/:itemSlug`
 
 | Campo | Detalle |
 |---|---|

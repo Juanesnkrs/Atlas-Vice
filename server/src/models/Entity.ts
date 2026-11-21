@@ -16,7 +16,10 @@ export const entitySchema = z.object({
   metadata_json: jsonRecordSchema.default({}),
 });
 export type EntityDTO = z.infer<typeof entitySchema>;
-export const entityUpdateSchema = entitySchema.partial();
+/** Sin `.default()`: un PATCH parcial no debe vaciar `stats_json` ni `metadata_json`. */
+export const entityUpdateSchema = entitySchema
+  .extend({ stats_json: jsonRecordSchema, metadata_json: jsonRecordSchema })
+  .partial();
 
 export interface EntityDoc {
   _id: string;

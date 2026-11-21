@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { OfficialNews } from '../models/OfficialNews.js';
+import { sendPublicJson } from '../services/httpCache.js';
 import { HttpError, parse } from '../services/validate.js';
 
 const toNewsDTO = (n: {
@@ -36,15 +37,13 @@ export async function registerNewsRoutes(app: FastifyInstance): Promise<void> {
       .sort({ publishedAt: -1 })
       .limit(q.limit)
       .lean();
-    reply.header('cache-control', 'public, max-age=60');
-    return rows.map(toNewsDTO);
+    return sendPublicJson(req, reply, rows.map(toNewsDTO));
   });
 
   app.get('/api/news/:slug', async (req, reply) => {
     const { slug } = parse(z.object({ slug: z.string().min(1).max(200) }), req.params);
     const n = await OfficialNews.findOne({ slug }).lean();
     if (!n) throw new HttpError(404, 'Noticia no encontrada');
-    reply.header('cache-control', 'public, max-age=60');
-    return toNewsDTO(n);
+    return sendPublicJson(req, reply, toNewsDTO(n));
   });
 }

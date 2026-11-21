@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest, onRequestAsyncHookHandler, preHandlerAsyncHookHandler } from 'fastify';
 import fp from 'fastify-plugin';
 import { ROLE_RANK, User, type Role, type UserDoc } from '../models/User.js';
 import { HttpError } from '../services/validate.js';
@@ -23,6 +23,18 @@ export function requireRole(...roles: Role[]): preHandlerAsyncHookHandler {
   };
 }
 
+/**
+ * Ruta administrativa oculta: hook `onRequest` (corre antes de parsear el cuerpo y de Zod).
+ * Sin sesion o con rol insuficiente responde el MISMO 404 que una ruta inexistente
+ * (el notFound handler devuelve `{"error":"No encontrado"}`), sin revelar que la ruta existe.
+ */
+export function requireStaffRole(role: Role): onRequestAsyncHookHandler {
+  const min = ROLE_RANK[role];
+  return async (req: FastifyRequest, _reply: FastifyReply) => {
+    if (!req.authUser || ROLE_RANK[req.authUser.rol] < min) throw new HttpError(404, 'No encontrado');
+  };
+}
+
 export const requireAuth = requireRole('USER');
 
 export default fp(async function authPlugin(app: FastifyInstance) {
@@ -32,8 +44,11 @@ export default fp(async function authPlugin(app: FastifyInstance) {
     req.authUser = null;
     const raw = req.cookies[SESSION_COOKIE];
     if (!raw) return;
-    const userId = await verifySession(raw);
-    if (!userId) return;
-    req.authUser = await User.findById(userId).lean<UserDoc>();
+    const session = await verifySession(raw);
+    if (!session) return;
+    const user = await User.findById(session.userId).lean<UserDoc>();
+    // Revocacion: la `iat` del JWT es en segundos, por eso se compara truncando la fecha de revocacion al segundo.
+    const revoked = user?.sessions_revoked_at ? Math.floor(user.sessions_revoked_at.getTime() / 1000) * 1000 : 0;
+    req.authUser = user && session.issuedAtMs >= revoked ? user : null;
   });
 }, { name: 'auth' });

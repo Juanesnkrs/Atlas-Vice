@@ -12,7 +12,7 @@ import {
 import { ROLE_RANK, type Role } from '../models/User.js';
 import { writeAuditEntry } from './audit.js';
 import { clearSsrCache } from './ssrLite.js';
-import { HttpError } from './validate.js';
+import { HttpError, resourceNotFound } from './validate.js';
 
 /** Quien ejecuta la accion: un usuario con rol o el sistema (autor de confianza). */
 export interface Actor {
@@ -33,10 +33,11 @@ export const slugify = (input: string): string =>
     .replace(/^-+|-+$/g, '')
     .slice(0, 110);
 
-const NO_TXN = /replica set|Transaction numbers|transactions? (are|is) not supported/i;
+const NO_TXN =
+  /replica set|Transaction numbers|transactions? (are|is) not supported|does not support retryable writes/i;
 
 /** Transaccion Mongo; si el servidor es standalone (dev) degrada a escritura sin sesion. */
-async function runAtomic<T>(fn: (session: ClientSession | null) => Promise<T>): Promise<T> {
+export async function runAtomic<T>(fn: (session: ClientSession | null) => Promise<T>): Promise<T> {
   const session = await mongoose.startSession();
   try {
     return (await session.withTransaction(() => fn(session))) as T;
@@ -55,6 +56,14 @@ const markerPayloadSchema = mapMarkerSchema.omit({ id: true, coord_x: true, coor
 const entityPayloadSchema = entitySchema
   .omit({ id: true, module_id: true, slug: true })
   .extend({ slug: slugSchema.optional() });
+/** Bloque opcional `payload.marker` de una ficha: crea su pin vinculado en la misma promocion. */
+const entityMarkerBlockSchema = z.object({
+  region: z.string().min(1).max(80),
+  coord_x: z.number().min(0).max(1000),
+  coord_y: z.number().min(0).max(700),
+  descripcion: z.string().max(2000).optional(),
+  slug: slugSchema.optional(),
+});
 const correctionPayloadSchema = z.object({
   target: z.enum(['Entity', 'MapMarker']),
   id: z.uuid(),
@@ -77,7 +86,7 @@ async function uniqueEntitySlug(moduleId: string, base: string, session: ClientS
  */
 export async function promote(submissionId: string, reviewer: Actor): Promise<SubmissionDoc> {
   const sub = await Submission.findById(submissionId).lean<SubmissionDoc>();
-  if (!sub) throw new HttpError(404, 'Aporte no encontrado');
+  if (!sub) throw resourceNotFound('Aporte no encontrado');
   if (isFooterType(sub.type)) throw new HttpError(409, 'contact/newsletter nunca se promueven');
   if (sub.promotedTo) return sub;
   if (sub.status === 'rejected') throw new HttpError(409, 'Aporte rechazado');
@@ -88,10 +97,12 @@ export async function promote(submissionId: string, reviewer: Actor): Promise<Su
     id: string;
     audit: string;
     extra: Record<string, unknown>;
+    /** Pin creado junto a la ficha (aporte `entity` con `payload.marker`). */
+    marker?: { id: string; titulo: string };
   }>;
 
   if (sub.type === 'marker') {
-    if (!sub.coords) throw new HttpError(422, 'coords obligatorio para marker');
+    if (!sub.coords) throw new HttpError(422, 'Falta ubicar el pin: indica las coordenadas X (0-1000) e Y (0-700) para aprobar este aporte.');
     const r = markerPayloadSchema.safeParse(sub.payload);
     if (!r.success) throw unprocessable(r.error);
     const coords = sub.coords;
@@ -102,12 +113,42 @@ export async function promote(submissionId: string, reviewer: Actor): Promise<Su
   } else if (sub.type === 'entity') {
     const r = entityPayloadSchema.safeParse(sub.payload);
     if (!r.success) throw unprocessable(r.error);
+    const rawMarker = (sub.payload as { marker?: unknown }).marker;
+    const mk = rawMarker === undefined ? null : entityMarkerBlockSchema.safeParse(rawMarker);
+    if (mk && !mk.success) throw unprocessable(mk.error);
     const mod = await Module.findOne({ slug: sub.moduleSlug, activo: true }).lean<{ _id: string }>();
     if (!mod) throw new HttpError(422, 'moduleSlug inexistente o inactivo');
     plan = () => async (session) => {
       const slug = await uniqueEntitySlug(mod._id, r.data.slug ?? slugify(r.data.titulo), session);
       const [doc] = await Entity.create([{ ...r.data, slug, module_id: mod._id }], { session });
-      return { collection: 'Entity', id: doc!._id, audit: 'entity.created', extra: { titulo: r.data.titulo, slug } };
+      let marker: { id: string; titulo: string } | undefined;
+      if (mk?.success) {
+        const m = mk.data;
+        // El slug del pin (deep-link /mapa?pin=) es unico: si ya esta ocupado se omite (indice sparse).
+        const wanted = m.slug ?? slug;
+        const taken = await MapMarker.exists({ slug: wanted }).session(session);
+        const [pin] = await MapMarker.create(
+          [
+            {
+              entity_id: doc!._id,
+              ...(taken ? {} : { slug: wanted }),
+              region: m.region,
+              titulo: r.data.titulo,
+              descripcion: m.descripcion ?? null,
+              coord: { x: m.coord_x, y: m.coord_y },
+            },
+          ],
+          { session },
+        );
+        marker = { id: pin!._id, titulo: r.data.titulo };
+      }
+      return {
+        collection: 'Entity',
+        id: doc!._id,
+        audit: 'entity.created',
+        extra: { titulo: r.data.titulo, slug, ...(marker ? { markerId: marker.id } : {}) },
+        ...(marker ? { marker } : {}),
+      };
     };
   } else {
     const c = correctionPayloadSchema.safeParse(sub.payload);
@@ -172,6 +213,18 @@ export async function promote(submissionId: string, reviewer: Actor): Promise<Su
       { ...base, action: out.audit, target_type: out.collection, target_id: out.id, metadata: { submissionId: sub._id, ...out.extra } },
       session,
     );
+    if (out.marker) {
+      await writeAuditEntry(
+        {
+          ...base,
+          action: 'marker.created',
+          target_type: 'MapMarker',
+          target_id: out.marker.id,
+          metadata: { submissionId: sub._id, titulo: out.marker.titulo, entity_id: out.id },
+        },
+        session,
+      );
+    }
     return updated!;
   });
   clearSsrCache(); // la entidad/marcador promovido cambia el HTML inyectado y el sitemap
@@ -186,7 +239,8 @@ export async function createUserSubmission(
 ): Promise<SubmissionDoc> {
   const created = await Submission.create({ ...body, userId: user._id, status: 'pending', reviewedBy: null, promotedTo: null });
   const doc = created.toObject() as SubmissionDoc;
-  if (ROLE_RANK[user.rol] >= ROLE_RANK.MODERATOR) {
+  // Un marcador sin coordenadas espera a que el equipo ubique el pin: no se autopromueve.
+  if (ROLE_RANK[user.rol] >= ROLE_RANK.MODERATOR && !(doc.type === 'marker' && doc.coords === null)) {
     return promote(doc._id, { ...SYSTEM, ip: ip ?? null });
   }
   return doc;
@@ -198,21 +252,27 @@ export async function reviewSubmission(
   status: 'approved' | 'rejected',
   reviewer: { _id: string; rol: Role },
   ip?: string | null,
+  reviewNote?: string,
+  coords?: { x: number; y: number },
 ): Promise<SubmissionDoc> {
   const sub = await Submission.findById(id).lean<SubmissionDoc>();
-  if (!sub) throw new HttpError(404, 'Aporte no encontrado');
+  if (!sub) throw resourceNotFound('Aporte no encontrado');
   const actor: Actor = { id: reviewer._id, role: reviewer.rol, ip: ip ?? null };
 
   if (isFooterType(sub.type) && ROLE_RANK[reviewer.rol] < ROLE_RANK.ADMIN) {
     throw new HttpError(403, 'Permisos insuficientes');
   }
 
-  if (status === 'approved' && !isFooterType(sub.type)) return promote(id, actor);
+  if (status === 'approved' && !isFooterType(sub.type)) {
+    // El aporte publico de ubicacion llega sin coordenadas: quien aprueba las completa aqui.
+    if (coords && sub.type === 'marker' && !sub.promotedTo) await Submission.updateOne({ _id: id }, { $set: { coords } });
+    return promote(id, actor);
+  }
 
   if (status === 'rejected' && sub.promotedTo) throw new HttpError(409, 'Aporte ya promovido');
   const updated = await Submission.findByIdAndUpdate(
     id,
-    { $set: { status, reviewedBy: reviewer._id } },
+    { $set: { status, reviewedBy: reviewer._id, ...(status === 'rejected' && reviewNote ? { reviewNote } : {}) } },
     { returnDocument: 'after' },
   ).lean<SubmissionDoc>();
   await writeAuditEntry({
@@ -222,7 +282,7 @@ export async function reviewSubmission(
     action: `submission.${status}`,
     target_type: 'Submission',
     target_id: id,
-    metadata: { from: sub.status, to: status },
+    metadata: { from: sub.status, to: status, ...(status === 'rejected' && reviewNote ? { reviewNote } : {}) },
   });
   return updated!;
 }

@@ -1,20 +1,29 @@
 // P01 + P02 - Acceso `/entrar` (DesignSpec §7.3), réplica de Main.dc.html (escritorio) y
 // MobileHero.dc.html (móvil): conmutador Entrar / Explorar, 4 botones de acceso (pilar 1) y sesión
 // por cookie HttpOnly emitida por la API (pilar 2). Nunca se guardan tokens en el cliente.
+import { useQuery } from '@tanstack/react-query';
 import { useEffect, useId, useState, type FormEvent } from 'react';
 import { SunsetBanner, ViceShell, ViceWordmark } from '../components/layout/ViceShell';
 import { Modal } from '../components/ui/Modal';
 import { PalmButton } from '../components/ui/PalmButton';
-import { HERO_IMAGE, SEED_TIPS, usePublicConfig } from '../data/seed';
-import { isApiConfigured, useAuthStore, type OAuthProvider } from '../store/useAuthStore';
+import { HERO_IMAGE, TIPS, usePublicConfig } from '../data/seed';
+import { apiFetch, isApiConfigured, useAuthStore, type OAuthProvider } from '../store/useAuthStore';
 import { navigate } from '../store/useRouteStore';
 
 const INPUT =
   'min-h-11 w-full rounded-xl border border-white/15 bg-white/10 px-4 text-base text-vice-text placeholder:text-vice-text/50 focus-visible:outline-2 focus-visible:outline-vice-gold';
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold';
 
+/** Retorno seguro (misma regla que el servidor): ruta relativa que empieza por «/», sin «//», sin barra invertida, sin CR/LF. */
 const safeNext = (next: string | null): string =>
-  next && next.startsWith('/') && !next.startsWith('//') ? next : '/hub';
+  typeof next === 'string' &&
+  next.length <= 512 &&
+  next.startsWith('/') &&
+  !next.startsWith('//') &&
+  !next.includes('\\') &&
+  !/[\r\n]/.test(next)
+    ? next
+    : '/hub';
 
 // ---- Iconos de proveedor ------------------------------------------------------------
 const glyph = (d: string) => (
@@ -30,12 +39,34 @@ const GLYPHS = {
 } as const;
 
 type ProviderId = OAuthProvider | 'magic-link';
-const PROVIDERS: ReadonlyArray<{ id: ProviderId; label: string }> = [
-  { id: 'google', label: 'Continuar con Google' },
-  { id: 'discord', label: 'Continuar con Discord' },
-  { id: 'apple', label: 'Continuar con Apple' },
-  { id: 'magic-link', label: 'Correo / Magic Link' },
+const PROVIDERS: ReadonlyArray<{ id: ProviderId; label: string; soon: string }> = [
+  { id: 'google', label: 'Continuar con Google', soon: 'Google · Próximamente' },
+  { id: 'discord', label: 'Continuar con Discord', soon: 'Discord · Próximamente' },
+  { id: 'apple', label: 'Continuar con Apple', soon: 'Apple · Próximamente' },
+  { id: 'magic-link', label: 'Correo / Magic Link', soon: 'Correo · Próximamente' },
 ];
+
+interface ProvidersResponse {
+  providers: Array<{ id: string; enabled: boolean; configured: boolean }>;
+}
+
+/** Disponibilidad real de cada método (GET /api/auth/providers): un proveedor sin credenciales se muestra «Próximamente». */
+function useProviderAvailability() {
+  const q = useQuery({
+    queryKey: ['auth', 'providers'],
+    enabled: isApiConfigured,
+    staleTime: 60_000,
+    queryFn: () => apiFetch<ProvidersResponse>('/api/auth/providers', { cache: 'no-cache' }),
+  });
+  const configured = new Map((q.data?.providers ?? []).map((p) => [p.id, p.configured]));
+  return {
+    /** true: configurado; false: «Próximamente»; undefined: aún sin respuesta o sin conexión. */
+    isConfigured: (id: string): boolean | undefined => configured.get(id),
+    checking: isApiConfigured && q.isLoading,
+    failed: isApiConfigured && q.isError,
+    retry: () => void q.refetch(),
+  };
+}
 
 // ---- Magic Link (Modal) ------------------------------------------------------------------------
 function MagicLinkDialog({ open, onClose, next }: { open: boolean; onClose: () => void; next: string | null }) {
@@ -49,7 +80,7 @@ function MagicLinkDialog({ open, onClose, next }: { open: boolean; onClose: () =
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    if (!/^S+@S+.S+$/.test(email.trim())) return setError('Introduce un correo electrónico válido.');
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Introduce un correo electrónico válido.');
     setBusy(true);
     const res = await requestMagicLink(email.trim(), safeNext(next));
     setBusy(false);
@@ -123,7 +154,7 @@ function ModeSwitch({ mode, onChange }: { mode: Mode; onChange: (m: Mode) => voi
 /** Tarjeta flotante "Tip del día" sobre el artwork (solo escritorio). */
 function TipFloat() {
   const [i, setI] = useState(0);
-  const tips = SEED_TIPS.slice(0, 3);
+  const tips = TIPS.slice(0, 3);
   return (
     <section aria-label="Tip del día" className="glass relative w-[580px] max-w-full rounded-[20px] px-7 pb-3.5 pt-6">
       <span aria-hidden="true" className="pointer-events-none absolute -top-2 left-3 font-display text-[76px] font-bold leading-none text-[rgba(246,126,86,0.6)]">
@@ -159,6 +190,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
   const signInWithProvider = useAuthStore((s) => s.signInWithProvider);
   const continueAsGuest = useAuthStore((s) => s.continueAsGuest);
   const cfg = usePublicConfig();
+  const availability = useProviderAvailability();
 
   const [mode, setMode] = useState<Mode>('login');
   const [busy, setBusy] = useState<ProviderId | null>(null);
@@ -236,7 +268,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
                   <h1 id="acceso-title" className="font-display text-[26px] font-bold leading-tight md:text-[28px]">
                     Bienvenido a Leonida
                   </h1>
-                  <p className="mt-1 text-[13px] text-vice-text/85">Entra para sincronizar tu progreso en todos tus dispositivos.</p>
+                  <p className="mt-1 text-[13px] text-vice-text/85">Entra para guardar tu avance y verlo en todos tus dispositivos.</p>
                   <div className="mt-4 flex flex-col gap-3">
                     {providers.map((p) => (
                       <PalmButton
@@ -245,11 +277,11 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
                         fullWidth
                         className="min-h-12"
                         loading={busy === p.id}
-                        disabled={!online || busy !== null}
+                        disabled={!online || busy !== null || availability.isConfigured(p.id) !== true}
                         icon={GLYPHS[p.id]}
                         onClick={() => void onProvider(p.id)}
                       >
-                        {p.label}
+                        {availability.isConfigured(p.id) === false ? p.soon : p.label}
                       </PalmButton>
                     ))}
                     {providers.length === 0 && (
@@ -265,9 +297,17 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
                       </p>
                     )}
                   </div>
+                  {online && availability.failed && (
+                    <p role="status" className="mt-2 rounded-xl border border-vice-gold/40 bg-white/5 p-3 text-xs text-vice-text/90">
+                      No pudimos comprobar los métodos de acceso.{' '}
+                      <button type="button" onClick={availability.retry} className={`inline-flex min-h-11 items-center font-semibold text-vice-orange underline ${FOCUS}`}>
+                        Reintentar
+                      </button>
+                    </p>
+                  )}
                   {!online && (
                     <p className="mt-2 rounded-xl border border-vice-gold/40 bg-white/5 p-3 text-xs text-vice-text/90">
-                      Sin conexión con el servidor: el inicio de sesión no está disponible. Puedes explorar como invitado y tu progreso se guarda en este dispositivo.
+                      Sin conexión con el servidor: el inicio de sesión no está disponible. Puedes explorar como invitado y tu avance se guarda en este dispositivo.
                     </p>
                   )}
                 </>
@@ -276,7 +316,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
                   <h1 id="acceso-title" className="font-display text-[26px] font-bold leading-tight md:text-[28px]">
                     Explora Leonida
                   </h1>
-                  <p className="mt-1 text-[13px] text-vice-text/85">Entra sin cuenta. Tu progreso se guarda solo en este dispositivo.</p>
+                  <p className="mt-1 text-[13px] text-vice-text/85">Entra sin cuenta. Tu avance se guarda solo en este dispositivo.</p>
                   <ul className="my-4 flex flex-col gap-3 text-[13px] md:rounded-[20px] md:border md:border-[rgba(246,146,89,0.25)] md:bg-white/5 md:px-5 md:py-[18px]">
                     {PERKS.map((t) => (
                       <li key={t} className="flex items-center gap-3">

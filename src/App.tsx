@@ -7,34 +7,45 @@
 //   /                       Portada pública (HomePage)
 //   /entrar                 P01+P02  Acceso: OAuth2 PKCE + Magic Link (noindex)
 //   /hub, /progreso         P03      Dashboard (noindex)
-//   /mapa                   P04      Mapa de Leonida (?region= &marker=)
-//   /catalogo               P05      Inspector NUI (?comparar=a,b[,c] abre el comparador)
-//   /catalogo/:modulo/:slug P05      Ficha de entidad
+//   /mapa                   P04      Mapa de Leonida (?region= ?pin=<slug>; ?marker= y ?entity= heredados)
+//   /catalogo               P05      Entrada: replaceState a /catalogo/armas (?q= ?comparar= ?modulo= ?entity= heredados)
+//   /catalogo/:categoria    P05      Inspector NUI de una categoría (Module.slug activo; en minúsculas)
+//   /catalogo/mapa[/:slug]           replaceState a /mapa[?pin=<slug>] (el mapa no es una categoría del catálogo)
+//   /catalogo/:categoria/:itemSlug   Inspector con el ítem preseleccionado (?vista=ficha = ficha completa)
 //   /guias, /guias/:slug             Guías (editorial)
 //   /noticias, /noticias/:slug       Noticias oficiales
 //   /foro                   P07      Foro (?hilo= &entity= &marker=)
-//   /aportar                P06      Aportes, moderación (ADMIN), Control Total (SUPER_ADMIN) (noindex)
+//   /aportar                P06      Buzón de la comunidad (noindex)
 //   /aportes                         Redirige a /aportar
 // La guarda de UI es cosmética: el servidor decide (RBAC en hooks Fastify).
 // =============================================================================
-import { useEffect, useMemo, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, type ReactNode } from 'react';
 import { BottomDock, DOCK_ITEMS } from './components/layout/BottomDock';
 import { ViceShell } from './components/layout/ViceShell';
 import { PalmButton } from './components/ui/PalmButton';
 import { useModuleGate, useProgressSummary } from './data/seed';
-import AdminSubmitPage from './pages/AdminSubmitPage';
-import CatalogPage from './pages/CatalogPage';
-import DashboardPage from './pages/DashboardPage';
-import ForumPage from './pages/ForumPage';
-import GuidesPage from './pages/GuidesPage';
 import HomePage from './pages/HomePage';
-import LandingAuthPage from './pages/LandingAuthPage';
-import MapPage from './pages/MapPage';
-import NewsPage from './pages/NewsPage';
 import { isApiConfigured, useAuthStore } from './store/useAuthStore';
 import { installRouter, matchRoute, navigate, useLocation, usePageMeta, type PageMeta } from './store/useRouteStore';
 
 installRouter();
+
+// Code-splitting por ruta: solo la portada (HomePage) va en el bundle inicial.
+const AportarPage = lazy(() => import('./pages/AportarPage'));
+const CatalogPage = lazy(() => import('./pages/CatalogPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const ForumPage = lazy(() => import('./pages/ForumPage'));
+const GuidesPage = lazy(() => import('./pages/GuidesPage'));
+const LandingAuthPage = lazy(() => import('./pages/LandingAuthPage'));
+const MapPage = lazy(() => import('./pages/MapPage'));
+const NewsPage = lazy(() => import('./pages/NewsPage'));
+// Módulo privado: solo se importa tras confirmar el rol (ver App). Su chunk sale de /assets (ver vite.config.ts).
+const StaffPage = lazy(() => import('./pages/StaffPage'));
+
+/** Fallback de carga: bloque de altura fija y sin contenido (no reflota) para no provocar saltos (CLS = 0). */
+function PageFallback() {
+  return <div className="min-h-[100dvh] w-full" role="status" aria-label="Cargando" aria-busy="true" />;
+}
 
 type RouteId =
   | 'landing'
@@ -43,14 +54,14 @@ type RouteId =
   | 'progress'
   | 'map'
   | 'catalog'
-  | 'entity'
   | 'guides'
   | 'guide'
   | 'news'
   | 'newsItem'
   | 'forum'
   | 'contribute'
-  | 'legacyContribute';
+  | 'legacyContribute'
+  | 'staff';
 
 const ROUTES: ReadonlyArray<readonly [string, RouteId]> = [
   ['/', 'landing'],
@@ -58,8 +69,10 @@ const ROUTES: ReadonlyArray<readonly [string, RouteId]> = [
   ['/hub', 'hub'],
   ['/progreso', 'progress'],
   ['/mapa', 'map'],
+  // Las 3 formas comparten RouteId: la vista no se desmonta al cambiar de categoría o de ítem.
   ['/catalogo', 'catalog'],
-  ['/catalogo/:modulo/:slug', 'entity'],
+  ['/catalogo/:categoria', 'catalog'],
+  ['/catalogo/:categoria/:itemSlug', 'catalog'],
   ['/guias', 'guides'],
   ['/guias/:slug', 'guide'],
   ['/noticias', 'news'],
@@ -67,6 +80,7 @@ const ROUTES: ReadonlyArray<readonly [string, RouteId]> = [
   ['/foro', 'forum'],
   ['/aportar', 'contribute'],
   ['/aportes', 'legacyContribute'],
+  ['/_staff', 'staff'],
 ];
 
 const NOINDEX = 'noindex,nofollow' as const;
@@ -82,14 +96,10 @@ const STATIC_META: Partial<Record<RouteId, PageMeta>> = {
   },
   login: { title: 'Entrar', description: 'Accede a LeonidApp con Google, Discord, Apple o Magic Link.', robots: NOINDEX },
   hub: { title: 'Hub', robots: NOINDEX },
-  progress: { title: 'Mi progreso', robots: NOINDEX },
+  progress: { title: 'Mi avance', robots: NOINDEX },
   map: {
     title: 'Mapa de Leonida',
     description: 'Mapa táctico de Leonida con capas, filtros y pines de coleccionables, armas, vehículos y puntos de interés.',
-  },
-  catalog: {
-    title: 'Catálogo de Leonida',
-    description: 'Inspector del catálogo: armas, vehículos, coleccionables y guías de Leonida con estadísticas y comparador.',
   },
   forum: {
     title: 'Foro de la comunidad',
@@ -103,7 +113,6 @@ const DOCK_ACTIVE: Partial<Record<RouteId, string>> = {
   hub: 'hub',
   map: 'map',
   catalog: 'catalog',
-  entity: 'catalog',
   forum: 'forum',
   contribute: 'contribute',
 };
@@ -125,7 +134,7 @@ function useDock() {
 
 // ---- Cabecera: enlaces editoriales, progreso y sesión --------------------------------------
 const HEADER_PILL =
-  'glass flex min-h-11 items-center rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold';
+  'glass flex min-h-11 items-center rounded-full px-3 text-sm min-[400px]:px-4 font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold';
 
 function HeaderEnd() {
   const status = useAuthStore((s) => s.status);
@@ -153,10 +162,11 @@ function HeaderEnd() {
       </nav>
       <a
         href="/progreso"
-        className={`${HEADER_PILL} font-display text-vice-orange`}
-        aria-label={`Progreso total ${summary.percent}%. Abrir mi avance`}
+        className={`${HEADER_PILL} gap-2`}
+        aria-label={`Mi avance: ${summary.percent}%. Abrir mi avance`}
       >
-        {summary.percent}%
+        <span className="hidden text-xs font-medium text-vice-text/85 min-[400px]:inline">Mi avance</span>
+        <span className="font-display text-vice-orange">{summary.percent}%</span>
       </a>
       {authenticated ? (
         <button
@@ -165,8 +175,12 @@ function HeaderEnd() {
           className={`${HEADER_PILL} gap-2`}
           aria-label="Cerrar sesión"
         >
-          <span className="max-w-[9ch] truncate">{profile?.username ?? user?.email?.split('@')[0] ?? 'Cuenta'}</span>
-          <span className="hidden text-vice-orange sm:inline">Salir</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 text-vice-orange">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7" />
+          </svg>
+          <span className="hidden max-w-[9ch] truncate md:inline">{profile?.username ?? user?.email?.split('@')[0] ?? 'Cuenta'}</span>
+          <span className="text-vice-orange">Salir</span>
         </button>
       ) : (
         <a href="/entrar" className={HEADER_PILL}>
@@ -214,7 +228,7 @@ function RequireAccount({ next, children }: { next: string; children: ReactNode 
   );
 }
 
-const LOCKED: ReadonlySet<RouteId> = new Set<RouteId>(['map', 'catalog', 'forum']);
+const LOCKED: ReadonlySet<RouteId> = new Set<RouteId>(['map', 'catalog']);
 
 function Unavailable({ title, text }: { title: string; text: string }) {
   usePageMeta({ title, robots: NOINDEX });
@@ -243,13 +257,14 @@ export default function App() {
   const dock = useDock();
 
   const match = matchRoute(ROUTES, path);
-  const route: RouteId | 'notfound' = match?.id ?? 'notfound';
+  const ready = useAuthStore((s) => s.ready);
+  const staffConfirmed = useAuthStore((s) => s.status === 'authenticated' && s.isStaff());
+  let route: RouteId | 'notfound' = match?.id ?? 'notfound';
+  // Ruta reservada: sin rol confirmado es indistinguible de una ruta inexistente (vista 404 estándar).
+  if (route === 'staff' && ready && !staffConfirmed) route = 'notfound';
 
-  // Metadatos por ruta (guías, noticias y fichas los gestionan ellas mismas).
-  const comparing = route === 'catalog' && params.has('comparar');
-  const baseMeta = route === 'notfound' ? null : (STATIC_META[route] ?? null);
-  const meta: PageMeta | null =
-    comparing && baseMeta ? { ...baseMeta, robots: NOINDEX, canonicalPath: '/catalogo' } : baseMeta;
+  // Metadatos por ruta (guías, noticias y catálogo los gestionan ellas mismas).
+  const meta: PageMeta | null = route === 'notfound' ? null : (STATIC_META[route] ?? null);
   usePageMeta(meta);
 
   // Redirección de cliente (replaceState): /aportes -> /aportar.
@@ -258,9 +273,18 @@ export default function App() {
   }, [route]);
 
   if (route === 'legacyContribute') return null;
-  if (route === 'login') return <LandingAuthPage next={params.get('next')} />;
+  // Antes de resolver la sesión: lienzo neutro, sin texto ni panel (evita parpadeos).
+  if (route === 'staff' && !ready) return <div className="min-h-[100dvh] w-full" aria-hidden="true" />;
+  if (route === 'login') {
+    return (
+      <Suspense fallback={<PageFallback />}>
+        <LandingAuthPage next={params.get('next')} />
+      </Suspense>
+    );
+  }
 
-  const modulo = match?.params.modulo ?? '';
+  const categoria = match?.params.categoria;
+  const itemSlug = match?.params.itemSlug;
   const slug = match?.params.slug ?? '';
 
   let page: ReactNode;
@@ -284,17 +308,12 @@ export default function App() {
       page = isActive('mapa') ? <MapPage params={params} /> : <Unavailable title="Mapa no disponible" text={MODULE_OFF} />;
       break;
     case 'catalog':
-      page = catalogActive ? (
-        <CatalogPage params={params} />
-      ) : (
+      page = !catalogActive ? (
         <Unavailable title="Catálogo no disponible" text={MODULE_OFF} />
-      );
-      break;
-    case 'entity':
-      page = isActive(modulo) ? (
-        <CatalogPage params={params} detail={{ modulo, slug }} />
-      ) : (
+      ) : categoria && !isActive(categoria) ? (
         <Unavailable title="Módulo no disponible" text={MODULE_OFF} />
+      ) : (
+        <CatalogPage params={params} categoria={categoria} itemSlug={itemSlug} />
       );
       break;
     case 'guides':
@@ -318,26 +337,33 @@ export default function App() {
     case 'contribute':
       page = (
         <RequireAccount next="/aportar">
-          <AdminSubmitPage />
+          <AportarPage />
         </RequireAccount>
       );
+      break;
+    case 'staff':
+      page = <StaffPage />;
       break;
     default:
       page = <Unavailable title="Página no encontrada" text="La ruta que buscas no existe en LeonidApp." />;
   }
 
   const activeId = route === 'notfound' ? undefined : DOCK_ACTIVE[route];
-  const locked = route !== 'notfound' && LOCKED.has(route);
+  // La ficha completa (?vista=ficha) es una página con scroll; el Inspector es un HUD de altura fija.
+  const fichaView = route === 'catalog' && itemSlug !== undefined && params.get('vista') === 'ficha';
+  const locked = route !== 'notfound' && LOCKED.has(route) && !fichaView;
+  // Catálogo: HUD fijo en escritorio y página con scroll natural en móvil (sin footer en ningún caso).
+  const lockMode: boolean | 'md' = route === 'catalog' && locked ? 'md' : locked;
 
   return (
     <ViceShell
       showHeader
-      lockScroll={locked}
-      footer={!locked}
+      lockScroll={lockMode}
+      footer={lockMode === false}
       headerEnd={<HeaderEnd />}
       dock={<BottomDock activeId={activeId} items={dock} />}
     >
-      {page}
+      <Suspense fallback={<PageFallback />}>{page}</Suspense>
     </ViceShell>
   );
 }

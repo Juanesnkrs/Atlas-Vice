@@ -51,9 +51,15 @@ export const isApiConfigured = API_URL !== '';
 
 export class ApiError extends Error {
   readonly status: number;
-  constructor(status: number, message: string) {
+  /** Detalle de validación del servidor (árbol de Zod), si lo hay. */
+  readonly details: unknown;
+  /** Código de negocio opcional del servidor (distingue un 404 de recurso del 404 uniforme de ruta). */
+  readonly code: string | undefined;
+  constructor(status: number, message: string, details?: unknown, code?: string) {
     super(message);
     this.status = status;
+    this.details = details;
+    this.code = code;
   }
 }
 
@@ -75,7 +81,7 @@ export async function apiFetch<T>(path: string, init: RequestInit & { json?: unk
   const data: unknown = await res.json().catch(() => null);
   if (!res.ok) {
     const msg = (data as { error?: string } | null)?.error ?? `Error ${res.status}`;
-    throw new ApiError(res.status, msg);
+    throw new ApiError(res.status, msg, (data as { details?: unknown } | null)?.details, (data as { code?: string } | null)?.code);
   }
   return data as T;
 }
@@ -84,9 +90,8 @@ export async function apiFetch<T>(path: string, init: RequestInit & { json?: unk
 export type AuthStatus = 'idle' | 'loading' | 'guest' | 'authenticated';
 export type AuthProviderKind = 'guest' | 'google' | 'discord' | 'apple' | 'magic-link';
 export type OAuthProvider = 'google' | 'discord' | 'apple';
-export type Role = 'USER' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN';
-
-const ROLE_RANK: Record<Role, number> = { USER: 0, MODERATOR: 1, ADMIN: 2, SUPER_ADMIN: 3 };
+/** Rol tal como lo emite el servidor. El cliente público no enumera roles internos: solo distingue 'USER' del resto. */
+export type Role = string;
 
 export interface SessionUser {
   id: string;
@@ -112,10 +117,12 @@ interface AuthState {
   status: AuthStatus;
   provider: AuthProviderKind | null;
   user: SessionUser | null;
-  /** Perfil con la forma del DER (`rol` colapsado a USER | ADMIN para la UI existente). */
+  /** Perfil con la forma del DER (el cliente público no expone el rol en `profile`). */
   profile: Profile | null;
-  /** Rol real del servidor (USER | MODERATOR | ADMIN | SUPER_ADMIN). Solo informativo: el servidor decide. */
+  /** Rol emitido por el servidor. Solo informativo: el servidor decide. */
   role: Role | null;
+  /** `true` cuando la comprobación de sesión terminó (distingue «sin comprobar» de «sin sesión»). */
+  ready: boolean;
   /** Elección persistida de "Continuar como Invitado" (RF-01 / HU-01). */
   guestMode: boolean;
   error: string | null;
@@ -137,8 +144,10 @@ interface AuthState {
   resetPassword: (email: string) => Promise<AuthResult>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
-  isAdmin: () => boolean;
-  hasRole: (min: Role) => boolean;
+  /** Cuenta con un rol por encima de USER (cosmético: el servidor decide). Sin literales de roles internos. */
+  isStaff: () => boolean;
+  /** El servidor negó un recurso reservado: se descarta el rol elevado local. */
+  dropElevatedRole: () => void;
 }
 
 const idbStorage: StateStorage = {
@@ -156,7 +165,7 @@ const toProfile = (u: ApiUser): Profile => ({
   username: u.username,
   avatar_url: u.avatar_url,
   discord_id: u.discord_id,
-  rol: ROLE_RANK[u.rol] >= ROLE_RANK.ADMIN ? 'ADMIN' : 'USER',
+  rol: 'USER',
   created_at: u.created_at ?? new Date(0).toISOString(),
 });
 
@@ -175,10 +184,18 @@ export const useAuthStore = create<AuthState>()(
             status: 'authenticated',
             guestMode: false,
             error: null,
+            ready: true,
           });
         } else {
           const guest = get().guestMode;
-          set({ user: null, profile: null, role: null, provider: guest ? 'guest' : null, status: guest ? 'guest' : 'idle' });
+          set({
+            user: null,
+            profile: null,
+            role: null,
+            provider: guest ? 'guest' : null,
+            status: guest ? 'guest' : 'idle',
+            ready: true,
+          });
         }
       };
 
@@ -203,6 +220,7 @@ export const useAuthStore = create<AuthState>()(
         user: null,
         profile: null,
         role: null,
+        ready: false,
         guestMode: false,
         error: null,
 
@@ -287,10 +305,12 @@ export const useAuthStore = create<AuthState>()(
           }
         },
 
-        isAdmin: () => get().hasRole('ADMIN'),
-        hasRole: (min) => {
+        isStaff: () => {
           const r = get().role;
-          return r !== null && ROLE_RANK[r] >= ROLE_RANK[min];
+          return r !== null && r !== 'USER';
+        },
+        dropElevatedRole: () => {
+          if (get().role !== null) set({ role: 'USER' });
         },
       };
     },

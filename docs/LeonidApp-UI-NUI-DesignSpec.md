@@ -57,7 +57,7 @@ Definidos como variables CSS en `src/styles/vice-nui.css` y expuestos en `tailwi
 
 | Plataforma | Regla |
 | --- | --- |
-| Escritorio | HUD flotante `100vw × 100vh` **sin scroll vertical** en Mapa (P04) e Inspector (P05). Páginas editoriales (`/`, `/hub`, `/guias`, `/noticias`, fichas, `/aportar`) sí hacen scroll y terminan en el Footer. |
+| Escritorio | HUD flotante `100vw × 100vh` **sin scroll vertical** en Mapa (P04) e Inspector (P05). Páginas editoriales (`/`, `/hub`, `/guias`, `/noticias`, `/foro`, fichas, `/aportar`) sí hacen scroll y terminan en el Footer. |
 | Escritorio y móvil | `BottomDock` **idéntico en todas las plataformas**, 5 ítems en este orden: `Hub` (`/hub`), `Mapa` (`/mapa`), `Catálogo` (`/catalogo`), `Foro` (`/foro`), `Aportar` (`/aportar`). En escritorio es la píldora flotante centrada de `Map.dc.html`; en móvil, la barra de `Mobile.dc.html`. El Progreso se abre desde el botón de % de la cabecera (`/progreso`). Paneles secundarios en móvil como `BottomSheet` deslizables. |
 | Táctil | Área mínima `44 × 44px`; `env(safe-area-inset-*)` en Dock, Sheets y cabeceras. |
 
@@ -74,6 +74,7 @@ Definidos como variables CSS en `src/styles/vice-nui.css` y expuestos en `tailwi
 | `TipCard` | `src/components/ui/TipCard.tsx` | Tarjeta HUD |
 | `StatBar` | `src/components/ui/StatBar.tsx` | Barra de estadística (catálogo y comparador) |
 | `BottomSheet` | `src/components/ui/BottomSheet.tsx` | Hoja deslizable con foco atrapado y cierre por gesto/Esc |
+| `EntityDetailPanel` | `src/components/ui/EntityDetailPanel.tsx` | Detalle único de un ítem del catálogo (badge, nombre, descripción, marcar, ubicación en el mapa, Ver ficha / Comparar / Discutir); lo usan el panel derecho de tablet/escritorio y el `BottomSheet` móvil de `/catalogo/:categoria/:itemSlug` |
 | `AdSlot` | `src/components/ui/AdSlot.tsx` | Reglas en `LeonidApp-Rutas-SEO-Monetizacion.md` §6 |
 | `Modal` | `src/components/ui/Modal.tsx` | Diálogo único de la app: `createPortal` a `document.body`, capa `.z-dialog` (por encima del dock y de las hojas), `role="dialog"`, `aria-modal`, `aria-labelledby`, foco atrapado, Esc y clic en el fondo para cerrar, foco devuelto al disparador. En móvil (< 768px) se presenta como `BottomSheet`. Toda ventana modal (muro de registro, Magic Link, modales del Footer) usa este componente; prohibidos los `fixed inset-0` propios en páginas. |
 
@@ -132,14 +133,18 @@ src/
 ├── main.tsx
 ├── components/
 │   ├── layout/        ViceShell.tsx · BottomDock.tsx · Footer.tsx (RockstarFooter)
-│   └── ui/            PalmButton.tsx · TipCard.tsx · StatBar.tsx · BottomSheet.tsx · AdSlot.tsx · Modal.tsx
-├── data/              seed.ts (capa offline-first y fallback)
+│   └── ui/            PalmButton.tsx · TipCard.tsx · StatBar.tsx · BottomSheet.tsx · EntityDetailPanel.tsx · AdSlot.tsx · Modal.tsx
+│                      MapCanvas.tsx (motor del mapa: pan/zoom/inercia/clustering sobre SVG + rAF) · mapPaint.ts (pintor <canvas> de la pirámide de teselas del referente)
+│                      HeroCarousel.tsx (carrusel del Hero, §7.12) · StaffHero.tsx + StaffHeroImage.tsx (módulo «Portada (Hero)» del panel oculto: gestor y subida de imagen)
+├── data/              seed.ts (capa offline-first y fallback) · leonidaMap.ts (marco de coordenadas, `MARKER_SPOTS` y metadatos de las teselas)
 ├── pages/             HomePage.tsx · LandingAuthPage.tsx · DashboardPage.tsx · MapPage.tsx · CatalogPage.tsx
 │                      ForumPage.tsx · AdminSubmitPage.tsx · GuidesPage.tsx · NewsPage.tsx
 ├── store/             useAuthStore.ts · useProgressStore.ts · useRouteStore.ts (router History API)
 ├── styles/            vice-nui.css
 └── types/             database.ts
 ```
+
+Los módulos de administración (panel oculto `/_staff`: moderación, Control Total, gestión de identidades, editor de pines y panel de catálogo) viven como **archivos** dentro de `src/pages/` y `src/components/ui/`, sin carpetas nuevas; su código se separa solo en el build (chunks en `/_staff/assets/`) y nunca se enlaza desde la UI pública, el dock, el footer ni el Hub.
 
 `HomePage.tsx` (portada `/`), `GuidesPage.tsx` (`/guias`, `/guias/:slug`) y `NewsPage.tsx` (`/noticias`, `/noticias/:slug`) son las únicas páginas nuevas aprobadas; `useRouteStore.ts` es el único store nuevo aprobado. Ninguna otra subcarpeta en `src/`.
 
@@ -152,11 +157,11 @@ server/src/
 ├── config/     db.ts · env.ts
 ├── models/     common.ts · index.ts · User.ts · AppConfig.ts · Module.ts · Entity.ts · MapMarker.ts
 │               UserProgress.ts · OfficialNews.ts · Submission.ts · ForumThread.ts · ForumPost.ts
-│               ForumVote.ts · AuditLog.ts
+│               ForumVote.ts · AuditLog.ts · MediaAsset.ts
 ├── routes/     auth.ts · catalog.ts · config.ts · forum.ts · news.ts · progress.ts · seo.ts
-│               submissions.ts · contact.ts
+│               submissions.ts · contact.ts · hero.ts (GET /api/hero, GET/PUT /api/admin/hero) · media.ts (POST /api/admin/media, GET /media/:id)
 ├── plugins/    auth.ts
-├── services/   audit.ts · mailer.ts · oauth.ts · session.ts · users.ts · validate.ts · submissions.ts · ssrLite.ts
+├── services/   imageProbe.ts (firma y dimensiones WebP/JPEG sin librerías) · audit.ts · mailer.ts · oauth.ts · session.ts · users.ts · validate.ts · submissions.ts · ssrLite.ts
 ├── workers/    officialNewsWorker.ts · sources.ts
 └── scripts/    seed.ts · seedData.json
 ```
@@ -165,7 +170,7 @@ server/src/
 
 ### 6.3 Fuera del árbol, válidos
 
-`server/` (raíz del backend), `supabase/` (legado, no se amplía), `android/`, `ios/`, `public/` (assets, `robots.txt`), `docs/`, `graphify-out/`, `.claude/skills/graphify/`.
+`server/` (raíz del backend), `supabase/` (legado, no se amplía), `android/`, `ios/`, `public/` (assets y `map-tiles/`; el `robots.txt` es dinámico y lo emite Fastify con solo `Disallow: /api/`), `docs/`, `graphify-out/`, `.claude/skills/graphify/`.
 
 ---
 
@@ -180,7 +185,9 @@ Objetivo: una app **al punto y al grano**, con la identidad Vice Sunset NUI. El 
   - Derecha en escritorio: enlaces de texto `Guías` y `Noticias`.
   - Derecha en escritorio y móvil: botón de progreso (`NN%`, enlaza a `/progreso`) y `Entrar` (sin sesión) o el nombre del usuario (con sesión).
   - Se elimina la etiqueta "Local" y cualquier jerga técnica visible.
-- **BottomDock:** idéntico en escritorio y móvil (§3), con Hub, Mapa, Catálogo, Foro y Aportar.
+- **BottomDock:** idéntico en escritorio y móvil (§3), con Hub, Mapa, Catálogo, Foro y Aportar (5 ítems). No contiene accesos a administración. El footer enlaza «Aportar» (no «Aportes y moderación»). `/aportar` es un buzón comunitario público sin menciones a moderación, roles ni administración.
+- **Hub:** la tarjeta «Rutas sugeridas» se oculta mientras no existan rutas reales. **`/entrar`:** máximo 4 botones; los proveedores con `configured:false` se ocultan o muestran «Próximamente».
+- **Fallo de API:** estado de error honesto con botón de reintento; no se muestran datos de ejemplo inventados.
 - **Footer:** un único `RockstarFooter`, solo al final de las páginas con scroll.
   - Se elimina la franja compacta "© LeonidApp ▲" de las pantallas HUD (Mapa, Inspector, Foro en escritorio).
   - El Footer nunca queda debajo del dock ni apilado con él: el contenido reserva al final el alto del dock más `env(safe-area-inset-bottom)`.
@@ -197,6 +204,7 @@ En este orden:
    - Kicker corto y H1 de 8 palabras como máximo.
    - Una sola línea de descripción.
    - CTA primario `PalmButton` "Abrir el mapa" (`/mapa`) y secundario "Crear cuenta gratis" (`/entrar`).
+   - Desde el 2026-11-21 el Hero es un **carrusel editable** (§7.12): lo anterior es la diapositiva por defecto.
 2. **"Explora Leonida":** rejilla de tarjetas con imagen, título y contador real, y la tarjeta entera como enlace. 3–4 columnas en escritorio y 2 en móvil.
    - Tarjetas: Mapa interactivo, Armas, Vehículos, Coleccionables, Guías, Noticias oficiales.
    - Imágenes: las de `docs/referencias-ui/design/assets/` o `public/assets/`, siempre con `alt` descriptivo.
@@ -248,3 +256,89 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
   - `GET /api/forum` sin sesión devuelve únicamente `threads` en formato *preview*: `id`, `titulo`, `categoria`, `is_pinned`, `is_spoiler`, `upvotes_count`, `replies_count`, autor público y `created_at`. Sin `contenido` ni `posts`, máximo 50 hilos, más recientes primero, e ignorando parámetros de filtro o búsqueda.
   - Con sesión devuelve la respuesta completa actual.
 - **SSR-lite de `/foro`:** sin contenido de hilos en meta ni JSON-LD.
+- **Móvil con sesión (claridad para personas nuevas):** al abrir un hilo se oculta la cabecera del foro (título y categorías) para dar todo el alto al hilo; el botón de volver dice «Volver a los hilos»; el envío dice «Publicar respuesta» (a ancho completo) y el botón «Discord oficial» solo se muestra en escritorio. Las tarjetas muestran el voto con la etiqueta «votos» y un extracto de dos líneas del contenido (salvo spoilers); la fila de categorías se atenúa en el borde para indicar que desliza; el formulario de hilo lleva textos de ayuda y las respuestas vacías muestran un aviso explícito.
+
+### 7.6 Aportar (`/aportar`)
+
+- **Introducción** de tres líneas: qué se puede compartir (lugares, fichas nuevas, correcciones), que el equipo revisa cada aporte y que, si procede, se publica, y dónde ver el estado («Mis aportes»). Sin mencionar moderación interna, roles ni administración.
+- **Campos según el tipo elegido** («Un lugar del mapa», «Una ficha nueva», «Corregir un dato»). Un lugar pide nombre, zona o región, descripción e imagen opcional: **no** pide coordenadas; el aporte se guarda con `coords: null` y el equipo ubica el pin al aprobarlo (contrato en Arquitectura §2.8 y §5). La ficha nueva añade sección y categoría; la corrección, el dato a corregir.
+- **Tras enviar** se sustituye el formulario por una confirmación («¡Aporte enviado!…») con el botón «Enviar otro aporte».
+- **Margen inferior** `pb-[calc(7rem+env(safe-area-inset-bottom))]`: el dock no tapa el formulario ni el botón de envío.
+
+### 7.7 Hub (`/hub`)
+
+- Arriba, antes de las estadísticas, tres accesos para empezar: «Explorar el mapa» (`/mapa`), «Abrir guías» (`/guias`) y «Ver hilos recientes» (`/foro`), respetando los módulos activos.
+- Estado de guardado: «Todo guardado · hace 2 min» (hora relativa). «Reintentar» aparece solo si hay un error real de guardado.
+- Las barras de categorías sin elementos (total 0) no se muestran. El resumen distingue «X de Y lugares del mapa completados» y «X de Y fichas del catálogo (armas, vehículos…)», con datos reales de la API; las guías no suman al porcentaje y así se indica.
+
+### 7.8 Noticias (`/noticias`)
+
+- El resumen se muestra sin el encabezado de agencia (p. ej. `NEW YORK --(BUSINESS WIRE)--Jun. 24, 2026--`); es solo de presentación, los datos en MongoDB no cambian.
+- Etiqueta discreta «Fuente en inglés» cuando el texto es claramente inglés (heurística de palabras frecuentes; ante la duda no se muestra).
+- Con menos de 3 noticias aparece un aviso amable con enlace a las Guías. El contenedor mantiene su alto mínimo (CLS < 0.05).
+
+### 7.9 Catálogo (`/catalogo`)
+
+- **Móvil (< 768 px):** rejilla de **2 columnas** amplias (nombres de hasta 2 líneas legibles) y **scroll natural de la página** (sin doble scroll encerrado). `ViceShell` admite `lockScroll="md"`: página con scroll en móvil y HUD `100vw × 100vh` sin scroll vertical desde `md`. El Catálogo sigue **sin footer** (el contenido reserva el alto del dock).
+- Sin imagen ni silueta propia, la ficha muestra un **icono SVG limpio de su categoría** (arma, vehículo, coleccionable o ficha genérica) en lugar del degradado de atardecer repetido.
+- **Filtros:** en móvil los chips de subcategoría se pliegan tras un botón «Filtros» con indicador del filtro activo; en escritorio siguen visibles.
+- El título del encabezado coincide con la pestaña activa («Armas», «Vehículos», «Coleccionables»).
+- Una categoría sin fichas aparece como «Coleccionables · Próximamente» (pestaña no navegable) y, si se abre por URL, muestra un estado «Próximamente» sin error.
+
+### 7.10 Mapa (`/mapa`) y Guías (`/guias`)
+
+- **Mapa:** junto a «N/M lugares completados» hay un botón «?» con la ayuda: qué es completar un lugar (se marca desde su ficha y cuenta para «Mi avance») y la **leyenda de colores** de las capas con puntos (los colores reales de `MAP_LAYERS`).
+- El botón «Modo editor» (solo staff autenticado) queda separado de los botones públicos de zoom (margen y anillo propio).
+- **Guías:** introducción directa: «Sigue cada guía paso a paso y marca lo que ya hiciste. Tu avance se guarda solo.»
+
+### 7.11 Transversal: cabecera, espaciado y vocabulario
+
+- **Cabecera:** etiqueta «Mi avance» junto al porcentaje y botón de cuenta con **icono de perfil** y «Salir» (el nombre solo desde `md`); áreas táctiles ≥ 44 px. **Pantallas estrechas:** por debajo de 400 px la etiqueta «Mi avance» se oculta (queda solo el porcentaje) y las píldoras reducen su relleno, para que la cabecera quepa en teléfonos de 320-360 px sin ensanchar la página. **Tableta vertical (768 px):** el foro usa una lista de 280-360 px y el panel del hilo ocupa el resto (desde `lg` vuelve a 340-500 px); las pestañas de categoría de Foro y Catálogo se atenúan en el borde derecho en móvil para indicar que deslizan, y en móvil «Próximamente» se abrevia a «Pronto» en la pestaña. El control de capas del mapa (móvil) pasa a varias filas si no cabe. **Pulidos de tableta:** el Catálogo usa lista de 2 columnas más detalle entre 768 y 1279 px (el visor con zoom aparece desde 1280 px, donde sí cabe) y 3 columnas de tarjetas desde 1024 px; el panel de detalle no pinta el cuadro de metadatos si la ficha no tiene valores. En el Mapa, «Capas y filtros» arranca colapsado por debajo de 1024 px (con el contador «lugares completados» y la ayuda en la misma fila). En Noticias el alto mínimo reservado es de 26 rem (antes 70 % del alto de pantalla): mantiene el CLS en ≈ 0 sin dejar una franja vacía. **Subcategorías del Catálogo en escritorio y tableta (≥ 768 px):** una sola fila que se recorre de forma evidente: flechas «‹ ›» a los lados (solo aparecen si hay más categorías en esa dirección y avanzan ~70 % de la fila), borde difuminado en el lado con más contenido, arrastre con el ratón (cursor de mano; un arrastre no selecciona ningún chip), la rueda del ratón recorre la fila y el chip activo se desplaza a la vista al elegirlo. Si todas caben (p. ej. Armas) no hay flechas ni difuminado. En móvil se mantiene el botón «Filtros» y el deslizamiento táctil nativo.
+- **Espaciado inferior:** las vistas con scroll usan `pb-[calc(7rem+env(safe-area-inset-bottom))]` (o el espaciador del shell) para que el dock nunca tape botones ni enlaces.
+- **Glosario público** (una palabra por concepto; no cambia rutas, claves de API ni campos):
+
+| Concepto | Palabra en la interfaz | Evitar |
+| --- | --- | --- |
+| Punto del mapa | lugar | marcador, pin, entidad |
+| Entrada del catálogo | ficha | elemento, ítem |
+| Lo que envía la comunidad | aporte (sección «Aportar») | buzón, tablón, sugerencia |
+| Avance del jugador | avance («Mi avance») | progreso |
+| Guardar en la cuenta | «Todo guardado» / guardar | sincronizar, sincronización |
+| Categoría del catálogo | categoría | módulo (en textos visibles) |
+| Cada pantalla del carrusel del Hero | diapositiva | slide, banner |
+| Pantalla de inicio pública | portada (Hero) | home, landing |
+
+### 7.12 Carrusel del Hero de la portada y su módulo en el panel (2026-11-21)
+
+**Público (`HeroCarousel.tsx`, en `HomePage.tsx`).** Misma estructura del Hero actual: texto informativo y descriptivo a la izquierda (kicker, H1, descripción, botón primario y el secundario (el «Crear cuenta gratis» de la diapositiva por defecto es solo para invitados; el botón secundario que el equipo configura en una diapositiva propia lo ve todo el mundo)), imagen a la derecha y, en móvil, texto arriba e imagen abajo como hoy.
+- Datos: `GET /api/hero` (diapositivas activas ordenadas). Sin diapositivas activas, o mientras llegan los datos, se muestra la **diapositiva por defecto** (contenido actual y `public/assets/hero-gas-station.jpg`) sin parpadeo ni salto de layout.
+- Con una sola diapositiva no hay controles. Con varias: avance automático cada ~4 s que se **pausa** con hover, foco o toque y se desactiva con `prefers-reduced-motion`; botones anterior/siguiente (≥ 44 px), indicadores (puntos) con etiqueta, deslizamiento táctil y flechas de teclado; transición de opacidad suave. **Móvil (< 768 px), diseño «imagen primero»:** la imagen va arriba (16:9 para las diapositivas del equipo; la imagen por defecto, vertical, se encuadra a 16:10 con las caras a la vista y sin su rótulo) con un fundido vertical hacia el texto; debajo, kicker, título (28 px), descripción (máx. 4 líneas) y los botones en una sola fila (dos columnas si caben, apilados si no; etiquetas centradas en una línea). Los puntos indicadores quedan arriba a la derecha sobre la imagen, sin las flechas (en táctil se desliza y los puntos bastan; las flechas siguen en ≥ 768 px). Tableta y escritorio mantienen texto a la izquierda e imagen a la derecha.
+- Accesibilidad: `role="region"`, `aria-roledescription="carrusel"`, nombre accesible, `aria-live="polite"` solo cuando la persona navega (no en el avance automático).
+- **CLS = 0:** imagen en contenedor 16:9 fijo y alto de texto reservado; la primera imagen con `fetchpriority="high"` y sin lazy, las demás `loading="lazy"`; `decoding="async"`; si una imagen falla (`onError`) se vuelve a la diapositiva por defecto.
+
+**Panel (`/_staff` → Contenido público → «Portada (Hero)», ADMIN+, chunk `staff-panel`).** Sigue el patrón de los demás gestores (lista, formulario modal con borrador, confirmación de borrado escribiendo un identificador corto, avisos, `pb-28`/safe-area, bloque «Qué controla en la app pública» y enlace a `/`).
+- Lista con miniatura, título, estado (Activa/Pausada), subir/bajar, editar y borrar; «Añadir diapositiva» (máx. 6; mínimo 1 activa, o el Hero vuelve a la diapositiva por defecto) y vista previa del Hero tal como se verá.
+- Formulario: kicker (≤ 60), título (≤ 90), descripción (≤ 220), texto y enlace del botón (≤ 30; ruta interna `/…` o `https://…`), botón secundario opcional, imagen y texto alternativo (≤ 140, obligatorio).
+- **Imagen:** tamaño estándar visible y exigido **1600 × 900 px (16:9), WebP o JPG, ≤ 400 KB**. Subida hecha en el navegador sin librerías: `<input type="file" accept="image/*">` → `<canvas>` → recorte centrado «cover» a 1600×900 → `toBlob('image/webp')` con calidad descendente hasta ≤ 400 KB (JPEG si no hay WebP) → vista previa con guía de encuadre → envío binario a `POST /api/admin/media` al guardar. Se rechaza lo que no es imagen, pesa > 15 MB de origen o mide menos de 800×450 («La imagen es demasiado pequeña»); si no es 16:9 se avisa de que se recortará. Alternativa: pegar un enlace `https://…` (con vista previa y aviso de usar solo imágenes propias o con licencia; no se re-procesa ni se valida su tamaño).
+
+### 6.4 Mapa interactivo (P04) — teselas del referente + capa interactiva SVG
+
+- **Base cartográfica:** el área cartográfica (sin la columna derecha de leyenda, créditos, frames ni interiores) del mapa comunitario de Leonida (`public/ref Leonida map/The final version of Commnunity map.jpeg`, recorte 6600 × 9300 px en `x=500, y=650`) con **sus colores y textos originales, sin recolorear ni retocar**, publicado como **pirámide de teselas WebP** en `public/map-tiles/{z}/{x}/{y}.webp` (512 px, `z=0..4`, `z=4` = resolución nativa 1:1, WebP calidad 86, ~7,6 MB en total y solo se descargan las visibles) con `manifest.json`. El relleno fuera del recorte y el fondo del lienzo usan el océano del referente (`WATER = #2C68A6`). La app **no** dibuja rótulos propios encima. La versión de la pirámide es `manifest.json` → `v`; las teselas se piden como `?v=<v>` y `sw.js` descarta las de otra versión. Es obra derivada de un mapa de terceros, autorizada por el propietario (ver `CLAUDE.md` §2) (por decisión del propietario la app no muestra texto de atribución sobre el mapa). El original sigue en `.gitignore` y fuera de `dist/`.
+- **Proyección:** las teselas cubren el rectángulo del mundo `x ∈ [249.6, 760.6]`, `y ∈ [13.2, 733.2]` del lienzo 0–1000 × 0–700 (`manifest.json` → `world`), con la misma transformación lineal que los `MapMarker` de MongoDB: `x = (px − 500)·0,2·K + 249,59660`, `y = (py − 650)·0,2·K + 13,17385`, `K = 0,387112` (`px, py` en píxeles del referente).
+- `src/components/ui/mapPaint.ts`: pinta en un `<canvas>` únicamente las teselas visibles del nivel `z` adecuado a la escala (caché en memoria; mientras carga una tesela se dibuja el recorte de su ancestro `z-1`… para evitar huecos). El bitmap se mueve con `translate3d` + `scale` en cada frame de rAF y solo se repinta al cargar teselas, cambiar de nivel `z` o alejarse del bitmap en caché.
+- `src/components/ui/MapCanvas.tsx`: transformación `{ x, y, scale }` en una `ref` aplicada con `requestAnimationFrame`; zoom anclado al cursor, pinch, inercia, límites sobre el contorno de la isla (`ISLAND_BBOX`), clustering por rejilla y *culling*. En SVG quedan **solo** los elementos interactivos: pines, clusters, mira, trazador y calca del Modo Editor.
+- `MapPage.tsx`: filtros AND (capas, región, ocultar completados), buscador con normalización NFD, deep-link `?pin=` y **Modo Editor** (solo en el panel oculto `/_staff` para staff autorizado; no existe en la UI pública): mira, copiar `(x, y)`, alta/movimiento de marcadores vía `POST`/`PATCH /api/markers`, calca de referencia y trazador SVG. `?editor=1&entity=<slug>` preselecciona una ficha para situar su pin.
+- **Nitidez en táctil:** el bitmap de teselas usa DPR máx. 2 en escritorio y 2,5 en táctil (límite 6144 px por lado); con DPR 3 el nivel nativo `z=4` se alcanza desde ~4,3 px CSS/unidad en lugar de ~6,2. El contador de completados queda a la izquierda de la barra de zoom.
+- `public/sw.js` (`leonidapp-static-v4`): `/map-tiles/*` con *stale-while-revalidate*.
+
+### 7.13 Modo editor del mapa: guía de 3 pasos (2026-11-21)
+
+Solo para el equipo (`isStaff()`; el RBAC real sigue en la API). Objetivo: que una persona nueva del equipo coloque un pin sin instrucciones.
+
+- **Flujo guiado, 3 pasos numerados que se marcan con ✓:** (1) «Elige la ficha (opcional)» — buscador de fichas, vacío = lugar nuevo; (2) «Toca el mapa donde irá el pin» — confirma «Punto fijado ✓ (x · y)» con «Copiar» pequeño; se puede volver a tocar para corregir; (3) «Completa los datos y guarda» — «Nombre del pin» (se rellena con el de la ficha) y «Zona o región» (sugerida por el pin más cercano). El enlace corto (`?pin=`) queda en «Más opciones» y se genera del nombre. El botón «Guardar pin» está desactivado hasta que todo esté listo y una línea dice exactamente qué falta («Para guardar falta: tocar el mapa, el nombre…»).
+- **Pin existente:** si hay uno seleccionado aparece «Mover un pin que ya existe» (arrastrarlo, o fijar un punto y «Mover «X» al punto fijado»).
+- **Herramientas avanzadas** (calca de referencia y trazador de dibujo, que antes ocupaban lo primero del panel) quedan plegadas al final.
+- **Vocabulario:** «punto», «nombre del pin», «zona o región», «ficha del catálogo», «enlace corto»; sin «mira», «lienzo 0–1000 × 0–700» ni «slug» en la interfaz. Una sola salida: «Salir».
+- **Escritorio y tableta (≥ 768 px):** el panel ocupa la columna izquierda en lugar del control de capas (que se oculta mientras se edita) y cabe sin scroll; no se muestra la ficha del pin seleccionado a la vez.
+- **Móvil:** panel acoplado sobre el dock (portal fuera del lienzo táctil, con scroll propio, máx. 46 % del alto) que **arranca plegado** como una barra («Toca el mapa para fijar el punto») para dejar el mapa libre; al fijar el punto se abre y el lienzo reserva ese espacio, acerca el mapa y centra el punto en la zona visible. Se puede ocultar/abrir y salir desde la barra. El zoom sube de posición para no quedar tapado.
+- **Mira:** trazo dorado con contorno oscuro para que se lea sobre el terreno claro.

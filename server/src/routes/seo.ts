@@ -1,16 +1,20 @@
-import { createReadStream } from 'node:fs';
+import { createReadStream, realpath as realpathCb } from 'node:fs';
 import { stat } from 'node:fs/promises';
-import { extname, resolve, sep } from 'node:path';
+import { basename, extname, posix, relative, resolve, sep } from 'node:path';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import Entity from '../models/Entity.js';
 import Module from '../models/Module.js';
+import { ROLE_RANK } from '../models/User.js';
+import { buildHtmlCsp } from '../services/csp.js';
 import OfficialNews from '../models/OfficialNews.js';
 import { baseUrl, clientDistDir, escHtml, injectHead, loadTemplate, resolveRoute } from '../services/ssrLite.js';
 
 const MAX_URLS = 50_000;
 const GUIDES_MODULE = 'guias';
+/** Módulos con fichas que no se indexan en el sitemap (el mapa ya tiene su propia ruta /mapa). */
+const SITEMAP_EXCLUDED_MODULES = new Set(['mapa']);
 // Rutas publicas indexables de docs §1.1 (sin /aportar, que es noindex).
-const STATIC_PATHS = ['/', '/mapa', '/catalogo', '/guias', '/noticias', '/foro'];
+const STATIC_PATHS = ['/', '/mapa', '/guias', '/noticias', '/foro'];
 
 interface UrlEntry {
   loc: string; // ruta limpia, sin '#' ni query
@@ -55,7 +59,7 @@ export async function collectUrls(): Promise<UrlEntry[]> {
   const guides: UrlEntry[] = [];
   for (const e of entities) {
     const mod = slugById.get(String(e.module_id));
-    if (!mod || !e.slug) continue;
+    if (!mod || !e.slug || SITEMAP_EXCLUDED_MODULES.has(mod)) continue;
     const lastmod = validDate(e.created_at);
     if (mod === GUIDES_MODULE) guides.push({ loc: `/guias/${seg(e.slug)}`, lastmod });
     else catalog.push({ loc: `/catalogo/${seg(mod)}/${seg(e.slug)}`, lastmod });
@@ -64,14 +68,24 @@ export async function collectUrls(): Promise<UrlEntry[]> {
     .filter((n) => n.slug)
     .map((n) => ({ loc: `/noticias/${seg(n.slug)}`, lastmod: validDate(n.updatedAt) ?? validDate(n.publishedAt) }));
 
+  // Una pagina de categoria por modulo activo (no guias) con al menos una ficha.
+  const catLastmod = new Map<string, Date | undefined>();
+  for (const e of entities) {
+    const mod = slugById.get(String(e.module_id));
+    if (!mod || !e.slug || mod === GUIDES_MODULE || SITEMAP_EXCLUDED_MODULES.has(mod)) continue;
+    catLastmod.set(mod, maxDate([catLastmod.get(mod), validDate(e.created_at)]));
+  }
+  const categories: UrlEntry[] = [...catLastmod].map(([mod, lastmod]) => ({ loc: `/catalogo/${seg(mod)}`, lastmod }));
+
   const staticLastmod: Record<string, Date | undefined> = {
     '/': maxDate(newsUrls.map((u) => u.lastmod)),
-    '/catalogo': maxDate(catalog.map((u) => u.lastmod)),
     '/guias': maxDate(guides.map((u) => u.lastmod)),
     '/noticias': maxDate(newsUrls.map((u) => u.lastmod)),
   };
   const statics = STATIC_PATHS.map((p) => ({ loc: p, lastmod: staticLastmod[p] }));
-  return [...statics, ...catalog, ...guides, ...newsUrls];
+  // Sin duplicados por URL (la primera aparicion gana).
+  const seen = new Set<string>();
+  return [...statics, ...categories, ...catalog, ...guides, ...newsUrls].filter((u) => !seen.has(u.loc) && !!seen.add(u.loc));
 }
 
 const lm = (d?: Date) => (d ? `<lastmod>${d.toISOString()}</lastmod>` : '');
@@ -104,9 +118,44 @@ const MIME: Record<string, string> = {
   '.mp4': 'video/mp4',
 };
 
+/**
+ * Area restringida del panel (no se documenta en sitemap/robots/SSR publico). Se detecta sobre la ruta
+ * decodificada y normalizada en minusculas para que variantes (%5F, `..`, mayusculas, barra invertida) no la eludan.
+ */
+/** Ruta real (resuelve symlinks y nombres cortos 8.3 de Windows). */
+const realNative = (p: string): Promise<string> =>
+  new Promise((ok, fail) => realpathCb.native(p, (e, r) => (e ? fail(e) : ok(r))));
+const STAFF_AREA = '_staff';
+const normalizeLower = (raw: string): string => {
+  let s = raw;
+  try {
+    s = decodeURIComponent(raw);
+  } catch {
+    /* se usa tal cual */
+  }
+  return posix.normalize('/' + s.split('\\').join('/')).toLowerCase();
+};
+const isStaffArea = (p: string): boolean => {
+  const n = normalizeLower(p);
+  return n === `/${STAFF_AREA}` || n.startsWith(`/${STAFF_AREA}/`);
+};
+/** Rango minimo para un archivo del area: chunk de Control Total (`staff-ctl-`) exige SUPER_ADMIN, resto MODERATOR. */
+const staffFileMinRank = (file: string): number =>
+  basename(file).toLowerCase().startsWith('staff-ctl-') ? ROLE_RANK.SUPER_ADMIN : ROLE_RANK.MODERATOR;
+
 /** Sirve un archivo de dist/ con proteccion de path traversal. 404 JSON si no existe o es directorio. */
-async function sendStatic(pathname: string, headOnly: boolean, reply: FastifyReply): Promise<FastifyReply> {
-  const notFound = () => reply.code(404).send({ error: 'No encontrado' });
+async function sendStatic(
+  pathname: string,
+  headOnly: boolean,
+  reply: FastifyReply,
+  staffRank: number,
+): Promise<FastifyReply> {
+  // Un /assets/* inexistente (hash de un despliegue anterior) responde text/plain limpio: un JSON con ese MIME
+  // rompe la carga de modulos/CSS con un error confuso. El area /_staff/ conserva su 404 JSON uniforme.
+  const notFound = () =>
+    pathname.startsWith('/assets/')
+      ? reply.code(404).header('Cache-Control', 'no-store').type('text/plain; charset=utf-8').send('No encontrado')
+      : reply.code(404).send({ error: 'No encontrado' });
   let rel: string;
   try {
     rel = decodeURIComponent(pathname);
@@ -121,14 +170,26 @@ async function sendStatic(pathname: string, headOnly: boolean, reply: FastifyRep
   const info = await stat(file).catch(() => null);
   if (!info?.isFile()) return notFound();
 
+  // Area restringida: se comprueba la ruta pedida y la real (symlinks / nombres cortos de Windows).
+  const real = await realNative(file).catch(() => file);
+  const realRoot = await realNative(root).catch(() => root);
+  const staffFile =
+    isStaffArea(rel) ||
+    isStaffArea('/' + relative(realRoot, real).split(sep).join('/')) ||
+    isStaffArea('/' + relative(root, file).split(sep).join('/'));
+  if (staffFile && staffRank < staffFileMinRank(real)) return notFound();
+  if (staffFile) reply.header('Vary', 'Cookie');
+
   reply
     .header(
       'Cache-Control',
-      rel === '/sw.js'
-        ? 'no-cache'
-        : rel.startsWith('/assets/')
-          ? 'public, max-age=31536000, immutable'
-          : 'public, max-age=3600',
+      staffFile
+        ? 'private, max-age=3600'
+        : rel === '/sw.js' || rel === '/index.html'
+          ? 'no-cache'
+          : rel.startsWith('/assets/')
+            ? 'public, max-age=31536000, immutable'
+            : 'public, max-age=3600',
     )
     .header('Content-Length', info.size)
     .type(MIME[extname(file).toLowerCase()] ?? 'application/octet-stream');
@@ -161,7 +222,7 @@ export async function registerSeoRoutes(app: FastifyInstance): Promise<void> {
       .header('Cache-Control', 'public, max-age=86400')
       .type('text/plain; charset=utf-8')
       .send(
-        `User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /aportar\nDisallow: /hub\nDisallow: /progreso\nDisallow: /entrar\n\nSitemap: ${baseUrl()}/sitemap.xml\n`,
+        `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${baseUrl()}/sitemap.xml\n`,
       ),
   );
 
@@ -172,20 +233,40 @@ export async function registerSeoRoutes(app: FastifyInstance): Promise<void> {
     const readOnly = req.method === 'GET' || req.method === 'HEAD';
     if (!readOnly || p.startsWith('/api/')) return reply.code(404).send({ error: 'No encontrado' });
 
+    const staffRank = req.authUser ? ROLE_RANK[req.authUser.rol] : -1;
     if (/\.[a-z0-9]{1,12}$/i.test(p)) {
       if (p === '/sitemap.xml' || p === '/robots.txt') return reply.code(404).send({ error: 'No encontrado' });
-      return sendStatic(p, req.method === 'HEAD', reply);
+      return sendStatic(p, req.method === 'HEAD', reply, staffRank);
     }
-    if (p.startsWith('/assets/')) return reply.code(404).send({ error: 'No encontrado' });
+    if (p.startsWith('/assets/')) return reply.code(404).header('Cache-Control', 'no-store').type('text/plain; charset=utf-8').send('No encontrado');
 
     const template = loadTemplate();
     if (!template) return reply.code(404).send({ error: 'Cliente no compilado (ejecuta pnpm build en la raiz)' });
+
+    const csp = buildHtmlCsp(template);
+
+    // Area restringida: staff (MODERATOR+) recibe la shell noindex; cualquier otro, exactamente lo mismo que una ruta inexistente.
+    if (isStaffArea(p)) {
+      const staff = staffRank >= ROLE_RANK.MODERATOR;
+      const rr = await resolveRoute(staff ? '/' : '/nada-existe', new URLSearchParams());
+      if (rr.kind === 'page') {
+        const meta = staff ? { ...rr.meta, title: 'Panel', robots: 'noindex,nofollow' as const, jsonLd: [] } : rr.meta;
+        reply.header('Content-Security-Policy', csp);
+        if (staff) {
+          void reply.header('Cache-Control', 'private, no-store').header('Vary', 'Cookie').header('X-Robots-Tag', 'noindex, nofollow');
+        } else {
+          void reply.header('Cache-Control', 'no-store');
+        }
+        return reply.code(meta.status).type('text/html; charset=utf-8').send(injectHead(template, meta));
+      }
+    }
 
     const r = await resolveRoute(p, url.searchParams);
     if (r.kind === 'redirect') return reply.redirect(r.to, 301);
     return reply
       .code(r.meta.status)
-      .header('Cache-Control', r.meta.status === 200 ? 'public, max-age=60' : 'no-store')
+      .header('Cache-Control', r.meta.status === 200 ? 'no-cache' : 'no-store')
+      .header('Content-Security-Policy', csp)
       .type('text/html; charset=utf-8')
       .send(injectHead(template, r.meta));
   });

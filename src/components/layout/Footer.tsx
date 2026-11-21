@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useMemo, useState, type FormEvent } from 'react';
 import { Modal } from '../ui/Modal';
-import { ApiError, apiFetch, isApiConfigured } from '../../store/useAuthStore';
+import { ApiError, apiFetch } from '../../store/useAuthStore';
+import { usePublicConfig } from '../../data/seed';
 
 /* ------------------------------------------------------------------ */
 /* Footer estilo Rockstar (pilar 6): negro puro, enlaces funcionales,  */
@@ -125,7 +126,7 @@ const DICT: Record<Lang, Dict> = {
     collaborate: 'Colabora',
     community: 'Recursos de la comunidad',
     subscribe: 'Suscríbete',
-    contribute: 'Aportes y moderación',
+    contribute: 'Aportar',
     forum: 'Foro de la comunidad',
     catalog: 'Catálogo de Leonida',
     guides: 'Guías',
@@ -174,7 +175,7 @@ const DICT: Record<Lang, Dict> = {
     collaborate: 'Collaborate',
     community: 'Community Resources',
     subscribe: 'Subscribe',
-    contribute: 'Contributions & moderation',
+    contribute: 'Contribute',
     forum: 'Community forum',
     catalog: 'Leonida catalog',
     guides: 'Guides',
@@ -225,7 +226,7 @@ const DOCS: Record<Lang, Record<DocId, { title: string; body: string[] }>> = {
     about: {
       title: 'Acerca de LeonidApp',
       body: [
-        'LeonidApp es un atlas interactivo creado por y para fans: mapa de Leonida, catálogo de ubicaciones y elementos, foro de la comunidad y seguimiento de tu progreso.',
+        'LeonidApp es un atlas interactivo creado por y para fans: mapa de Leonida, catálogo de fichas, foro de la comunidad y seguimiento de tu avance.',
         'Es un proyecto independiente y sin ánimo de lucro. NO está afiliado, respaldado ni patrocinado por Rockstar Games ni por Take-Two Interactive Software, Inc.',
         'Todo el contenido proviene de la comunidad y de información pública. Si eres titular de derechos y deseas que retiremos algo, usa el formulario de contacto.',
       ],
@@ -233,7 +234,7 @@ const DOCS: Record<Lang, Record<DocId, { title: string; body: string[] }>> = {
     privacy: {
       title: 'Política de privacidad',
       body: [
-        'Datos que tratamos: los de tu cuenta si inicias sesión (identificador, nombre de usuario, correo del proveedor de acceso), tu progreso, tus aportes y tus mensajes del foro. Como invitado, tu progreso se guarda solo en tu dispositivo.',
+        'Datos que tratamos: los de tu cuenta si inicias sesión (identificador, nombre de usuario, correo del proveedor de acceso), tu avance, tus aportes y tus mensajes del foro. Como invitado, tu progreso se guarda solo en tu dispositivo.',
         'Finalidad: ofrecer las funciones de la aplicación, mantener la seguridad y moderar la comunidad. No vendemos tus datos ni los usamos para publicidad personalizada.',
         'Conservación y derechos: conservamos los datos mientras mantengas la cuenta. Puedes solicitar acceso, rectificación o eliminación a través del formulario de contacto.',
         'Terceros: el inicio de sesión con Google, Discord o Apple está sujeto a las políticas de cada proveedor.',
@@ -242,7 +243,7 @@ const DOCS: Record<Lang, Record<DocId, { title: string; body: string[] }>> = {
     cookiePolicy: {
       title: 'Política de cookies',
       body: [
-        'Usamos cookies y almacenamiento local. Necesarias: mantienen la sesión y la seguridad. Preferencias: idioma, progreso de invitado y ajustes. Analíticas y Marketing: desactivadas por defecto y solo se activarían con tu consentimiento.',
+        'Usamos cookies y almacenamiento local. Necesarias: mantienen la sesión y la seguridad. Preferencias: idioma, avance de invitado y ajustes. Analíticas y Marketing: desactivadas por defecto y solo se activarían con tu consentimiento.',
         'Puedes cambiar tu elección en cualquier momento desde "Ajustes de cookies". También puedes borrar los datos desde la configuración de tu navegador.',
       ],
     },
@@ -402,29 +403,19 @@ function safeHttpUrl(raw: unknown): string | null {
   }
 }
 
+/** Enlaces sociales de la configuración pública (consulta compartida: una sola petición a /api/config/public). */
 function useSocialLinks(): SocialLink[] {
-  const [links, setLinks] = useState<SocialLink[]>([]);
-  useEffect(() => {
-    if (!isApiConfigured) return;
-    let alive = true;
-    apiFetch<{ social_links?: unknown }>('/api/config/public')
-      .then((cfg) => {
-        if (!alive || !Array.isArray(cfg?.social_links)) return;
-        const out: SocialLink[] = [];
-        for (const item of cfg.social_links as Array<Record<string, unknown>>) {
-          const url = safeHttpUrl(item?.url);
-          if (url && typeof item.platform === 'string' && item.platform.trim()) {
-            out.push({ platform: item.platform.trim().slice(0, 30), url });
-          }
-        }
-        setLinks(out);
-      })
-      .catch(() => undefined);
-    return () => {
-      alive = false;
-    };
-  }, []);
-  return links;
+  const cfg = usePublicConfig();
+  return useMemo(() => {
+    const out: SocialLink[] = [];
+    for (const item of cfg.social_links as Array<Record<string, unknown>>) {
+      const url = safeHttpUrl(item?.url);
+      if (url && typeof item.platform === 'string' && item.platform.trim()) {
+        out.push({ platform: item.platform.trim().slice(0, 30), url });
+      }
+    }
+    return out;
+  }, [cfg.social_links]);
 }
 
 /* ------------------------------------------------------------------ */
@@ -609,7 +600,7 @@ function CookieSettings({ t, onDone }: { t: Dict; onDone: () => void }) {
 /* ------------------------------------------------------------------ */
 
 const LINK =
-  'inline-flex min-h-[44px] items-center text-sm text-white underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold md:min-h-[32px]';
+  'inline-flex min-h-[44px] min-w-[44px] items-center text-sm text-white underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold md:min-h-[32px]';
 
 function FooterBody({
   lang,

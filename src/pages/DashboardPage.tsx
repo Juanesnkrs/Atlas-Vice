@@ -1,20 +1,19 @@
-// P03 - Dashboard de Progreso (Hub `/hub` y `/progreso`): avance 100%, rutas sugeridas y novedades.
+// P03 - Dashboard de Progreso (Hub `/hub` y `/progreso`): avance 100% y novedades.
 // Sigue la pestaña Progreso de Mobile.dc.html; las novedades salen solo de la API de noticias oficiales.
 import { useEffect, useRef } from 'react';
+import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { StatBar, type StatAccent } from '../components/ui/StatBar';
 import { TipCard } from '../components/ui/TipCard';
 import {
   NEWS_SOURCES,
-  SAMPLE_NOTICE,
-  SEED_ROUTES,
-  SEED_TIPS,
+  TIPS,
+  describeApiError,
   useModuleGate,
   useOfficialNews,
   useProgressSummary,
   usePublicConfig,
-  useWorldData,
 } from '../data/seed';
-import { isApiConfigured, useAuthStore } from '../store/useAuthStore';
+import { useAuthStore } from '../store/useAuthStore';
 import { useProgressStore } from '../store/useProgressStore';
 import { CROPS, CropImg } from './HomePage';
 
@@ -27,14 +26,31 @@ const ACCENTS: Record<string, StatAccent> = {
   coleccionables: 'lilac',
 };
 
+/** Hora relativa corta en español («hace 2 min»). */
+function relativeTime(iso: string, now = Date.now()): string {
+  const min = Math.max(0, Math.round((now - new Date(iso).getTime()) / 60_000));
+  if (min < 1) return 'hace un momento';
+  if (min < 60) return `hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const d = Math.round(h / 24);
+  return `hace ${d} ${d === 1 ? 'día' : 'días'}`;
+}
+
+const START: ReadonlyArray<{ href: string; label: string; module?: string }> = [
+  { href: '/mapa', label: 'Explorar el mapa', module: 'mapa' },
+  { href: '/guias', label: 'Abrir guías', module: 'guias' },
+  { href: '/foro', label: 'Ver hilos recientes', module: 'foro' },
+];
+
 const SOURCE_LABEL: Record<string, string> = Object.fromEntries(NEWS_SOURCES.map((s) => [s.value, s.label]));
 
 /** `module`: slug del módulo que debe estar activo para mostrar el acceso (los inactivos no se muestran). */
 const QUICK: ReadonlyArray<{ href: string; title: string; text: string; crop: keyof typeof CROPS; module?: string }> = [
-  { href: '/guias', title: 'Guías', text: 'Pasos verificables y rutas.', crop: 'guias', module: 'guias' },
+  { href: '/guias', title: 'Guías', text: 'Pasos claros para cada reto.', crop: 'guias', module: 'guias' },
   { href: '/noticias', title: 'Noticias oficiales', text: 'Rockstar Games y Take-Two.', crop: 'noticias' },
-  { href: '/aportar', title: 'Aportar', text: 'Envía hallazgos con tu cuenta.', crop: 'coleccionables' },
-  { href: '/mapa', title: 'Mapa de Leonida', text: 'Pines, capas y check 100%.', crop: 'mapa', module: 'mapa' },
+  { href: '/aportar', title: 'Aportar', text: 'Comparte lugares y correcciones.', crop: 'coleccionables' },
+  { href: '/mapa', title: 'Mapa de Leonida', text: 'Lugares, capas y tu avance.', crop: 'mapa', module: 'mapa' },
   { href: '/catalogo', title: 'Catálogo', text: 'Armas, vehículos y coleccionables.', crop: 'vehiculos', module: 'catalogo' },
   { href: '/foro', title: 'Foro', text: 'Hilos, votos y spoilers.', crop: 'armas', module: 'foro' },
 ];
@@ -72,13 +88,11 @@ function Ring({ percent }: { percent: number }) {
 }
 
 export default function DashboardPage({ section }: { section: 'hub' | 'progress' }) {
-  const { news, loading: newsLoading, error: newsError } = useOfficialNews('all', 3);
+  const { news, loading: newsLoading, error: newsError, retry: retryNews } = useOfficialNews('all', 3);
   const cfg = usePublicConfig();
   const { isActive, catalogActive } = useModuleGate();
   const quick = QUICK.filter((q) => (q.module === 'catalogo' ? catalogActive : q.module ? isActive(q.module) : true));
   const summary = useProgressSummary();
-  const { data, error } = useWorldData();
-  const items = useProgressStore((s) => s.items);
   const hydrated = useProgressStore((s) => s.hydrated);
   const syncStatus = useProgressStore((s) => s.syncStatus);
   const syncError = useProgressStore((s) => s.syncError);
@@ -92,23 +106,39 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
     if (section === 'progress') progressRef.current?.scrollIntoView({ block: 'start' });
   }, [section]);
 
-  const markerIds = new Set(data.markers.map((m) => m.id));
-  const routes = SEED_ROUTES.map((r) => {
-    const ids = r.markerIds.filter((id) => markerIds.has(id));
-    const done = ids.filter((id) => items[`marker:${id}`]?.completado).length;
-    const nextId = ids.find((id) => !items[`marker:${id}`]?.completado);
-    return { ...r, total: ids.length, done, nextId };
-  }).filter((r) => r.total > 0);
-
   const authenticated = status === 'authenticated';
   const markers = summary.categories.find((c) => c.id === 'markers');
+  const start = START.filter((s) => !s.module || isActive(s.module));
+  const visibleCats = summary.categories.filter((c) => c.total > 0);
+  const catalogCats = visibleCats.filter((c) => c.id !== 'markers');
+  const catalogDone = catalogCats.reduce((a, c) => a + c.done, 0);
+  const catalogTotal = catalogCats.reduce((a, c) => a + c.total, 0);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-8 pt-2 md:px-8">
+    <div className="mx-auto w-full max-w-6xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-2 md:px-8">
       <h1 className="font-display text-3xl font-bold text-[#FFC09A] md:text-4xl">Mi avance</h1>
       <p className="mt-1 text-sm text-vice-text/90">
         Hola, {username ?? 'invitado'}. Así va tu 100% de Leonida.
       </p>
+
+      {start.length > 0 && (
+        <nav aria-label="Para empezar" className="mt-4">
+          <ul className="flex flex-col gap-2 sm:flex-row">
+            {start.map((s, i) => (
+              <li key={s.href} className="sm:flex-1">
+                <a
+                  href={s.href}
+                  className={`flex min-h-12 items-center justify-center rounded-2xl px-4 text-center font-bold ${FOCUS} ${
+                    i === 0 ? 'bg-vice-accent text-vice-ink' : 'glass hover:border-vice-orange'
+                  }`}
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
 
       <div className="mt-5 grid gap-5 lg:grid-cols-3">
         {/* Avance total y por categoría */}
@@ -118,8 +148,13 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
           </h2>
           {!hydrated ? (
             <p role="status" className="mt-4 text-vice-text/80">
-              Cargando tu progreso local…
+              Cargando tu avance…
             </p>
+          ) : summary.unavailable ? (
+            <ApiErrorState compact title="No pudimos calcular tu avance" message={summary.error ?? describeApiError()} onRetry={() => {
+                summary.retry();
+                retryNews();
+              }} />
           ) : (
             <>
               <div className="mt-4 flex items-center gap-5">
@@ -128,13 +163,22 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
                   <span className="font-semibold text-white">
                     {markers?.done ?? 0} de {markers?.total ?? 0}
                   </span>{' '}
-                  marcadores completados.
+                  lugares del mapa completados.
+                  {catalogTotal > 0 && (
+                    <>
+                      <br />
+                      <span className="font-semibold text-white">
+                        {catalogDone} de {catalogTotal}
+                      </span>{' '}
+                      fichas del catálogo ({catalogCats.map((c) => c.label.toLowerCase()).join(', ')}).
+                    </>
+                  )}
                   <br />
-                  {summary.done} de {summary.total} elementos en total.
+                  <span className="text-vice-text/70">Las guías no suman al porcentaje.</span>
                 </p>
               </div>
               <div className="mt-5 flex flex-col gap-4">
-                {summary.categories.map((c) => (
+                {visibleCats.map((c) => (
                   <StatBar
                     key={c.id}
                     label={c.label}
@@ -151,59 +195,38 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
               <>
                 <span>
                   {syncStatus === 'syncing'
-                    ? 'Sincronizando…'
+                    ? 'Guardando…'
                     : syncStatus === 'error'
-                      ? `Error de sincronización: ${syncError ?? 'desconocido'}`
+                      ? `No se pudo guardar tu avance${syncError ? `: ${syncError}` : '.'}`
                       : lastSyncedAt
-                        ? `Sincronizado con tu cuenta · ${new Date(lastSyncedAt).toLocaleString('es')}`
-                        : 'Pendiente de sincronizar'}
+                        ? `Todo guardado · ${relativeTime(lastSyncedAt)}`
+                        : 'Todo guardado'}
                 </span>
-                <button
-                  type="button"
-                  onClick={() => void syncWithCloud()}
-                  disabled={syncStatus === 'syncing'}
-                  className={`glass min-h-11 rounded-full px-4 font-semibold disabled:opacity-50 ${FOCUS}`}
-                >
-                  Reintentar sincronización
-                </button>
+                {syncStatus === 'error' && (
+                  <button
+                    type="button"
+                    onClick={() => void syncWithCloud()}
+                    className={`glass min-h-11 rounded-full px-4 font-semibold ${FOCUS}`}
+                  >
+                    Reintentar
+                  </button>
+                )}
               </>
             ) : (
               <span>
-                Tu progreso se guarda en este dispositivo.{' '}
+                Tu avance se guarda en este dispositivo.{' '}
                 <a href="/entrar" className={`inline-flex min-h-11 items-center text-vice-orange underline ${FOCUS}`}>
                   Inicia sesión
                 </a>{' '}
-                para sincronizarlo.
+                para guardarlo en tu cuenta.
               </span>
             )}
           </div>
         </section>
 
         <div className="flex flex-col gap-5">
-          <TipCard tips={SEED_TIPS} />
+          <TipCard tips={TIPS} />
         </div>
-
-        {/* Rutas sugeridas */}
-        <section aria-labelledby="rutas-title" className="glass rounded-3xl p-5 md:p-6 lg:col-span-2">
-          <h2 id="rutas-title" className="font-display text-xl font-bold">
-            Rutas sugeridas
-          </h2>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-            {routes.map((r) => (
-              <li key={r.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <h3 className="font-display text-lg font-bold">{r.titulo}</h3>
-                <p className="text-sm text-vice-text/80">{r.descripcion}</p>
-                <StatBar className="mt-3" label="Completado" value={(r.done / r.total) * 100} valueLabel={`${r.done}/${r.total}`} accent="gold" />
-                <a
-                  href={r.nextId ? `/mapa?marker=${r.nextId}` : '/mapa'}
-                  className={`mt-3 inline-flex min-h-11 items-center rounded-full bg-vice-accent px-5 font-bold text-vice-ink ${FOCUS}`}
-                >
-                  {r.nextId ? 'Ir al siguiente punto' : 'Ruta completa · ver mapa'}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </section>
 
         {/* Anuncio global (config pública) */}
         {cfg.announcement && (
@@ -223,14 +246,23 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
               Ver todas
             </a>
           </div>
-          <div aria-live="polite" className="mt-2">
+          <div aria-live="polite" className={newsLoading ? 'mt-2 min-h-[280px] md:min-h-[88px]' : 'mt-2'}>
             {newsLoading ? (
               <p role="status" className="text-sm text-vice-text/80">
                 Cargando noticias oficiales…
               </p>
             ) : newsError || news.length === 0 ? (
               <p className="glass rounded-2xl p-4 text-sm">
-                {newsError ? 'No pudimos cargar las noticias oficiales. ' : 'Aún no hay noticias oficiales. '}
+                {newsError ? (
+                  <>
+                    {newsError}{' '}
+                    <button type="button" onClick={retryNews} className={`inline-flex min-h-11 items-center font-semibold text-vice-orange underline ${FOCUS}`}>
+                      Reintentar
+                    </button>{' '}
+                  </>
+                ) : (
+                  'Aún no hay noticias oficiales. '
+                )}
                 <a
                   href="https://www.rockstargames.com/newswire"
                   target="_blank"
@@ -286,12 +318,6 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
         </nav>
       </div>
 
-      {(error || data.source === 'seed' || !isApiConfigured) && (
-        <p role="status" className="mt-6 text-xs text-vice-text/60">
-          {error ? `No se pudo conectar con el servidor (${error}). ` : ''}
-          {SAMPLE_NOTICE}
-        </p>
-      )}
     </div>
   );
 }

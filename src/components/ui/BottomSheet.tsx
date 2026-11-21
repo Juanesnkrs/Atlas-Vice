@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react';
+import { useEffect, useId, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 
 const FOCUSABLE =
@@ -68,6 +68,8 @@ export interface BottomSheetProps {
   closeLabel?: string;
   /** 'sheet' (defecto) o 'dialog': el Modal usa 'dialog' para quedar sobre otras hojas y el dock. */
   layer?: 'sheet' | 'dialog';
+  /** false = el clic en el fondo no cierra (formularios con datos por perder). Por defecto cierra. */
+  dismissOnBackdrop?: boolean;
   className?: string;
 }
 
@@ -80,11 +82,39 @@ export function BottomSheet({
   modal = true,
   closeLabel = 'Cerrar',
   layer = 'sheet',
+  dismissOnBackdrop = true,
   className = '',
 }: BottomSheetProps) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogFocus(open, panelRef, onClose, modal);
+
+  // Arrastre hacia abajo desde el asa/cabecera (solo táctil en móvil): bajar el sheet lo cierra.
+  const [dy, setDy] = useState(0);
+  const drag = useRef<{ id: number; y0: number; t0: number; active: boolean } | null>(null);
+  const onDragDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (mode === 'side' || e.pointerType === 'mouse' || window.matchMedia('(min-width: 768px)').matches) return;
+    drag.current = { id: e.pointerId, y0: e.clientY, t0: e.timeStamp, active: false };
+  };
+  const onDragMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    const delta = e.clientY - d.y0;
+    if (!d.active && Math.abs(delta) > 6) {
+      d.active = true;
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
+    if (d.active) setDy(Math.max(0, delta));
+  };
+  const onDragEnd = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d || d.id !== e.pointerId) return;
+    drag.current = null;
+    const delta = e.clientY - d.y0;
+    const fast = delta / Math.max(1, e.timeStamp - d.t0) > 0.6;
+    setDy(0);
+    if (d.active && (delta > 96 || (fast && delta > 30))) onClose();
+  };
 
   if (!open) return null;
 
@@ -100,7 +130,7 @@ export function BottomSheet({
         <div
           aria-hidden="true"
           className="absolute inset-0 bg-[#1a0a22]/60"
-          onClick={onClose}
+          onClick={dismissOnBackdrop ? onClose : undefined}
         />
       )}
       <div
@@ -111,9 +141,17 @@ export function BottomSheet({
         aria-label={title ? undefined : 'Panel'}
         tabIndex={-1}
         className={`glass pointer-events-auto absolute flex flex-col overflow-hidden outline-none ${position} ${className}`}
+        style={dy > 0 ? { transform: `translateY(${dy}px)`, transition: 'none' } : undefined}
       >
+        <div
+          className="max-md:touch-none"
+          onPointerDown={onDragDown}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+          onPointerCancel={onDragEnd}
+        >
         {!side && (
-          <div aria-hidden="true" className="flex justify-center pt-2 md:hidden">
+          <div aria-hidden="true" className="flex justify-center pb-1 pt-3 md:hidden">
             <span className="h-1.5 w-10 rounded-full bg-white/30" />
           </div>
         )}
@@ -144,6 +182,7 @@ export function BottomSheet({
               <path d="M6 6l12 12M18 6L6 18" />
             </svg>
           </button>
+        </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-[calc(1.25rem+var(--safe-bottom))]">{children}</div>
       </div>

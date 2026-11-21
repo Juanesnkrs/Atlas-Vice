@@ -9,11 +9,13 @@
 
 ## 1. Fuente de Verdad Única (`/docs/`)
 
-Toda decisión de arquitectura, esquemas, rutas, SEO, monetización y diseño está definida exclusivamente en estos 3 documentos maestros de `/docs/`:
+Toda decisión de arquitectura, esquemas, rutas, SEO, monetización y diseño está definida exclusivamente en estos 3 documentos maestros temáticos de `/docs/`, más un cuarto documento maestro de consulta (`docs/LeonidApp-Documentacion-Completa.md`, ver abajo):
 
-- `docs/LeonidApp-Arquitectura-Datos-MongoDB.md` — las 10 colecciones Mongoose + Zod, RBAC (`GUEST` < `USER` < `MODERATOR` < `ADMIN` < `SUPER_ADMIN`), OAuth2 + PKCE con cookies HttpOnly y aprobación automática de `Submission`.
+- `docs/LeonidApp-Arquitectura-Datos-MongoDB.md` — las 11 colecciones Mongoose + Zod, RBAC (`GUEST` < `USER` < `MODERATOR` < `ADMIN` < `SUPER_ADMIN`), OAuth2 + PKCE con cookies HttpOnly y aprobación automática de `Submission`.
 - `docs/LeonidApp-Rutas-SEO-Monetizacion.md` — rutas limpias con History API, SSR-lite (meta + JSON-LD `HowTo`/`Article`/`SearchAction`) en Fastify, `sitemap.xml`, enlazado cruzado, comparador NUI y reglas de `<AdSlot/>` + consentimiento.
 - `docs/LeonidApp-UI-NUI-DesignSpec.md` — tokens Vice Sunset NUI, fidelidad a `docs/referencias-ui/design/` (`Mobile.dc.html`, `MobileHero.dc.html`, `Inspector.dc.html`, `Forum.dc.html`), Rediseño v2 (§7), `<RockstarFooter/>` y árbol exacto de carpetas (§6).
+
+- `docs/LeonidApp-Documentacion-Completa.md` — **cuarto documento maestro de consulta**: visión completa del producto (stack, datos vigentes, API, SEO, seguridad, navegación, pantallas). Su §0 recoge el estado objetivo vigente. **Ante cualquier contradicción mandan los 3 documentos `LeonidApp-*` temáticos y hay que corregir este cuarto documento.**
 
 Los documentos `AtlasVice-v2.md`, `AtlasViceArquitecturaDatosSQL.md`, `AtlasViceNavegacionWireframesNUI.md` (archivados en `docs/legado/`) y el resto de la carpeta `docs/legado/` son **[LEGADO HISTÓRICO - NO USAR]**: solo referencia histórica. Si este archivo y un documento `LeonidApp-*.md` difieren, manda el documento `LeonidApp-*.md` y este archivo debe corregirse.
 
@@ -22,7 +24,7 @@ Los documentos `AtlasVice-v2.md`, `AtlasViceArquitecturaDatosSQL.md`, `AtlasVice
 - PROHIBIDO instalar librerías de UI externas (Material UI, Chakra, Shadcn completo, Bootstrap, `lucide-react`, `react-router`). Todos los componentes se construyen en Tailwind sobre los tokens Vice NUI e iconos SVG inline.
 - PROHIBIDO crear carpetas o archivos fuera del árbol aprobado (`docs/LeonidApp-UI-NUI-DesignSpec.md` §6 + carpetas válidas listadas abajo).
 - PROHIBIDO inventar campos o colecciones no aprobados: todo modelo Mongoose debe tener su schema Zod equivalente y reflejar exactamente las colecciones de `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`.
-- PROHIBIDO copiar, traducir literalmente o parafrasear textos de wikis o sitios de terceros (ej. GTABase), así como alojar imágenes con prefijos de terceros en `public/assets/` (`complexmusic_*`, `rockstargames_*`, `theofficialselfridges_*`). Todo contenido editorial debe ser 100 % original en español neutro para cumplimiento de copyright y AdSense.
+- PROHIBIDO copiar, traducir literalmente o parafrasear textos de wikis o sitios de terceros (ej. GTABase), así como alojar imágenes con prefijos de terceros en `public/assets/` (`complexmusic_*`, `rockstargames_*`, `theofficialselfridges_*`). Todo contenido editorial debe ser 100 % original en español neutro para cumplimiento de copyright y AdSense. **Excepción autorizada por el propietario del proyecto (mapa):** la base cartográfica de `/mapa` es el mapa comunitario de Leonida (`public/ref Leonida map/The final version of Commnunity map.jpeg`), solo su área cartográfica (sin la columna de leyenda), con sus colores y textos originales a resolución nativa, publicado como pirámide de teselas en `public/map-tiles/` (obra derivada; por decisión del propietario la app no muestra texto de atribución en el mapa). Es la única imagen de terceros permitida; el original en `public/ref Leonida map/` sigue ignorado por git y excluido de `dist/`.
 - PROHIBIDO añadir código nuevo a `supabase/`: está deprecado (ver sección 4).
 - PROHIBIDO avanzar de sprint o fase sin ejecutar `pnpm typecheck` y `pnpm build` sin errores (en `server/` también su propio `typecheck` y `build`).
 - PROHIBIDO guardar tokens de sesión en `localStorage`/`sessionStorage`: solo cookies `HttpOnly`.
@@ -53,7 +55,7 @@ Los documentos `AtlasVice-v2.md`, `AtlasViceArquitecturaDatosSQL.md`, `AtlasVice
 2. **Sesión con cookies HttpOnly**: tokens solo en cookies `HttpOnly` + `Secure` + `SameSite`; el cliente nunca lee el token. Deep link de retorno `leonidapp://auth/callback`.
 3. **Noticias 100% oficiales**: únicamente fuentes oficiales de Rockstar Games / Take-Two. Prohibido contenido de terceros, rumores o scraping de medios. Ingesta mediante el worker del agente `05-workers-seo`.
 4. **RBAC**: jerarquía `GUEST` (sin sesión, no persistido) < `USER` < `MODERATOR` < `ADMIN` < `SUPER_ADMIN`. La autorización se aplica en el servidor (hook Fastify), nunca solo en la UI.
-5. **Panel Control Total**: panel exclusivo de `SUPER_ADMIN` (gestión de roles, módulos, moderación, pines del mapa, logs de auditoría y fuentes de noticias).
+5. **Panel Control Total y Gestión de Identidades (invisibles)**: viven en la ruta oculta `/_staff` (cliente y SSR), sin exposición en UI pública, dock, footer, Hub, `robots.txt` ni `sitemap.xml`; sus chunks salen en `/_staff/assets/` y el servidor solo los sirve a staff autorizado (MODERATOR+ moderación/catálogo; SUPER_ADMIN Control Total/roles/identidades/auditoría), con 404 uniforme en cualquier otro caso; `/api/admin/*` y las mutaciones administrativas devuelven ese mismo 404 sin sesión de staff (RBAC antes que Zod). Requiere red y mismo origen (no offline ni Capacitor). Panel exclusivo de `SUPER_ADMIN` (gestión de roles, módulos, moderación, pines del mapa, logs de auditoría y fuentes de noticias).
 6. **Footer estilo Rockstar** (`<RockstarFooter/>`): pie de página institucional negro `#000000`, Contact y Subscribe persistidos en MongoDB, selector de idioma, modal de cookies (`leonidapp_consent`), columnas de enlaces, legales y avisos de marca registrada, sobre los tokens Vice NUI.
 7. **Landing SEO/Storytelling y Monetización Responsable**: landing pública con narrativa, metadatos Open Graph, `sitemap.xml`, JSON-LD (`HowTo`, `Article`, `SearchAction`) y `<AdSlot/>` condicionado al consentimiento de Marketing (`leonidapp_consent`), carga diferida (`IntersectionObserver`), CLS = 0 y máximo 2 bloques en `/guias/:slug`.
 8. **Fidelidad al artifact `/Design`**: la UI replica el artifact `/Design` (copia en `docs/referencias-ui/design/`), con las decisiones del Rediseño v2 (`docs/LeonidApp-UI-NUI-DesignSpec.md` §7), que prevalecen. `CatalogPage.tsx` y `ForumPage.tsx` se ajustan a `Inspector.dc.html` y `Forum.dc.html`.
@@ -96,6 +98,8 @@ También son válidos, fuera del árbol aprobado, y `04-qa-mobile` NO debe borra
 - `supabase/` (legado deprecado; no se borra, tampoco se amplía).
 - `android/` e `ios/` (proyectos nativos generados por Capacitor).
 - `src/data/seed.ts` (datos semilla de ejemplo y capa de acceso offline-first).
+- `public/map-tiles/` (pirámide de teselas WebP del área cartográfica del referente, colores originales + `manifest.json`, cargada bajo demanda por `/mapa`; fuera del bundle JS).
+- `public/ref Leonida map/` (referencias locales del mapa: ignoradas por git y eliminadas de `dist/` en el build; solo sirven de calca en el Modo Editor y de fuente para generar las teselas).
 - `supabase/03_seed_data.sql` (datos de ejemplo generados desde `seed.ts`, mismos UUIDs; legado).
 
 ## Subagentes (`.claude/agents/`)

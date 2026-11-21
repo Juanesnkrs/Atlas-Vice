@@ -20,9 +20,9 @@
 
 ---
 
-## 2. Las 10 colecciones
+## 2. Las 11 colecciones
 
-Las colecciones aprobadas son 10 grupos lógicos (el grupo Foro se compone de 3 modelos):
+Las colecciones aprobadas son 11 grupos lógicos (el grupo Foro se compone de 3 modelos):
 
 1. `User`
 2. `AppConfig`
@@ -34,6 +34,7 @@ Las colecciones aprobadas son 10 grupos lógicos (el grupo Foro se compone de 3 
 8. `Submission`
 9. Foro: `ForumThread` / `ForumPost` / `ForumVote`
 10. `AuditLog`
+11. **Δ** `MediaAsset` (imágenes subidas desde el panel, §2.11; aprobada por el propietario el 2026-11-21)
 
 ### 2.1 `User` — `models/User.ts`
 
@@ -48,13 +49,14 @@ Sustituye a `profiles` + `auth.users` del DER legado.
 | `discord_id` | String \| null | `z.string().nullable().optional()` | Índice único parcial. |
 | `rol` | String enum `ROLES`, default `USER` | `roleSchema` | Ver §3. `GUEST` nunca se persiste. |
 | `identities` | `[{ provider, subject }]` | `z.array(...)` | `provider ∈ AUTH_PROVIDERS`. Índice `{ 'identities.provider', 'identities.subject' }`. |
+| `sessions_revoked_at` | Date \| null, default `null` | `z.coerce.date().nullable().optional()` | Revocación de sesiones (solo SUPER_ADMIN, desde Identidades): una cookie `lv_session` emitida antes de esta fecha deja de ser válida. Nunca en DTO público. |
 | `created_at` | Date | `z.coerce.date().optional()` | |
 
 DTO: `toPublicUserDTO` (sin email) y `toSelfUserDTO` (con email, solo `/api/auth/me`).
 
 ### 2.2 `AppConfig` — `models/AppConfig.ts`
 
-Singleton con `key: 'global'` (unique). Lectura con `getGlobalConfig()` (upsert). Solo `SUPER_ADMIN` escribe.
+Singleton con `key: 'global'` (unique). Lectura con `getGlobalConfig()` (upsert). Solo `SUPER_ADMIN` escribe con `PATCH /api/admin/config`; la única excepción es `hero_slides`, que escribe `ADMIN+` con `PUT /api/admin/hero` (contenido público, no configuración del sistema) y que `PATCH /api/admin/config` rechaza.
 
 | Campo | Tipo | Zod | Notas |
 | --- | --- | --- | --- |
@@ -65,12 +67,13 @@ Singleton con `key: 'global'` (unique). Lectura con `getGlobalConfig()` (upsert)
 | `enabled_auth_providers` | `[String]` | `z.array(z.enum([...AUTH_PROVIDERS])).max(4)` | Máximo 4 (§4). |
 | `social_links` | `[{ platform, url }]` | `.max(12)` | Consumido por el Footer. |
 | **Δ** `monetization` | Subdocumento (abajo) | `monetizationSchema` | Reglas de colocación en `LeonidApp-Rutas-SEO-Monetizacion.md` §6. |
+| **Δ** `hero_slides` | `[Mixed]`, default `[]` | `z.array(heroSlideSchema).max(6)` | Carrusel del Hero de `/` (abajo). Vacío o sin diapositivas activas = el Hero muestra la diapositiva por defecto del cliente. |
 | `updatedAt` | Date | — | Solo `updatedAt`. |
 
 Bloque **Δ** `monetization`:
 
 ```ts
-const AD_ROUTES = ['/catalogo/:modulo/:slug', '/guias', '/guias/:slug', '/noticias', '/noticias/:slug', '/foro'] as const;
+const AD_ROUTES = ['/catalogo/:categoria/:itemSlug', '/guias', '/guias/:slug', '/noticias', '/noticias/:slug', '/foro'] as const;
 const AD_POSITIONS = ['in-article', 'after-content', 'sidebar'] as const;
 
 export const monetizationSchema = z.object({
@@ -90,7 +93,35 @@ export const monetizationSchema = z.object({
 ```
 
 Mongoose: `monetization: { type: Schema.Types.Mixed, default: { ads_enabled: false, provider: 'none', publisher_id: null, require_consent: true, slots: [] } }`.
-`GET /api/config` expone `monetization` sin campos internos; `PATCH /api/admin/config` (SUPER_ADMIN) valida con `appConfigUpdateSchema`.
+`GET /api/config` expone `monetization` sin campos internos; `PATCH /api/admin/config` (SUPER_ADMIN) valida con `appConfigUpdateSchema` (que **omite** `hero_slides`).
+
+Bloque **Δ** `hero_slides` (carrusel del Hero de la portada `/`, gestionado desde `/_staff` → Contenido público → Portada (Hero), ADMIN+):
+
+```ts
+const internalPath = z.string().regex(/^\/(?!\/)[^\s\]*$/);       // "/mapa", "/guias?x=1"; nunca "//", esquemas ni espacios
+const httpsUrl = z.url({ protocol: /^https$/ });                    // solo https; rechaza javascript:, data:, http:
+export const heroSlideSchema = z.object({
+  id: z.uuid(),
+  activa: z.boolean(),
+  orden: z.number().int().min(0).max(99),                           // el servidor lo normaliza a la posición 0..n-1 al guardar
+  kicker: z.string().trim().max(60).default(''),                    // opcional ('' = sin kicker)
+  titulo: z.string().trim().min(1).max(90),
+  descripcion: z.string().trim().min(1).max(220),
+  boton_texto: z.string().trim().min(1).max(30),
+  boton_enlace: z.union([internalPath, httpsUrl]),
+  boton_secundario_texto: z.string().trim().min(1).max(30).nullable().default(null),    // opcional: ambos o ninguno
+  boton_secundario_enlace: z.union([internalPath, httpsUrl]).nullable().default(null),  // solo se muestra a invitados («Crear cuenta gratis»)
+  imagen_url: z.union([z.string().regex(/^\/media\/[0-9a-f-]{36}$/), httpsUrl]),        // imagen propia (§2.11) o enlace https
+  imagen_alt: z.string().trim().min(1).max(140),                    // accesibilidad (obligatorio)
+});
+```
+
+- Máximo 6 diapositivas e `id` únicos (validación estricta al guardar con `PUT /api/admin/hero`; la lectura pública es tolerante y descarta las que no validan).
+- Con 0 diapositivas activas el cliente muestra la **diapositiva por defecto** (texto, botones «Abrir el mapa» y «Crear cuenta gratis» e imagen `public/assets/hero-gas-station.jpg` actuales); es contenido del cliente, no se persiste.
+- Imagen estándar: **1600 × 900 px (16:9), WebP o JPG, ≤ 400 KB**. Si `imagen_url` es `/media/<id>` se subió con el panel y cumple esa medida (validada en el servidor); si es un enlace `https://` no se valida su tamaño (recomendación 1600×900; el equipo responde de su licencia).
+- Al borrar una diapositiva o reemplazar su imagen, el servidor elimina el `MediaAsset` propio (`/media/<id>`) que quede sin referencias (best effort) y lo audita (`media.delete`).
+- Auditoría: `hero.update` (`target_type: 'AppConfig'`, `target_id: 'global'`, `metadata: { before, after }` de `hero_slides`, truncado según §2.10).
+- `GET /api/hero` (público) devuelve solo las diapositivas **activas** ordenadas, sin `activa` ni `orden`.
 
 ### 2.3 `Module` — `models/Module.ts`
 
@@ -104,7 +135,7 @@ Mongoose: `monetization: { type: Schema.Types.Mixed, default: { ads_enabled: fal
 | `orden` | Number, default `0` | `z.number().int()` |
 | `created_at` | Date | — |
 
-`slug` es el segmento `:modulo` de `/catalogo/:modulo/:slug`. El módulo con `slug: 'guias'` aloja las guías (`/guias/:slug`).
+`slug` es el segmento `:modulo` de `/catalogo/:categoria/:itemSlug`. El módulo con `slug: 'guias'` aloja las guías (`/guias/:slug`).
 
 ### 2.4 `Entity` — `models/Entity.ts`
 
@@ -127,14 +158,19 @@ Mongoose: `monetization: { type: Schema.Types.Mixed, default: { ads_enabled: fal
 | --- | --- | --- | --- |
 | `_id` | UUID | `z.uuid().optional()` | |
 | `entity_id` | String ref `Entity` \| null | `z.uuid().nullable().optional()` | Enlace Mapa ↔ Catálogo. |
+| `slug` | String (opcional, sin valor por defecto) | `slugSchema.optional()` | **Δ** Identificador legible para el deep-link `/mapa?pin=<slug>`. Índice **único *sparse*** `{ slug: 1 }`: los marcadores sin `slug` no entran en el índice. Se rellena con el `slug` de su `Entity` o con el título normalizado. |
 | `region` | String | `z.string().min(1).max(80)` | Índice `{ region: 1 }`. |
 | `titulo` | String | `.min(1).max(160)` | |
 | `descripcion` | String \| null | `.max(2000).nullable().optional()` | |
-| `coord` | `{ x: Number, y: Number }` (sin `_id`) | entrada: `coord_x`, `coord_y` (`z.number().finite()`) | **Índice `2d`**: `s.index({ coord: '2d' }, { min: -100000, max: 100000 })`. Plano Leaflet `CRS.Simple`. |
+| `coord` | `{ x: Number, y: Number }` (sin `_id`) | entrada: `coord_x` (`z.number().min(0).max(1000)`), `coord_y` (`z.number().min(0).max(700)`) | **Índice `2d`**: `s.index({ coord: '2d' }, { min: 0, max: 1000 })`. Plano cartesiano propio del lienzo del mapa (**0–1000 × 0–700**, origen arriba a la izquierda, eje Y hacia abajo), renderizado con SVG propio, sin Leaflet. |
 | `media_url` | String \| null | `.nullable().optional()` | |
 | `created_at` | Date | — | |
 
-El DTO aplana `coord` a `coord_x` / `coord_y`. Consultas espaciales con `$near` / `$geoWithin: { $box }` sobre `coord`.
+**Δ Índice `{ entity_id: 1 }` (no es un campo nuevo):** acelera «¿qué pines cuelgan de esta ficha?» (conexión Ficha ↔ Pin del panel `/_staff`, resumen de pines huérfanos y comprobación de dependientes al borrar una `Entity`).
+
+**Δ Marco de coordenadas de `coord`:** el lienzo 0–1000 × 0–700 coincide con la pirámide de teselas recoloreadas de `public/map-tiles/` (`manifest.json` → `world`; ver DesignSpec §6.4). Los 10 `MapMarker` base están calibrados sobre esas teselas y cualquier alta o movimiento (Modo Editor) usa ese mismo marco. No hay cambios de esquema.
+
+El DTO aplana `coord` a `coord_x` / `coord_y` y expone `slug` (`null` si no existe). `GET /api/markers` admite `?region=` y `?bbox=x1,y1,x2,y2` (consulta `$geoWithin: { $box }` sobre `coord`) y responde con `ETag` y `Cache-Control: public, max-age=60, must-revalidate`.
 
 ### 2.6 `UserProgress` — `models/UserProgress.ts`
 
@@ -174,9 +210,10 @@ Escritura exclusiva del worker `server/src/workers/officialNewsWorker.ts`.
 | `type` | String | **Δ** `z.enum(SUBMISSION_TYPES)` | `SUBMISSION_TYPES = ['marker', 'entity', 'correction', 'contact', 'newsletter']`. |
 | `title` | String | `.min(3).max(160)` | |
 | `payload` | Mixed | `jsonRecordSchema` | Campos destino (ver §5). En `newsletter`: `{ email, locale }`. En `contact`: `{ email, message }`. |
-| `coords` | `{ x, y } \| null` | `z.object({x,y}).nullable()` | Obligatorio si `type = 'marker'`. |
+| `coords` | `{ x, y } \| null` | `z.object({x,y}).nullable()` | Un aporte público `marker` se guarda con `coords: null` (el visitante no conoce el sistema 0-1000 × 0-700); quien lo aprueba debe aportarlas (ver §5). |
 | `status` | `'pending' \| 'approved' \| 'rejected'` | `submissionStatusSchema` | Índice `{ status, createdAt: -1 }`. |
 | `reviewedBy` | String \| null | `z.uuid().nullable()` | `'system'` en aprobación automática. |
+| **Δ** `reviewNote` | String (opcional, sin valor por defecto) | `z.string().trim().max(500).optional()` | Motivo del rechazo, visible solo en moderación (`/_staff`). Se guarda solo al rechazar (`PATCH /api/admin/submissions/:id` con `{ status: 'rejected', reviewNote? }`) y se expone en el DTO como `reviewNote`. |
 | **Δ** `promotedTo` | `{ collection: 'MapMarker' \| 'Entity', id: string } \| null` | `z.object(...).nullable()` | Resultado de la promoción (§5). |
 | `createdAt` | Date | — | |
 
@@ -195,6 +232,7 @@ Escritura exclusiva del worker `server/src/workers/officialNewsWorker.ts`.
 | `contenido` | String | `.min(1).max(10000)` |
 | `is_spoiler` | Boolean | `default(false)` |
 | `is_pinned` | Boolean | solo MODERATOR+ |
+| `is_locked` | Boolean, default `false` | solo MODERATOR+; un hilo cerrado rechaza respuestas nuevas (409) y sigue siendo legible |
 | `upvotes_count` | Number | contador desnormalizado |
 | `created_at` | Date | índice `{ categoria, created_at: -1 }` |
 
@@ -215,7 +253,32 @@ Escritura exclusiva del worker `server/src/workers/officialNewsWorker.ts`.
 | `ip` | String \| null | |
 | `created_at` | Date | Índices `{ created_at: -1 }`, `{ actor_id, created_at: -1 }`. |
 
-Inmutable: solo `insert` mediante `services/audit.ts#writeAudit`. Se escribe en toda acción ADMIN+ y en toda promoción de `Submission`.
+Inmutable: solo `insert` mediante `services/audit.ts#writeAudit`. Se escribe en toda acción ADMIN+ y en toda promoción de `Submission`. `models/AuditLog.ts` exporta además `auditLogSchema` (Zod) con la misma forma.
+
+**Δ Convención de `metadata` (sin campos nuevos; `metadata` sigue siendo `Mixed`):**
+
+- **Actualizaciones** (`entity.update`, `module.update`, `marker.update`, `config.update`, `forum.thread.update`): `metadata = { before, after }` con **solo los campos que cambian** (mismas claves en ambos). Los textos de más de 500 caracteres se truncan (`…[+N]`) y los objetos/arrays cuyo JSON supera 4000 caracteres se sustituyen por `"[valor extenso: N caracteres]"`. Se excluyen siempre secretos, tokens, hashes y correos de terceros: ninguno de esos campos existe en los diffs de catálogo, mapa, módulos, configuración ni foro, y `User` nunca se difunde en `before`/`after`.
+- **Borrados** (`entity.delete`, `module.delete`, `marker.delete`, `forum.thread.delete`): `metadata = { snapshot, … }`, con el documento completo tal como estaba (para `forum.thread.delete`: `{ thread, posts[], votes[] }`, es decir, también los hijos del borrado en cascada). Si el snapshot serializado supera 8 MB solo se guarda `{ thread }` y la entrada lleva `snapshot_truncated: true` (no restaurable).
+- **Restauración** (`entity.restore`, `module.restore`, `marker.restore`, `forum.thread.restore`): solo `SUPER_ADMIN`, `POST /api/admin/audit-logs/:id/restore`. Reinserta el `snapshot` **con el mismo `_id`** en una transacción (en MongoDB sin réplica degrada a escritura sin atomicidad, como `promote()`); responde `409` si el `_id` o el `slug` único ya existen, si esa entrada ya se restauró o si la dependencia (módulo de la ficha) no existe. Escribe su propia entrada con `metadata = { restored_from: <id de la entrada de borrado> }`.
+- Las entradas anteriores a esta convención (`metadata.patch`) siguen siendo legibles y el panel las muestra tal cual.
+
+### 2.11 `MediaAsset` — `models/MediaAsset.ts`
+
+Imágenes subidas desde el panel (solo las diapositivas del Hero, §2.2). Se guardan en MongoDB como binario: sin disco, sin servicio externo y sin librerías.
+
+| Campo | Tipo Mongoose | Zod | Notas |
+| --- | --- | --- | --- |
+| `_id` | String (UUID) | `z.uuid()` | Identificador público: `GET /media/:id`. |
+| `mime` | String enum | `z.enum(['image/webp', 'image/jpeg'])` | Solo estos dos tipos. |
+| `width` / `height` | Number | `z.literal(1600)` / `z.literal(900)` | Leídos de la cabecera real del archivo. |
+| `bytes` | Number | `z.number().int().positive().max(409600)` | ≤ 400 KB. |
+| `data` | Buffer | `z.instanceof(Buffer)` | Contenido binario; nunca viaja en JSON. |
+| `created_by` | String (UUID de `User`) | `z.uuid()` | Quién la subió. |
+| `created_at` | Date | `z.coerce.date().optional()` | Solo creación. |
+
+- Subida: `POST /api/admin/media` (ADMIN+, 404 uniforme sin staff) con cuerpo **binario** (`Content-Type: image/webp` o `image/jpeg`, sin multipart; parser de cuerpo crudo propio solo en esa ruta, `bodyLimit` 600 KB). El servidor valida tipo, **firma mágica real** (WebP `RIFF…WEBP`; JPEG `FFD8FF`), tamaño ≤ 400 KB y dimensiones exactas 1600×900 leídas de la cabecera (JPEG: marcador SOF; WebP: VP8 / VP8L / VP8X), con código propio. Rate-limit 20/min por IP. Auditoría `media.upload`. Responde `201 { id, url: '/media/<id>', mime, width, height, bytes }`.
+- Lectura pública: `GET /media/:id` (solo imágenes; `Content-Type` correcto, `X-Content-Type-Options: nosniff`, `Cache-Control: public, max-age=31536000, immutable`, `ETag`; 404 `text/plain` si no existe). **Sin listados ni enumeración** y fuera de `sitemap.xml`.
+- Orfandad: el `MediaAsset` se borra al eliminar la diapositiva o reemplazar su imagen (best effort, solo si nadie más lo referencia). Una subida cuyo guardado posterior falla puede quedar huérfana; limitación aceptada.
 
 ---
 
@@ -228,7 +291,7 @@ Inmutable: solo `insert` mediante `services/audit.ts#writeAudit`. Se escribe en 
 | `GUEST` | No (ausencia de sesión; `req.authUser === null`) | — | Lectura pública de mapa, catálogo, guías y noticias. Del **foro**, solo la lista en vivo en formato *preview* (sin contenido, respuestas, filtros, búsqueda ni votos: `LeonidApp-UI-NUI-DesignSpec.md` §7.5). Progreso solo local (IndexedDB). Puede enviar `contact` y `newsletter`. |
 | `USER` | Sí (default) | 0 | Progreso sincronizado, crear hilos/posts, votar, crear `Submission` (`marker`, `entity`, `correction`). |
 | `MODERATOR` | Sí | 1 | Lo anterior + fijar/ocultar hilos, revisar `Submission`. Sus propios aportes se aprueban automáticamente (§5). |
-| `ADMIN` | Sí | 2 | Lo anterior + CRUD de `Module`, `Entity`, `MapMarker`; bandeja `contact`. |
+| `ADMIN` | Sí | 2 | Lo anterior + CRUD de `Module`, `Entity`, `MapMarker`; bandeja `contact`; carrusel del Hero (`AppConfig.hero_slides`) y subida de `MediaAsset`. |
 | `SUPER_ADMIN` | Sí | 3 | Lo anterior + panel **Control Total**: cambio de roles, `AppConfig` (incluido `monetization` y proveedores de auth), fuentes de noticias, lectura de `AuditLog`. |
 
 Reglas:
@@ -275,14 +338,14 @@ PROHIBIDO tokens en `localStorage`, `sessionStorage`, IndexedDB o en la URL. El 
 
 **Disparadores** (cualquiera de los dos):
 
-- **A. Revisión manual:** `PATCH /api/admin/submissions/:id { status: 'approved' }` por `MODERATOR+`.
+- **A. Revisión manual:** `PATCH /api/admin/submissions/:id { status: 'approved', coords? }` por `MODERATOR+` (`coords` solo al aprobar; se escribe en la Submission `marker` antes de promover).
 - **B. Autor de confianza:** al crear (`POST /api/submissions`), si el autor tiene rango `≥ MODERATOR`, el servidor la marca `approved` con `reviewedBy: 'system'` y ejecuta la promoción en la misma petición.
 
 **Promoción** (servicio `services/submissions.ts#promote`, en una transacción Mongo):
 
 | `type` | Validación previa | Resultado |
 | --- | --- | --- |
-| `marker` | `coords` no nulo; `payload` valida con `mapMarkerSchema` (`region`, `titulo`, `descripcion?`, `entity_id?`, `media_url?`) | `MapMarker.create({ ...payload, coord: coords })` |
+| `marker` | `coords` no nulo (al aprobar, `PATCH /api/admin/submissions/:id` admite `coords: {x,y}` en el cuerpo para ubicar el pin; sin ellas responde 422 «Falta ubicar el pin…» y el aporte sigue `pending`); `payload` valida con `mapMarkerSchema` (`region`, `titulo`, `descripcion?`, `entity_id?`, `media_url?`) | `MapMarker.create({ ...payload, coord: coords })` |
 | `entity` | `moduleSlug` existe y `activo`; `payload` valida con `entitySchema` (sin `module_id`, que se resuelve desde `moduleSlug`) | `Entity.create({ ...payload, module_id })` |
 | `correction` | `payload = { target: 'Entity' \| 'MapMarker', id, patch }`; `patch` valida con el schema `.partial()` | `updateOne` del documento destino |
 | `contact`, `newsletter` | — | **Nunca se promueven.** Solo bandeja ADMIN; `approved` = atendido. |
@@ -305,11 +368,22 @@ Reglas:
 | `AppConfig` | `key` único |
 | `Module` | `slug` único |
 | `Entity` | `{ module_id, categoria }` · **Δ** `{ module_id, slug }` único |
-| `MapMarker` | `{ coord: '2d' }` (min −100000, max 100000) · `{ region }` |
+| `MapMarker` | `{ coord: '2d' }` (min 0, max 1000) · `{ region }` · **Δ** `{ slug }` único *sparse* · **Δ** `{ entity_id }` |
 | `UserProgress` | `{ user_id, target_type, target_id }` único |
 | `OfficialNews` | `sourceUrl` único · `publishedAt: -1` · **Δ** `slug` único |
 | `Submission` | `userId` · `{ status, createdAt: -1 }` |
 | `ForumThread` | `{ categoria, created_at: -1 }` · `entity_id` parcial |
 | `ForumPost` | `thread_id` |
 | `ForumVote` | `{ user_id, target_type, target_id }` único |
-| `AuditLog` | `{ created_at: -1 }` · `{ actor_id, created_at: -1 }` |
+| `MediaAsset` | solo `_id` |
+| `AuditLog` | `{ created_at: -1 }` · `{ actor_id, created_at: -1 }` · **Δ** `{ target_type, target_id, created_at: -1 }` (historial de un objeto) |
+
+## Anexo. Exposición pública y respuestas uniformes
+
+- **Hero y medios:** `GET /api/hero` (público, `Cache-Control: public, max-age=30`, ETag débil) solo expone las diapositivas activas sin `activa` ni `orden`; `GET /api/admin/hero` y `PUT /api/admin/hero` (ADMIN+) y `POST /api/admin/media` (ADMIN+) devuelven el 404 uniforme sin sesión de staff (RBAC antes que Zod y antes del parser binario). `GET /media/:id` es público, sin listados, con `nosniff` y caché inmutable; un id inexistente responde 404 `text/plain`.
+- **Foro público:** la proyección pública de autores expone solo `id`, `username` y `avatar_url` (nunca `rol` ni `email`).
+- **Superficie administrativa:** `/api/admin/*` y los POST/PATCH/DELETE administrativos de catálogo, mapa, roles, configuración y auditoría devuelven un **404 genérico** (idéntico al de una ruta inexistente) a quien no tenga sesión de staff autorizada; el RBAC se evalúa antes que la validación Zod. Lectura de `AuditLog`, cambio de roles, revocación de sesiones, configuración, salud del sistema y caché: `SUPER_ADMIN`. Moderación de aportes y foro: `MODERATOR+`. Catálogo, mapa, módulos y estado/ejecución del worker de noticias: `ADMIN+`.
+- **Panel `/_staff` (resumen, historial, restauración, dependientes):** `GET /api/admin/overview` (Resumen Operativo, `MODERATOR+`, `Cache-Control: private, no-store`; contenido filtrado por rol: MODERATOR ve los aportes de moderación —sin contact/newsletter— y sus propias acciones; ADMIN+ añade worker de noticias, cobertura del catálogo y pines huérfanos; SUPER_ADMIN ve las últimas 10 acciones de todos), `GET /api/admin/submissions/pending-count` (`MODERATOR+`, insignia de pendientes), `GET /api/admin/dependents/:type/:id` (`type ∈ thread|entity|marker|module`; `thread` MODERATOR+, el resto ADMIN+; recuentos y títulos para la confirmación de borrado), `GET /api/admin/history?target_type&target_id` (`MODERATOR+`; SUPER_ADMIN ve todo el historial del objeto, el resto solo sus propias entradas y sin `snapshot`) y `POST /api/admin/audit-logs/:id/restore` (`SUPER_ADMIN`). Todos devuelven el 404 uniforme a quien no corresponda.
+- **404 de negocio vs 404 uniforme:** el 404 uniforme (ruta inexistente o sin autorización de staff) lleva el cuerpo exacto `{"error":"No encontrado"}` y es indistinguible de una ruta inexistente. Un 404 de recurso que solo ve un staff ya autorizado lleva además `code: "RESOURCE_NOT_FOUND"` (p. ej. `{"error":"Entidad no encontrada","code":"RESOURCE_NOT_FOUND"}`); el cliente del panel solo se considera «sin acceso» ante el 404 **sin** `code`. Un borrado con dependientes responde `409` con `code: "HAS_DEPENDENTS"` y `details` (recuento y títulos). Nunca se emite un código distinto de 404 a quien no es staff.
+- **`GET /api/entities`:** admite `?limit=&page=`, `?module=`, `?id=` (una ficha concreta) y `?q=` (búsqueda por título o slug; es la búsqueda remota del selector único de fichas `EntityPicker`, sin cargar el catálogo entero); respuesta comprimida con `Cache-Control`/`ETag`.
+- Cifras vigentes del catálogo: 243 `Entity` (armas 13, vehículos 200, guías 20, mapa 10), 10 `MapMarker`, 1 `OfficialNews`.

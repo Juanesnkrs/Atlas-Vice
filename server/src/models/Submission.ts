@@ -13,7 +13,7 @@ export const submissionTypeSchema = z.enum(SUBMISSION_TYPES);
 export const FOOTER_SUBMISSION_TYPES = ['contact', 'newsletter'] as const;
 export const isFooterType = (t: string): boolean => (FOOTER_SUBMISSION_TYPES as readonly string[]).includes(t);
 
-const coordsSchema = z.object({ x: z.number().finite(), y: z.number().finite() });
+const coordsSchema = z.object({ x: z.number().min(0).max(1000), y: z.number().min(0).max(700) });
 
 const submissionBase = z.object({
   moduleSlug: z.string().min(1).max(60),
@@ -23,12 +23,9 @@ const submissionBase = z.object({
   coords: coordsSchema.nullable().default(null),
 });
 
-const markerNeedsCoords = (v: { type: string; coords: unknown }): boolean => v.type !== 'marker' || v.coords !== null;
-
 /** Entrada de usuarios con sesion (POST /api/submissions): solo aportes, no Footer. */
 export const submissionCreateSchema = submissionBase
-  .refine((v) => !isFooterType(v.type), { message: 'Tipo no permitido', path: ['type'] })
-  .refine(markerNeedsCoords, { message: 'coords obligatorio para marker', path: ['coords'] });
+  .refine((v) => !isFooterType(v.type), { message: 'Tipo no permitido', path: ['type'] });
 export type SubmissionCreate = z.infer<typeof submissionCreateSchema>;
 
 /** Esquema completo del documento: userId null solo para contact/newsletter. */
@@ -42,15 +39,19 @@ export const submissionSchema = submissionBase
       .object({ collection: z.enum(['MapMarker', 'Entity']), id: z.string() })
       .nullable()
       .default(null),
+    reviewNote: z.string().trim().max(500).optional(),
     createdAt: z.coerce.date().optional(),
   })
   .refine((v) => v.userId !== null || isFooterType(v.type), {
     message: 'userId solo puede ser null en contact/newsletter',
     path: ['userId'],
-  })
-  .refine(markerNeedsCoords, { message: 'coords obligatorio para marker', path: ['coords'] });
+  });
 export type SubmissionDTO = z.infer<typeof submissionSchema>;
-export const submissionReviewSchema = z.object({ status: z.enum(['approved', 'rejected']) });
+/** reviewNote (motivo de rechazo) solo aplica a `rejected`; coords (ubicacion del pin) solo a `approved`. */
+export const submissionReviewSchema = z
+  .object({ status: z.enum(['approved', 'rejected']), reviewNote: z.string().trim().max(500).optional(), coords: coordsSchema.optional() })
+  .refine((v) => v.status === 'rejected' || v.reviewNote === undefined, { message: 'reviewNote solo se admite al rechazar', path: ['reviewNote'] })
+  .refine((v) => v.status === 'approved' || v.coords === undefined, { message: 'coords solo se admite al aprobar', path: ['coords'] });
 
 export interface SubmissionDoc {
   _id: string;
@@ -63,6 +64,7 @@ export interface SubmissionDoc {
   status: (typeof SUBMISSION_STATUSES)[number];
   reviewedBy: string | null;
   promotedTo: { collection: 'MapMarker' | 'Entity'; id: string } | null;
+  reviewNote?: string;
   createdAt: Date;
 }
 
@@ -78,6 +80,7 @@ const s = new Schema<SubmissionDoc>(
     status: { type: String, enum: SUBMISSION_STATUSES, default: 'pending' },
     reviewedBy: { type: String, default: null },
     promotedTo: { type: Schema.Types.Mixed, default: null },
+    reviewNote: { type: String },
   },
   { timestamps: { createdAt: 'createdAt', updatedAt: false }, versionKey: false, minimize: false },
 );
@@ -97,5 +100,6 @@ export const toSubmissionDTO = (d: SubmissionDoc) => ({
   status: d.status,
   reviewedBy: d.reviewedBy ?? null,
   promotedTo: d.promotedTo ?? null,
+  ...(d.reviewNote ? { reviewNote: d.reviewNote } : {}),
   createdAt: d.createdAt?.toISOString(),
 });

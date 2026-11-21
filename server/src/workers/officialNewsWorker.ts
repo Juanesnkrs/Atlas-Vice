@@ -14,8 +14,17 @@ const MAX_ITEMS_PER_SOURCE = 30;
 
 export const officialNewsSchema = z.object({
   title: z.string().trim().min(3).max(300),
-  summary: z.string().trim().max(500).default(''),
-  sourceUrl: z.string().url().refine(isAllowedUrl, 'host fuera de la lista blanca'),
+  summary: z.string().trim().min(1, 'resumen oficial obligatorio').max(500),
+  sourceUrl: z
+    .string()
+    .url()
+    .refine(isAllowedUrl, 'host fuera de la lista blanca')
+    .transform((u) => {
+      const c = new URL(u);
+      c.hash = '';
+      c.search = '';
+      return c.toString();
+    }),
   source: z.enum(['rockstar-newswire', 'rockstar-youtube', 'take-two-ir']),
   imageUrl: z.string().url().optional(),
   publishedAt: z.date(),
@@ -186,29 +195,72 @@ async function ingestSource(source: NewsSourceConfig): Promise<number> {
   return res.upsertedCount ?? 0;
 }
 
-export async function runOfficialNewsIngest(): Promise<void> {
-  if (running) return;
+export interface NewsRunResult {
+  source: string;
+  inserted: number;
+  error: string | null;
+}
+const CRON_EXPR = '*/15 * * * *';
+const state: { enabled: boolean; startedAt: Date | null; finishedAt: Date | null; trigger: 'cron' | 'manual' | null; results: NewsRunResult[] } = {
+  enabled: false,
+  startedAt: null,
+  finishedAt: null,
+  trigger: null,
+  results: [],
+};
+
+/** Estado en memoria del worker (por proceso): para el panel de staff. */
+export function getNewsWorkerStatus() {
+  const now = new Date();
+  const next = new Date(now);
+  next.setSeconds(0, 0);
+  next.setMinutes(Math.floor(now.getMinutes() / 15) * 15 + 15);
+  return {
+    enabled: state.enabled,
+    schedule: CRON_EXPR,
+    running,
+    trigger: state.trigger,
+    lastStartedAt: state.startedAt?.toISOString() ?? null,
+    lastFinishedAt: state.finishedAt?.toISOString() ?? null,
+    lastResults: state.results,
+    nextRunAt: state.enabled ? next.toISOString() : null,
+    sources: NEWS_SOURCES.map((s) => ({ id: s.id, url: s.url })),
+  };
+}
+
+/** Devuelve false si ya habia una ejecucion en curso. */
+export async function runOfficialNewsIngest(trigger: 'cron' | 'manual' = 'cron'): Promise<boolean> {
+  if (running) return false;
   running = true;
+  state.startedAt = new Date();
+  state.trigger = trigger;
+  const results: NewsRunResult[] = [];
   try {
     for (const source of NEWS_SOURCES) {
       try {
         const n = await ingestSource(source);
+        results.push({ source: source.id, inserted: n, error: null });
         log.info({ source: source.id, inserted: n }, 'ingesta de noticias oficiales');
       } catch (err) {
+        results.push({ source: source.id, inserted: 0, error: err instanceof Error ? err.message.slice(0, 200) : 'error' });
         log.error({ err, source: source.id }, 'fallo en fuente; se continua con las demas');
       }
     }
   } finally {
+    state.results = results;
+    state.finishedAt = new Date();
     running = false;
   }
+  return true;
 }
 
 export function startOfficialNewsWorker(app?: FastifyInstance): void {
   if (process.env.NEWS_WORKER_ENABLED === 'false') return;
+  state.enabled = true;
   if (app?.log) log = app.log as unknown as Logger;
   const safeRun = () => {
     void runOfficialNewsIngest().catch((err) => log.error({ err }, 'ingesta fallida'));
   };
-  cron.schedule('*/15 * * * *', safeRun);
+  cron.schedule(CRON_EXPR, safeRun);
   safeRun();
 }

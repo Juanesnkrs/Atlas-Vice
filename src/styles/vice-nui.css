@@ -45,6 +45,21 @@ body,
   -webkit-font-smoothing: antialiased;
 }
 
+/* Listas desplegables nativas (select): fondo oscuro y texto claro en cada opción. Sin esto, en Windows/Android
+   las opciones salen blanco sobre blanco y solo se leen al pasar el cursor. */
+select {
+  color-scheme: dark;
+}
+select option,
+select optgroup {
+  background-color: #1a0f2a;
+  color: var(--vice-text);
+}
+select option:checked {
+  background-color: #7b2c6f;
+  color: var(--vice-text);
+}
+
 h1,
 h2,
 h3 {
@@ -70,6 +85,15 @@ h3 {
   backdrop-filter: blur(14px);
   border: 1px solid var(--vice-glass-border);
   box-shadow: 0 10px 40px rgba(26, 10, 34, 0.45);
+}
+
+/* Rendimiento táctil en /mapa: sin backdrop-filter sobre el bitmap en movimiento; mismo tono, algo más opaco. */
+@media (max-width: 767px), (pointer: coarse) {
+  body.map-active .glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: rgba(20, 14, 36, 0.93);
+  }
 }
 
 /* Capas: ver --z-* en :root. Las hojas se pintan en un portal en <body> para quedar sobre el dock. */
@@ -140,6 +164,18 @@ h3 {
 *::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #e1307e, #f69259);
   border-radius: 8px;
+}
+
+/* Utilidad scrollbar-none: carruseles táctiles de píldoras sin barra visible (el scroll sigue activo).
+   Va fuera de las capas de Tailwind a propósito: las reglas sin capa de scrollbars (arriba) ganarían a una utility en capa. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 /* Animaciones */

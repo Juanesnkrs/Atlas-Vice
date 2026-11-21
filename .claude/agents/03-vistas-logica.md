@@ -14,7 +14,7 @@ Tu único alcance:
 2. Vistas en `src/pages/`:
    - `LandingAuthPage.tsx` (P01 + P02): landing SEO/Storytelling (pilar 7) + Auth PKCE con **máximo 4 botones** y sesión por cookie HttpOnly (pilares 1 y 2). Nunca guardes tokens en el cliente.
    - `DashboardPage.tsx` (P03): avance, rutas sugeridas y novedades. Las noticias salen solo de la API de noticias oficiales (pilar 3).
-   - `MapPage.tsx` (P04): Leaflet CRS.Simple con capas, filtros, pines y drawer de comentarios.
+   - `MapPage.tsx` (P04): canvas propio (pirámide de teselas HD en `public/map-tiles/`) con capa SVG de marcadores, filtros, pines y drawer de comentarios. Sin Leaflet.
    - `CatalogPage.tsx` (P05) y `ForumPage.tsx` (P07): **CONSERVAR** su diseño actual (pilar 8). Solo conecta datos a la API sin cambiar su UI.
    - `AdminSubmitPage.tsx` (P06): aportes USER + moderación ADMIN.
    - Panel **Control Total** (pilar 5), visible solo para `SUPER_ADMIN`, ubicado dentro de la estructura aprobada.

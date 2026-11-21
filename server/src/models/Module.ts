@@ -11,7 +11,17 @@ export const moduleSchema = z.object({
   orden: z.number().int().default(0),
 });
 export type ModuleDTO = z.infer<typeof moduleSchema>;
-export const moduleUpdateSchema = moduleSchema.partial();
+/** Sin `.default()`: un PATCH parcial no debe resetear `activo` ni `orden`. */
+export const moduleUpdateSchema = z
+  .object({
+    id: z.uuid(),
+    slug: z.string().min(1).max(60),
+    nombre: z.string().min(1).max(80),
+    icono: z.string().min(1).max(60),
+    activo: z.boolean(),
+    orden: z.number().int(),
+  })
+  .partial();
 
 export interface ModuleDoc {
   _id: string;

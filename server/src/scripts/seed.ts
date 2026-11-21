@@ -1,5 +1,7 @@
 // Seed idempotente (upserts por _id). Datos de ejemplo replicados desde src/data/seed.ts
 // (seedData.json, mismos UUID). Uso: pnpm --dir server seed
+// Con `--base` solo crea los 7 módulos, la config global y los índices (sin datos de ejemplo):
+// pensado para entornos reales cuyo contenido llega por `import:catalog`.
 import type { Model } from 'mongoose';
 import { connectDb, disconnectDb } from '../config/db.js';
 import { getGlobalConfig } from '../models/AppConfig.js';
@@ -118,6 +120,15 @@ async function backfillNewsSlugs(): Promise<void> {
 
 async function main(): Promise<void> {
   await connectDb();
+
+  if (process.argv.includes('--base')) {
+    await upsertAll<ModuleDoc>('modules', Module, raw.modules as never);
+    await getGlobalConfig();
+    await Promise.all([Module, Entity, MapMarker, OfficialNews].map((m) => m.syncIndexes()));
+    console.log('Seed base completado (solo módulos).');
+    await disconnectDb();
+    return;
+  }
 
   await upsertAll<UserDoc>('users', User, raw.profiles as never);
   await upsertAll<ModuleDoc>('modules', Module, raw.modules as never);
