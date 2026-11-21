@@ -560,6 +560,49 @@ function EditorPanel({ extra, cross, selected, preset, regions, nearestRegion, b
   );
 }
 
+/** Ayuda junto al contador: qué es «completado» y leyenda de colores de las capas con puntos. */
+function MapHelp({ layers, align }: { layers: ReadonlyArray<{ id: string; label: string; color: string }>; align: 'left' | 'right' }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-flex">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="map-ayuda"
+        aria-label="Ayuda: qué significa completado y colores del mapa"
+        onClick={() => setOpen((v) => !v)}
+        className="glass pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold focus-visible:outline-2 focus-visible:outline-vice-gold md:h-8 md:w-8"
+      >
+        ?
+      </button>
+      {open && (
+        <div
+          id="map-ayuda"
+          role="region"
+          aria-label="Ayuda del mapa"
+          className={`glass pointer-events-auto absolute top-full z-20 mt-2 w-72 max-w-[85vw] rounded-2xl p-3 text-left text-xs leading-relaxed ${
+            align === 'left' ? 'left-0' : 'right-0'
+          }`}
+        >
+          <p className="font-semibold">¿Qué es «completado»?</p>
+          <p className="mt-1 text-vice-text/90">
+            Marca un lugar como completado desde su ficha cuando ya lo hayas visitado o resuelto. Cuenta para tu avance.
+          </p>
+          <p className="mt-2 font-semibold">Colores de los puntos</p>
+          <ul className="mt-1 grid grid-cols-1 gap-y-1">
+            {layers.map((l) => (
+              <li key={l.id} className="flex items-center gap-2">
+                <span aria-hidden="true" className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: l.color }} />
+                {l.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </span>
+  );
+}
+
 const ZOOM_BTN =
   'flex h-11 w-11 items-center justify-center text-xl hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold';
 
@@ -614,6 +657,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
     for (const l of layered) c.set(l.layer, (c.get(l.layer) ?? 0) + 1);
     return c;
   }, [layered]);
+  const legendLayers = useMemo(() => MAP_LAYERS.filter((l) => (layerCount.get(l.id) ?? 0) > 0), [layerCount]);
   const regions = useMemo(
     () => [...new Set(data.markers.map((m) => m.region))].sort((a, b) => a.localeCompare(b, 'es')),
     [data.markers],
@@ -1006,7 +1050,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       {/* API caída, 429 o sin servidor: estado honesto con reintento (el mapa base sigue disponible) */}
       {unavailable && (
         <div className="absolute inset-0 z-20 flex items-center justify-center p-4">
-          <ApiErrorState compact title="No pudimos cargar los marcadores" message={error ?? ''} onRetry={retry} />
+          <ApiErrorState compact title="No pudimos cargar los lugares" message={error ?? ''} onRetry={retry} />
         </div>
       )}
 
@@ -1014,7 +1058,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       {pins.length === 0 && filtersActive && !unavailable && (
         <div role="status" className="pointer-events-none absolute inset-x-3 bottom-28 z-10 flex justify-center md:bottom-10">
           <div className="glass pointer-events-auto flex max-w-sm flex-col items-center gap-3 rounded-2xl p-4 text-center">
-            <p className="font-semibold">No hay marcadores con estos filtros.</p>
+            <p className="font-semibold">No hay lugares con estos filtros.</p>
             <PalmButton type="button" onClick={resetFilters} className="min-h-11!">
               Limpiar filtros
             </PalmButton>
@@ -1026,7 +1070,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       <div className="pointer-events-none absolute left-3 right-3 top-2 z-10 flex max-h-[calc(100%-1rem)] flex-col gap-2 md:right-auto md:w-64 md:overflow-y-auto">
         <div className="pointer-events-auto relative">
           <label htmlFor="map-search" className="sr-only">
-            Buscar marcador, entidad o región
+            Buscar lugar, ficha o región
           </label>
           <input
             id="map-search"
@@ -1072,8 +1116,9 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
             Capas y filtros{filtersActive ? ' •' : ''}
           </button>
           <p role="status" className="glass whitespace-nowrap rounded-full px-3 py-2 text-xs">
-            {doneCount}/{data.markers.length} completados
+            {doneCount}/{data.markers.length} lugares completados
           </p>
+          <MapHelp layers={legendLayers} align="left" />
         </div>
 
         <fieldset
@@ -1161,12 +1206,13 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           <button
             type="button"
             aria-pressed={editor}
+            title="Solo para el equipo"
             onClick={() => {
               setEditor((v) => !v);
               setCross(null);
               setStatus(null);
             }}
-            className={`flex min-h-11 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
+            className={`mt-4 flex min-h-11 items-center gap-2 whitespace-nowrap rounded-full px-4 text-sm font-bold ring-1 ring-vice-gold/40 focus-visible:outline-2 focus-visible:outline-vice-gold ${
               editor ? 'bg-vice-gold text-vice-ink' : 'glass'
             }`}
           >
@@ -1177,9 +1223,12 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
             Modo editor
           </button>
         )}
-        <p role="status" className="glass hidden whitespace-nowrap rounded-full px-3 py-1 text-xs md:absolute md:right-full md:top-0 md:mr-2 md:block">
-          {doneCount}/{data.markers.length} completados
-        </p>
+        <div className="hidden items-center gap-1 md:absolute md:right-full md:top-0 md:mr-2 md:flex">
+          <p role="status" className="glass whitespace-nowrap rounded-full px-3 py-1 text-xs">
+            {doneCount}/{data.markers.length} lugares completados
+          </p>
+          <MapHelp layers={legendLayers} align="right" />
+        </div>
       </div>
 
       {notice && (
@@ -1191,7 +1240,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       {/* Ficha P04.3: panel flotante (escritorio) / Bottom Sheet (móvil; en modo editor muestra el editor) */}
       {selected && isDesktop && (
         <aside
-          aria-label="Ficha de marcador"
+          aria-label="Ficha del lugar"
           className="glass absolute bottom-3 right-3 top-[15rem] z-10 w-[340px] overflow-y-auto rounded-2xl p-4 max-md:hidden"
         >
           {card}

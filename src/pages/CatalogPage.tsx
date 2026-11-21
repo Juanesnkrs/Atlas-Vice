@@ -6,7 +6,6 @@
 //   ...?vista=ficha                  -> ficha completa del ítem (misma URL canónica)
 //   ?comparar=a,b[,c]  comparador sobre la URL vigente · ?q= búsqueda · ?modulo= / ?entity= heredados
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { SunsetBanner } from '../components/layout/ViceShell';
 import { AdSlot } from '../components/ui/AdSlot';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { BottomSheet } from '../components/ui/BottomSheet';
@@ -47,11 +46,12 @@ import type { Entity } from '../types/database';
 
 type TabSlug = 'armas' | 'vehiculos' | 'coleccionables';
 
-const TABS: ReadonlyArray<{ slug: TabSlug; label: string; heading: string; doneLabel: string }> = [
-  { slug: 'armas', label: 'Armas', heading: 'ARMERÍA', doneLabel: 'Obtenida' },
-  { slug: 'vehiculos', label: 'Vehículos', heading: 'GARAJE', doneLabel: 'Obtenido' },
-  { slug: 'coleccionables', label: 'Coleccionables', heading: 'COLECCIONABLES', doneLabel: 'Completado' },
+const TABS: ReadonlyArray<{ slug: TabSlug; label: string; doneLabel: string }> = [
+  { slug: 'armas', label: 'Armas', doneLabel: 'Obtenida' },
+  { slug: 'vehiculos', label: 'Vehículos', doneLabel: 'Obtenido' },
+  { slug: 'coleccionables', label: 'Coleccionables', doneLabel: 'Completado' },
 ];
+const TAB_SLUGS = TABS.map((t) => t.slug);
 
 const normalizeText = (t: string): string =>
   t
@@ -157,21 +157,56 @@ function Silhouette({ entity, className = '' }: { entity: Entity; className?: st
   );
 }
 
-function Artwork({ src, alt, className }: { src: string | null; alt: string; className?: string }) {
+/** Icono limpio por categoria para las fichas que aun no tienen imagen ni silueta propia. */
+function CategoryGlyph({ kind, className = '' }: { kind?: string; className?: string }) {
+  const gid = useId();
+  const wide = kind === 'vehiculos';
+  return (
+    <svg
+      aria-hidden="true"
+      focusable="false"
+      viewBox={wide ? '0 0 240 100' : '0 0 100 100'}
+      className={`text-[#F67E56] opacity-60 ${className}`}
+      fill={`url(#${gid})`}
+    >
+      <defs>
+        <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="100">
+          <stop offset="0" stopColor="#E1307E" />
+          <stop offset="1" stopColor="#F69259" />
+        </linearGradient>
+      </defs>
+      {kind === 'armas' ? (
+        <>
+          <circle cx="50" cy="50" r="28" fill="none" stroke={`url(#${gid})`} strokeWidth="7" />
+          <path d="M47 6h6v26h-6zM47 68h6v26h-6zM6 47h26v6H6zM68 47h26v6H68z" />
+          <circle cx="50" cy="50" r="5" />
+        </>
+      ) : wide ? (
+        <VehiclePaths kind="sedan" />
+      ) : kind === 'coleccionables' ? (
+        <path d="M50 8 L61 38 L93 40 L68 60 L77 92 L50 74 L23 92 L32 60 L7 40 L39 38 Z" />
+      ) : (
+        <path d="M50 10 L90 50 L50 90 L10 50 Z" />
+      )}
+    </svg>
+  );
+}
+
+function Artwork({ src, alt, kind, className }: { src: string | null; alt: string; kind?: string; className?: string }) {
   const [failed, setFailed] = useState<string | null>(null);
-  if (!src || failed === src) return <SunsetBanner className={className} />;
+  if (!src || failed === src) return <CategoryGlyph kind={kind} className={className} />;
   return <img src={src} alt={alt} className={className} onError={() => setFailed(src)} />;
 }
 
 /** Imagen de un ítem: artwork real, silueta SVG (armas/vehículos) o banner sunset. */
-function ItemVisual({ entity, className = '' }: { entity: Entity; className?: string }) {
+function ItemVisual({ entity, kind, className = '' }: { entity: Entity; kind?: string; className?: string }) {
   if (entity.imagen_url) {
-    return <Artwork src={entity.imagen_url} alt={entity.titulo} className={`object-cover ${className}`} />;
+    return <Artwork src={entity.imagen_url} alt={entity.titulo} kind={kind} className={`object-cover ${className}`} />;
   }
   if (metaOf(entity).silueta) {
     return <Silhouette entity={entity} className={className} />;
   }
-  return <SunsetBanner className={className} />;
+  return <CategoryGlyph kind={kind} className={className} />;
 }
 
 const MAX_COMPARE = 3;
@@ -192,7 +227,7 @@ const ZOOM_BTN =
   'glass flex h-11 w-11 items-center justify-center rounded-xl hover:brightness-110 focus-visible:outline-2 focus-visible:outline-vice-gold';
 
 /** Visor del Inspector (escritorio): marco con zoom 0.8x-1.8x como `Inspector.dc.html`. */
-function Viewer({ entity }: { entity: Entity }) {
+function Viewer({ entity, kind }: { entity: Entity; kind?: string }) {
   const [zoom, setZoom] = useState(1);
   const step = (d: number) => setZoom((z) => Math.min(1.8, Math.max(0.8, Math.round((z + d) * 10) / 10)));
   const credit = entity.imagen_url ? 'Artwork' : metaOf(entity).silueta ? 'Silueta vectorial ilustrativa' : '';
@@ -210,6 +245,7 @@ function Viewer({ entity }: { entity: Entity }) {
             />
             <ItemVisual
               entity={entity}
+              kind={kind}
               className={
                 entity.imagen_url
                   ? 'absolute inset-0 h-full w-full'
@@ -300,6 +336,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
   } = useWorldData({
     entities: legacyAll ? 'all' : mapRedirect || categoria === 'guias' ? [] : [scopeSlug],
     markers: true,
+    counts: TAB_SLUGS,
   });
   const { data: forum } = useForumData();
   const items = useProgressStore((s) => s.items);
@@ -317,6 +354,10 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
   const defaultTab = tabs.find((t) => t.slug === 'armas') ?? tabs[0];
 
   const [cat, setCat] = useState<string>('Todas');
+  // Movil: los chips de subcategoria van tras un boton «Filtros».
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  // Una categoria sin fichas se anuncia como «Próximamente» en lugar de una pestaña vacía.
+  const comingSoon = (slug: string): boolean => loaded && data.counts[slug] === 0;
 
   // Buscador por URL: ?q=texto (SearchAction de ssrLite). Filtra por titulo, subtitulo, categoria y alias.
   const qParam = params.get('q') ?? '';
@@ -445,7 +486,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
       state: itemSlug ? undefined : { [OVERLAY_STATE_KEY]: true },
     });
   };
-  const selectTab = (slug: string) => navigate(`/catalogo/${slug}${buildQuery({ q: qValue })}`, { keepScroll: true });
+  const selectTab = (slug: string) => comingSoon(slug) || navigate(`/catalogo/${slug}${buildQuery({ q: qValue })}`, { keepScroll: true });
   const selectSub = (c: string) => {
     setCat(c);
     if (itemSlug) navigate(`${catPath}${buildQuery({ q: qValue })}`, { replace: true, keepScroll: true });
@@ -474,7 +515,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
     const noindex = 'noindex,nofollow' as const;
     if (failed) return { title: 'Catálogo de Leonida', robots: noindex };
     if (categoryMissing) return { title: 'Categoría no encontrada', robots: noindex };
-    if (itemMissing) return { title: 'Elemento no encontrado', robots: noindex };
+    if (itemMissing) return { title: 'Ficha no encontrada', robots: noindex };
     if (!moduleDef || !tab) {
       return {
         title: 'Catálogo de Leonida',
@@ -629,11 +670,11 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3 px-3 pt-1 md:px-8">
+    <div className="flex flex-col gap-3 px-3 pt-1 md:h-full md:min-h-0 md:px-8">
       {/* Cabecera y pestañas */}
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h1 className="font-display text-xl font-bold uppercase tracking-wide text-vice-gold md:text-2xl">
-          {tabDef.heading}
+          {tabDef.label}
           {cat !== 'Todas' && <span className="text-vice-orange"> // {cat}</span>}
         </h1>
         <div role="tablist" aria-label="Categorías del catálogo" className="scrollbar-none flex max-w-full gap-2 overflow-x-auto">
@@ -643,12 +684,14 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
               type="button"
               role="tab"
               aria-selected={tab === t.slug}
+              aria-disabled={comingSoon(t.slug) || undefined}
               onClick={() => selectTab(t.slug)}
               className={`min-h-11 whitespace-nowrap rounded-full border border-vice-orange/30 px-5 text-sm font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-                tab === t.slug ? 'bg-vice-accent text-vice-ink' : 'bg-white/10 hover:bg-white/15'
+                tab === t.slug ? 'bg-vice-accent text-vice-ink' : comingSoon(t.slug) ? 'bg-white/5 text-vice-text/70' : 'bg-white/10 hover:bg-white/15'
               }`}
             >
               {t.label}
+              {comingSoon(t.slug) && <span className="ml-2 text-[11px] font-semibold text-vice-gold">Próximamente</span>}
             </button>
           ))}
         </div>
@@ -670,7 +713,25 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
       </div>
 
       {categories.length > 2 && (
-        <div role="group" aria-label="Filtrar por categoría" className="scrollbar-none flex gap-1 overflow-x-auto">
+        <button
+          type="button"
+          aria-expanded={filtersOpen}
+          aria-controls="cat-filtros"
+          onClick={() => setFiltersOpen((o) => !o)}
+          className="glass flex min-h-11 items-center justify-between gap-3 rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold md:hidden"
+        >
+          <span>Filtros</span>
+          <span className="text-xs text-vice-orange">{cat === 'Todas' ? 'Todas' : `Activo: ${cat}`}</span>
+        </button>
+      )}
+
+      {categories.length > 2 && (
+        <div
+          id="cat-filtros"
+          role="group"
+          aria-label="Filtrar por categoría"
+          className={`scrollbar-none ${filtersOpen ? 'flex flex-wrap' : 'hidden'} gap-1 md:flex md:flex-nowrap md:overflow-x-auto`}
+        >
           {categories.map((c) => (
             <button
               key={c}
@@ -689,12 +750,12 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
 
       {categories.length <= 2 && entitiesPending && (
         // Reserva el alto de la fila de subcategorías mientras llegan las fichas (CLS = 0).
-        <div aria-hidden="true" className="h-11 shrink-0 md:h-9" />
+        <div aria-hidden="true" className="hidden h-9 shrink-0 md:block" />
       )}
 
       {itemMissing && !isDesktop && (
         <p role="status" className="glass rounded-xl p-3 text-center text-sm">
-          No encontramos este elemento.{' '}
+          No encontramos esta ficha.{' '}
           <a href={catPath} className="font-semibold text-vice-orange underline">
             Ver {tabDef.label.toLowerCase()}
           </a>
@@ -705,14 +766,14 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
         <section
           aria-label="Selección"
           role="status"
-          className="glass flex min-h-0 flex-1 items-center justify-center rounded-2xl p-6 text-center"
+          className="glass flex min-h-[40dvh] items-center justify-center rounded-2xl p-6 text-center md:min-h-0 md:flex-1"
         >
           <div>
             <p className="font-display text-xl font-bold">
-              {q ? `Sin resultados para «${search.trim()}»` : 'Aún no hay fichas en esta categoría'}
+              {q ? `Sin resultados para «${search.trim()}»` : 'Próximamente'}
             </p>
             <p className="mt-2 text-sm text-vice-text/80">
-              {q ? 'Prueba con otro nombre, categoría o alias.' : 'Estamos preparando este contenido: vuelve pronto.'}
+              {q ? 'Prueba con otro nombre, categoría o alias.' : `Estamos preparando las fichas de ${tabDef.label.toLowerCase()}. Vuelve pronto.`}
             </p>
             {q && (
               <button
@@ -726,22 +787,22 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
           </div>
         </section>
       ) : (
-      <div className="flex min-h-0 flex-1 flex-col md:grid md:grid-cols-[minmax(260px,360px)_minmax(0,1fr)_minmax(300px,360px)] md:grid-rows-[minmax(0,1fr)] md:gap-5">
+      <div className="flex flex-col md:min-h-0 md:flex-1 md:grid md:grid-cols-[minmax(260px,360px)_minmax(0,1fr)_minmax(300px,360px)] md:grid-rows-[minmax(0,1fr)] md:gap-5">
         {/* Rejilla de selección */}
-        <section aria-label="Selección" className="glass flex min-h-0 flex-1 flex-col rounded-2xl p-3 md:p-4">
+        <section aria-label="Selección" className="glass flex flex-col rounded-2xl p-3 md:min-h-0 md:flex-1 md:p-4">
           <div className="mb-3 flex items-baseline justify-between px-1">
             <h2 className="text-xs font-semibold uppercase tracking-widest text-vice-text/90">{tabDef.label}</h2>
             <span className="text-xs text-vice-text/80">{list.length} en total</span>
           </div>
           {list.length === 0 ? (
             <p role="status" className="p-4 text-vice-text/70">
-              {entitiesPending ? 'Cargando…' : 'No hay elementos para mostrar.'}
+              {entitiesPending ? 'Cargando…' : 'No hay fichas para mostrar.'}
             </p>
           ) : (
             <ul
               ref={gridRef}
               onScroll={(ev) => scrollMemo.current.set(gridKeyRef.current, ev.currentTarget.scrollTop)}
-              className="grid min-h-0 flex-1 grid-cols-3 content-start gap-x-2.5 gap-y-3 overflow-y-auto pb-1"
+              className="grid grid-cols-2 content-start gap-x-3 gap-y-4 pb-1 md:min-h-0 md:flex-1 md:grid-cols-3 md:gap-x-2.5 md:gap-y-3 md:overflow-y-auto"
             >
               {list.map((e) => {
                 const sel = selected?.id === e.id;
@@ -764,6 +825,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
                       >
                         <ItemVisual
                           entity={e}
+                          kind={tab ?? undefined}
                           className={e.imagen_url ? 'absolute inset-0 h-full w-full' : 'h-3/5 w-4/5'}
                         />
                         {done(e) && (
@@ -775,7 +837,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
                           </span>
                         )}
                       </span>
-                      <span className="line-clamp-2 px-0.5 text-[11px] font-semibold leading-tight">{e.titulo}</span>
+                      <span className="line-clamp-2 px-0.5 text-sm font-semibold leading-tight md:text-[11px]">{e.titulo}</span>
                     </button>
                   </li>
                 );
@@ -787,7 +849,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
         {isDesktop &&
           (selected ? (
             <>
-              <Viewer key={selected.id} entity={selected} />
+              <Viewer key={selected.id} entity={selected} kind={tab ?? undefined} />
               <aside aria-label="Detalle" className="glass min-h-0 rounded-2xl p-5">
                 {detail}
               </aside>
@@ -796,13 +858,13 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
             <p role={itemMissing ? 'status' : undefined} className="col-span-2 self-center text-center text-vice-text/70">
               {itemMissing ? (
                 <>
-                  No encontramos este elemento.{' '}
+                  No encontramos esta ficha.{' '}
                   <a href={catPath} className="font-semibold text-vice-orange underline">
                     Ver {tabDef.label.toLowerCase()}
                   </a>
                 </>
               ) : (
-                'Sin elementos en esta categoría.'
+                'Sin fichas en esta categoría.'
               )}
             </p>
           ))}
@@ -850,7 +912,7 @@ function ComparePanel({
     return (
       <div className="pt-2">
         <p role="status" className="text-sm">
-          No se puede comparar: indica al menos 2 elementos válidos del mismo módulo (por ejemplo, desde la ficha o el Inspector).
+          No se puede comparar: indica al menos 2 fichas válidas de la misma categoría (por ejemplo, desde la ficha o el Inspector).
         </p>
         <a href="/catalogo" className="mt-3 inline-flex min-h-11 items-center font-semibold text-vice-orange underline">
           Volver al catálogo
@@ -863,7 +925,7 @@ function ComparePanel({
       <p className="text-xs text-vice-text/70">La mejor cifra de cada fila se resalta. Las no comparables muestran —.</p>
       {discarded > 0 && (
         <p role="status" className="mt-1 text-xs text-vice-orange">
-          {discarded === 1 ? 'Se omitió 1 elemento' : `Se omitieron ${discarded} elementos`} no válidos o de otro módulo.
+          {discarded === 1 ? 'Se omitió 1 ficha' : `Se omitieron ${discarded} fichas`} no válidas o de otra categoría.
         </p>
       )}
       <div
@@ -936,7 +998,7 @@ function ComparePanel({
       </div>
       {entities.length < MAX_COMPARE && free.length > 0 && (
         <label className="mt-4 block text-xs font-semibold">
-          Añadir un tercer elemento
+          Añadir una tercera ficha
           <select
             value=""
             onChange={(ev) => ev.target.value && onChange([...slugs, ev.target.value])}
@@ -1003,7 +1065,7 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
     'flex min-h-11 items-center rounded-xl border border-white/15 px-4 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold';
 
   return (
-    <article className="mx-auto w-full max-w-4xl px-4 pb-10 pt-2 md:px-8">
+    <article className="mx-auto w-full max-w-4xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-2 md:px-8">
       <nav aria-label="Migas de pan" className="text-xs text-vice-text/80">
         <ol className="flex flex-wrap items-center gap-1">
           <li>
@@ -1035,6 +1097,7 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
         <section aria-label="Imagen" className="glass relative flex h-56 items-center justify-center overflow-hidden rounded-2xl md:h-72">
           <ItemVisual
             entity={entity}
+            kind={modulo}
             className={entity.imagen_url ? 'absolute inset-0 h-full w-full' : 'relative h-4/5 w-4/5 drop-shadow-[0_10px_30px_rgba(225,48,126,0.5)]'}
           />
         </section>

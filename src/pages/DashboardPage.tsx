@@ -148,7 +148,7 @@ export default function DashboardPage({ section }: { section: 'hub' | 'progress'
           </h2>
           {!hydrated ? (
             <p role="status" className="mt-4 text-vice-text/80">
-              Cargando tu progreso local…
+              Cargando tu avance…
             </p>
           ) : summary.unavailable ? (
             <ApiErrorState compact title="No pudimos calcular tu avance" message={summary.error ?? describeApiError()} onRetry={() => {

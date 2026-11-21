@@ -226,7 +226,7 @@ const DOCS: Record<Lang, Record<DocId, { title: string; body: string[] }>> = {
     about: {
       title: 'Acerca de LeonidApp',
       body: [
-        'LeonidApp es un atlas interactivo creado por y para fans: mapa de Leonida, catálogo de ubicaciones y elementos, foro de la comunidad y seguimiento de tu progreso.',
+        'LeonidApp es un atlas interactivo creado por y para fans: mapa de Leonida, catálogo de fichas, foro de la comunidad y seguimiento de tu avance.',
         'Es un proyecto independiente y sin ánimo de lucro. NO está afiliado, respaldado ni patrocinado por Rockstar Games ni por Take-Two Interactive Software, Inc.',
         'Todo el contenido proviene de la comunidad y de información pública. Si eres titular de derechos y deseas que retiremos algo, usa el formulario de contacto.',
       ],
@@ -234,7 +234,7 @@ const DOCS: Record<Lang, Record<DocId, { title: string; body: string[] }>> = {
     privacy: {
       title: 'Política de privacidad',
       body: [
-        'Datos que tratamos: los de tu cuenta si inicias sesión (identificador, nombre de usuario, correo del proveedor de acceso), tu progreso, tus aportes y tus mensajes del foro. Como invitado, tu progreso se guarda solo en tu dispositivo.',
+        'Datos que tratamos: los de tu cuenta si inicias sesión (identificador, nombre de usuario, correo del proveedor de acceso), tu avance, tus aportes y tus mensajes del foro. Como invitado, tu progreso se guarda solo en tu dispositivo.',
         'Finalidad: ofrecer las funciones de la aplicación, mantener la seguridad y moderar la comunidad. No vendemos tus datos ni los usamos para publicidad personalizada.',
         'Conservación y derechos: conservamos los datos mientras mantengas la cuenta. Puedes solicitar acceso, rectificación o eliminación a través del formulario de contacto.',
         'Terceros: el inicio de sesión con Google, Discord o Apple está sujeto a las políticas de cada proveedor.',
@@ -243,7 +243,7 @@ const DOCS: Record<Lang, Record<DocId, { title: string; body: string[] }>> = {
     cookiePolicy: {
       title: 'Política de cookies',
       body: [
-        'Usamos cookies y almacenamiento local. Necesarias: mantienen la sesión y la seguridad. Preferencias: idioma, progreso de invitado y ajustes. Analíticas y Marketing: desactivadas por defecto y solo se activarían con tu consentimiento.',
+        'Usamos cookies y almacenamiento local. Necesarias: mantienen la sesión y la seguridad. Preferencias: idioma, avance de invitado y ajustes. Analíticas y Marketing: desactivadas por defecto y solo se activarían con tu consentimiento.',
         'Puedes cambiar tu elección en cualquier momento desde "Ajustes de cookies". También puedes borrar los datos desde la configuración de tu navegador.',
       ],
     },

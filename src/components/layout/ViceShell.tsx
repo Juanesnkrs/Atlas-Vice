@@ -223,8 +223,9 @@ export interface ViceShellProps {
   /**
    * true (por defecto): HUD 100vw x 100vh sin scroll vertical (Mapa / Inspector / Foro).
    * false: el contenido puede desplazarse verticalmente.
+   * 'md': scroll natural en móvil y HUD de altura fija desde `md` (Catálogo).
    */
-  lockScroll?: boolean;
+  lockScroll?: boolean | 'md';
   /** Añade el RockstarFooter al final de la página (solo en páginas con scroll). */
   footer?: boolean;
   /** Dibuja palmeras y skyline decorativos (siempre detrás del contenido). */
@@ -243,11 +244,13 @@ export function ViceShell({
   decorations = true,
   className = '',
 }: ViceShellProps) {
-  const withFooter = footer && !lockScroll;
+  const withFooter = footer && lockScroll === false;
+  const locked = lockScroll === true;
+  const lockMd = lockScroll === 'md';
   return (
     <div
       className={`bg-sunset relative flex w-full flex-col font-body text-vice-text ${
-        lockScroll ? 'h-dvh overflow-hidden' : 'min-h-dvh'
+        locked ? 'h-dvh overflow-hidden' : lockMd ? 'min-h-dvh md:h-dvh md:overflow-hidden' : 'min-h-dvh'
       } ${className}`}
     >
       {decorations && (
@@ -276,9 +279,9 @@ export function ViceShell({
         )}
 
         <main
-          className={`relative min-h-0 flex-1 ${lockScroll ? 'overflow-hidden' : 'min-h-dvh overflow-y-auto'} ${
-            dock && lockScroll ? 'pb-[var(--dock-reserve)]' : ''
-          }`}
+          className={`relative min-h-0 flex-1 ${
+            locked ? 'overflow-hidden' : lockMd ? 'overflow-y-auto md:overflow-hidden' : 'min-h-dvh overflow-y-auto'
+          } ${dock && locked ? 'pb-[var(--dock-reserve)]' : dock && lockMd ? 'md:pb-[var(--dock-reserve)]' : ''}`}
         >
           {children}
         </main>
@@ -291,8 +294,8 @@ export function ViceShell({
             <Footer />
           </div>
         )}
-        {!withFooter && dock && !lockScroll && (
-          <div aria-hidden="true" className="h-[var(--dock-reserve)] shrink-0" />
+        {!withFooter && dock && !locked && (
+          <div aria-hidden="true" className={`h-[var(--dock-reserve)] shrink-0 ${lockMd ? 'md:hidden' : ''}`} />
         )}
       </div>
 

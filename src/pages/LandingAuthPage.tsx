@@ -268,7 +268,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
                   <h1 id="acceso-title" className="font-display text-[26px] font-bold leading-tight md:text-[28px]">
                     Bienvenido a Leonida
                   </h1>
-                  <p className="mt-1 text-[13px] text-vice-text/85">Entra para sincronizar tu progreso en todos tus dispositivos.</p>
+                  <p className="mt-1 text-[13px] text-vice-text/85">Entra para guardar tu avance y verlo en todos tus dispositivos.</p>
                   <div className="mt-4 flex flex-col gap-3">
                     {providers.map((p) => (
                       <PalmButton
@@ -307,7 +307,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
                   )}
                   {!online && (
                     <p className="mt-2 rounded-xl border border-vice-gold/40 bg-white/5 p-3 text-xs text-vice-text/90">
-                      Sin conexión con el servidor: el inicio de sesión no está disponible. Puedes explorar como invitado y tu progreso se guarda en este dispositivo.
+                      Sin conexión con el servidor: el inicio de sesión no está disponible. Puedes explorar como invitado y tu avance se guarda en este dispositivo.
                     </p>
                   )}
                 </>
@@ -316,7 +316,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
                   <h1 id="acceso-title" className="font-display text-[26px] font-bold leading-tight md:text-[28px]">
                     Explora Leonida
                   </h1>
-                  <p className="mt-1 text-[13px] text-vice-text/85">Entra sin cuenta. Tu progreso se guarda solo en este dispositivo.</p>
+                  <p className="mt-1 text-[13px] text-vice-text/85">Entra sin cuenta. Tu avance se guarda solo en este dispositivo.</p>
                   <ul className="my-4 flex flex-col gap-3 text-[13px] md:rounded-[20px] md:border md:border-[rgba(246,146,89,0.25)] md:bg-white/5 md:px-5 md:py-[18px]">
                     {PERKS.map((t) => (
                       <li key={t} className="flex items-center gap-3">

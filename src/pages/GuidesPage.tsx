@@ -89,17 +89,17 @@ function GuidesIndex() {
   const { data, unavailable, error, retry, loading } = useWorldData(LIST_SCOPE);
   usePageMeta({
     title: 'Guías y misiones',
-    description: 'Guías paso a paso de Leonida con progreso verificable: primeros pasos, rutas de tiendas, eventos y misiones.',
+    description: 'Guías paso a paso de Leonida con avance verificable: primeros pasos, rutas de tiendas, eventos y misiones.',
     canonicalPath: '/guias',
   });
   const guidesModule = data.modules.find((m) => m.slug === 'guias');
   const guides = data.entities.filter((e) => e.module_id === guidesModule?.id);
 
   return (
-    <div className="mx-auto w-full max-w-5xl px-4 pb-10 pt-2 md:px-8">
+    <div className="mx-auto w-full max-w-5xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-2 md:px-8">
       <h1 className="font-display text-3xl font-bold tracking-[0.02em] text-[#FFC09A] md:text-4xl">Guías y misiones</h1>
       <p className="mt-1 max-w-2xl text-sm text-vice-text/85">
-        Sigue cada guía paso a paso y marca lo que ya hiciste: tu avance se guarda en el dispositivo y, con cuenta, se sincroniza.
+        Sigue cada guía paso a paso y marca lo que ya hiciste. Tu avance se guarda solo.
       </p>
       {unavailable ? (
         <ApiErrorState compact title="No pudimos cargar las guías" message={error ?? ''} onRetry={retry} />
@@ -150,7 +150,7 @@ function GuideDetail({ slug }: { slug: string }) {
       ? {
           title: guide.titulo,
           description: clip(
-            `${guide.subtitulo ? `${guide.subtitulo}. ` : ''}Guía paso a paso de ${guide.titulo} en LeonidApp, con progreso verificable.`,
+            `${guide.subtitulo ? `${guide.subtitulo}. ` : ''}Guía paso a paso de ${guide.titulo} en LeonidApp, con avance verificable.`,
             160,
           ),
           canonicalPath: `/guias/${slug}`,
@@ -160,7 +160,7 @@ function GuideDetail({ slug }: { slug: string }) {
 
   if (!guide && guideError) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 pb-8 pt-4">
+      <div className="mx-auto w-full max-w-3xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4">
         <ApiErrorState compact title="No pudimos cargar la guía" message={errorMessage} onRetry={retryGuide} />
       </div>
     );
@@ -168,7 +168,7 @@ function GuideDetail({ slug }: { slug: string }) {
 
   if (!guide) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 pb-8 pt-4">
+      <div className="mx-auto w-full max-w-3xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4">
         <p role="status" className="glass rounded-2xl p-6 text-center">
           {loading ? 'Cargando guía…' : 'No encontramos esta guía.'}{' '}
           <a href="/guias" className="font-semibold text-vice-orange underline">
@@ -202,7 +202,7 @@ function GuideDetail({ slug }: { slug: string }) {
   const inArticle = !wide;
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-10 pt-2 md:px-8 xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-8">
+    <div className="mx-auto w-full max-w-6xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-2 md:px-8 xl:grid xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-8">
       <article>
         <nav aria-label="Migas de pan" className="text-xs text-vice-text/80">
           <ol className="flex flex-wrap items-center gap-1">
@@ -228,7 +228,7 @@ function GuideDetail({ slug }: { slug: string }) {
         {steps.length > 0 && (
           <div className="glass mt-4 rounded-[22px] p-5">
             <StatBar
-              label="Progreso de la guía"
+              label="Avance de la guía"
               value={percent}
               valueLabel={`${count}/${steps.length} pasos`}
               accent="gold"

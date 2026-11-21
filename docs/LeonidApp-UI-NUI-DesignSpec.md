@@ -275,6 +275,35 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
 - Etiqueta discreta «Fuente en inglés» cuando el texto es claramente inglés (heurística de palabras frecuentes; ante la duda no se muestra).
 - Con menos de 3 noticias aparece un aviso amable con enlace a las Guías. El contenedor mantiene su alto mínimo (CLS < 0.05).
 
+### 7.9 Catálogo (`/catalogo`)
+
+- **Móvil (< 768 px):** rejilla de **2 columnas** amplias (nombres de hasta 2 líneas legibles) y **scroll natural de la página** (sin doble scroll encerrado). `ViceShell` admite `lockScroll="md"`: página con scroll en móvil y HUD `100vw × 100vh` sin scroll vertical desde `md`. El Catálogo sigue **sin footer** (el contenido reserva el alto del dock).
+- Sin imagen ni silueta propia, la ficha muestra un **icono SVG limpio de su categoría** (arma, vehículo, coleccionable o ficha genérica) en lugar del degradado de atardecer repetido.
+- **Filtros:** en móvil los chips de subcategoría se pliegan tras un botón «Filtros» con indicador del filtro activo; en escritorio siguen visibles.
+- El título del encabezado coincide con la pestaña activa («Armas», «Vehículos», «Coleccionables»).
+- Una categoría sin fichas aparece como «Coleccionables · Próximamente» (pestaña no navegable) y, si se abre por URL, muestra un estado «Próximamente» sin error.
+
+### 7.10 Mapa (`/mapa`) y Guías (`/guias`)
+
+- **Mapa:** junto a «N/M lugares completados» hay un botón «?» con la ayuda: qué es completar un lugar (se marca desde su ficha y cuenta para «Mi avance») y la **leyenda de colores** de las capas con puntos (los colores reales de `MAP_LAYERS`).
+- El botón «Modo editor» (solo staff autenticado) queda separado de los botones públicos de zoom (margen y anillo propio).
+- **Guías:** introducción directa: «Sigue cada guía paso a paso y marca lo que ya hiciste. Tu avance se guarda solo.»
+
+### 7.11 Transversal: cabecera, espaciado y vocabulario
+
+- **Cabecera:** etiqueta «Mi avance» junto al porcentaje y botón de cuenta con **icono de perfil** y «Salir» (el nombre solo desde `md`); áreas táctiles ≥ 44 px.
+- **Espaciado inferior:** las vistas con scroll usan `pb-[calc(7rem+env(safe-area-inset-bottom))]` (o el espaciador del shell) para que el dock nunca tape botones ni enlaces.
+- **Glosario público** (una palabra por concepto; no cambia rutas, claves de API ni campos):
+
+| Concepto | Palabra en la interfaz | Evitar |
+| --- | --- | --- |
+| Punto del mapa | lugar | marcador, pin, entidad |
+| Entrada del catálogo | ficha | elemento, ítem |
+| Lo que envía la comunidad | aporte (sección «Aportar») | buzón, tablón, sugerencia |
+| Avance del jugador | avance («Mi avance») | progreso |
+| Guardar en la cuenta | «Todo guardado» / guardar | sincronizar, sincronización |
+| Categoría del catálogo | categoría | módulo (en textos visibles) |
+
 ### 6.4 Mapa interactivo (P04) — teselas del referente + capa interactiva SVG
 
 - **Base cartográfica:** el área cartográfica (sin la columna derecha de leyenda, créditos, frames ni interiores) del mapa comunitario de Leonida (`public/ref Leonida map/The final version of Commnunity map.jpeg`, recorte 6600 × 9300 px en `x=500, y=650`) con **sus colores y textos originales, sin recolorear ni retocar**, publicado como **pirámide de teselas WebP** en `public/map-tiles/{z}/{x}/{y}.webp` (512 px, `z=0..4`, `z=4` = resolución nativa 1:1, WebP calidad 86, ~7,6 MB en total y solo se descargan las visibles) con `manifest.json`. El relleno fuera del recorte y el fondo del lienzo usan el océano del referente (`WATER = #2C68A6`). La app **no** dibuja rótulos propios encima. La versión de la pirámide es `manifest.json` → `v`; las teselas se piden como `?v=<v>` y `sw.js` descarta las de otra versión. Es obra derivada de un mapa de terceros, autorizada por el propietario (ver `CLAUDE.md` §2) (por decisión del propietario la app no muestra texto de atribución sobre el mapa). El original sigue en `.gitignore` y fuera de `dist/`.

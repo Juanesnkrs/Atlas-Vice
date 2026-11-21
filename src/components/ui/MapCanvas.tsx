@@ -803,7 +803,7 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
                   data-cluster
                   role="button"
                   tabIndex={0}
-                  aria-label={`${it.count} marcadores agrupados. Acercar para verlos`}
+                  aria-label={`${it.count} lugares agrupados. Acercar para verlos`}
                   className="lm-pin"
                   style={{ transform: pxPos(it.x, it.y) }}
                   onClick={() => zoomIntoCluster(it.x, it.y)}

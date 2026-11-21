@@ -394,7 +394,7 @@ export default function HomePage() {
   const plural = (n: number, one: string, many: string): string => (worldDown || world.modules.length === 0 ? '' : `${n} ${n === 1 ? one : many}`);
 
   const candidates: Array<ExploreCard | false> = [
-    isActive('mapa') && { href: '/mapa', title: 'Mapa interactivo', count: plural(world.markers.length, 'marcador', 'marcadores') || null, crop: CROPS.mapa },
+    isActive('mapa') && { href: '/mapa', title: 'Mapa interactivo', count: plural(world.markers.length, 'lugar', 'lugares') || null, crop: CROPS.mapa },
     catalogActive && isActive('armas') && { href: '/catalogo/armas', title: 'Armas', count: plural(countOf('armas'), 'ficha', 'fichas') || null, crop: CROPS.armas },
     catalogActive && isActive('vehiculos') && { href: '/catalogo/vehiculos', title: 'Vehículos', count: plural(countOf('vehiculos'), 'ficha', 'fichas') || null, crop: CROPS.vehiculos },
     catalogActive && isActive('coleccionables') && { href: '/catalogo/coleccionables', title: 'Coleccionables', count: plural(countOf('coleccionables'), 'ficha', 'fichas') || null, crop: CROPS.coleccionables },

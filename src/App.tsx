@@ -96,7 +96,7 @@ const STATIC_META: Partial<Record<RouteId, PageMeta>> = {
   },
   login: { title: 'Entrar', description: 'Accede a LeonidApp con Google, Discord, Apple o Magic Link.', robots: NOINDEX },
   hub: { title: 'Hub', robots: NOINDEX },
-  progress: { title: 'Mi progreso', robots: NOINDEX },
+  progress: { title: 'Mi avance', robots: NOINDEX },
   map: {
     title: 'Mapa de Leonida',
     description: 'Mapa táctico de Leonida con capas, filtros y pines de coleccionables, armas, vehículos y puntos de interés.',
@@ -162,10 +162,11 @@ function HeaderEnd() {
       </nav>
       <a
         href="/progreso"
-        className={`${HEADER_PILL} font-display text-vice-orange`}
-        aria-label={`Progreso total ${summary.percent}%. Abrir mi avance`}
+        className={`${HEADER_PILL} gap-2`}
+        aria-label={`Mi avance: ${summary.percent}%. Abrir mi avance`}
       >
-        {summary.percent}%
+        <span className="text-xs font-medium text-vice-text/85">Mi avance</span>
+        <span className="font-display text-vice-orange">{summary.percent}%</span>
       </a>
       {authenticated ? (
         <button
@@ -174,8 +175,12 @@ function HeaderEnd() {
           className={`${HEADER_PILL} gap-2`}
           aria-label="Cerrar sesión"
         >
-          <span className="max-w-[9ch] truncate">{profile?.username ?? user?.email?.split('@')[0] ?? 'Cuenta'}</span>
-          <span className="hidden text-vice-orange sm:inline">Salir</span>
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0 text-vice-orange">
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21c0-4.2 3.6-7 8-7s8 2.8 8 7" />
+          </svg>
+          <span className="hidden max-w-[9ch] truncate md:inline">{profile?.username ?? user?.email?.split('@')[0] ?? 'Cuenta'}</span>
+          <span className="text-vice-orange">Salir</span>
         </button>
       ) : (
         <a href="/entrar" className={HEADER_PILL}>
@@ -347,12 +352,14 @@ export default function App() {
   // La ficha completa (?vista=ficha) es una página con scroll; el Inspector es un HUD de altura fija.
   const fichaView = route === 'catalog' && itemSlug !== undefined && params.get('vista') === 'ficha';
   const locked = route !== 'notfound' && LOCKED.has(route) && !fichaView;
+  // Catálogo: HUD fijo en escritorio y página con scroll natural en móvil (sin footer en ningún caso).
+  const lockMode: boolean | 'md' = route === 'catalog' && locked ? 'md' : locked;
 
   return (
     <ViceShell
       showHeader
-      lockScroll={locked}
-      footer={!locked}
+      lockScroll={lockMode}
+      footer={lockMode === false}
       headerEnd={<HeaderEnd />}
       dock={<BottomDock activeId={activeId} items={dock} />}
     >
