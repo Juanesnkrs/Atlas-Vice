@@ -97,7 +97,7 @@ export function CatalogManager({ fixedModule }: { fixedModule?: string }) {
             <option value="">Todos los módulos</option>
             {mods.map((m) => (
               <option key={m.id} value={m.slug}>
-                {m.nombre}
+                {m.slug === 'mapa' ? `${m.nombre} · fichas de lugares` : m.nombre}
               </option>
             ))}
           </select>
@@ -108,6 +108,11 @@ export function CatalogManager({ fixedModule }: { fixedModule?: string }) {
         </button>
       </div>
       {fixedName && <p className="mt-2 text-xs text-vice-text/70">Solo fichas del módulo «{fixedName}».</p>}
+      {moduleFilter === 'mapa' && (
+        <p className="mt-2 text-xs text-vice-text/70">
+          Estas fichas son el contenido editorial de cada lugar (texto, SEO). Su pin y sus coordenadas se sitúan en Mapa interactivo; aquí solo se edita la ficha.
+        </p>
+      )}
 
       <QueryState
         loading={list.isLoading}

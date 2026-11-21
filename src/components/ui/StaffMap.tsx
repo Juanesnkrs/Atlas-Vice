@@ -78,6 +78,9 @@ export function MapManager() {
         <PublicLink href="/mapa?editor=1">Abrir el Modo Editor del mapa</PublicLink>
         <span className="text-sm text-vice-text/70">{rows.length} marcadores publicados</span>
       </div>
+      <p className="mt-2 text-xs text-vice-text/70">
+        Cada marcador es solo el pin (coordenadas y región). El texto del lugar vive en su ficha del catálogo: usa «Abrir ficha» para editarlo.
+      </p>
       <QueryState
         loading={markers.isLoading}
         error={markers.error}
