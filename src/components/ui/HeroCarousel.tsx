@@ -54,6 +54,9 @@ function Slide({ slide, active, first, guest, inert, total, position, imageFaile
   const Title = active ? headingLevel : 'div';
   const tab = active && !inert ? undefined : -1;
   const external = isExternal(slide.boton_enlace);
+  // La imagen por defecto es vertical (1080×1350) y trae un rótulo arriba: en móvil se encuadra más abajo (caras a la
+  // vista, sin rótulo). Las imágenes del equipo son 16:9 y se muestran completas.
+  const isDefault = slide.id === DEFAULT_HERO_SLIDE.id;
   // El «Crear cuenta gratis» de la diapositiva por defecto es solo para invitados; el botón secundario que el equipo
   // configura en una diapositiva propia se muestra a todo el mundo.
   const secondary = (guest || slide.id !== DEFAULT_HERO_SLIDE.id) && slide.boton_secundario_texto && slide.boton_secundario_enlace ? { text: slide.boton_secundario_texto, href: slide.boton_secundario_enlace } : null;
@@ -64,16 +67,16 @@ function Slide({ slide, active, first, guest, inert, total, position, imageFaile
       aria-label={total > 1 ? `${position} de ${total}` : undefined}
       aria-hidden={active ? undefined : true}
       inert={inert}
-      className={`relative col-start-1 row-start-1 flex flex-col transition-[opacity,visibility] duration-500 motion-reduce:transition-none md:min-h-[52vh] md:flex-row md:items-center ${
+      className={`relative col-start-1 row-start-1 flex flex-col transition-[opacity,visibility] duration-500 motion-reduce:transition-none max-md:flex-col-reverse md:min-h-[52vh] md:flex-row md:items-center ${
         active ? 'visible opacity-100' : 'invisible opacity-0'
       }`}
     >
-      <div className="relative z-10 flex max-w-xl flex-col items-start gap-3 px-6 pb-4 pt-8 md:w-[55%] md:px-10 md:py-10">
+      <div className="relative z-10 flex max-w-xl flex-col items-start gap-3 px-5 pb-5 pt-0 max-md:-mt-6 md:w-[55%] md:px-10 md:py-10">
         {slide.kicker !== '' && <p className="text-xs font-semibold uppercase tracking-[0.3em] text-vice-orange">{slide.kicker}</p>}
-        <Title className="font-display text-4xl font-bold leading-tight md:text-5xl">{slide.titulo}</Title>
-        <p className="text-base text-vice-text/90 md:text-lg">{slide.descripcion}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-3">
-          <PalmButton as="a" href={slide.boton_enlace} tabIndex={tab} {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+        <Title className="font-display text-[1.75rem] font-bold leading-[1.15] md:text-5xl">{slide.titulo}</Title>
+        <p className="text-[15px] leading-relaxed text-vice-text/90 max-md:line-clamp-4 md:text-lg">{slide.descripcion}</p>
+        <div className="mt-1 flex w-full flex-wrap items-center gap-2 md:mt-2 md:w-auto md:gap-3">
+          <PalmButton as="a" href={slide.boton_enlace} tabIndex={tab} className="max-md:min-w-0 max-md:flex-1 max-md:basis-[9.5rem] max-md:truncate max-md:px-3 max-md:text-[15px]" {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
             {slide.boton_texto}
           </PalmButton>
           {secondary && (
@@ -81,7 +84,7 @@ function Slide({ slide, active, first, guest, inert, total, position, imageFaile
               href={secondary.href}
               tabIndex={tab}
               {...(isExternal(secondary.href) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
-              className={`glass inline-flex min-h-11 items-center rounded-full px-5 text-[15px] font-semibold hover:bg-white/10 ${FOCUS}`}
+              className={`glass inline-flex min-h-11 items-center justify-center rounded-full px-5 text-[15px] font-semibold hover:bg-white/10 max-md:min-w-0 max-md:flex-1 max-md:basis-[9.5rem] max-md:truncate max-md:px-3 max-md:text-[15px] ${FOCUS}`}
             >
               {secondary.text}
             </a>
@@ -90,11 +93,7 @@ function Slide({ slide, active, first, guest, inert, total, position, imageFaile
       </div>
       <div
         aria-hidden={imageFailed || undefined}
-        className="relative h-44 w-full md:absolute md:inset-y-0 md:right-0 md:h-full md:w-[55%]"
-        style={{
-          WebkitMaskImage: 'linear-gradient(90deg, transparent 0, #000 28%)',
-          maskImage: 'linear-gradient(90deg, transparent 0, #000 28%)',
-        }}
+        className={`relative w-full ${isDefault ? 'aspect-[16/10]' : 'aspect-video'} max-md:[-webkit-mask-image:linear-gradient(180deg,#000_62%,transparent_100%)] max-md:[mask-image:linear-gradient(180deg,#000_62%,transparent_100%)] md:absolute md:inset-y-0 md:right-0 md:aspect-auto md:h-full md:w-[55%] md:[-webkit-mask-image:linear-gradient(90deg,transparent_0,#000_28%)] md:[mask-image:linear-gradient(90deg,transparent_0,#000_28%)]`}
       >
         {!imageFailed && (
           <img
@@ -102,11 +101,11 @@ function Slide({ slide, active, first, guest, inert, total, position, imageFaile
             alt={active ? slide.imagen_alt : ''}
             decoding="async"
             {...(first ? { fetchPriority: 'high' as const } : { loading: 'lazy' as const })}
-            className="absolute bottom-0 right-0 h-full w-full max-w-none object-cover object-[50%_100%]"
+            className={`absolute bottom-0 right-0 h-full w-full max-w-none object-cover md:object-[50%_100%] ${isDefault ? 'max-md:object-[50%_82%]' : 'max-md:object-center'}`}
             onError={onImageError}
           />
         )}
-        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-[#2E1A47] to-transparent md:hidden" />
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-[rgba(20,14,36,0.55)] to-transparent md:hidden" />
       </div>
     </div>
   );
@@ -207,8 +206,8 @@ export function HeroCarousel({
         />
       ))}
       {total > 1 && !preview && (
-        <div className="absolute bottom-2 right-3 z-20 flex items-center gap-1 rounded-full bg-[rgba(20,14,36,0.78)] px-1 backdrop-blur-sm">
-          <button type="button" onClick={() => goTo(current - 1)} aria-label="Diapositiva anterior" className={CTRL}>
+        <div className="absolute bottom-2 right-3 z-20 flex items-center gap-1 rounded-full bg-[rgba(20,14,36,0.78)] px-1 backdrop-blur-sm max-md:bottom-auto max-md:top-3">
+          <button type="button" onClick={() => goTo(current - 1)} aria-label="Diapositiva anterior" className={`${CTRL} max-md:hidden`}>
             <Chevron dir="left" />
           </button>
           <div role="group" aria-label="Elegir diapositiva" className="flex items-center">
@@ -225,7 +224,7 @@ export function HeroCarousel({
               </button>
             ))}
           </div>
-          <button type="button" onClick={() => goTo(current + 1)} aria-label="Diapositiva siguiente" className={CTRL}>
+          <button type="button" onClick={() => goTo(current + 1)} aria-label="Diapositiva siguiente" className={`${CTRL} max-md:hidden`}>
             <Chevron dir="right" />
           </button>
         </div>
