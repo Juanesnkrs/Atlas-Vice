@@ -8,7 +8,7 @@ import { API_URL } from '../../store/useAuthStore';
 import type { HeroSlide } from '../../types/database';
 import { PalmButton } from './PalmButton';
 
-const AUTO_MS = 6000;
+const AUTO_MS = 4000;
 const SWIPE_PX = 40;
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold';
 const CTRL =
@@ -54,7 +54,9 @@ function Slide({ slide, active, first, guest, inert, total, position, imageFaile
   const Title = active ? headingLevel : 'div';
   const tab = active && !inert ? undefined : -1;
   const external = isExternal(slide.boton_enlace);
-  const secondary = guest && slide.boton_secundario_texto && slide.boton_secundario_enlace ? { text: slide.boton_secundario_texto, href: slide.boton_secundario_enlace } : null;
+  // El «Crear cuenta gratis» de la diapositiva por defecto es solo para invitados; el botón secundario que el equipo
+  // configura en una diapositiva propia se muestra a todo el mundo.
+  const secondary = (guest || slide.id !== DEFAULT_HERO_SLIDE.id) && slide.boton_secundario_texto && slide.boton_secundario_enlace ? { text: slide.boton_secundario_texto, href: slide.boton_secundario_enlace } : null;
   return (
     <div
       role={total > 1 ? 'group' : undefined}
@@ -118,7 +120,7 @@ export function HeroCarousel({
 }: {
   /** Diapositivas a mostrar; vacío = diapositiva por defecto. */
   slides: HeroSlide[];
-  /** Solo los invitados ven el botón secundario. */
+  /** Solo los invitados ven el botón secundario de la diapositiva por defecto («Crear cuenta gratis»). */
   guest: boolean;
   /** Vista previa estática (panel): sin avance, sin controles ni enlaces activos. */
   preview?: boolean;

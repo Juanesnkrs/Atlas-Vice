@@ -310,9 +310,9 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
 
 ### 7.12 Carrusel del Hero de la portada y su módulo en el panel (2026-11-21)
 
-**Público (`HeroCarousel.tsx`, en `HomePage.tsx`).** Misma estructura del Hero actual: texto informativo y descriptivo a la izquierda (kicker, H1, descripción, botón primario y, solo a invitados, el secundario), imagen a la derecha y, en móvil, texto arriba e imagen abajo como hoy.
+**Público (`HeroCarousel.tsx`, en `HomePage.tsx`).** Misma estructura del Hero actual: texto informativo y descriptivo a la izquierda (kicker, H1, descripción, botón primario y el secundario (el «Crear cuenta gratis» de la diapositiva por defecto es solo para invitados; el botón secundario que el equipo configura en una diapositiva propia lo ve todo el mundo)), imagen a la derecha y, en móvil, texto arriba e imagen abajo como hoy.
 - Datos: `GET /api/hero` (diapositivas activas ordenadas). Sin diapositivas activas, o mientras llegan los datos, se muestra la **diapositiva por defecto** (contenido actual y `public/assets/hero-gas-station.jpg`) sin parpadeo ni salto de layout.
-- Con una sola diapositiva no hay controles. Con varias: avance automático cada ~6 s que se **pausa** con hover, foco o toque y se desactiva con `prefers-reduced-motion`; botones anterior/siguiente (≥ 44 px), indicadores (puntos) con etiqueta, deslizamiento táctil y flechas de teclado; transición de opacidad suave.
+- Con una sola diapositiva no hay controles. Con varias: avance automático cada ~4 s que se **pausa** con hover, foco o toque y se desactiva con `prefers-reduced-motion`; botones anterior/siguiente (≥ 44 px), indicadores (puntos) con etiqueta, deslizamiento táctil y flechas de teclado; transición de opacidad suave.
 - Accesibilidad: `role="region"`, `aria-roledescription="carrusel"`, nombre accesible, `aria-live="polite"` solo cuando la persona navega (no en el avance automático).
 - **CLS = 0:** imagen en contenedor 16:9 fijo y alto de texto reservado; la primera imagen con `fetchpriority="high"` y sin lazy, las demás `loading="lazy"`; `decoding="async"`; si una imagen falla (`onError`) se vuelve a la diapositiva por defecto.
 
