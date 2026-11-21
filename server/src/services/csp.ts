@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import { env } from '../config/env.js';
-import { ALLOWED_HOSTS } from '../workers/sources.js';
 
 /**
  * Content-Security-Policy.
@@ -16,6 +15,9 @@ import { ALLOWED_HOSTS } from '../workers/sources.js';
  *     por lo que si el cliente cambia esa linea la politica se adapta sin tocar el servidor.
  *   * `style-src 'unsafe-inline'`: React/Tailwind emiten atributos `style=""` dinamicos
  *     (no se pueden hashear). Se acepta el riesgo, limitado a estilos.
+ *   * `img-src ... https:`: decision del propietario (2026-11-21). Las diapositivas del Hero admiten imagenes
+ *     de cualquier dominio https, por lo que se retiran los hosts oficiales sueltos (quedan incluidos). Riesgo
+ *     aceptado: fuga de IP/Referer al host de la imagen y contenido externo mutable. Ninguna otra directiva se relaja.
  *   * AdSense (solo tras consentimiento, `<AdSlot/>`): script de pagead2.googlesyndication.com y
  *     frames de anuncios.
  */
@@ -27,10 +29,6 @@ const originOf = (u: string): string | null => {
     return null;
   }
 };
-
-/** Dominios registrables oficiales (p. ej. `*.rockstargames.com`) para imagenes de noticias. */
-const officialImageHosts = (): string[] =>
-  [...new Set(ALLOWED_HOSTS.map((h) => h.split('.').slice(-2).join('.')))].map((d) => `https://*.${d} https://${d}`);
 
 const sha256 = (s: string): string => `'sha256-${createHash('sha256').update(s, 'utf8').digest('base64')}'`;
 
@@ -75,7 +73,7 @@ export function buildHtmlCsp(html: string): string {
     `script-src ${script.join(' ')}`,
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com data:",
-    `img-src 'self' data: blob: ${officialImageHosts().join(' ')}`,
+    "img-src 'self' data: blob: https:",
     `connect-src ${connect.join(' ')}`,
     "worker-src 'self'",
     "manifest-src 'self'",

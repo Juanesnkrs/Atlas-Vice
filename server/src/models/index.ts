@@ -11,3 +11,4 @@ export * from './AppConfig.js';
 export * from './OfficialNews.js';
 export * from './AuditLog.js';
 export * from './Submission.js';
+export * from './MediaAsset.js';

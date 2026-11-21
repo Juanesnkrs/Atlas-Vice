@@ -16,6 +16,8 @@ import { registerNewsRoutes } from './routes/news.js';
 import { registerSubmissionRoutes } from './routes/submissions.js';
 import { registerContactRoutes } from './routes/contact.js';
 import { registerConfigRoutes } from './routes/config.js';
+import { registerHeroRoutes } from './routes/hero.js';
+import { registerMediaRoutes } from './routes/media.js';
 import { registerForumRoutes } from './routes/forum.js';
 import { registerProgressRoutes } from './routes/progress.js';
 import { API_POLICY, buildHtmlCsp } from './services/csp.js';
@@ -36,7 +38,7 @@ const allowedOrigins = new Set([
 type RateClass = 'read' | 'page' | 'default';
 const RATE_MAX: Record<RateClass, number> = { read: 3000, page: 1500, default: 200 };
 /** GET/HEAD publicos de solo lectura del catalogo y config (sin sesion ni escritura). */
-const PUBLIC_READ_RE = /^\/api\/(health|modules|entities|markers|news|config)(\/|$)/;
+const PUBLIC_READ_RE = /^\/api\/(health|modules|entities|markers|news|config|hero)(\/|$)/;
 /**
  * Clasifica la peticion para el rate-limit: lecturas publicas de API (tope muy alto), SSR-lite/estaticos/sitemap
  * (tope alto por IP) y el resto (auth, escrituras, foro, progreso, admin: 200/min, sin debilitar).
@@ -45,6 +47,8 @@ function rateClass(req: { method: string; url: string }): RateClass {
   if (req.method !== 'GET' && req.method !== 'HEAD') return 'default';
   const path = req.url.split('?')[0] ?? '';
   if (path.startsWith('/api/')) return PUBLIC_READ_RE.test(path) ? 'read' : 'default';
+  // Imagenes subidas desde el panel: una portada carga varias por visita, como una lectura publica de API.
+  if (path.startsWith('/media/')) return 'read';
   return 'page';
 }
 
@@ -106,6 +110,9 @@ export async function buildApp(): Promise<FastifyInstance> {
       return reply.code(409).send({ error: 'Conflicto: el slug o identificador ya existe' });
     }
     if (err instanceof ZodError) return reply.code(400).send({ error: 'Datos invalidos' });
+    const fastifyCode = (err as { code?: unknown }).code;
+    if (fastifyCode === 'FST_ERR_CTP_BODY_TOO_LARGE') return reply.code(413).send({ error: 'El contenido enviado supera el tamano permitido' });
+    if (fastifyCode === 'FST_ERR_CTP_INVALID_MEDIA_TYPE') return reply.code(415).send({ error: 'Tipo de contenido no admitido' });
     const status = (err as { statusCode?: number }).statusCode ?? 500;
     if (status >= 500) app.log.error(err);
     return reply.code(status).send({ error: status >= 500 ? 'Error interno' : (err as Error).message });
@@ -131,6 +138,8 @@ export async function buildApp(): Promise<FastifyInstance> {
   app.get('/api/health', async () => ({ ok: true }));
 
   await registerConfigRoutes(app);
+  await registerHeroRoutes(app);
+  await registerMediaRoutes(app);
   await registerAdminRoutes(app);
   await registerAdminPanelRoutes(app);
   await registerAuthRoutes(app);
