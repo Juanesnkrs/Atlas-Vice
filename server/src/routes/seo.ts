@@ -150,7 +150,12 @@ async function sendStatic(
   reply: FastifyReply,
   staffRank: number,
 ): Promise<FastifyReply> {
-  const notFound = () => reply.code(404).send({ error: 'No encontrado' });
+  // Un /assets/* inexistente (hash de un despliegue anterior) responde text/plain limpio: un JSON con ese MIME
+  // rompe la carga de modulos/CSS con un error confuso. El area /_staff/ conserva su 404 JSON uniforme.
+  const notFound = () =>
+    pathname.startsWith('/assets/')
+      ? reply.code(404).header('Cache-Control', 'no-store').type('text/plain; charset=utf-8').send('No encontrado')
+      : reply.code(404).send({ error: 'No encontrado' });
   let rel: string;
   try {
     rel = decodeURIComponent(pathname);
@@ -180,7 +185,7 @@ async function sendStatic(
       'Cache-Control',
       staffFile
         ? 'private, max-age=3600'
-        : rel === '/sw.js'
+        : rel === '/sw.js' || rel === '/index.html'
           ? 'no-cache'
           : rel.startsWith('/assets/')
             ? 'public, max-age=31536000, immutable'
@@ -233,7 +238,7 @@ export async function registerSeoRoutes(app: FastifyInstance): Promise<void> {
       if (p === '/sitemap.xml' || p === '/robots.txt') return reply.code(404).send({ error: 'No encontrado' });
       return sendStatic(p, req.method === 'HEAD', reply, staffRank);
     }
-    if (p.startsWith('/assets/')) return reply.code(404).send({ error: 'No encontrado' });
+    if (p.startsWith('/assets/')) return reply.code(404).header('Cache-Control', 'no-store').type('text/plain; charset=utf-8').send('No encontrado');
 
     const template = loadTemplate();
     if (!template) return reply.code(404).send({ error: 'Cliente no compilado (ejecuta pnpm build en la raiz)' });
@@ -260,7 +265,7 @@ export async function registerSeoRoutes(app: FastifyInstance): Promise<void> {
     if (r.kind === 'redirect') return reply.redirect(r.to, 301);
     return reply
       .code(r.meta.status)
-      .header('Cache-Control', r.meta.status === 200 ? 'public, max-age=60' : 'no-store')
+      .header('Cache-Control', r.meta.status === 200 ? 'no-cache' : 'no-store')
       .header('Content-Security-Policy', csp)
       .type('text/html; charset=utf-8')
       .send(injectHead(template, r.meta));

@@ -26,6 +26,38 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   });
 }
 
+// Recuperacion ante un despliegue nuevo: si el navegador pide un chunk/CSS con un hash que ya no existe,
+// se recarga UNA sola vez (marca en sessionStorage, solo un indicador: nunca datos de sesion) para tomar el index.html nuevo.
+// La marca se retira tras 10 s de funcionamiento estable, de modo que un despliegue posterior pueda recuperarse otra vez.
+const RELOAD_KEY = 'leonidapp_chunk_reload';
+function reloadOnceForStaleAssets(): void {
+  try {
+    if (sessionStorage.getItem(RELOAD_KEY)) return;
+    sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+  } catch {
+    return; // sin sessionStorage no se arriesga un bucle de recargas
+  }
+  window.location.reload();
+}
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault();
+  reloadOnceForStaleAssets();
+});
+window.addEventListener('unhandledrejection', (event) => {
+  const msg = event.reason instanceof Error ? event.reason.message : String(event.reason ?? '');
+  if (/Failed to fetch dynamically imported module|error loading dynamically imported module|Importing a module script failed/i.test(msg)) {
+    event.preventDefault();
+    reloadOnceForStaleAssets();
+  }
+});
+window.setTimeout(() => {
+  try {
+    sessionStorage.removeItem(RELOAD_KEY);
+  } catch {
+    /* sin almacenamiento: nada que limpiar */
+  }
+}, 10_000);
+
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('No se encontró el elemento #root');
 
