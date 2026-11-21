@@ -254,6 +254,7 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
   - `GET /api/forum` sin sesión devuelve únicamente `threads` en formato *preview*: `id`, `titulo`, `categoria`, `is_pinned`, `is_spoiler`, `upvotes_count`, `replies_count`, autor público y `created_at`. Sin `contenido` ni `posts`, máximo 50 hilos, más recientes primero, e ignorando parámetros de filtro o búsqueda.
   - Con sesión devuelve la respuesta completa actual.
 - **SSR-lite de `/foro`:** sin contenido de hilos en meta ni JSON-LD.
+- **Móvil con sesión (claridad para personas nuevas):** al abrir un hilo se oculta la cabecera del foro (título y categorías) para dar todo el alto al hilo; el botón de volver dice «Volver a los hilos»; el envío dice «Publicar respuesta» (a ancho completo) y el botón «Discord oficial» solo se muestra en escritorio. Las tarjetas muestran el voto con la etiqueta «votos» y un extracto de dos líneas del contenido (salvo spoilers); la fila de categorías se atenúa en el borde para indicar que desliza; el formulario de hilo lleva textos de ayuda y las respuestas vacías muestran un aviso explícito.
 
 ### 6.4 Mapa interactivo (P04) — teselas del referente + capa interactiva SVG
 

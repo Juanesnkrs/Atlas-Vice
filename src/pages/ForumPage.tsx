@@ -370,9 +370,9 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
   return (
     <div className="flex h-[calc(100dvh-5rem-var(--dock-reserve))] min-h-[30rem] flex-col gap-3 px-3 pt-1 md:px-8">
       {/* Cabecera del foro: título, categorías y "+ Hilo" */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+      <div className={`flex flex-wrap items-center gap-x-5 gap-y-2 ${mobileDetail && !guest ? 'max-md:hidden' : ''}`}>
         <h1 className="font-display text-2xl font-bold tracking-[0.04em] text-[#FFC09A] md:text-[26px]">COMUNIDAD</h1>
-        <div role="tablist" aria-label="Categorías del foro" className="order-last flex w-full gap-2 overflow-x-auto [scrollbar-width:none] md:order-none md:w-auto">
+        <div role="tablist" aria-label="Categorías del foro" className="order-last flex w-full gap-2 overflow-x-auto pr-6 [scrollbar-width:none] max-md:[mask-image:linear-gradient(to_right,#000_88%,transparent)] md:order-none md:w-auto">
           {([{ value: 'all', label: 'Todos' }, ...FORUM_CATEGORIES] as const).map((c) => {
             const on = (guest ? 'all' : cat) === c.value;
             return (
@@ -397,7 +397,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
       </div>
 
       {hasContext && (
-        <p className="glass flex flex-wrap items-center gap-2 rounded-xl px-4 py-1 text-sm">
+        <p className={`glass flex flex-wrap items-center gap-2 rounded-xl px-4 py-1 text-sm ${mobileDetail && !guest ? 'max-md:hidden' : ''}`}>
           Hilos sobre: <strong>{ctxLabel ?? 'este elemento'}</strong>
           <a href="/foro" className="flex min-h-11 items-center text-vice-orange underline">
             Quitar filtro
@@ -493,12 +493,13 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
                           aria-pressed={voted}
                           aria-label={`Votar hilo, ${t.upvotes_count} votos`}
                           onClick={() => void vote('THREAD', t.id)}
-                          className={`flex min-h-14 w-12 shrink-0 flex-col items-center justify-center gap-0.5 rounded-[14px] border text-xs font-semibold text-white md:hidden ${FOCUS} ${
+                          className={`flex min-h-16 w-14 shrink-0 flex-col self-start items-center justify-center gap-0.5 rounded-[14px] border text-xs font-semibold text-white md:hidden ${FOCUS} ${
                             voted ? 'border-vice-coral bg-vice-coral/35' : 'border-vice-orange/30 bg-white/[0.07]'
                           }`}
                         >
                           <span aria-hidden="true">▲</span>
                           <span>{t.upvotes_count}</span>
+                          <span className="text-[10px] font-normal text-vice-text/75">votos</span>
                         </button>
                         <button
                           type="button"
@@ -520,6 +521,9 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
                             {t.is_spoiler && <SpoilerTag />}
                           </span>
                           <span className="mt-1.5 block text-sm font-medium leading-snug text-white md:mt-2 md:text-[15px]">{t.titulo}</span>
+                          {t.contenido && !t.is_spoiler && (
+                            <span className="mt-1 line-clamp-2 block text-xs leading-relaxed text-vice-text/70">{t.contenido}</span>
+                          )}
                           <span className="mt-1.5 flex flex-wrap gap-x-3.5 gap-y-0.5 text-xs text-vice-text/80 md:mt-2">
                             <span className="font-semibold text-[#FFC09A] max-md:hidden">▲ {t.upvotes_count}</span>
                             <span>{repliesOf(t)} respuestas</span>
@@ -564,7 +568,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
                   onClick={() => setMobileDetail(false)}
                   className={`${BTN} -ml-2 mb-1 text-sm text-vice-orange hover:bg-white/10 md:hidden`}
                 >
-                  ← Volver al tablón
+                  ← Volver a los hilos
                 </button>
                 <div className="flex flex-wrap items-center gap-2">
                   <CategoryTag categoria={selected.categoria} />
@@ -650,7 +654,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
 
                 <h3 className="mb-1 mt-6 text-xs font-semibold tracking-[0.1em] text-vice-text/90">RESPUESTAS · {posts.length}</h3>
                 {posts.length === 0 ? (
-                  <p className="text-sm text-vice-text/70">Sé la primera persona en responder.</p>
+                  <p className="rounded-xl border border-dashed border-vice-orange/30 p-4 text-sm text-vice-text/80">Todavía nadie ha respondido. ¡Sé la primera persona en hacerlo!</p>
                 ) : (
                   <ul>
                     {flatPosts.map(({ post: p, depth }) => {
@@ -712,7 +716,7 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
               >
                 <div className="min-w-0 flex-1 basis-full md:basis-0">
                   <label htmlFor="reply" className="mb-1 flex items-center text-xs text-vice-text/80">
-                    {selected.is_locked ? 'Hilo cerrado: no admite más respuestas' : replyTarget ? `Respondiendo a ${nameOf(replyTarget.user_id)}` : 'Respuesta rápida'}
+                    {selected.is_locked ? 'Hilo cerrado: no admite más respuestas' : replyTarget ? `Respondiendo a ${nameOf(replyTarget.user_id)}` : 'Tu respuesta'}
                     {replyTarget && (
                       <button type="button" onClick={() => setReplyTo(null)} className="ml-2 min-h-11 text-vice-orange underline">
                         Cancelar
@@ -729,14 +733,14 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
                     className="w-full resize-none rounded-2xl border border-vice-orange/30 bg-white/[0.07] px-4 py-3 text-sm text-white placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold"
                   />
                 </div>
-                <PalmButton type="submit" loading={busy} className="h-[52px] rounded-full px-6 text-[15px]">
-                  Responder
+                <PalmButton type="submit" loading={busy} className="h-[52px] rounded-full px-6 text-[15px] max-md:w-full">
+                  Publicar respuesta
                 </PalmButton>
                 <a
                   href={DISCORD_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`glass flex h-[52px] items-center gap-2 whitespace-nowrap rounded-full px-4 text-[13px] font-semibold tracking-[0.04em] text-white hover:brightness-110 ${FOCUS}`}
+                  className={`glass flex h-[52px] items-center gap-2 whitespace-nowrap rounded-full px-4 max-md:hidden text-[13px] font-semibold tracking-[0.04em] text-white hover:brightness-110 ${FOCUS}`}
                 >
                   <svg aria-hidden="true" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8">
                     <rect x="2.5" y="5" width="19" height="13" rx="5" />
@@ -806,13 +810,13 @@ export default function ForumPage({ params }: { params: URLSearchParams }) {
             <label htmlFor="nt-title" className="mb-1 block text-sm font-medium">
               Título
             </label>
-            <input id="nt-title" name="titulo" required maxLength={140} className={INPUT} />
+            <input id="nt-title" name="titulo" required maxLength={140} placeholder="Resume tu tema en una frase" className={INPUT} />
           </div>
           <div>
             <label htmlFor="nt-body" className="mb-1 block text-sm font-medium">
               Contenido
             </label>
-            <textarea id="nt-body" name="contenido" required rows={5} className={`${INPUT} py-2`} />
+            <textarea id="nt-body" name="contenido" required rows={5} placeholder="Cuenta los detalles para que otras personas puedan ayudarte" className={`${INPUT} py-2`} />
           </div>
           <label className="flex min-h-11 items-center gap-3 text-sm">
             <input type="checkbox" name="spoiler" className="h-5 w-5 accent-[#E1307E]" />
