@@ -30,6 +30,7 @@ export function EntityPicker({
   name,
   defaultValue = null,
   label = 'Ficha vinculada',
+  hideLabel = false,
   onChange,
 }: {
   id: string;
@@ -37,6 +38,8 @@ export function EntityPicker({
   name?: string;
   defaultValue?: string | null;
   label?: string;
+  /** Oculta la etiqueta visualmente (sigue disponible para lectores de pantalla). */
+  hideLabel?: boolean;
   onChange?: (entity: PickedEntity | null) => void;
 }) {
   const [value, setValue] = useState<string | null>(defaultValue);
@@ -85,7 +88,7 @@ export function EntityPicker({
   return (
     <div>
       {name && <input ref={hidden} type="hidden" name={name} value={value ?? ''} readOnly />}
-      <label htmlFor={id} className="mb-1 block text-sm font-medium">
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : 'mb-1 block text-sm font-medium'}>
         {label}
       </label>
       {value !== null ? (

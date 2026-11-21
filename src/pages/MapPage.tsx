@@ -2,6 +2,7 @@
 // filtros combinados sincronizados con la URL, buscador instantáneo, ficha de marcador con check 100%
 // (P04.3), drawer de hilos (P07.3) y Modo Editor de coordenadas para ADMIN+.
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SunsetBanner } from '../components/layout/ViceShell';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
@@ -416,12 +417,32 @@ interface EditorPanelProps {
   onMoveHere: () => void;
   onCopy: () => void;
   onClose: () => void;
+  /** Panel acoplado en móvil: la cabecera (título y «Salir») la pone el contenedor. */
+  compact?: boolean;
 }
 
 const FIELD =
   'glass min-h-11 w-full rounded-xl px-3 text-sm text-vice-text placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold';
 
-function EditorPanel({ extra, cross, selected, preset, regions, nearestRegion, busy, status, onCreate, onMoveHere, onCopy, onClose }: EditorPanelProps) {
+function EditorStep({ n, title, done, children }: { n: number; title: string; done?: boolean; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-2">
+      <h3 className="flex items-center gap-2 font-semibold">
+        <span
+          aria-hidden="true"
+          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${done ? 'bg-vice-gold text-vice-ink' : 'bg-white/15 text-vice-text'}`}
+        >
+          {done ? '✓' : n}
+        </span>
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+/** Guía de 3 pasos para colocar un pin: ficha (opcional) → tocar el mapa → datos y guardar. */
+function EditorPanel({ extra, cross, selected, preset, regions, nearestRegion, busy, status, onCreate, onMoveHere, onCopy, onClose, compact = false }: EditorPanelProps) {
   const [picked, setPicked] = useState<PickedEntity | null>(null);
   const [region, setRegion] = useState('');
   const [titulo, setTitulo] = useState('');
@@ -447,52 +468,57 @@ function EditorPanel({ extra, cross, selected, preset, regions, nearestRegion, b
   }, [preset, pick]);
 
   const slugOk = slug === '' || SLUG_RE.test(slug);
-  const canCreate = cross !== null && region.trim() !== '' && titulo.trim() !== '' && slugOk && !busy;
+  const missing = [cross === null && 'tocar el mapa', titulo.trim() === '' && 'el nombre', region.trim() === '' && 'la zona', !slugOk && 'un enlace corto válido'].filter(
+    (m): m is string => typeof m === 'string',
+  );
+  const canCreate = missing.length === 0 && !busy;
 
   return (
     <div className="flex flex-col gap-3 text-sm">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-vice-orange">Modo editor</p>
-          <p className="text-vice-text/80">Toca el mapa para fijar la mira. Arrastra el pin seleccionado para moverlo.</p>
+      {!compact && (
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-widest text-vice-orange">Modo editor</p>
+            <p className="text-vice-text/80">Coloca un pin nuevo o mueve uno existente.</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-11 shrink-0 rounded-xl px-3 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+          >
+            Salir
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="min-h-11 shrink-0 rounded-xl px-3 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-        >
-          Salir
-        </button>
-      </div>
+      )}
 
-      <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-        <p className="text-xs text-vice-text/70">Coordenadas (lienzo 0–1000 × 0–700)</p>
-        <p role="status" className="font-display text-lg font-bold tabular-nums">
-          {cross ? `x ${cross.x.toFixed(2)} · y ${cross.y.toFixed(2)}` : 'Sin mira fijada'}
-        </p>
-        <button
-          type="button"
-          disabled={!cross}
-          onClick={onCopy}
-          className="mt-2 min-h-11 w-full rounded-xl border border-white/15 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold disabled:opacity-40"
-        >
-          Copiar coordenadas
-        </button>
-      </div>
+      <EditorStep n={1} title="Elige la ficha (opcional)" done={picked !== null}>
+        <EntityPicker key={picked?.id ?? 'none'} id="ed-entity" defaultValue={picked?.id ?? null} label="Ficha del catálogo" hideLabel onChange={pick} />
+      </EditorStep>
 
-      {extra}
+      <EditorStep n={2} title="Toca el mapa donde irá el pin" done={cross !== null}>
+        {cross ? (
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-vice-gold/40 bg-vice-gold/10 px-3 py-2">
+            <p role="status" className="font-semibold">
+              Punto fijado ✓ <span className="font-normal tabular-nums text-vice-text/70">(x {cross.x.toFixed(0)} · y {cross.y.toFixed(0)})</span>
+            </p>
+            <button type="button" onClick={onCopy} className="min-h-11 shrink-0 rounded-xl px-3 text-xs font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold">
+              Copiar
+            </button>
+          </div>
+        ) : (
+          <p role="status" className="rounded-xl border border-dashed border-vice-orange/50 px-3 py-2 text-vice-text/90">
+            Aún sin punto. Toca el mapa (puedes volver a tocar para corregir).
+          </p>
+        )}
+      </EditorStep>
 
-      <div className="flex flex-col gap-2">
-        <EntityPicker key={picked?.id ?? 'none'} id="ed-entity" defaultValue={picked?.id ?? null} label="Entidad del catálogo" onChange={pick} />
-      </div>
-
-      <div className="grid grid-cols-1 gap-2">
+      <EditorStep n={3} title="Completa los datos y guarda">
         <label className="font-semibold" htmlFor="ed-titulo">
-          Título
+          Nombre del pin
         </label>
         <input id="ed-titulo" value={titulo} maxLength={160} onChange={(e) => setTitulo(e.target.value)} className={FIELD} />
         <label className="font-semibold" htmlFor="ed-region">
-          Región
+          Zona o región
         </label>
         <input
           id="ed-region"
@@ -510,43 +536,52 @@ function EditorPanel({ extra, cross, selected, preset, regions, nearestRegion, b
             <option key={r} value={r} />
           ))}
         </datalist>
-        <label className="font-semibold" htmlFor="ed-slug">
-          Slug (<code>?pin=</code>)
-        </label>
-        <input
-          id="ed-slug"
-          value={slug}
-          onChange={(e) => setSlug(e.target.value.toLowerCase())}
-          onBlur={() => titulo && slug === '' && setSlug(slugify(titulo))}
-          aria-invalid={!slugOk}
-          className={FIELD}
-        />
-        {!slugOk && <p className="text-xs text-vice-accent">Solo minúsculas, números y guiones.</p>}
-      </div>
-
-      <div className="flex flex-col gap-2">
+        <details className="rounded-xl bg-white/5 px-3">
+          <summary className="flex min-h-11 cursor-pointer items-center text-xs font-semibold text-vice-text/80">Más opciones</summary>
+          <div className="flex flex-col gap-2 pb-3">
+            <label className="font-semibold" htmlFor="ed-slug">
+              Enlace corto <span className="font-normal text-vice-text/70">(<code>?pin=</code>)</span>
+            </label>
+            <input
+              id="ed-slug"
+              value={slug}
+              placeholder="Se genera a partir del nombre"
+              onChange={(e) => setSlug(e.target.value.toLowerCase())}
+              onBlur={() => titulo && slug === '' && setSlug(slugify(titulo))}
+              aria-invalid={!slugOk}
+              className={FIELD}
+            />
+            {!slugOk && <p className="text-xs text-vice-accent">Solo minúsculas, números y guiones.</p>}
+          </div>
+        </details>
         <PalmButton
           type="button"
           fullWidth
           disabled={!canCreate}
-          onClick={() =>
-            onCreate({ entity_id: picked?.id ?? null, ...(slug ? { slug } : {}), region: region.trim(), titulo: titulo.trim() })
-          }
+          onClick={() => onCreate({ entity_id: picked?.id ?? null, ...(slug ? { slug } : {}), region: region.trim(), titulo: titulo.trim() })}
           className="min-h-12! text-base!"
         >
-          {busy ? 'Guardando…' : 'Crear marcador aquí'}
+          {busy ? 'Guardando…' : 'Guardar pin'}
         </PalmButton>
-        {selected && (
+        <p className="text-xs text-vice-text/70">{missing.length > 0 ? `Para guardar falta: ${missing.join(', ')}.` : 'Todo listo para guardar.'}</p>
+      </EditorStep>
+
+      {selected && (
+        <section className="flex flex-col gap-2 rounded-xl border border-white/10 bg-white/5 p-3">
+          <h3 className="font-semibold">Mover un pin que ya existe</h3>
+          <p className="text-xs text-vice-text/80">
+            Tienes seleccionado «{selected.titulo}». Arrástralo por el mapa, o toca un punto nuevo y pulsa el botón.
+          </p>
           <button
             type="button"
             disabled={!cross || busy}
             onClick={onMoveHere}
             className="min-h-12 rounded-xl border border-white/15 px-3 font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold disabled:opacity-40"
           >
-            Mover «{selected.titulo}» aquí
+            Mover «{selected.titulo}» al punto fijado
           </button>
-        )}
-      </div>
+        </section>
+      )}
 
       {status && (
         <p
@@ -556,7 +591,65 @@ function EditorPanel({ extra, cross, selected, preset, regions, nearestRegion, b
           {status.text}
         </p>
       )}
+
+      <details className="rounded-xl border border-white/10">
+        <summary className="flex min-h-11 cursor-pointer items-center px-3 text-xs font-semibold text-vice-text/80">Herramientas avanzadas (calca y trazador de dibujo)</summary>
+        <div className="flex flex-col gap-3 p-3 pt-0">{extra}</div>
+      </details>
     </div>
+  );
+}
+
+/**
+ * Móvil: panel acoplado sobre el dock y plegable. Arranca plegado (solo una barra con la instrucción) para dejar el mapa
+ * libre; al fijar el punto se abre. Informa de su alto para que el lienzo reserve ese espacio. Se pinta fuera del lienzo
+ * táctil (portal) para poder hacer scroll dentro.
+ */
+function EditorDock({ hasPoint, onClose, onHeight, children }: { hasPoint: boolean; onClose: () => void; onHeight: (px: number) => void; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (hasPoint) setOpen(true);
+  }, [hasPoint]);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const ro = new ResizeObserver(() => onHeight(Math.round(el.getBoundingClientRect().height) + 8));
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      onHeight(0);
+    };
+  }, [onHeight]);
+  return createPortal(
+    <section
+      ref={ref}
+      aria-label="Modo editor"
+      className="glass fixed inset-x-2 z-[var(--z-sheet)] flex max-h-[46dvh] flex-col overflow-hidden rounded-2xl md:hidden"
+      style={{ bottom: 'calc(var(--dock-reserve) + 0.25rem)' }}
+    >
+      <div className="flex shrink-0 items-center justify-between gap-2 px-3">
+        <button
+          type="button"
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+          className="flex min-h-11 flex-1 flex-col items-start justify-center text-left focus-visible:outline-2 focus-visible:outline-vice-gold"
+        >
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-vice-orange">Modo editor</span>
+          <span className="text-sm font-semibold">
+            {open ? 'Completa los datos del pin' : hasPoint ? 'Punto fijado ✓ · Toca para completar' : 'Toca el mapa para fijar el punto'}
+          </span>
+        </button>
+        <button type="button" onClick={() => setOpen((o) => !o)} className="min-h-11 shrink-0 rounded-xl px-2 text-xs font-semibold text-vice-orange hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold">
+          {open ? 'Ocultar' : 'Abrir'}
+        </button>
+        <button type="button" onClick={onClose} className="min-h-11 shrink-0 rounded-xl px-2 text-sm font-semibold hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold">
+          Salir
+        </button>
+      </div>
+      {open && <div className="touch-pan-y overflow-y-auto overscroll-contain px-3 pb-4">{children}</div>}
+    </section>,
+    document.body,
   );
 }
 
@@ -963,8 +1056,9 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
     [editor, trace],
   );
 
-  const editorPanel = (
+  const renderEditorPanel = (compact: boolean) => (
     <EditorPanel
+      compact={compact}
       extra={
         <EditorTools
           refState={refState}
@@ -995,6 +1089,11 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       }}
     />
   );
+  const closeEditor = () => {
+    setEditor(false);
+    setCross(null);
+    setTrace((tr) => ({ ...tr, on: false }));
+  };
 
   const notice = error && !unavailable ? 'No se pudo actualizar desde el servidor.' : null;
 
@@ -1012,7 +1111,16 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
     />
   );
 
-  const insets = useMemo(() => ({ top: isDesktop ? 0 : MOBILE_CONTROLS_PX }), [isDesktop]);
+  // Alto del panel acoplado del editor (móvil): el lienzo lo reserva y centra el punto fijado en la zona visible.
+  const [dockPx, setDockPx] = useState(0);
+  const insets = useMemo(() => ({ top: isDesktop ? 0 : MOBILE_CONTROLS_PX, bottom: editor && !isDesktop ? dockPx : 0 }), [isDesktop, editor, dockPx]);
+  const crossSet = cross !== null;
+  useEffect(() => {
+    if (editor && !isDesktop && crossSet && dockPx > 0 && cross) canvas.current?.flyTo(cross.x, cross.y, { zoom: 2.4 });
+    // Solo al fijar el primer punto o al cambiar el alto del panel; los toques siguientes no deben mover el mapa. Se acerca
+    // un poco: con la isla entera a la vista el lienzo no puede desplazarse para dejar el punto sobre el panel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor, isDesktop, crossSet, dockPx]);
   const editable = useMemo(
     () => (editor && !trace.on && selected ? { pinId: selected.id, onMove: moveMarker } : undefined),
     [editor, trace.on, selected, moveMarker],
@@ -1067,7 +1175,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       )}
 
       {/* HUD superior izquierdo: buscador + filtros (+ editor en escritorio) */}
-      <div className="pointer-events-none absolute left-3 right-3 top-2 z-10 flex max-h-[calc(100%-1rem)] flex-col gap-2 md:right-auto md:w-[25rem] md:overflow-y-auto lg:w-64">
+      <div className="pointer-events-none absolute left-3 right-3 top-2 z-10 flex max-h-[calc(100%-1rem)] flex-col gap-2 md:right-auto md:w-[25rem] md:overflow-y-auto ${editor && isDesktop ? 'lg:w-[22rem]' : 'lg:w-64'}">
         <div className="pointer-events-auto relative">
           <label htmlFor="map-search" className="sr-only">
             Buscar lugar, ficha o región
@@ -1106,7 +1214,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           )}
         </div>
 
-        <div className="pointer-events-auto flex flex-wrap items-center gap-2 lg:hidden">
+        <div className={`pointer-events-auto flex-wrap items-center gap-2 lg:hidden ${editor && isDesktop ? 'hidden' : 'flex'}`}>
           <button
             type="button"
             aria-expanded={layersOpen}
@@ -1123,7 +1231,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
 
         <fieldset
           className={`glass pointer-events-auto max-h-[46vh] shrink-0 overflow-y-auto rounded-2xl p-3 ${
-            layersOpen ? 'block' : 'hidden lg:block'
+            editor && isDesktop ? 'hidden' : layersOpen ? 'block' : 'hidden lg:block'
           }`}
         >
           <legend className="sr-only">Capas y filtros del mapa</legend>
@@ -1184,11 +1292,11 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           </div>
         </fieldset>
 
-        {editor && isDesktop && <div className="glass pointer-events-auto shrink-0 rounded-2xl p-3">{editorPanel}</div>}
+        {editor && isDesktop && <div aria-label="Modo editor" role="region" className="glass pointer-events-auto shrink-0 rounded-2xl p-3">{renderEditorPanel(false)}</div>}
       </div>
 
       {/* Zoom, progreso y Modo Editor (ADMIN+) */}
-      <div className="absolute bottom-3 right-3 z-10 flex flex-col items-end gap-2 md:bottom-auto md:top-2">
+      <div className={`absolute right-3 z-10 flex flex-col items-end gap-2 md:bottom-auto md:top-2 ${editor && !isDesktop ? 'top-[10.5rem]' : 'bottom-3'}`}>
         <div className="glass flex flex-col overflow-hidden rounded-2xl">
           <button type="button" aria-label="Acercar" onClick={() => canvas.current?.zoomBy(1.6)} className={ZOOM_BTN}>
             +
@@ -1238,7 +1346,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       )}
 
       {/* Ficha P04.3: panel flotante (escritorio) / Bottom Sheet (móvil; en modo editor muestra el editor) */}
-      {selected && isDesktop && (
+      {selected && isDesktop && !editor && (
         <aside
           aria-label="Ficha del lugar"
           className="glass absolute bottom-3 right-3 top-[15rem] z-10 w-[340px] overflow-y-auto rounded-2xl p-4 max-md:hidden"
@@ -1246,14 +1354,19 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           {card}
         </aside>
       )}
+      {editor && !isDesktop && (
+        <EditorDock hasPoint={cross !== null} onClose={closeEditor} onHeight={setDockPx}>
+          {renderEditorPanel(true)}
+        </EditorDock>
+      )}
       <BottomSheet
-        open={(editor || selected !== null) && !isDesktop}
-        onClose={() => (editor ? undefined : deselect())}
-        title={editor ? 'Modo editor' : selected?.titulo}
+        open={selected !== null && !editor && !isDesktop}
+        onClose={deselect}
+        title={selected?.titulo}
         modal={false}
         className="md:hidden"
       >
-        {editor ? editorPanel : card}
+        {card}
       </BottomSheet>
     </div>
   );

@@ -330,3 +330,15 @@ Copy: frases cortas y concretas, sin "PKCE", "LAUNCH READY", "HUD" ni términos 
 - `MapPage.tsx`: filtros AND (capas, región, ocultar completados), buscador con normalización NFD, deep-link `?pin=` y **Modo Editor** (solo en el panel oculto `/_staff` para staff autorizado; no existe en la UI pública): mira, copiar `(x, y)`, alta/movimiento de marcadores vía `POST`/`PATCH /api/markers`, calca de referencia y trazador SVG. `?editor=1&entity=<slug>` preselecciona una ficha para situar su pin.
 - **Nitidez en táctil:** el bitmap de teselas usa DPR máx. 2 en escritorio y 2,5 en táctil (límite 6144 px por lado); con DPR 3 el nivel nativo `z=4` se alcanza desde ~4,3 px CSS/unidad en lugar de ~6,2. El contador de completados queda a la izquierda de la barra de zoom.
 - `public/sw.js` (`leonidapp-static-v4`): `/map-tiles/*` con *stale-while-revalidate*.
+
+### 7.13 Modo editor del mapa: guía de 3 pasos (2026-11-21)
+
+Solo para el equipo (`isStaff()`; el RBAC real sigue en la API). Objetivo: que una persona nueva del equipo coloque un pin sin instrucciones.
+
+- **Flujo guiado, 3 pasos numerados que se marcan con ✓:** (1) «Elige la ficha (opcional)» — buscador de fichas, vacío = lugar nuevo; (2) «Toca el mapa donde irá el pin» — confirma «Punto fijado ✓ (x · y)» con «Copiar» pequeño; se puede volver a tocar para corregir; (3) «Completa los datos y guarda» — «Nombre del pin» (se rellena con el de la ficha) y «Zona o región» (sugerida por el pin más cercano). El enlace corto (`?pin=`) queda en «Más opciones» y se genera del nombre. El botón «Guardar pin» está desactivado hasta que todo esté listo y una línea dice exactamente qué falta («Para guardar falta: tocar el mapa, el nombre…»).
+- **Pin existente:** si hay uno seleccionado aparece «Mover un pin que ya existe» (arrastrarlo, o fijar un punto y «Mover «X» al punto fijado»).
+- **Herramientas avanzadas** (calca de referencia y trazador de dibujo, que antes ocupaban lo primero del panel) quedan plegadas al final.
+- **Vocabulario:** «punto», «nombre del pin», «zona o región», «ficha del catálogo», «enlace corto»; sin «mira», «lienzo 0–1000 × 0–700» ni «slug» en la interfaz. Una sola salida: «Salir».
+- **Escritorio y tableta (≥ 768 px):** el panel ocupa la columna izquierda en lugar del control de capas (que se oculta mientras se edita) y cabe sin scroll; no se muestra la ficha del pin seleccionado a la vez.
+- **Móvil:** panel acoplado sobre el dock (portal fuera del lienzo táctil, con scroll propio, máx. 46 % del alto) que **arranca plegado** como una barra («Toca el mapa para fijar el punto») para dejar el mapa libre; al fijar el punto se abre y el lienzo reserva ese espacio, acerca el mapa y centra el punto en la zona visible. Se puede ocultar/abrir y salir desde la barra. El zoom sube de posición para no quedar tapado.
+- **Mira:** trazo dorado con contorno oscuro para que se lea sobre el terreno claro.

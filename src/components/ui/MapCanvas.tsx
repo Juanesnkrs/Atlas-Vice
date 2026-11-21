@@ -789,10 +789,13 @@ export function MapCanvas({ ref, refOverlay, tracer, captureClicks, pins, select
           {tracer && <TracerOverlay tracer={tracer} />}
           {crosshair && (
             <g data-cross style={{ transform: pxPos(crosshair.x, crosshair.y), pointerEvents: 'none' }}>
-              <circle className="lm-pulse" r={14} fill="none" stroke="#FFC857" strokeWidth={2} />
-              <circle r={14} fill="rgba(255,200,87,0.12)" stroke="#FFC857" strokeWidth={2} />
-              <path d="M-22 0H-6M6 0H22M0-22V-6M0 6V22" stroke="#FFC857" strokeWidth={2} strokeLinecap="round" />
-              <circle r={2} fill="#FFC857" />
+              {/* Contorno oscuro bajo el trazo dorado: la mira se lee también sobre el terreno claro. */}
+              <circle r={14} fill="none" stroke="#140E24" strokeWidth={6} opacity={0.85} />
+              <path d="M-24 0H-6M6 0H24M0-24V-6M0 6V24" stroke="#140E24" strokeWidth={6} strokeLinecap="round" opacity={0.85} />
+              <circle className="lm-pulse" r={14} fill="none" stroke="#FFC857" strokeWidth={2.5} />
+              <circle r={14} fill="rgba(255,200,87,0.18)" stroke="#FFC857" strokeWidth={2.5} />
+              <path d="M-22 0H-6M6 0H22M0-22V-6M0 6V22" stroke="#FFC857" strokeWidth={2.5} strokeLinecap="round" />
+              <circle r={2.5} fill="#FFC857" />
             </g>
           )}
           {items.map((it) => {
