@@ -89,6 +89,7 @@ export function EntityDetailPanel({
   const meta = metaOf(entity);
   const stats = statsOf(entity);
   const pin = markers[0];
+  const metaRows = Object.entries(meta).filter(([k]) => k in META_LABELS);
   return (
     <div className={`flex flex-col gap-3 ${pinned ? 'h-full min-h-0' : ''}`}>
       <div className={`flex flex-col gap-3 ${pinned ? 'min-h-0 flex-1 overflow-y-auto pr-1' : ''}`}>
@@ -109,10 +110,9 @@ export function EntityDetailPanel({
           </div>
         )}
 
+        {(metaRows.length > 0 || markers.length > 0) && (
         <dl className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-xl bg-white/5 p-3 text-sm">
-          {Object.entries(meta)
-            .filter(([k]) => k in META_LABELS)
-            .map(([k, v]) => (
+          {metaRows.map(([k, v]) => (
               <div key={k} className="contents">
                 <dt className="text-vice-text/70">{META_LABELS[k]}</dt>
                 <dd className="font-semibold">{fmtMeta(k, v)}</dd>
@@ -127,6 +127,7 @@ export function EntityDetailPanel({
             </div>
           )}
         </dl>
+        )}
 
         {threads.length > 0 && (
           <ul aria-label="Hilos relacionados" className="flex flex-col text-sm">

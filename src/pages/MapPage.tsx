@@ -1067,7 +1067,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
       )}
 
       {/* HUD superior izquierdo: buscador + filtros (+ editor en escritorio) */}
-      <div className="pointer-events-none absolute left-3 right-3 top-2 z-10 flex max-h-[calc(100%-1rem)] flex-col gap-2 md:right-auto md:w-64 md:overflow-y-auto">
+      <div className="pointer-events-none absolute left-3 right-3 top-2 z-10 flex max-h-[calc(100%-1rem)] flex-col gap-2 md:right-auto md:w-[25rem] md:overflow-y-auto lg:w-64">
         <div className="pointer-events-auto relative">
           <label htmlFor="map-search" className="sr-only">
             Buscar lugar, ficha o región
@@ -1106,7 +1106,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
           )}
         </div>
 
-        <div className="pointer-events-auto flex flex-wrap items-center gap-2 md:hidden">
+        <div className="pointer-events-auto flex flex-wrap items-center gap-2 lg:hidden">
           <button
             type="button"
             aria-expanded={layersOpen}
@@ -1123,7 +1123,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
 
         <fieldset
           className={`glass pointer-events-auto max-h-[46vh] shrink-0 overflow-y-auto rounded-2xl p-3 ${
-            layersOpen ? 'block' : 'hidden md:block'
+            layersOpen ? 'block' : 'hidden lg:block'
           }`}
         >
           <legend className="sr-only">Capas y filtros del mapa</legend>
@@ -1223,7 +1223,7 @@ export default function MapPage({ params }: { params: URLSearchParams }) {
             Modo editor
           </button>
         )}
-        <div className="hidden items-center gap-1 md:absolute md:right-full md:top-0 md:mr-2 md:flex">
+        <div className="hidden items-center gap-1 lg:absolute lg:right-full lg:top-0 lg:mr-2 lg:flex">
           <p role="status" className="glass whitespace-nowrap rounded-full px-3 py-1 text-xs">
             {doneCount}/{data.markers.length} lugares completados
           </p>

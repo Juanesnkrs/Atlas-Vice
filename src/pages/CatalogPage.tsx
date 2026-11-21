@@ -232,7 +232,7 @@ function Viewer({ entity, kind }: { entity: Entity; kind?: string }) {
   const step = (d: number) => setZoom((z) => Math.min(1.8, Math.max(0.8, Math.round((z + d) * 10) / 10)));
   const credit = entity.imagen_url ? 'Artwork' : metaOf(entity).silueta ? 'Silueta vectorial ilustrativa' : '';
   return (
-    <section aria-label="Visor" className="flex min-h-0 flex-col items-center gap-3">
+    <section aria-label="Visor" className="hidden min-h-0 flex-col items-center gap-3 xl:flex">
       <div className="flex min-h-0 w-full flex-1 items-center justify-center">
         <div className="relative aspect-square h-full max-h-[460px] max-w-full overflow-hidden rounded-[28px] border border-vice-orange/35 bg-[linear-gradient(160deg,#4B2262,#1E1030)] shadow-[0_30px_60px_rgba(0,0,0,0.45),0_0_0_6px_rgba(246,126,86,0.14)]">
           <div
@@ -787,7 +787,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
           </div>
         </section>
       ) : (
-      <div className="flex flex-col md:min-h-0 md:flex-1 md:grid md:grid-cols-[minmax(260px,360px)_minmax(0,1fr)_minmax(300px,360px)] md:grid-rows-[minmax(0,1fr)] md:gap-5">
+      <div className="flex flex-col md:min-h-0 md:flex-1 md:grid md:grid-cols-[minmax(240px,1fr)_minmax(300px,1fr)] md:grid-rows-[minmax(0,1fr)] md:gap-5 xl:grid-cols-[minmax(260px,360px)_minmax(0,1fr)_minmax(300px,360px)]">
         {/* Rejilla de selección */}
         <section aria-label="Selección" className="glass flex flex-col rounded-2xl p-3 md:min-h-0 md:flex-1 md:p-4">
           <div className="mb-3 flex items-baseline justify-between px-1">
@@ -802,7 +802,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
             <ul
               ref={gridRef}
               onScroll={(ev) => scrollMemo.current.set(gridKeyRef.current, ev.currentTarget.scrollTop)}
-              className="grid grid-cols-2 content-start gap-x-3 gap-y-4 pb-1 md:min-h-0 md:flex-1 md:grid-cols-3 md:gap-x-2.5 md:gap-y-3 md:overflow-y-auto"
+              className="grid grid-cols-2 content-start gap-x-3 gap-y-4 pb-1 md:min-h-0 md:flex-1 md:grid-cols-2 md:gap-x-3 md:gap-y-3 md:overflow-y-auto lg:grid-cols-3 xl:gap-x-2.5"
             >
               {list.map((e) => {
                 const sel = selected?.id === e.id;
@@ -837,7 +837,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
                           </span>
                         )}
                       </span>
-                      <span className="line-clamp-2 px-0.5 text-sm font-semibold leading-tight md:text-[11px]">{e.titulo}</span>
+                      <span className="line-clamp-2 px-0.5 text-sm font-semibold leading-tight xl:text-[11px]">{e.titulo}</span>
                     </button>
                   </li>
                 );

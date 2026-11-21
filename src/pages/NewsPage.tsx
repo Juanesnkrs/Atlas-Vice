@@ -125,7 +125,7 @@ function NewsList() {
       )}
 
       {/* Alto mínimo común a carga / vacío / error: el pie no salta al llegar la respuesta (CLS = 0). */}
-      <div aria-live="polite" className="mt-4 min-h-[70dvh]">
+      <div aria-live="polite" className="mt-4 min-h-[26rem]">
         {loading ? (
           <p role="status" className="text-sm">
             Cargando noticias oficiales…
