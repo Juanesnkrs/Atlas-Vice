@@ -474,3 +474,414 @@ describe('(i) imagen_url vacia no se guarda (M2)', () => {
     assert.equal(e?.imagen_url ?? null, null);
   });
 });
+
+// ======================================================================================================
+// Normalizacion, tarjeta, marker, lote, noticias, DTO y SSR (ficha real de FireCrawl como referencia)
+// ======================================================================================================
+
+const { canonicalizeMetadata } = await import('../services/catalogIngest.js');
+const { MediaAsset } = await import('../models/MediaAsset.js');
+const { MapMarker } = await import('../models/MapMarker.js');
+const { AuditLog } = await import('../models/AuditLog.js');
+const { OfficialNews } = await import('../models/OfficialNews.js');
+const { clearSsrCache, resolveRoute } = await import('../services/ssrLite.js');
+const { runOfficialNewsIngest } = await import('../workers/officialNewsWorker.js');
+const SYS = { id: 'system', role: 'SYSTEM' } as const;
+
+/** WebP VP8L minimo (cabecera valida; basta para la sonda de tipo y dimensiones). */
+function webp(width = 1600, height = 900, size = 64): Buffer {
+  const b = Buffer.alloc(Math.max(size, 30));
+  b.write('RIFF', 0, 'ascii');
+  b.writeUInt32LE(b.length - 8, 4);
+  b.write('WEBP', 8, 'ascii');
+  b.write('VP8L', 12, 'ascii');
+  b.writeUInt32LE(b.length - 20, 16);
+  b[20] = 0x2f;
+  b.writeUInt32LE(((width - 1) & 0x3fff) | (((height - 1) & 0x3fff) << 14), 21);
+  return b;
+}
+const tarjetaOf = (b: Buffer = webp()) => ({ mime: 'image/webp', base64: b.toString('base64') });
+
+const roleCookies = new Map<string, string>();
+async function staffCookie(rol: 'USER' | 'MODERATOR' | 'ADMIN' | 'SUPER_ADMIN'): Promise<string> {
+  const cached = roleCookies.get(rol);
+  if (cached) return cached;
+  const id = randomUUID();
+  await User.create({ _id: id, username: `x-${rol.toLowerCase()}-${id.slice(0, 6)}`, rol, identities: [] });
+  const c = `${SESSION_COOKIE}=${await signSession(id, 600)}`;
+  roleCookies.set(rol, c);
+  return c;
+}
+const asStaff = async (method: 'GET' | 'POST' | 'PATCH', url: string, rol: 'MODERATOR' | 'ADMIN' | 'USER' = 'MODERATOR', payload?: unknown) =>
+  app.inject({
+    method,
+    url,
+    remoteAddress: nextIp(),
+    headers: { cookie: await staffCookie(rol), ...(payload !== undefined ? { 'content-type': 'application/json' } : {}) },
+    ...(payload !== undefined ? { payload: JSON.stringify(payload) } : {}),
+  });
+const subOf = (slug: string) => Submission.findOne({ origin: 'pipeline', 'payload.slug': slug }).sort({ createdAt: -1 }).lean();
+const promoteSlug = async (slug: string) => promote((await subOf(slug))!._id, SYS);
+
+describe('(j) canonicalizeMetadata: alias -> claves canonicas, sin nulos ni ruido', () => {
+  it('lleva descripcion_es, atributos y pasos a su forma canonica', () => {
+    const r = canonicalizeMetadata({
+      metadata: {
+        descripcion_es: '  Un coche rapido.  ',
+        fabricante: 'Karin',
+        asientos: 2,
+        cargador: 30,
+        lugar: 'Vice Beach',
+        clase: 'Deportivo',
+        peso_kg: 1400,
+        precio: null,
+        marchas: '',
+        steps: [{ titulo: 'Uno', texto: 'Hazlo' }, 'Solo texto'],
+        pasos: [{ titulo: 'Duplicado', texto: 'x' }],
+        requiere_redaccion: true,
+        estado_verificacion: 'ok',
+        stats_verificadas: { dano: 1 },
+        howto_pendiente: true,
+        fuente_ruta: '/tmp/x',
+        fuente_url: 'https://ejemplo.test/a',
+        notas: 'Redactar descripcion original a partir de los hechos',
+        captura_propia_pendiente: true,
+      },
+    });
+    assert.equal(r.ok, true);
+    if (!r.ok) return;
+    assert.deepEqual(r.metadata, {
+      descripcion: 'Un coche rapido.',
+      marca: 'Karin',
+      plazas: 2,
+      municion: 30,
+      ubicacion: 'Vice Beach',
+      clase: 'Deportivo',
+      peso_kg: 1400,
+      fuente_url: 'https://ejemplo.test/a',
+      steps: [
+        { title: 'Uno', body: 'Hazlo' },
+        { title: 'Paso 2', body: 'Solo texto' },
+      ],
+    });
+    assert.equal(r.capturaPropiaPendiente, true);
+  });
+  it('la clave canonica con valor gana sobre su alias; los alias de 1er nivel funcionan', () => {
+    const r = canonicalizeMetadata({ metadata: { marca: 'Declan', fabricante: 'Otro' }, top: { description: 'Texto', steps: [{ title: 'A', body: 'B' }], capturaPropiaPendiente: true } });
+    assert.equal(r.ok, true);
+    if (!r.ok) return;
+    assert.equal(r.metadata['marca'], 'Declan');
+    assert.equal('fabricante' in r.metadata, false);
+    assert.equal(r.metadata['descripcion'], 'Texto');
+    assert.deepEqual(r.metadata['steps'], [{ title: 'A', body: 'B' }]);
+    assert.equal(r.capturaPropiaPendiente, true);
+  });
+  it('descripcion fuera de limite se rechaza con motivo', () => {
+    const r = canonicalizeMetadata({ metadata: { descripcion_es: 'x'.repeat(4001) } });
+    assert.equal(r.ok, false);
+    if (!r.ok) assert.match(r.message, /4000/);
+  });
+});
+
+describe('(k) ingesta normaliza la ficha y avisa de claves desconocidas', () => {
+  it('guarda metadata canonica en el payload, sin ruido, y reporta avisos', async () => {
+    const r = await ok([
+      ficha('norm-a', {
+        metadata: { descripcion_es: 'Descripcion original.', fabricante: 'Karin', asientos: 4, precio: null, requiere_redaccion: true, captura_propia_pendiente: true },
+        campo_raro: 'x',
+      }),
+      ficha('norm-b', { metadata: { description: 'y'.repeat(4001) } }),
+    ]);
+    assert.equal(r.nuevas, 1);
+    assert.equal(r.rechazados, 1);
+    const d = r.details.find((x) => x.slug === 'norm-a') as { avisos?: string[] } | undefined;
+    assert.ok(d?.avisos?.some((a) => /campo_raro/.test(a)));
+    assert.match(r.details.find((x) => x.slug === 'norm-b')?.motivo ?? '', /4000/);
+    const sub = await subOf('norm-a');
+    const p = sub!.payload as { metadata_json: Record<string, unknown>; capturaPropiaPendiente?: boolean };
+    assert.equal(p.metadata_json['descripcion'], 'Descripcion original.');
+    assert.equal(p.metadata_json['marca'], 'Karin');
+    assert.equal(p.metadata_json['plazas'], 4);
+    for (const k of ['descripcion_es', 'fabricante', 'asientos', 'precio', 'requiere_redaccion', 'captura_propia_pendiente']) assert.equal(k in p.metadata_json, false, k);
+    assert.equal(p.capturaPropiaPendiente, true);
+  });
+  it('una ficha con steps/pasos de 1er nivel acaba con metadata.steps', async () => {
+    await ok([ficha('norm-steps', { pasos: [{ titulo: 'Primero', texto: 'Hazlo asi' }] })]);
+    const p = (await subOf('norm-steps'))!.payload as { metadata_json: { steps?: unknown; pasos?: unknown } };
+    assert.deepEqual(p.metadata_json.steps, [{ title: 'Primero', body: 'Hazlo asi' }]);
+    assert.equal('pasos' in p.metadata_json, false);
+  });
+});
+
+describe('(l) tarjeta provisional', () => {
+  it('lote mixto: valida entra; invalida, enorme, de otras dimensiones y con imagen_url se rechazan sin abortar', async () => {
+    const r = await ok([
+      ficha('tj-ok', { tarjeta: tarjetaOf() }),
+      ficha('tj-b64', { tarjeta: { mime: 'image/webp', base64: '***no-base64***' } }),
+      ficha('tj-big', { tarjeta: tarjetaOf(webp(1600, 900, 450 * 1024)) }),
+      ficha('tj-dim', { tarjeta: tarjetaOf(webp(800, 450)) }),
+      ficha('tj-png', { tarjeta: { mime: 'image/png', base64: webp().toString('base64') } }),
+      ficha('tj-both', { tarjeta: tarjetaOf(), imagen_url: '/assets/propia.jpg' }),
+      ficha('tj-plain'),
+    ]);
+    assert.equal(r.nuevas, 2);
+    assert.equal(r.rechazados, 5);
+    const by = Object.fromEntries(r.details.map((d) => [d.slug, d]));
+    assert.match(by['tj-b64']?.motivo ?? '', /base64/);
+    assert.match(by['tj-big']?.motivo ?? '', /m[aá]ximo/);
+    assert.match(by['tj-dim']?.motivo ?? '', /1600x900/);
+    assert.equal(by['tj-ok']?.resultado, 'nueva');
+    assert.equal(await Submission.countDocuments({ 'payload.slug': { $in: ['tj-b64', 'tj-big', 'tj-dim', 'tj-png', 'tj-both'] } }), 0);
+    const p = (await subOf('tj-ok'))!.payload as { tarjeta: { base64: string; sha256: string; bytes: number }; capturaPropiaPendiente: boolean };
+    assert.equal(p.tarjeta.bytes, 64);
+    assert.match(p.tarjeta.sha256, /^[a-f0-9]{64}$/);
+    assert.equal(p.capturaPropiaPendiente, true);
+  });
+
+  it('el listado admin devuelve metadatos (sin base64) y la miniatura se sirve solo a staff', async () => {
+    await ok([ficha('tj-list', { tarjeta: tarjetaOf() })]);
+    const sub = await subOf('tj-list');
+    const list = await asStaff('GET', '/api/admin/submissions?origin=pipeline');
+    assert.equal(list.statusCode, 200, list.body);
+    assert.ok(!list.body.includes('base64'), 'el base64 no viaja en el listado');
+    const item = list.json<Array<{ id: string; payload: { tarjeta?: { bytes: number; sha256: string } }; pipeline_reason: string; pipeline_run_id: string; conflict_fields: string[] }>>().find((x) => x.id === sub!._id);
+    assert.equal(item?.payload.tarjeta?.bytes, 64);
+    assert.equal(item?.pipeline_reason, 'nueva');
+    assert.match(item?.pipeline_run_id ?? '', /^[0-9a-f-]{36}$/);
+    assert.deepEqual(item?.conflict_fields, []);
+
+    const img = await asStaff('GET', `/api/admin/submissions/${sub!._id}/tarjeta.webp`);
+    assert.equal(img.statusCode, 200);
+    assert.equal(img.headers['content-type'], 'image/webp');
+    assert.match(String(img.headers['cache-control']), /no-store/);
+    assert.deepEqual(img.rawPayload, webp());
+    const asUser = await asStaff('GET', `/api/admin/submissions/${sub!._id}/tarjeta.webp`, 'USER');
+    const anon = await app.inject({ method: 'GET', url: `/api/admin/submissions/${sub!._id}/tarjeta.webp`, remoteAddress: nextIp() });
+    const missing = await app.inject({ method: 'GET', url: '/api/admin/no-existe-xyz', remoteAddress: nextIp() });
+    assert.equal(asUser.statusCode, 404);
+    assert.equal(anon.statusCode, 404);
+    assert.equal(anon.body, missing.body);
+    const none = await asStaff('GET', `/api/admin/submissions/${randomUUID()}/tarjeta.webp`);
+    assert.equal(none.statusCode, 404);
+  });
+
+  it('promote crea el MediaAsset, fija imagen_url=/media/<id>, deja capturaPropiaPendiente y no guarda el base64 en Entity ni en auditoria', async () => {
+    await ok([ficha('tj-prom', { tarjeta: tarjetaOf() })]);
+    const done = await promoteSlug('tj-prom');
+    const e = await Entity.findOne({ slug: 'tj-prom' }).lean();
+    assert.match(e?.imagen_url ?? '', /^\/media\/[0-9a-f-]{36}$/);
+    assert.equal(e?.capturaPropiaPendiente, true);
+    assert.ok(!JSON.stringify(e).includes(webp().toString('base64')));
+    const id = e!.imagen_url!.replace('/media/', '');
+    const asset = await MediaAsset.findById(id).lean();
+    assert.equal(asset?.mime, 'image/webp');
+    assert.equal(asset?.width, 1600);
+    assert.equal(asset?.created_by, 'system');
+    assert.equal(done.status, 'approved');
+    const audits = JSON.stringify(await AuditLog.find({ target_id: { $in: [e!._id, done._id] } }).lean());
+    assert.ok(!audits.includes(webp().toString('base64')));
+    // E2E: GET publico de la ficha y de su imagen.
+    const pub = await app.inject({ method: 'GET', url: '/api/modules/armas/entities/tj-prom', remoteAddress: nextIp() });
+    assert.equal(pub.statusCode, 200, pub.body);
+    assert.equal(pub.json<{ imagen_url: string; capturaPropiaPendiente: boolean }>().imagen_url, e!.imagen_url);
+    const media = await app.inject({ method: 'GET', url: e!.imagen_url!, remoteAddress: nextIp() });
+    assert.equal(media.statusCode, 200);
+    assert.deepEqual(media.rawPayload, webp());
+  });
+
+  it('rechazar la Submission no crea MediaAsset ni Entity', async () => {
+    await ok([ficha('tj-rej', { tarjeta: tarjetaOf() })]);
+    const sub = await subOf('tj-rej');
+    const before = await MediaAsset.countDocuments();
+    const res = await asStaff('PATCH', `/api/admin/submissions/${sub!._id}`, 'MODERATOR', { status: 'rejected', reviewNote: 'no' });
+    assert.equal(res.statusCode, 200, res.body);
+    assert.equal(await MediaAsset.countDocuments(), before);
+    assert.equal(await Entity.countDocuments({ slug: 'tj-rej' }), 0);
+  });
+
+  it('actualizacion: con manualEdits.imagen_url no se pisa; sin conflicto reemplaza la imagen /media/ previa', async () => {
+    await ok([ficha('tj-upd', { tarjeta: tarjetaOf(webp(1600, 900, 64)) })]);
+    await promoteSlug('tj-upd');
+    const first = await Entity.findOne({ slug: 'tj-upd' }).lean();
+    await Submission.deleteMany({});
+    // Misma ficha y misma tarjeta -> sin cambios.
+    const same = await ok([ficha('tj-upd', { tarjeta: tarjetaOf(webp(1600, 900, 64)) })]);
+    assert.equal(same.sin_cambios, 1);
+    // Tarjeta distinta -> actualizada y reemplaza.
+    const r = await ok([ficha('tj-upd', { tarjeta: tarjetaOf(webp(1600, 900, 80)) })]);
+    assert.equal(r.actualizadas, 1);
+    await promoteSlug('tj-upd');
+    const second = await Entity.findOne({ slug: 'tj-upd' }).lean();
+    assert.notEqual(second?.imagen_url, first?.imagen_url);
+    assert.match(second?.imagen_url ?? '', /^\/media\//);
+    // Edicion manual de imagen_url: la tarjeta no se aplica.
+    await Entity.updateOne({ slug: 'tj-upd' }, { $set: { manualEdits: ['imagen_url'], imagen_url: '/assets/mia.jpg' } });
+    await Submission.deleteMany({});
+    await ok([ficha('tj-upd', { tarjeta: tarjetaOf(webp(1600, 900, 96)) })]);
+    const assets = await MediaAsset.countDocuments();
+    await promoteSlug('tj-upd');
+    assert.equal(await MediaAsset.countDocuments(), assets, 'no se crea el asset en conflicto');
+    assert.equal((await Entity.findOne({ slug: 'tj-upd' }).lean())?.imagen_url, '/assets/mia.jpg');
+  });
+});
+
+describe('(m) marker en el hash y slug de pin unico', () => {
+  it('anadir un marker a una ficha existente la hace "actualizada"; el mismo marker es sin_cambios', async () => {
+    await ok([ficha('mk-a')]);
+    await promoteSlug('mk-a');
+    await Submission.deleteMany({});
+    const withPin = ficha('mk-a', { marker: { region: 'Keys', coord_x: 10, coord_y: 20 } });
+    const r1 = await ok([withPin]);
+    assert.equal(r1.actualizadas, 1);
+    await promoteSlug('mk-a');
+    await Submission.deleteMany({});
+    const r2 = await ok([withPin]);
+    assert.equal(r2.sin_cambios, 1);
+    const r3 = await ok([ficha('mk-a', { marker: { region: 'Keys', coord_x: 11, coord_y: 20 } })]);
+    assert.equal(r3.actualizadas, 1);
+  });
+  it('un slug de pin ya tomado recibe sufijo -2 en vez de omitirse', async () => {
+    await MapMarker.deleteMany({});
+    await ok([
+      ficha('pin-uno', { marker: { region: 'Keys', coord_x: 1, coord_y: 1, slug: 'pin-comun' } }),
+      ficha('pin-dos', { marker: { region: 'Keys', coord_x: 2, coord_y: 2, slug: 'pin-comun' } }),
+    ]);
+    await promoteSlug('pin-uno');
+    await promoteSlug('pin-dos');
+    const slugs = (await MapMarker.find({}).lean()).map((m) => m.slug).sort();
+    assert.deepEqual(slugs, ['pin-comun', 'pin-comun-2']);
+  });
+});
+
+describe('(n) POST /api/admin/submissions/bulk', () => {
+  const bulk = (payload: unknown, rol: 'MODERATOR' | 'USER' = 'MODERATOR') => asStaff('POST', '/api/admin/submissions/bulk', rol, payload);
+
+  it('sin staff o con USER: 404 uniforme aunque el cuerpo sea invalido (RBAC antes que Zod)', async () => {
+    const ref = await app.inject({ method: 'GET', url: '/api/admin/no-existe-xyz', remoteAddress: nextIp() });
+    const anon = await app.inject({ method: 'POST', url: '/api/admin/submissions/bulk', remoteAddress: nextIp(), headers: { 'content-type': 'application/json' }, payload: '{{malformado' });
+    assert.equal(anon.statusCode, 404);
+    assert.equal(anon.body, ref.body);
+    assert.equal((await bulk({ nada: true }, 'USER')).statusCode, 404);
+    assert.equal((await bulk({ nada: true })).statusCode, 400);
+    assert.equal((await bulk({ action: 'approve', ids: [randomUUID()], filter: { origin: 'pipeline', status: 'pending' } })).statusCode, 400);
+  });
+
+  it('por ids: resultados parciales sin abortar', async () => {
+    await ok([ficha('bk-a'), ficha('bk-b')]);
+    const a = (await subOf('bk-a'))!._id;
+    const b = (await subOf('bk-b'))!._id;
+    const ghost = randomUUID();
+    const res = await bulk({ action: 'approve', ids: [a, ghost, b] });
+    assert.equal(res.statusCode, 200, res.body);
+    const out = res.json<{ requested: number; ok: number; failed: number; truncated: boolean; results: Array<{ id: string; ok: boolean; error?: string }> }>();
+    assert.equal(out.requested, 3);
+    assert.equal(out.ok, 2);
+    assert.equal(out.failed, 1);
+    assert.equal(out.truncated, false);
+    assert.equal(out.results.find((r) => r.id === ghost)?.ok, false);
+    assert.equal(await Entity.countDocuments({ slug: { $in: ['bk-a', 'bk-b'] } }), 2);
+    assert.equal(await AuditLog.countDocuments({ action: 'submission.approved', target_id: { $in: [a, b] } }), 2);
+  });
+
+  it('por filtro runId: approve excluye conflictos salvo reason explicito; reject usa reviewNote', async () => {
+    await ok([ficha('bf-c'), ficha('bf-d')]);
+    await promoteSlug('bf-c');
+    await promoteSlug('bf-d');
+    await Submission.deleteMany({});
+    await Entity.updateOne({ slug: 'bf-c' }, { $set: { manualEdits: ['titulo'] } });
+    const run = await ok([ficha('bf-c', { titulo: 'Cambiado' }), ficha('bf-d', { categoria: 'Rifles' }), ficha('bf-n'), ficha('bf-n2')]);
+    const filter = { origin: 'pipeline', status: 'pending', runId: run.runId };
+    const res = await bulk({ action: 'approve', filter });
+    const out = res.json<{ ok: number; requested: number }>();
+    assert.equal(res.statusCode, 200, res.body);
+    assert.equal(out.requested, 3, 'nueva, nueva y actualizada; el conflicto queda fuera');
+    assert.equal(out.ok, 3);
+    assert.equal((await subOf('bf-c'))!.status, 'pending');
+    assert.equal(await Entity.countDocuments({ slug: { $in: ['bf-n', 'bf-n2'] } }), 2);
+
+    const rej = await bulk({ action: 'reject', filter: { ...filter, reason: 'conflicto' }, reviewNote: 'edicion manual vigente' });
+    assert.equal(rej.statusCode, 200, rej.body);
+    assert.equal(rej.json<{ ok: number }>().ok, 1);
+    const c = await subOf('bf-c');
+    assert.equal(c!.status, 'rejected');
+    assert.equal(c!.reviewNote, 'edicion manual vigente');
+    // El listado admite filtrar por origen, run y motivo.
+    const list = await asStaff('GET', `/api/admin/submissions?origin=pipeline&runId=${run.runId}&reason=conflicto`);
+    assert.equal(list.json<unknown[]>().length, 1);
+  });
+
+  it('GET submissions: reason sin coincidencias devuelve vacio y runId invalido 400', async () => {
+    assert.equal((await asStaff('GET', '/api/admin/submissions?reason=nueva')).json<unknown[]>().length, 0);
+    assert.equal((await asStaff('GET', '/api/admin/submissions?runId=no-uuid')).statusCode, 400);
+  });
+});
+
+describe('(o) el worker de noticias registra cada ciclo como PipelineRun', () => {
+  const rss = `<?xml version="1.0"?><rss version="2.0"><channel><item><title>Rockstar Games anuncia novedades de prueba</title><description>Resumen oficial de prueba sobre Rockstar Games.</description><link>https://ir.take2games.com/news-releases/prueba-1</link><pubDate>Tue, 03 Nov 2026 10:00:00 GMT</pubDate></item></channel></rss>`;
+  const realFetch = globalThis.fetch;
+  after(() => {
+    globalThis.fetch = realFetch;
+  });
+  it('ciclo correcto: run ok, scheduled, modulo noticias, y no cuenta como lote de catalogo', async () => {
+    await OfficialNews.deleteMany({});
+    globalThis.fetch = (async (input: unknown) => (String(input).endsWith('robots.txt') ? new Response('', { status: 404 }) : new Response(rss, { status: 200 }))) as typeof fetch;
+    assert.equal(await runOfficialNewsIngest('cron'), true);
+    const run = await PipelineRun.findOne({ modulo: 'noticias' }).lean();
+    assert.equal(run?.status, 'ok');
+    assert.equal(run?.trigger, 'scheduled');
+    assert.equal(run?.source, 'news');
+    assert.equal(run?.counts.created, 1);
+    assert.equal(run?.counts.rejected, 0);
+    assert.ok(run?.finishedAt);
+    assert.equal(await AuditLog.countDocuments({ action: 'news.batch', actor_label: 'system:news', target_id: run?._id }), 1);
+
+    const res = await asStaff('GET', '/api/admin/pipeline/runs', 'ADMIN');
+    const body = res.json<{ runs: unknown[]; estado: { activo: boolean; ultimoLoteAt: string | null; enCurso: boolean } }>();
+    assert.equal(body.runs.length, 0, 'por defecto solo lotes de catalogo');
+    assert.equal(body.estado.activo, false);
+    assert.equal(body.estado.ultimoLoteAt, null);
+    const news = await asStaff('GET', '/api/admin/pipeline/runs?kind=noticias', 'ADMIN');
+    const nb = news.json<{ runs: Array<{ kind: string; trigger: string }> }>();
+    assert.equal(nb.runs.length, 1);
+    assert.equal(nb.runs[0]?.kind, 'noticias');
+    assert.equal(nb.runs[0]?.trigger, 'scheduled');
+  });
+  it('fuente caida: run en error con la fuente en rejected', async () => {
+    await PipelineRun.deleteMany({});
+    globalThis.fetch = (async () => {
+      throw new Error('sin red');
+    }) as typeof fetch;
+    assert.equal(await runOfficialNewsIngest('manual'), true);
+    const run = await PipelineRun.findOne({ modulo: 'noticias' }).lean();
+    assert.equal(run?.status, 'error');
+    assert.equal(run?.trigger, 'manual');
+    assert.equal(run?.counts.rejected, 1);
+    assert.equal(run?.rejected[0]?.slug, 'take-two-ir');
+  });
+});
+
+describe('(p) DTO publico y SSR-lite con la descripcion canonica', () => {
+  it('toEntityDTO expone capturaPropiaPendiente y no contentHash ni manualEdits; el SSR usa descripcion', async () => {
+    const long = 'Descripcion editorial original de la ficha. '.repeat(10).trim();
+    await ok([ficha('ssr-a', { metadata: { descripcion_es: long, fabricante: 'Karin', asientos: 2 } })]);
+    await promoteSlug('ssr-a');
+    const pub = await app.inject({ method: 'GET', url: '/api/modules/armas/entities/ssr-a', remoteAddress: nextIp() });
+    const dto = pub.json<Record<string, unknown>>();
+    assert.equal(dto['capturaPropiaPendiente'], true);
+    assert.equal('contentHash' in dto, false);
+    assert.equal('manualEdits' in dto, false);
+    const md = dto['metadata_json'] as Record<string, unknown>;
+    assert.equal(md['descripcion'], long);
+    assert.equal(md['marca'], 'Karin');
+    assert.equal(md['plazas'], 2);
+
+    clearSsrCache();
+    const r = await resolveRoute('/catalogo/armas/ssr-a', new URLSearchParams());
+    assert.equal(r.kind, 'page');
+    if (r.kind !== 'page') return;
+    assert.ok(r.meta.description.length <= 160, r.meta.description);
+    assert.ok(r.meta.description.startsWith('Descripcion editorial original'), r.meta.description + ' / ' + r.meta.title);
+    const ld = JSON.stringify(r.meta.jsonLd);
+    assert.ok(ld.includes(long), 'el JSON-LD lleva la descripcion completa');
+  });
+});

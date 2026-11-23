@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { idField } from './common.js';
 
 export const PIPELINE_STATUSES = ['queued', 'running', 'ok', 'error'] as const;
-export const PIPELINE_TRIGGERS = ['push', 'manual'] as const;
+export const PIPELINE_TRIGGERS = ['push', 'manual', 'scheduled'] as const;
+/** Los ciclos del worker de noticias se registran con este `modulo` (no son lotes de catálogo). */
+export const NEWS_RUN_MODULE = 'noticias';
 /** Tope de motivos de rechazo guardados por ejecucion (Arquitectura §2.12). */
 export const MAX_REJECTED_PER_RUN = 200;
 
@@ -70,6 +72,7 @@ export const toPipelineRunDTO = (r: PipelineRunDoc) => ({
   finishedAt: r.finishedAt ? r.finishedAt.toISOString() : null,
   status: r.status,
   trigger: r.trigger,
+  kind: r.modulo === NEWS_RUN_MODULE ? ('noticias' as const) : ('catalogo' as const),
   source: r.source,
   modulo: r.modulo,
   archivo: r.archivo ?? null,

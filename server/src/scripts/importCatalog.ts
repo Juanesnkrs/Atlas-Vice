@@ -13,9 +13,8 @@ import { Entity } from '../models/Entity.js';
 import { MapMarker } from '../models/MapMarker.js';
 import { Module } from '../models/Module.js';
 import {
-  canonicalOf,
-  contentHashOf,
   DEFAULT_SOURCE,
+  ficheHashOf,
   fichaSchema,
   normalizeFicha,
   sourceSchema,
@@ -62,6 +61,8 @@ async function main(): Promise<void> {
       continue;
     }
     const markerParsed = n.marker;
+    for (const a of n.avisos) console.warn(`~ ${f.modulo}/${f.slug}: ${a}`);
+    if (n.tarjeta) console.warn(`~ ${f.modulo}/${f.slug}: la tarjeta solo se procesa en la ingesta del pipeline (POST /api/pipeline/ingest); se ignora aquí`);
     const existing = await Entity.findOne({ module_id, slug: f.slug }, { metadata_json: 1, imagen_url: 1 }).lean();
     const prevSource = (existing?.metadata_json as Record<string, unknown> | undefined)?.fuente;
     // Con --replace-source seed también se reemplazan las entidades legadas del seed que no llevan fuente
@@ -76,7 +77,11 @@ async function main(): Promise<void> {
     if (!existing) resumen.nuevas++;
     else if (prevSource === source) resumen.actualizadas++;
     else resumen.reemplazadas++;
-    const doc = { ...n.doc, contentHash: contentHashOf(canonicalOf(n.doc, existing?.imagen_url)) };
+    const doc = {
+      ...n.doc,
+      contentHash: ficheHashOf({ ...n, tarjeta: null }, existing?.imagen_url),
+      ...(n.capturaPropiaPendiente ? { capturaPropiaPendiente: true } : {}),
+    };
     // _id explícito: el upsert no aplica el default UUID de Mongoose y Mongo pondría un ObjectId.
     if (apply) {
       await Entity.updateOne(

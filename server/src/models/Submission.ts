@@ -92,9 +92,20 @@ const s = new Schema<SubmissionDoc>(
 );
 s.index({ status: 1, createdAt: -1 });
 s.index({ origin: 1, status: 1, createdAt: -1 });
+s.index({ origin: 1, 'payload.pipeline_run_id': 1, status: 1 });
 
 export const Submission: Model<SubmissionDoc> = model<SubmissionDoc>('Submission', s);
 export default Submission;
+
+/** `payload.tarjeta` (imagen en base64) nunca viaja en JSON: se sustituye por sus metadatos `{ bytes, sha256 }`. */
+function publicPayload(payload: Record<string, unknown> | undefined): Record<string, unknown> {
+  const p = payload ?? {};
+  const t = p['tarjeta'];
+  if (t === undefined || t === null || typeof t !== 'object') return p;
+  const { bytes, sha256 } = t as { bytes?: unknown; sha256?: unknown };
+  return { ...p, tarjeta: { bytes: typeof bytes === 'number' ? bytes : 0, sha256: typeof sha256 === 'string' ? sha256 : null } };
+}
+const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
 
 export const toSubmissionDTO = (d: SubmissionDoc) => ({
   id: d._id,
@@ -103,7 +114,14 @@ export const toSubmissionDTO = (d: SubmissionDoc) => ({
   moduleSlug: d.moduleSlug,
   type: d.type,
   title: d.title,
-  payload: d.payload ?? {},
+  payload: publicPayload(d.payload),
+  ...(d.origin === 'pipeline'
+    ? {
+        pipeline_reason: str(d.payload?.['pipeline_reason']),
+        pipeline_run_id: str(d.payload?.['pipeline_run_id']),
+        conflict_fields: Array.isArray(d.payload?.['conflict_fields']) ? (d.payload['conflict_fields'] as unknown[]).filter((x): x is string => typeof x === 'string') : [],
+      }
+    : {}),
   coords: d.coords ?? null,
   status: d.status,
   reviewedBy: d.reviewedBy ?? null,

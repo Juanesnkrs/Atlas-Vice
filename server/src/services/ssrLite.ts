@@ -224,6 +224,9 @@ async function newsPage(slug: string): Promise<PageMeta> {
   });
 }
 
+/** `metadata_json.descripcion` canónica (texto editorial original) o ''. */
+const descripcionOf = (meta: Doc): string => (typeof meta.descripcion === 'string' ? meta.descripcion.replace(/\s+/g, ' ').trim() : '');
+
 async function guidePage(slug: string): Promise<PageMeta> {
   const mod = (await Module.findOne({ slug: GUIDES_MODULE, activo: true }).lean().exec()) as Doc | null;
   const g = mod ? ((await Entity.findOne({ module_id: mod._id, slug }).lean().exec()) as Doc | null) : null;
@@ -235,7 +238,10 @@ async function guidePage(slug: string): Promise<PageMeta> {
     .filter((s): s is Doc => !!s && typeof s === 'object')
     .filter((s) => typeof s.title === 'string' && s.title)
     .map((s, i) => ({ id: String(s.id ?? i + 1), title: String(s.title), body: String(s.body ?? '') }));
-  const description = truncate(g.subtitulo || steps[0]?.body || `Guia de ${g.titulo} en LeonidApp.`, 160);
+  const longText = descripcionOf(meta);
+  const description = truncate(longText || g.subtitulo || steps[0]?.body || `Guia de ${g.titulo} en LeonidApp.`, 160);
+  /** JSON-LD: descripción completa si existe; si no, la misma de la meta. */
+  const ldDescription = longText || description;
   const image = absolute(g.imagen_url);
   const published = g.created_at ? new Date(g.created_at).toISOString() : undefined;
   const main: JsonLd = steps.length
@@ -243,7 +249,7 @@ async function guidePage(slug: string): Promise<PageMeta> {
         '@context': 'https://schema.org',
         '@type': 'HowTo',
         name: g.titulo,
-        description,
+        description: ldDescription,
         image: [image],
         step: steps.map((s, i) => ({
           '@type': 'HowToStep',
@@ -257,7 +263,7 @@ async function guidePage(slug: string): Promise<PageMeta> {
         '@context': 'https://schema.org',
         '@type': 'Article',
         headline: truncate(g.titulo, 110),
-        description,
+        description: ldDescription,
         image: [image],
         ...(published ? { datePublished: published } : {}),
         mainEntityOfPage: baseUrl() + path,
@@ -357,7 +363,8 @@ async function entityPage(moduleSlug: string, slug: string): Promise<Resolved> {
   if (!e) return { kind: 'page', meta: notFound() };
   if (moduleSlug === GUIDES_MODULE) return { kind: 'redirect', to: `/guias/${slug}` };
   const path = `/catalogo/${moduleSlug}/${slug}`;
-  const description = truncate(e.subtitulo || `${e.titulo}: ${e.categoria} de ${mod.nombre} en el catalogo de LeonidApp.`, 160);
+  const longText = descripcionOf((e.metadata_json ?? {}) as Doc);
+  const description = truncate(longText || e.subtitulo || `${e.titulo}: ${e.categoria} de ${mod.nombre} en el catalogo de LeonidApp.`, 160);
   const image = absolute(e.imagen_url);
   return {
     kind: 'page',
@@ -371,7 +378,7 @@ async function entityPage(moduleSlug: string, slug: string): Promise<Resolved> {
           '@context': 'https://schema.org',
           '@type': 'CreativeWork',
           name: e.titulo,
-          description,
+          description: longText || description,
           image: [image],
           genre: e.categoria,
           url: baseUrl() + path,

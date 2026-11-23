@@ -4,6 +4,8 @@ import { createHash } from 'node:crypto';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import { OfficialNews } from '../models/OfficialNews.js';
+import { NEWS_RUN_MODULE, PipelineRun } from '../models/PipelineRun.js';
+import { writeAuditEntry } from '../services/audit.js';
 import { clearSsrCache } from '../services/ssrLite.js';
 import { NEWS_SOURCES, isAllowedUrl, isRelevant, type NewsSourceConfig } from './sources.js';
 
@@ -228,6 +230,46 @@ export function getNewsWorkerStatus() {
   };
 }
 
+/** Abre el PipelineRun del ciclo (best effort: un fallo de BD no debe detener la ingesta de noticias). */
+async function openNewsRun(trigger: 'cron' | 'manual'): Promise<string | null> {
+  try {
+    const run = await PipelineRun.create({
+      status: 'running',
+      trigger: trigger === 'cron' ? 'scheduled' : 'manual',
+      source: 'news',
+      modulo: NEWS_RUN_MODULE,
+      archivo: null,
+      dryRun: false,
+    });
+    return run._id;
+  } catch (err) {
+    log.error({ err }, 'no se pudo registrar el PipelineRun de noticias');
+    return null;
+  }
+}
+
+/** Cierra el PipelineRun del ciclo: created = noticias insertadas, rejected = fuentes con error (con su motivo). */
+async function closeNewsRun(runId: string | null, results: NewsRunResult[]): Promise<void> {
+  if (!runId) return;
+  try {
+    const failed = results.filter((r) => r.error);
+    const counts = { created: results.reduce((n, r) => n + r.inserted, 0), updated: 0, unchanged: 0, conflicts: 0, rejected: failed.length };
+    const rejected = failed.map((r) => ({ slug: r.source, reason: (r.error ?? 'error').slice(0, 300) }));
+    await PipelineRun.updateOne({ _id: runId }, { $set: { status: failed.length > 0 ? 'error' : 'ok', finishedAt: new Date(), counts, rejected } });
+    await writeAuditEntry({
+      actor_id: 'system',
+      actor_role: 'system',
+      actor_label: 'system:news',
+      action: 'news.batch',
+      target_type: 'pipeline_run',
+      target_id: runId,
+      metadata: { source: 'news', modulo: NEWS_RUN_MODULE, counts, sources: results.map((r) => ({ source: r.source, inserted: r.inserted, error: r.error })) },
+    });
+  } catch (err) {
+    log.error({ err }, 'no se pudo cerrar el PipelineRun de noticias');
+  }
+}
+
 /** Devuelve false si ya habia una ejecucion en curso. */
 export async function runOfficialNewsIngest(trigger: 'cron' | 'manual' = 'cron'): Promise<boolean> {
   if (running) return false;
@@ -235,6 +277,7 @@ export async function runOfficialNewsIngest(trigger: 'cron' | 'manual' = 'cron')
   state.startedAt = new Date();
   state.trigger = trigger;
   const results: NewsRunResult[] = [];
+  const runId = await openNewsRun(trigger);
   try {
     for (const source of NEWS_SOURCES) {
       try {
@@ -247,6 +290,7 @@ export async function runOfficialNewsIngest(trigger: 'cron' | 'manual' = 'cron')
       }
     }
   } finally {
+    await closeNewsRun(runId, results);
     state.results = results;
     state.finishedAt = new Date();
     running = false;

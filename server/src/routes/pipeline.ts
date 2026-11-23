@@ -2,7 +2,7 @@ import { createHash, randomUUID, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { env } from '../config/env.js';
-import { PipelineRun, toPipelineRunDTO, type PipelineRunDoc } from '../models/PipelineRun.js';
+import { NEWS_RUN_MODULE, PipelineRun, toPipelineRunDTO, type PipelineRunDoc } from '../models/PipelineRun.js';
 import { requireStaffRole } from '../plugins/auth.js';
 import { writeAudit } from '../services/audit.js';
 import { expireStaleRuns, ingestPipelineBatch, RUN_STALE_MS, sourceSchema } from '../services/catalogIngest.js';
@@ -51,6 +51,8 @@ const envelopeSchema = z.object({
   fichas: z.array(z.unknown()).max(MAX_FICHAS),
 });
 
+const catalogRuns = { modulo: { $ne: NEWS_RUN_MODULE } };
+
 export async function registerPipelineRoutes(app: FastifyInstance): Promise<void> {
   // ---- Maquina a maquina: fuera de /api/admin/*, sin cookies ni CSRF -------------------------
   app.post(
@@ -76,17 +78,23 @@ export async function registerPipelineRoutes(app: FastifyInstance): Promise<void
 
   app.get('/api/admin/pipeline/runs', admin, async (req, reply) => {
     void reply.header('Cache-Control', NO_STORE);
-    const q = parse(z.object({ limit: z.coerce.number().int().min(1).max(100).default(20) }), req.query);
+    const q = parse(
+      z.object({ limit: z.coerce.number().int().min(1).max(100).default(20), kind: z.enum(['catalogo', 'noticias', 'todos']).default('catalogo') }),
+      req.query,
+    );
+    // Los ciclos del worker de noticias (modulo 'noticias') no cuentan como lotes de catalogo: se excluyen de `estado` siempre
+    // y de `runs` salvo que se pida kind=noticias|todos.
+    const listFilter = q.kind === 'todos' ? {} : q.kind === 'noticias' ? { modulo: NEWS_RUN_MODULE } : catalogRuns;
     await expireStaleRuns();
     const since = new Date(Date.now() - ACTIVE_WINDOW_HOURS * 3_600_000);
     const [rows, recent, running, queued] = await Promise.all([
-      PipelineRun.find().sort({ startedAt: -1 }).limit(q.limit).lean<PipelineRunDoc[]>(),
+      PipelineRun.find(listFilter).sort({ startedAt: -1 }).limit(q.limit).lean<PipelineRunDoc[]>(),
       // «Activo» = hubo alguna ejecucion real (no solo encolada) en las ultimas 24 h.
-      PipelineRun.findOne({ status: { $ne: 'queued' }, startedAt: { $gte: since } }, { startedAt: 1 }).sort({ startedAt: -1 }).lean<{ startedAt: Date }>(),
-      PipelineRun.exists({ status: 'running' }),
-      PipelineRun.exists({ status: 'queued' }),
+      PipelineRun.findOne({ ...catalogRuns, status: { $ne: 'queued' }, startedAt: { $gte: since } }, { startedAt: 1 }).sort({ startedAt: -1 }).lean<{ startedAt: Date }>(),
+      PipelineRun.exists({ ...catalogRuns, status: 'running' }),
+      PipelineRun.exists({ ...catalogRuns, status: 'queued' }),
     ]);
-    const last = await PipelineRun.findOne({ status: { $ne: 'queued' } }, { startedAt: 1 }).sort({ startedAt: -1 }).lean<{ startedAt: Date }>();
+    const last = await PipelineRun.findOne({ ...catalogRuns, status: { $ne: 'queued' } }, { startedAt: 1 }).sort({ startedAt: -1 }).lean<{ startedAt: Date }>();
     return {
       runs: rows.map(toPipelineRunDTO),
       estado: {
@@ -105,7 +113,7 @@ export async function registerPipelineRoutes(app: FastifyInstance): Promise<void
     const url = webhookUrl();
     if (!url) throw new HttpError(409, 'PIPELINE_WEBHOOK_URL no está configurada', undefined, 'PIPELINE_WEBHOOK_UNSET');
     await expireStaleRuns();
-    if (await PipelineRun.exists({ status: { $in: ['queued', 'running'] }, startedAt: { $gte: new Date(Date.now() - RUN_STALE_MS) } })) {
+    if (await PipelineRun.exists({ ...catalogRuns, status: { $in: ['queued', 'running'] }, startedAt: { $gte: new Date(Date.now() - RUN_STALE_MS) } })) {
       throw new HttpError(409, 'Ya hay una ejecución del pipeline en curso', undefined, 'PIPELINE_BUSY');
     }
     const run = await PipelineRun.create({ status: 'queued', trigger: 'manual', source: 'manual', modulo: '*', archivo: null, dryRun: false });

@@ -15,7 +15,8 @@ export const mediaAssetSchema = z.object({
   height: z.literal(MEDIA_HEIGHT),
   bytes: z.number().int().positive().max(MEDIA_MAX_BYTES),
   data: z.instanceof(Buffer),
-  created_by: z.uuid(),
+  /** UUID del usuario que la subió, o `'system'` si la crea `promote()` desde la tarjeta de una ficha del pipeline. */
+  created_by: z.union([z.uuid(), z.literal('system')]),
   created_at: z.coerce.date().optional(),
 });
 export type MediaAssetDTO = z.infer<typeof mediaAssetSchema>;

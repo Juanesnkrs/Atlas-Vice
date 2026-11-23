@@ -3,6 +3,7 @@ import mongoose, { type ClientSession } from 'mongoose';
 import { z } from 'zod';
 import { Entity, type EntityDoc, entitySchema, entityUpdateSchema, slugSchema } from '../models/Entity.js';
 import { MapMarker, mapMarkerSchema, mapMarkerUpdateSchema } from '../models/MapMarker.js';
+import { MEDIA_HEIGHT, MEDIA_WIDTH, MediaAsset } from '../models/MediaAsset.js';
 import { Module } from '../models/Module.js';
 import {
   isFooterType,
@@ -12,7 +13,7 @@ import {
 } from '../models/Submission.js';
 import { ROLE_RANK, type Role } from '../models/User.js';
 import { writeAuditEntry } from './audit.js';
-import { withManualEdits } from './catalogIngest.js';
+import { parseTarjeta, withManualEdits } from './catalogIngest.js';
 import { clearSsrCache } from './ssrLite.js';
 import { HttpError, resourceNotFound } from './validate.js';
 
@@ -85,6 +86,29 @@ async function uniqueEntitySlug(moduleId: string, base: string, session: ClientS
   throw new HttpError(409, 'No se pudo generar un slug unico');
 }
 
+/** Slug de pin libre: `base`, `base-2`, `base-3`… (el índice único es sparse; nunca se omite el slug en silencio). */
+async function uniqueMarkerSlug(base: string, session: ClientSession | null): Promise<string> {
+  const root = base.slice(0, 110);
+  for (let i = 1; i < 200; i += 1) {
+    const candidate = i === 1 ? base : `${root}-${i}`;
+    if (!(await MapMarker.exists({ slug: candidate }).session(session))) return candidate;
+  }
+  throw new HttpError(409, 'No se pudo generar un slug de pin unico');
+}
+
+/** Crea el MediaAsset de la tarjeta (created_by = revisor o 'system') dentro de la transaccion y devuelve su ruta publica. */
+async function createTarjetaAsset(tarjeta: { buffer: Buffer; bytes: number }, createdBy: string, session: ClientSession | null): Promise<string> {
+  const [asset] = await MediaAsset.create(
+    [{ mime: 'image/webp', width: MEDIA_WIDTH, height: MEDIA_HEIGHT, bytes: tarjeta.bytes, data: tarjeta.buffer, created_by: createdBy }],
+    { session },
+  );
+  return `/media/${asset!._id}`;
+}
+
+/** Imagen reemplazable por una tarjeta: ninguna o un /media/ propio (nunca un asset editorial /assets/ ni una edicion manual). */
+const tarjetaMayReplace = (current: { imagen_url?: string | null; manualEdits?: string[] }): boolean =>
+  !(current.manualEdits ?? []).includes('imagen_url') && (!current.imagen_url || current.imagen_url.startsWith('/media/'));
+
 /**
  * Promueve una Submission aprobada. Idempotente: si `promotedTo` existe no hace nada.
  * Lanza 422 (y no escribe nada) si el payload no valida.
@@ -122,24 +146,40 @@ export async function promote(submissionId: string, reviewer: Actor): Promise<Su
     const rawMarker = (sub.payload as { marker?: unknown }).marker;
     const mk = rawMarker === undefined ? null : entityMarkerBlockSchema.safeParse(rawMarker);
     if (mk && !mk.success) throw unprocessable(mk.error);
+    // Tarjeta provisional: solo en aportes del pipeline; se revalida (misma logica que /api/admin/media).
+    const rawTarjeta = fromPipeline ? (sub.payload as { tarjeta?: unknown }).tarjeta : undefined;
+    let tarjeta: { buffer: Buffer; bytes: number } | null = null;
+    if (rawTarjeta !== undefined && rawTarjeta !== null) {
+      const t = parseTarjeta(rawTarjeta as { mime?: unknown; base64?: unknown });
+      if (!t.ok) throw new HttpError(422, t.message);
+      tarjeta = { buffer: t.buffer, bytes: t.value.bytes };
+    }
     const mod = await Module.findOne({ slug: sub.moduleSlug, activo: true }).lean<{ _id: string }>();
     if (!mod) throw new HttpError(422, 'moduleSlug inexistente o inactivo');
     plan = () => async (session) => {
       // Aporte del pipeline sobre una ficha existente (actualizada/conflicto): se actualiza esa ficha, sin duplicarla.
       if (fromPipeline && r.data.slug) {
-        const current = await Entity.findOne({ module_id: mod._id, slug: r.data.slug }, { _id: 1 }).session(session).lean<{ _id: string }>();
+        const current = await Entity.findOne({ module_id: mod._id, slug: r.data.slug }, { _id: 1, imagen_url: 1, manualEdits: 1 }).session(session).lean<{ _id: string; imagen_url?: string | null; manualEdits?: string[] }>();
         if (current) {
           // slug no se toca; manualEdits y capturaPropiaPendiente (por defecto del schema) no se resetean.
-          const { slug: _slug, manualEdits: _manual, capturaPropiaPendiente: _captura, ...set } = r.data as z.infer<typeof entityPayloadSchema>;
-          await Entity.updateOne({ _id: current._id }, { $set: set }).session(session);
+          const { slug: _slug, manualEdits: _manual, capturaPropiaPendiente: flag, ...set } = r.data as z.infer<typeof entityPayloadSchema>;
+          let tarjetaUrl: string | null = null;
+          if (tarjeta) {
+            // Una imagen_url del payload nunca pisa la existente cuando llega tarjeta; la tarjeta solo entra si no hay conflicto.
+            delete set.imagen_url;
+            if (tarjetaMayReplace(current)) tarjetaUrl = await createTarjetaAsset(tarjeta, reviewer.id, session);
+          }
+          const extra: Record<string, unknown> = tarjetaUrl ? { imagen_url: tarjetaUrl, capturaPropiaPendiente: true } : flag === true ? { capturaPropiaPendiente: true } : {};
+          await Entity.updateOne({ _id: current._id }, { $set: { ...set, ...extra } }).session(session);
           let pin: { id: string; titulo: string } | undefined;
           if (mk?.success) {
             const m = mk.data;
+            const pinExists = Boolean(await MapMarker.exists({ entity_id: current._id }).session(session));
             await MapMarker.updateOne(
               { entity_id: current._id },
               {
                 $set: { region: m.region, titulo: r.data.titulo, descripcion: m.descripcion ?? null, coord: { x: m.coord_x, y: m.coord_y } },
-                $setOnInsert: { _id: randomUUID(), entity_id: current._id },
+                $setOnInsert: { _id: randomUUID(), entity_id: current._id, ...(pinExists ? {} : { slug: await uniqueMarkerSlug(m.slug ?? r.data.slug!, session) }) },
               },
               { upsert: true },
             ).session(session);
@@ -150,24 +190,27 @@ export async function promote(submissionId: string, reviewer: Actor): Promise<Su
             collection: 'Entity',
             id: current._id,
             audit: 'entity.updated',
-            extra: { titulo: r.data.titulo, slug: r.data.slug, via: 'pipeline', ...(pin ? { markerId: pin.id } : {}) },
+            extra: { titulo: r.data.titulo, slug: r.data.slug, via: 'pipeline', ...(tarjetaUrl ? { tarjeta: tarjetaUrl } : {}), ...(pin ? { markerId: pin.id } : {}) },
             ...(pin ? { marker: pin } : {}),
           };
         }
       }
       const slug = await uniqueEntitySlug(mod._id, r.data.slug ?? slugify(r.data.titulo), session);
-      const [doc] = await Entity.create([{ ...r.data, slug, module_id: mod._id }], { session });
+      const tarjetaUrl = tarjeta ? await createTarjetaAsset(tarjeta, reviewer.id, session) : null;
+      const [doc] = await Entity.create(
+        [{ ...r.data, slug, module_id: mod._id, ...(tarjetaUrl ? { imagen_url: tarjetaUrl, capturaPropiaPendiente: true } : {}) }],
+        { session },
+      );
       let marker: { id: string; titulo: string } | undefined;
       if (mk?.success) {
         const m = mk.data;
-        // El slug del pin (deep-link /mapa?pin=) es unico: si ya esta ocupado se omite (indice sparse).
-        const wanted = m.slug ?? slug;
-        const taken = await MapMarker.exists({ slug: wanted }).session(session);
+        // El slug del pin (deep-link /mapa?pin=) es unico: si ya esta ocupado se usa un sufijo -2, -3...
+        const pinSlug = await uniqueMarkerSlug(m.slug ?? slug, session);
         const [pin] = await MapMarker.create(
           [
             {
               entity_id: doc!._id,
-              ...(taken ? {} : { slug: wanted }),
+              slug: pinSlug,
               region: m.region,
               titulo: r.data.titulo,
               descripcion: m.descripcion ?? null,
@@ -182,7 +225,7 @@ export async function promote(submissionId: string, reviewer: Actor): Promise<Su
         collection: 'Entity',
         id: doc!._id,
         audit: 'entity.created',
-        extra: { titulo: r.data.titulo, slug, ...(marker ? { markerId: marker.id } : {}) },
+        extra: { titulo: r.data.titulo, slug, ...(tarjetaUrl ? { tarjeta: tarjetaUrl } : {}), ...(marker ? { markerId: marker.id } : {}) },
         ...(marker ? { marker } : {}),
       };
     };
@@ -356,4 +399,74 @@ export async function createNewsletterSubscription(data: { email: string; locale
     reviewedBy: null,
     promotedTo: null,
   });
+}
+
+// ---- Lote de moderacion --------------------------------------------------------
+
+/** Tope duro de aportes que procesa una llamada de lote (por ids o por filtro). */
+export const BULK_MAX = 500;
+export const PIPELINE_REASONS = ['nueva', 'actualizada', 'conflicto'] as const;
+export type PipelineReason = (typeof PIPELINE_REASONS)[number];
+
+export interface BulkInput {
+  action: 'approve' | 'reject';
+  ids?: string[] | undefined;
+  filter?: { origin: 'pipeline'; status: 'pending'; runId?: string | undefined; reason?: PipelineReason | undefined } | undefined;
+  reviewNote?: string | undefined;
+}
+export interface BulkItemResult {
+  id: string;
+  ok: boolean;
+  error?: string;
+}
+export interface BulkResult {
+  action: 'approve' | 'reject';
+  /** Aportes seleccionados (<= BULK_MAX). */
+  requested: number;
+  ok: number;
+  failed: number;
+  /** `true` si el filtro tenia mas de BULK_MAX coincidencias: repite la llamada para el resto. */
+  truncated: boolean;
+  results: BulkItemResult[];
+}
+
+/** Filtro Mongo de la seleccion por `filter`: `approve` sin `reason` explicito excluye los `conflicto`. */
+export function bulkFilterQuery(action: 'approve' | 'reject', f: NonNullable<BulkInput['filter']>): Record<string, unknown> {
+  return {
+    origin: 'pipeline',
+    status: 'pending',
+    type: 'entity',
+    ...(f.runId ? { 'payload.pipeline_run_id': f.runId } : {}),
+    ...(f.reason ? { 'payload.pipeline_reason': f.reason } : action === 'approve' ? { 'payload.pipeline_reason': { $ne: 'conflicto' } } : {}),
+  };
+}
+
+/**
+ * Aprueba o rechaza varios aportes en secuencia reutilizando `reviewSubmission` (mismas reglas, promocion y AuditLog por item).
+ * Un fallo en un item no aborta el lote: queda en `results` con su motivo.
+ */
+export async function bulkReview(input: BulkInput, reviewer: { _id: string; rol: Role }, ip?: string | null): Promise<BulkResult> {
+  let ids: string[];
+  let truncated = false;
+  if (input.ids) ids = [...new Set(input.ids)];
+  else {
+    const rows = await Submission.find(bulkFilterQuery(input.action, input.filter!), { _id: 1 })
+      .sort({ createdAt: 1, _id: 1 })
+      .limit(BULK_MAX + 1)
+      .lean<Array<{ _id: string }>>();
+    truncated = rows.length > BULK_MAX;
+    ids = rows.slice(0, BULK_MAX).map((r) => r._id);
+  }
+  const status = input.action === 'approve' ? 'approved' : 'rejected';
+  const results: BulkItemResult[] = [];
+  for (const id of ids) {
+    try {
+      await reviewSubmission(id, status, reviewer, ip, status === 'rejected' ? input.reviewNote : undefined);
+      results.push({ id, ok: true });
+    } catch (err) {
+      results.push({ id, ok: false, error: (err instanceof HttpError ? err.message : 'Error interno').slice(0, 300) });
+    }
+  }
+  const okCount = results.filter((r) => r.ok).length;
+  return { action: input.action, requested: ids.length, ok: okCount, failed: results.length - okCount, truncated, results };
 }

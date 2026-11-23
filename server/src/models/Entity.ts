@@ -80,5 +80,6 @@ export const toEntityDTO = (e: EntityDoc) => ({
   imagen_url: e.imagen_url ?? null,
   stats_json: e.stats_json ?? {},
   metadata_json: e.metadata_json ?? {},
+  capturaPropiaPendiente: e.capturaPropiaPendiente === true,
   created_at: e.created_at?.toISOString(),
 });
