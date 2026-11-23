@@ -7,6 +7,7 @@
     "dev": "tsc -p tsconfig.json && node --env-file-if-exists=.env --watch dist/index.js",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "build": "tsc -p tsconfig.json",
+    "test": "tsc -p tsconfig.test.json && node node_modules/.cache/leonidapp-test/scripts/pipeline.test.js",
     "start": "node dist/index.js",
     "seed": "tsc -p tsconfig.json && node dist/scripts/seed.js",
     "demo:access": "tsc -p tsconfig.json && node --env-file-if-exists=.env dist/scripts/demoAccess.js",
