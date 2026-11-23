@@ -885,3 +885,102 @@ describe('(p) DTO publico y SSR-lite con la descripcion canonica', () => {
     assert.ok(ld.includes(long), 'el JSON-LD lleva la descripcion completa');
   });
 });
+
+// ======================================================================================================
+// M1 (WebP coherente) y M6 (revision atomica)
+// ======================================================================================================
+
+const { probeImage } = await import('../services/imageProbe.js');
+const { reviewSubmission } = await import('../services/submissions.js');
+const { readdirSync, readFileSync, existsSync } = await import('node:fs');
+
+/** JPEG minimo con SOF0 (cabecera valida; basta para la sonda). */
+function jpeg(width = 1600, height = 900): Buffer {
+  const b = Buffer.from([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0, 0, 0, 0, 0x03, 0x01, 0x22, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01, 0xff, 0xd9]);
+  b.writeUInt16BE(height, 7);
+  b.writeUInt16BE(width, 9);
+  return b;
+}
+const CARDS_DIR = 'C:/Users/JuaneSnkrs/Documents/FireCrawl/exports/cards';
+
+describe('(q) probeImage valida el contenedor WebP completo (M1)', () => {
+  it('cabecera valida con tamano RIFF incoherente (mayor o menor que el archivo) se rechaza', () => {
+    assert.deepEqual(probeImage(webp()), { mime: 'image/webp', width: 1600, height: 900 });
+    const largo = webp();
+    largo.writeUInt32LE(largo.length + 100, 4); // declara mas de lo que hay (truncado)
+    assert.equal(probeImage(largo), null);
+    const corto = webp();
+    corto.writeUInt32LE(corto.length - 20, 4); // declara menos (bytes sobrantes)
+    assert.equal(probeImage(corto), null);
+  });
+  it('el primer chunk debe caber en el archivo', () => {
+    const b = webp();
+    b.writeUInt32LE(b.length, 16); // chunk mas grande que lo que queda
+    assert.equal(probeImage(b), null);
+    const c = webp();
+    c.writeUInt32LE(0, 16);
+    assert.equal(probeImage(c), null);
+  });
+  it('tarjetas WebP reales (si existen en local) siguen siendo validas', { skip: !existsSync(CARDS_DIR) }, () => {
+    const files = readdirSync(CARDS_DIR).filter((f) => f.endsWith('.webp'));
+    for (const f of files) assert.deepEqual(probeImage(readFileSync(`${CARDS_DIR}/${f}`)), { mime: 'image/webp', width: 1600, height: 900 }, f);
+  });
+  it('subida admin del Hero: WebP (sintetico y real) y JPEG 1600x900 pasan; WebP con RIFF roto no', async () => {
+    const cookie = await staffCookie('ADMIN');
+    const up = (body: Buffer, type: string) =>
+      app.inject({ method: 'POST', url: '/api/admin/media', remoteAddress: nextIp(), headers: { cookie, 'content-type': type }, payload: body });
+    assert.equal((await up(webp(), 'image/webp')).statusCode, 201);
+    assert.equal((await up(jpeg(), 'image/jpeg')).statusCode, 201);
+    if (existsSync(CARDS_DIR)) {
+      const real = readdirSync(CARDS_DIR).find((f) => f.endsWith('.webp'));
+      if (real) assert.equal((await up(readFileSync(`${CARDS_DIR}/${real}`), 'image/webp')).statusCode, 201);
+    }
+    const roto = webp();
+    roto.writeUInt32LE(roto.length + 100, 4);
+    assert.equal((await up(roto, 'image/webp')).statusCode, 400);
+  });
+});
+
+describe('(r) reviewSubmission: rechazo con guarda atomica (M6)', () => {
+  const reviewer = { _id: 'system', rol: 'SUPER_ADMIN' as const };
+  const userSub = (slug: string) =>
+    Submission.create({
+      userId: randomUUID(),
+      moduleSlug: MODULE,
+      type: 'entity',
+      title: 'Aporte M6',
+      payload: { ...ficha(slug), slug, stats_json: {}, metadata_json: {} },
+      coords: null,
+      status: 'pending',
+      reviewedBy: null,
+      promotedTo: null,
+    });
+
+  it('aprobar y luego rechazar el mismo aporte: 409 y queda approved con ficha promovida', async () => {
+    const sub = await userSub('m6-a');
+    await reviewSubmission(sub._id, 'approved', reviewer);
+    await assert.rejects(() => reviewSubmission(sub._id, 'rejected', reviewer), { statusCode: 409 });
+    const after = await Submission.findById(sub._id).lean();
+    assert.equal(after?.status, 'approved');
+    assert.ok(after?.promotedTo);
+    assert.equal(await Entity.countDocuments({ slug: 'm6-a' }), 1);
+  });
+
+  it('rechazar dos veces: la segunda es 409 y no pisa al revisor', async () => {
+    const sub = await userSub('m6-b');
+    await reviewSubmission(sub._id, 'rejected', reviewer, null, 'no');
+    await assert.rejects(() => reviewSubmission(sub._id, 'rejected', reviewer, null, 'otra'), { statusCode: 409 });
+    assert.equal((await Submission.findById(sub._id).lean())?.status, 'rejected');
+  });
+
+  it('el rechazo no pisa un aporte que ya tiene ficha promovida aunque su lectura previa fuera pending', async () => {
+    const sub = await userSub('m6-c');
+    await promote(sub._id, SYS);
+    // Simula la carrera: el documento ya esta promovido; la guarda del update debe impedir marcarlo rejected.
+    await Submission.updateOne({ _id: sub._id }, { $set: { status: 'pending' } });
+    await assert.rejects(() => reviewSubmission(sub._id, 'rejected', reviewer), { statusCode: 409 });
+    const after = await Submission.findById(sub._id).lean();
+    assert.notEqual(after?.status, 'rejected');
+    assert.ok(after?.promotedTo);
+  });
+});

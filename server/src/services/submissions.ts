@@ -351,11 +351,13 @@ export async function reviewSubmission(
   }
 
   if (status === 'rejected' && sub.promotedTo) throw new HttpError(409, 'Aporte ya promovido');
-  const updated = await Submission.findByIdAndUpdate(
-    id,
+  // Guarda atomica: solo se cierra un aporte aun pendiente y sin ficha promovida (una aprobacion concurrente gana).
+  const updated = await Submission.findOneAndUpdate(
+    { _id: id, status: 'pending', promotedTo: null },
     { $set: { status, reviewedBy: reviewer._id, ...(status === 'rejected' && reviewNote ? { reviewNote } : {}) } },
     { returnDocument: 'after' },
   ).lean<SubmissionDoc>();
+  if (!updated) throw new HttpError(409, 'Aporte ya procesado');
   await writeAuditEntry({
     actor_id: actor.id,
     actor_role: actor.role,

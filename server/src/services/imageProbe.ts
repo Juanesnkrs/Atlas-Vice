@@ -33,7 +33,13 @@ function probeJpeg(b: Buffer): ImageInfo | null {
 
 function probeWebp(b: Buffer): ImageInfo | null {
   if (b.length < 30) return null;
+  // Contenedor RIFF coherente: el tamaño declarado (sin los 8 bytes de "RIFF"+tamaño) coincide con el archivo
+  // (un WebP conforme no lleva bytes sobrantes ni truncados) y el primer chunk cabe entero dentro de él.
+  if (b.readUInt32LE(4) + 8 !== b.length) return null;
   const chunk = b.toString('ascii', 12, 16);
+  const chunkSize = b.readUInt32LE(16);
+  const minChunk = chunk === 'VP8L' ? 5 : 10;
+  if (chunkSize < minChunk || 20 + chunkSize > b.length) return null;
   let width: number;
   let height: number;
   if (chunk === 'VP8 ') {
