@@ -6,6 +6,7 @@ import { MapMarker, mapMarkerSchema, mapMarkerUpdateSchema, toMarkerDTO, type Ma
 import { Module, moduleSchema, moduleUpdateSchema, toModuleDTO, type ModuleDoc } from '../models/Module.js';
 import { clearSsrCache } from '../services/ssrLite.js';
 import { diffFields, toSnapshot, writeAudit } from '../services/audit.js';
+import { withManualEdits } from '../services/catalogIngest.js';
 import { sendPublicJson } from '../services/httpCache.js';
 import { HttpError, idParamsSchema, parse, resourceNotFound } from '../services/validate.js';
 
@@ -155,7 +156,8 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
   });
 
   app.post('/api/entities', admin, async (req, reply) => {
-    const { id, ...rest } = parse(entitySchema, req.body);
+    // contentHash y manualEdits son del servidor/pipeline: el cliente no los fija.
+    const { id, ...rest } = parse(entitySchema.omit({ contentHash: true, manualEdits: true }), req.body);
     if (!(await Module.exists({ _id: rest.module_id }))) throw new HttpError(422, 'module_id inexistente');
     const doc = await Entity.create({ ...rest, ...(id ? { _id: id } : {}) });
     await writeAudit(req, 'entity.create', 'Entity', doc._id, { titulo: doc.titulo });
@@ -165,10 +167,12 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
 
   app.patch('/api/entities/:id', admin, async (req) => {
     const { id } = parse(idParamsSchema, req.params);
-    const { id: _ignored, ...patch } = parse(entityUpdateSchema, req.body);
+    const { id: _ignored, ...patch } = parse(entityUpdateSchema.omit({ contentHash: true, manualEdits: true }), req.body);
     const prev = await Entity.findById(id).lean<EntityDoc>();
     if (!prev) throw resourceNotFound('Entidad no encontrada');
-    const doc = await Entity.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after' }).lean<EntityDoc>();
+    // Campos de contenido editados a mano: el pipeline no los sobrescribe y el hash se recalcula.
+    const set = withManualEdits(prev, patch);
+    const doc = await Entity.findByIdAndUpdate(id, { $set: set }, { returnDocument: 'after' }).lean<EntityDoc>();
     if (!doc) throw resourceNotFound('Entidad no encontrada');
     await writeAudit(req, 'entity.update', 'Entity', id, diffFields(prev as unknown as Record<string, unknown>, patch));
     clearSsrCache();

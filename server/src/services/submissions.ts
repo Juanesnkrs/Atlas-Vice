@@ -1,6 +1,7 @@
+import { randomUUID } from 'node:crypto';
 import mongoose, { type ClientSession } from 'mongoose';
 import { z } from 'zod';
-import { Entity, entitySchema, entityUpdateSchema, slugSchema } from '../models/Entity.js';
+import { Entity, type EntityDoc, entitySchema, entityUpdateSchema, slugSchema } from '../models/Entity.js';
 import { MapMarker, mapMarkerSchema, mapMarkerUpdateSchema } from '../models/MapMarker.js';
 import { Module } from '../models/Module.js';
 import {
@@ -11,6 +12,7 @@ import {
 } from '../models/Submission.js';
 import { ROLE_RANK, type Role } from '../models/User.js';
 import { writeAuditEntry } from './audit.js';
+import { withManualEdits } from './catalogIngest.js';
 import { clearSsrCache } from './ssrLite.js';
 import { HttpError, resourceNotFound } from './validate.js';
 
@@ -56,6 +58,9 @@ const markerPayloadSchema = mapMarkerSchema.omit({ id: true, coord_x: true, coor
 const entityPayloadSchema = entitySchema
   .omit({ id: true, module_id: true, slug: true })
   .extend({ slug: slugSchema.optional() });
+/** Campos que construye el servidor: un aporte de usuario nunca los fija (se descartan al validar). */
+const SERVER_ONLY = { contentHash: true, manualEdits: true, capturaPropiaPendiente: true } as const;
+const userEntityPayloadSchema = entityPayloadSchema.omit(SERVER_ONLY);
 /** Bloque opcional `payload.marker` de una ficha: crea su pin vinculado en la misma promocion. */
 const entityMarkerBlockSchema = z.object({
   region: z.string().min(1).max(80),
@@ -111,7 +116,8 @@ export async function promote(submissionId: string, reviewer: Actor): Promise<Su
       return { collection: 'MapMarker', id: doc!._id, audit: 'marker.created', extra: { titulo: r.data.titulo } };
     };
   } else if (sub.type === 'entity') {
-    const r = entityPayloadSchema.safeParse(sub.payload);
+    const fromPipeline = sub.origin === 'pipeline';
+    const r = (fromPipeline ? entityPayloadSchema : userEntityPayloadSchema).safeParse(sub.payload);
     if (!r.success) throw unprocessable(r.error);
     const rawMarker = (sub.payload as { marker?: unknown }).marker;
     const mk = rawMarker === undefined ? null : entityMarkerBlockSchema.safeParse(rawMarker);
@@ -119,6 +125,36 @@ export async function promote(submissionId: string, reviewer: Actor): Promise<Su
     const mod = await Module.findOne({ slug: sub.moduleSlug, activo: true }).lean<{ _id: string }>();
     if (!mod) throw new HttpError(422, 'moduleSlug inexistente o inactivo');
     plan = () => async (session) => {
+      // Aporte del pipeline sobre una ficha existente (actualizada/conflicto): se actualiza esa ficha, sin duplicarla.
+      if (fromPipeline && r.data.slug) {
+        const current = await Entity.findOne({ module_id: mod._id, slug: r.data.slug }, { _id: 1 }).session(session).lean<{ _id: string }>();
+        if (current) {
+          // slug no se toca; manualEdits y capturaPropiaPendiente (por defecto del schema) no se resetean.
+          const { slug: _slug, manualEdits: _manual, capturaPropiaPendiente: _captura, ...set } = r.data as z.infer<typeof entityPayloadSchema>;
+          await Entity.updateOne({ _id: current._id }, { $set: set }).session(session);
+          let pin: { id: string; titulo: string } | undefined;
+          if (mk?.success) {
+            const m = mk.data;
+            await MapMarker.updateOne(
+              { entity_id: current._id },
+              {
+                $set: { region: m.region, titulo: r.data.titulo, descripcion: m.descripcion ?? null, coord: { x: m.coord_x, y: m.coord_y } },
+                $setOnInsert: { _id: randomUUID(), entity_id: current._id },
+              },
+              { upsert: true },
+            ).session(session);
+            const found = await MapMarker.findOne({ entity_id: current._id }, { _id: 1 }).session(session).lean<{ _id: string }>();
+            if (found) pin = { id: found._id, titulo: r.data.titulo };
+          }
+          return {
+            collection: 'Entity',
+            id: current._id,
+            audit: 'entity.updated',
+            extra: { titulo: r.data.titulo, slug: r.data.slug, via: 'pipeline', ...(pin ? { markerId: pin.id } : {}) },
+            ...(pin ? { marker: pin } : {}),
+          };
+        }
+      }
       const slug = await uniqueEntitySlug(mod._id, r.data.slug ?? slugify(r.data.titulo), session);
       const [doc] = await Entity.create([{ ...r.data, slug, module_id: mod._id }], { session });
       let marker: { id: string; titulo: string } | undefined;
@@ -155,11 +191,13 @@ export async function promote(submissionId: string, reviewer: Actor): Promise<Su
     if (!c.success) throw unprocessable(c.error);
     const { target, id, patch } = c.data;
     if (target === 'Entity') {
-      const p = entityUpdateSchema.omit({ id: true, module_id: true }).safeParse(patch);
+      const p = entityUpdateSchema.omit({ id: true, module_id: true, ...SERVER_ONLY }).safeParse(patch);
       if (!p.success) throw unprocessable(p.error);
       plan = () => async (session) => {
-        const res = await Entity.updateOne({ _id: id }, { $set: p.data }).session(session);
-        if (res.matchedCount === 0) throw new HttpError(422, 'Entidad destino inexistente');
+        const prev = await Entity.findById(id).session(session).lean<EntityDoc>();
+        if (!prev) throw new HttpError(422, 'Entidad destino inexistente');
+        // Marca los campos corregidos en manualEdits y recalcula contentHash (igual que PATCH /api/entities).
+        await Entity.updateOne({ _id: id }, { $set: withManualEdits(prev, p.data) }).session(session);
         return { collection: 'Entity', id, audit: 'entity.updated', extra: { patch: p.data } };
       };
     } else {
