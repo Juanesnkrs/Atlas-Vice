@@ -984,3 +984,98 @@ describe('(r) reviewSubmission: rechazo con guarda atomica (M6)', () => {
     assert.ok(after?.promotedTo);
   });
 });
+
+describe('POST /api/admin/entities/:id/image (reemplazo manual de imagen)', () => {
+  const sharpMod = import('sharp').then((m) => m.default);
+  const png = async (w = 900, h = 400): Promise<Buffer> =>
+    (await sharpMod)({ create: { width: w, height: h, channels: 3, background: { r: 200, g: 60, b: 120 } } }).png().toBuffer();
+  const post = async (id: string, body: Buffer | string, type: string, cookie?: string) =>
+    app.inject({
+      method: 'POST',
+      url: `/api/admin/entities/${id}/image`,
+      remoteAddress: nextIp(),
+      headers: { ...(cookie ? { cookie } : {}), 'content-type': type },
+      payload: body,
+    });
+  const mkEntity = async (slug: string, extra: Record<string, unknown> = {}) => {
+    const id = randomUUID();
+    await Entity.create({ _id: id, module_id: moduleId, slug, titulo: `Ficha ${slug}`, categoria: 'Pistolas', ...extra });
+    return id;
+  };
+  const mkMedia = async (): Promise<string> => {
+    const { MediaAsset } = await import('../models/MediaAsset.js');
+    const data = await (await sharpMod)({ create: { width: 1600, height: 900, channels: 3, background: '#112233' } }).webp().toBuffer();
+    const id = randomUUID();
+    await MediaAsset.create({ _id: id, mime: 'image/webp', width: 1600, height: 900, bytes: data.length, data, created_by: 'system' });
+    return id;
+  };
+
+  it('sin sesion de staff responde el 404 uniforme', async () => {
+    const id = await mkEntity('img-anon');
+    const r = await post(id, await png(), 'image/png');
+    assert.equal(r.statusCode, 404);
+  });
+
+  it('un MODERATOR no puede reemplazar imagenes (solo ADMIN+)', async () => {
+    const id = await mkEntity('img-mod');
+    const r = await post(id, await png(), 'image/png', await staffCookie('MODERATOR'));
+    assert.equal(r.statusCode, 404);
+  });
+
+  it('optimiza a WebP 1600x900 <= 400 KB, borra el /media anterior, baja el flag y deja auditoria', async () => {
+    const { MediaAsset } = await import('../models/MediaAsset.js');
+    const { AuditLog } = await import('../models/AuditLog.js');
+    const { probeImage } = await import('../services/imageProbe.js');
+    const oldId = await mkMedia();
+    const id = await mkEntity('img-ok', {
+      imagen_url: `/media/${oldId}`,
+      capturaPropiaPendiente: true,
+      metadata_json: { capturaPropiaPendiente: true, descripcion: 'x' },
+    });
+    const r = await post(id, await png(), 'image/png', await staffCookie('ADMIN'));
+    assert.equal(r.statusCode, 200, r.body);
+    const out = r.json() as { url: string; bytes: number };
+    const doc = await Entity.findById(id).lean();
+    assert.equal(doc?.imagen_url, out.url);
+    assert.match(out.url, /^\/media\/[0-9a-f-]{36}$/);
+    assert.equal(doc?.capturaPropiaPendiente, false);
+    assert.equal((doc?.metadata_json as Record<string, unknown>)['capturaPropiaPendiente'], undefined);
+    assert.equal((doc?.metadata_json as Record<string, unknown>)['descripcion'], 'x');
+    assert.ok(doc?.manualEdits?.includes('imagen_url'));
+    assert.equal(await MediaAsset.exists({ _id: oldId }), null, 'el asset anterior no debe quedar huerfano');
+    const asset = await MediaAsset.findById(out.url.slice('/media/'.length));
+    assert.ok(asset && asset.bytes <= 409_600);
+    const info = probeImage(Buffer.from(asset.data));
+    assert.deepEqual([info?.mime, info?.width, info?.height], ['image/webp', 1600, 900]);
+    assert.ok(await AuditLog.exists({ action: 'entity.image.replace', target_id: id }));
+    assert.ok(await AuditLog.exists({ action: 'media.delete', target_id: oldId }));
+  });
+
+  it('no borra el /media anterior si otra ficha lo sigue usando', async () => {
+    const { MediaAsset } = await import('../models/MediaAsset.js');
+    const shared = await mkMedia();
+    const a = await mkEntity('img-shared-a', { imagen_url: `/media/${shared}` });
+    await mkEntity('img-shared-b', { imagen_url: `/media/${shared}` });
+    const r = await post(a, await png(), 'image/png', await staffCookie('ADMIN'));
+    assert.equal(r.statusCode, 200, r.body);
+    assert.ok(await MediaAsset.exists({ _id: shared }));
+  });
+
+  it('rechaza contenido que no coincide con el tipo declarado y fichas inexistentes', async () => {
+    const id = await mkEntity('img-bad');
+    const cookie = await staffCookie('ADMIN');
+    assert.equal((await post(id, Buffer.from('no soy una imagen'), 'image/png', cookie)).statusCode, 400);
+    assert.equal((await post(id, await png(), 'image/jpeg', cookie)).statusCode, 400);
+    assert.equal((await post(randomUUID(), await png(), 'image/png', cookie)).statusCode, 404);
+    assert.equal((await Entity.findById(id).lean())?.imagen_url ?? null, null);
+  });
+
+  it('GET /api/entities?provisional=1 lista solo fichas con imagen provisional', async () => {
+    await mkEntity('prov-si', { capturaPropiaPendiente: true });
+    await mkEntity('prov-no');
+    const r = await app.inject({ method: 'GET', url: '/api/entities?provisional=1&limit=500', remoteAddress: nextIp() });
+    const slugs = (r.json() as Array<{ slug: string; capturaPropiaPendiente: boolean }>).map((e) => e.slug);
+    assert.ok(slugs.includes('prov-si'));
+    assert.ok(!slugs.includes('prov-no'));
+  });
+});

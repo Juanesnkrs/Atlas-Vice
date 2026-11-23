@@ -111,10 +111,12 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
         limit: z.coerce.number().int().min(1).max(ENTITIES_MAX_LIMIT).default(ENTITIES_DEFAULT_LIMIT),
         page: z.coerce.number().int().min(1).max(100_000).default(1),
         envelope: z.enum(['1']).optional(),
+        provisional: z.enum(['1']).optional(), // solo fichas con imagen provisional (capturaPropiaPendiente)
       }),
       req.query,
     );
     const filter: Record<string, unknown> = {};
+    if (q.provisional) filter.capturaPropiaPendiente = true;
     if (q.module_id) filter.module_id = q.module_id;
     if (q.id) filter._id = q.id;
     if (q.categoria) filter.categoria = q.categoria;
