@@ -54,13 +54,14 @@ const labelOf = (l: AuditEntry): string => String(l.metadata['titulo'] ?? l.meta
 
 export default function StaffAudit() {
   const qc = useQueryClient();
-  const { f, set, page, setPage } = useBlockFilters('auditoria', { action: '', tipo: '', actor: '', desde: '', hasta: '', p: '1' });
+  const { f, set, page, setPage } = useBlockFilters('auditoria', { action: '', tipo: '', actor: '', label: '', desde: '', hasta: '', p: '1' });
   const [restoring, setRestoring] = useState<AuditEntry | null>(null);
 
   const qs = new URLSearchParams({ limit: '25', page: String(page) });
   if (f.action) qs.set('action', f.action);
   if (f.tipo) qs.set('target_type', f.tipo);
   if (f.actor) qs.set('actor_id', f.actor);
+  if (f.label) qs.set('actor_label', f.label);
   if (f.desde) qs.set('from', dayStart(f.desde));
   if (f.hasta) qs.set('to', dayEnd(f.hasta));
   const logs = useQuery({
@@ -114,10 +115,11 @@ export default function StaffAudit() {
           <input type="date" value={f.hasta} onChange={(e) => set({ hasta: e.target.value, p: '1' })} className={INPUT} />
         </label>
       </div>
-      {(f.actor || f.action || f.tipo || f.desde || f.hasta) && (
+      {(f.actor || f.label || f.action || f.tipo || f.desde || f.hasta) && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
           {f.actor && <span>Actor: {actorName}</span>}
-          <button type="button" onClick={() => set({ action: '', tipo: '', actor: '', desde: '', hasta: '', p: '1' })} className={SMALL_BTN}>
+          {f.label && <span>Origen: {f.label}</span>}
+          <button type="button" onClick={() => set({ action: '', tipo: '', actor: '', label: '', desde: '', hasta: '', p: '1' })} className={SMALL_BTN}>
             Quitar filtros
           </button>
         </div>
