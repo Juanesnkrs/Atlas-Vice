@@ -89,6 +89,8 @@ type Database = {
           imagen_url: string | null;
           stats_json: Json;
           metadata_json: Json;
+          /** La imagen es una tarjeta provisional del pipeline (la captura propia aún no existe). */
+          capturaPropiaPendiente?: boolean;
           created_at: string;
         };
         Insert: {

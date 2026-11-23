@@ -10,23 +10,28 @@ import { AdSlot } from '../components/ui/AdSlot';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { BottomSheet } from '../components/ui/BottomSheet';
 import {
+  DescriptionBlock,
   EntityDetailPanel,
-  META_LABELS,
   MapPinIcon,
+  ProvisionalChip,
   STAT_ACCENTS,
+  SpecSheet,
   compareSlugs,
-  fmtMeta,
   forumHref,
 } from '../components/ui/EntityDetailPanel';
 import { PalmButton } from '../components/ui/PalmButton';
 import { StatBar } from '../components/ui/StatBar';
 import {
   STAT_LABELS,
+  descriptionOf,
+  seoDescription,
   entitySlug,
   forumCategoryLabel,
   loreRefs,
+  mediaSrc,
   metaOf,
   statsOf,
+  subtitleOf,
   useEntityDetail,
   useForumData,
   useWorldData,
@@ -195,13 +200,15 @@ function CategoryGlyph({ kind, className = '' }: { kind?: string; className?: st
 function Artwork({ src, alt, kind, className }: { src: string | null; alt: string; kind?: string; className?: string }) {
   const [failed, setFailed] = useState<string | null>(null);
   if (!src || failed === src) return <CategoryGlyph kind={kind} className={className} />;
-  return <img src={src} alt={alt} className={className} onError={() => setFailed(src)} />;
+  return <img src={mediaSrc(src)} alt={alt} loading="lazy" decoding="async" className={className} onError={() => setFailed(src)} />;
 }
 
 /** Imagen de un ítem: artwork real, silueta SVG (armas/vehículos) o banner sunset. */
 function ItemVisual({ entity, kind, className = '' }: { entity: Entity; kind?: string; className?: string }) {
   if (entity.imagen_url) {
-    return <Artwork src={entity.imagen_url} alt={entity.titulo} kind={kind} className={`object-cover ${className}`} />;
+    // Las tarjetas del pipeline (/media/…) son 16:9: se muestran completas, sin recortar el título.
+    const fit = entity.imagen_url.startsWith('/media/') ? 'object-contain' : 'object-cover';
+    return <Artwork src={entity.imagen_url} alt={entity.titulo} kind={kind} className={`${fit} ${className}`} />;
   }
   if (metaOf(entity).silueta) {
     return <Silhouette entity={entity} className={className} />;
@@ -666,11 +673,11 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
     });
     if (itemEntity) {
       const itemPath = `/catalogo/${tab}/${entitySlug(itemEntity)}`;
-      const description = truncate(
-        itemEntity.subtitulo || `${itemEntity.titulo}: ${itemEntity.categoria} de ${moduleDef.nombre} en el catalogo de LeonidApp.`,
-        160,
+      const description = seoDescription(
+        itemEntity,
+        `${itemEntity.titulo}: ${itemEntity.categoria} de ${moduleDef.nombre} en el catalogo de LeonidApp.`,
       );
-      const image = itemEntity.imagen_url ? absoluteUrl(itemEntity.imagen_url) : undefined;
+      const image = itemEntity.imagen_url ? absoluteUrl(mediaSrc(itemEntity.imagen_url)) : undefined;
       return {
         title: itemEntity.titulo,
         description,
@@ -1170,8 +1177,9 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
   const moduleDef = data.modules.find((m) => m.slug === modulo);
   const tabDef = TABS.find((t) => t.slug === modulo);
 
-  const meta = metaOf(entity);
   const stats = statsOf(entity);
+  const description = descriptionOf(entity);
+  const subtitle = subtitleOf(entity);
   const trackable = tabDef !== undefined;
   const done = items[`entity:${entity.id}`]?.completado === true;
   const markers = data.markers.filter((m) => m.entity_id === entity.id);
@@ -1215,11 +1223,13 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
       <header className="mt-2">
         <p className="text-xs font-semibold uppercase tracking-widest text-vice-orange">{entity.categoria}</p>
         <h1 className="font-display text-3xl font-bold">{entity.titulo}</h1>
-        {entity.subtitulo && <p className="text-vice-text/85">{entity.subtitulo}</p>}
+        {subtitle && <p className="text-vice-text/85">{subtitle}</p>}
         <a href={itemPath} className="mt-2 inline-flex min-h-11 items-center text-sm font-semibold text-vice-orange underline">
           Volver al Inspector
         </a>
       </header>
+
+      <DescriptionBlock paragraphs={description} className="mt-3 max-w-prose" />
 
       <div className="mt-4 grid gap-5 md:grid-cols-2">
         <section aria-label="Imagen" className="glass relative flex h-56 items-center justify-center overflow-hidden rounded-2xl md:h-72">
@@ -1228,24 +1238,16 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
             kind={modulo}
             className={entity.imagen_url ? 'absolute inset-0 h-full w-full' : 'relative h-4/5 w-4/5 drop-shadow-[0_10px_30px_rgba(225,48,126,0.5)]'}
           />
+          {entity.imagen_url && entity.capturaPropiaPendiente === true && <ProvisionalChip className="absolute bottom-2 left-2" />}
         </section>
 
-        <section aria-label="Estadísticas" className="glass flex flex-col gap-3 rounded-2xl p-5">
+        <section aria-label="Estadísticas y ficha técnica" className="glass flex flex-col gap-3 rounded-2xl p-5">
           {stats.length > 0 ? (
             stats.map((s, i) => <StatBar key={s.key} label={s.label} value={s.value} valueLabel={s.display} accent={STAT_ACCENTS[i % STAT_ACCENTS.length]} />)
           ) : (
             <p className="text-sm text-vice-text/70">Sin estadísticas numéricas.</p>
           )}
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
-            {Object.entries(meta)
-              .filter(([k]) => k in META_LABELS)
-              .map(([k, v]) => (
-                <div key={k} className="contents">
-                  <dt className="text-vice-text/70">{META_LABELS[k]}</dt>
-                  <dd className="font-semibold">{fmtMeta(k, v)}</dd>
-                </div>
-              ))}
-          </dl>
+          <SpecSheet entity={entity} />
           {trackable && (
             <button
               type="button"

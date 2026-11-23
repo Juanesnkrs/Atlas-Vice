@@ -2,23 +2,85 @@
 // (tablet/escritorio) y por el BottomSheet móvil de /catalogo/:categoria/:itemSlug.
 import { PalmButton } from './PalmButton';
 import { StatBar, type StatAccent } from './StatBar';
-import { entitySlug, forumCategoryLabel, metaOf, statsOf } from '../../data/seed';
+import {
+  descriptionOf,
+  entitySlug,
+  forumCategoryLabel,
+  specGroupsOf,
+  statsOf,
+  subtitleOf,
+  type SpecGroup,
+  type SpecRow,
+} from '../../data/seed';
 import type { Entity, ForumThread, MapMarker } from '../../types/database';
 
 export const STAT_ACCENTS: StatAccent[] = ['magenta', 'gold', 'cyan', 'lilac'];
 
-export const META_LABELS: Record<string, string> = {
-  ubicacion: 'Ubicación',
-  precio: 'Precio',
-  municion: 'Munición',
-  plazas: 'Plazas',
-  region: 'Región',
-};
+/** Descripción editorial (`metadata_json.descripcion`): siempre texto plano, un `<p>` por salto de línea. */
+export function DescriptionBlock({ paragraphs, className = '' }: { paragraphs: string[]; className?: string }) {
+  if (paragraphs.length === 0) return null;
+  return (
+    <div className={`flex flex-col gap-2 text-sm leading-relaxed text-vice-text/90 ${className}`}>
+      {paragraphs.map((p, i) => (
+        <p key={i} className="break-words">
+          {p}
+        </p>
+      ))}
+    </div>
+  );
+}
 
-export const fmtMeta = (key: string, v: unknown): string => {
-  if (key === 'precio' && typeof v === 'number') return `$${v.toLocaleString('es')}`;
-  return String(v);
-};
+/** Chip discreto para imágenes provisionales del pipeline (`capturaPropiaPendiente`). */
+export function ProvisionalChip({ className = '' }: { className?: string }) {
+  return (
+    <span
+      title="Esta imagen es provisional; se reemplazará por una captura propia."
+      className={`inline-flex w-fit items-center rounded-full border border-vice-gold/50 bg-black/70 px-2.5 py-0.5 text-[11px] font-semibold text-vice-text ${className}`}
+    >
+      Imagen provisional
+    </span>
+  );
+}
+
+/** Ficha técnica compartida (Inspector y ficha completa). No renderiza nada si no hay atributos ni filas extra. */
+export function SpecSheet({ entity, extra = [] }: { entity: Entity; extra?: SpecRow[] }) {
+  const groups: SpecGroup[] = specGroupsOf(entity);
+  if (extra.length > 0) groups.push({ id: 'extra', title: 'Mapa', rows: extra });
+  if (groups.length === 0) return null;
+  const titled = groups.length > 1;
+  return (
+    <section aria-label="Ficha técnica" className="flex flex-col gap-2">
+      <h3 className="text-xs font-semibold uppercase tracking-widest text-vice-text/90">Ficha técnica</h3>
+      <div className="flex flex-col gap-3 rounded-xl bg-white/5 p-3 text-sm">
+        {groups.map((g) => (
+          <div key={g.id}>
+            {titled && <h4 className="mb-1 text-[11px] font-semibold uppercase tracking-widest text-vice-orange">{g.title}</h4>}
+            <dl className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-x-3 gap-y-1">
+              {g.rows.map((r) => (
+                <div key={r.key} className="contents">
+                  <dt className="text-vice-text/75">{r.label}</dt>
+                  <dd className="break-words font-semibold">
+                    {Array.isArray(r.value) ? (
+                      <ul className="flex flex-wrap gap-1">
+                        {r.value.map((v, i) => (
+                          <li key={`${v}-${i}`} className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-semibold">
+                            {v}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      r.value
+                    )}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 /** Los Invitados no pueden abrir hilos concretos: se les lleva al listado del foro. */
 export const forumHref = (guest: boolean, path: string): string => (guest ? '/foro' : path);
@@ -86,10 +148,11 @@ export function EntityDetailPanel({
   heading,
   pinned,
 }: EntityDetailPanelProps) {
-  const meta = metaOf(entity);
   const stats = statsOf(entity);
   const pin = markers[0];
-  const metaRows = Object.entries(meta).filter(([k]) => k in META_LABELS);
+  const description = descriptionOf(entity);
+  const subtitle = subtitleOf(entity);
+  const extra: SpecRow[] = markers.length > 0 ? [{ key: 'pines', label: 'Puntos en el mapa', value: `${doneMarkers}/${markers.length}` }] : [];
   return (
     <div className={`flex flex-col gap-3 ${pinned ? 'h-full min-h-0' : ''}`}>
       <div className={`flex flex-col gap-3 ${pinned ? 'min-h-0 flex-1 overflow-y-auto pr-1' : ''}`}>
@@ -98,8 +161,11 @@ export function EntityDetailPanel({
             {entity.categoria}
           </span>
           {heading && <h2 className="mt-2 font-display text-2xl font-bold leading-tight">{entity.titulo}</h2>}
-          {entity.subtitulo && <p className={`${heading ? '' : 'mt-2 '}text-sm text-vice-text/80`}>{entity.subtitulo}</p>}
+          {subtitle && <p className={`${heading ? '' : 'mt-2 '}text-sm text-vice-text/80`}>{subtitle}</p>}
+          {entity.imagen_url && entity.capturaPropiaPendiente === true && <ProvisionalChip className="mt-2" />}
         </div>
+
+        <DescriptionBlock paragraphs={description} />
 
         {stats.length > 0 && (
           <div className="flex flex-col gap-3">
@@ -110,24 +176,7 @@ export function EntityDetailPanel({
           </div>
         )}
 
-        {(metaRows.length > 0 || markers.length > 0) && (
-        <dl className="grid grid-cols-2 gap-x-3 gap-y-1 rounded-xl bg-white/5 p-3 text-sm">
-          {metaRows.map(([k, v]) => (
-              <div key={k} className="contents">
-                <dt className="text-vice-text/70">{META_LABELS[k]}</dt>
-                <dd className="font-semibold">{fmtMeta(k, v)}</dd>
-              </div>
-            ))}
-          {markers.length > 0 && (
-            <div className="contents">
-              <dt className="text-vice-text/70">Puntos en el mapa</dt>
-              <dd className="font-semibold">
-                {doneMarkers}/{markers.length}
-              </dd>
-            </div>
-          )}
-        </dl>
-        )}
+        <SpecSheet entity={entity} extra={extra} />
 
         {threads.length > 0 && (
           <ul aria-label="Hilos relacionados" className="flex flex-col text-sm">

@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AdSlot } from '../components/ui/AdSlot';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
+import { DescriptionBlock, SpecSheet } from '../components/ui/EntityDetailPanel';
 import { StatBar } from '../components/ui/StatBar';
 import {
   FULL_SCOPE,
@@ -12,9 +13,12 @@ import {
   entityHref,
   entitySlug,
   forumCategoryLabel,
+  descriptionOf,
+  seoDescription,
   guideSteps,
   loreRefs,
   metaOf,
+  subtitleOf,
   useEntityDetail,
   useForumData,
   useWorldData,
@@ -43,7 +47,6 @@ function useWide(): boolean {
   return wide;
 }
 
-const clip = (t: string, n: number): string => (t.length > n ? `${t.slice(0, n - 3)}...` : t);
 
 function useGuideProgress(guide: Entity | null, total: number) {
   const stored = useProgressStore((s) => (guide ? s.guideSteps[guide.id] : undefined));
@@ -149,10 +152,7 @@ function GuideDetail({ slug }: { slug: string }) {
     guide
       ? {
           title: guide.titulo,
-          description: clip(
-            `${guide.subtitulo ? `${guide.subtitulo}. ` : ''}Guía paso a paso de ${guide.titulo} en LeonidApp, con avance verificable.`,
-            160,
-          ),
+          description: seoDescription(guide, steps[0]?.body || `Guía de ${guide.titulo} en LeonidApp.`),
           canonicalPath: `/guias/${slug}`,
         }
       : { title: loading ? 'Cargando guía' : guideError ? 'No pudimos cargar la guía' : 'Guía no encontrada', robots: 'noindex,nofollow' },
@@ -222,8 +222,12 @@ function GuideDetail({ slug }: { slug: string }) {
             </span>
           </p>
           <h1 className="mt-2 font-display text-3xl font-bold text-[#FFC09A] md:text-4xl">{guide.titulo}</h1>
-          {guide.subtitulo && <p className="text-vice-text/85">{guide.subtitulo}</p>}
+          {subtitleOf(guide) && <p className="text-vice-text/85">{subtitleOf(guide)}</p>}
         </header>
+
+        <div className="mt-4 max-w-xl">
+          <SpecSheet entity={guide} />
+        </div>
 
         {steps.length > 0 && (
           <div className="glass mt-4 rounded-[22px] p-5">
@@ -242,6 +246,7 @@ function GuideDetail({ slug }: { slug: string }) {
         )}
 
         <section aria-labelledby="pasos-title" className="mt-5">
+          {!spoilerHidden && <DescriptionBlock paragraphs={descriptionOf(guide)} className="mb-4 max-w-prose" />}
           <h2 id="pasos-title" className="font-display text-xl font-bold">
             Pasos
           </h2>

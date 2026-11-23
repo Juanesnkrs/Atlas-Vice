@@ -6,7 +6,7 @@
 // =============================================================================
 import { useQueries, useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { useEffect, useMemo } from 'react';
-import { ApiError, apiFetch, isApiConfigured, useAuthStore } from '../store/useAuthStore';
+import { API_URL, ApiError, apiFetch, isApiConfigured, useAuthStore } from '../store/useAuthStore';
 import { useProgressStore, type ProgressKey } from '../store/useProgressStore';
 import type {
   Entity,
@@ -78,6 +78,163 @@ export const statsOf = (e: Entity): Array<{ key: string; label: string; value: n
 export const metaOf = (e: Entity): Record<string, unknown> => {
   const m = e.metadata_json;
   return m && typeof m === 'object' && !Array.isArray(m) ? (m as Record<string, unknown>) : {};
+};
+
+// ---- Descripción, ficha técnica e imagen de una Entity (claves canónicas, Arquitectura §2.4) -------
+/** URL usable de `imagen_url`: `/media/<id>` lo sirve la API (VITE_API_URL en producción); `/assets/...` y https se usan tal cual. */
+export const mediaSrc = (url: string): string => (url.startsWith('/media/') ? `${API_URL}${url}` : url);
+
+const norm = (t: string): string => t.replace(/\s+/g, ' ').trim().toLowerCase();
+
+/** Párrafos de `metadata_json.descripcion` (texto plano; se renderiza SIEMPRE como texto React, nunca HTML). */
+export const descriptionOf = (e: Entity): string[] => {
+  const d = metaOf(e).descripcion;
+  if (typeof d !== 'string') return [];
+  return d
+    .split(/\r?\n+/)
+    .map((p) => p.trim())
+    .filter((p) => p !== '');
+};
+
+/** Subtítulo a mostrar: se omite si repite (o es el comienzo de) la descripción. */
+export const subtitleOf = (e: Entity): string | null => {
+  const sub = e.subtitulo?.trim();
+  if (!sub) return null;
+  const full = norm(descriptionOf(e).join(' '));
+  return full !== '' && full.startsWith(norm(sub)) ? null : sub;
+};
+
+/** Meta description como SSR-lite (Rutas §1.6): `metadata_json.descripcion` -> `subtitulo` -> `fallback`, a 160 caracteres. */
+export const seoDescription = (e: Entity, fallback: string): string => {
+  const t = (descriptionOf(e).join(' ') || e.subtitulo || fallback).replace(/s+/g, ' ').trim();
+  return t.length <= 160 ? t : `${t.slice(0, 159).trimEnd()}…`;
+};
+
+export type SpecFormat = 'text' | 'number' | 'kg' | 'money' | 'bool' | 'list';
+export interface SpecDef {
+  key: string;
+  label: string;
+  format: SpecFormat;
+}
+export interface SpecRow {
+  key: string;
+  label: string;
+  /** Texto, o lista (chips) para claves de tipo array. */
+  value: string | string[];
+}
+export interface SpecGroup {
+  id: string;
+  title: string;
+  rows: SpecRow[];
+}
+
+/**
+ * UNICA definición de la ficha técnica pública (Inspector y ficha completa). Orden = orden de aparición.
+ * Lo que no esté aquí (fuente, fuente_url, confianza, evidencia, notas, steps, descripcion, stats_juego,
+ * silueta, spoiler, lore_refs y claves desconocidas) NUNCA se muestra.
+ */
+export const SPEC_GROUPS: ReadonlyArray<{ id: string; title: string; defs: readonly SpecDef[] }> = [
+  {
+    id: 'general',
+    title: 'General',
+    defs: [
+      { key: 'marca', label: 'Marca', format: 'text' },
+      { key: 'clase', label: 'Clase', format: 'text' },
+      { key: 'carroceria', label: 'Carrocería', format: 'text' },
+      { key: 'basado_en', label: 'Basado en', format: 'text' },
+      { key: 'genero', label: 'Género', format: 'text' },
+      { key: 'presentador', label: 'Presentador', format: 'text' },
+      { key: 'num_pistas', label: 'Número de pistas', format: 'number' },
+      { key: 'apariciones', label: 'Apariciones', format: 'list' },
+    ],
+  },
+  {
+    id: 'rendimiento',
+    title: 'Rendimiento',
+    defs: [
+      { key: 'traccion', label: 'Tracción', format: 'text' },
+      { key: 'marchas', label: 'Marchas', format: 'number' },
+      { key: 'plazas', label: 'Plazas', format: 'number' },
+      { key: 'peso_kg', label: 'Peso', format: 'kg' },
+      { key: 'velocidad_punta', label: 'Velocidad punta', format: 'number' },
+      { key: 'aceleracion', label: 'Aceleración', format: 'number' },
+    ],
+  },
+  {
+    id: 'armamento',
+    title: 'Armamento',
+    defs: [
+      { key: 'slot', label: 'Ranura', format: 'text' },
+      { key: 'municion', label: 'Munición', format: 'text' },
+      { key: 'dano', label: 'Daño', format: 'number' },
+      { key: 'cadencia', label: 'Cadencia', format: 'number' },
+      { key: 'alcance', label: 'Alcance', format: 'number' },
+    ],
+  },
+  {
+    id: 'obtencion',
+    title: 'Obtención y lugar',
+    defs: [
+      { key: 'adquisicion', label: 'Adquisición', format: 'text' },
+      { key: 'precio', label: 'Precio', format: 'money' },
+      { key: 'ubicacion', label: 'Ubicación', format: 'text' },
+      { key: 'region', label: 'Región', format: 'text' },
+    ],
+  },
+  {
+    id: 'mision',
+    title: 'Misión',
+    defs: [
+      { key: 'numero_mision', label: 'Misión n.º', format: 'number' },
+      { key: 'tipo_mision', label: 'Tipo de misión', format: 'text' },
+      { key: 'capitulo', label: 'Capítulo', format: 'text' },
+      { key: 'protagonistas', label: 'Protagonistas', format: 'list' },
+      { key: 'requisito_100', label: '100 % requerido', format: 'bool' },
+      { key: 'recompensa_dinero', label: 'Recompensa en dinero', format: 'money' },
+      { key: 'recompensa_logro', label: 'Logro', format: 'text' },
+    ],
+  },
+];
+
+const numFmt = (n: number): string => n.toLocaleString('es-MX');
+
+/** Formatea un valor de ficha; `null` si está vacío o no es representable (la fila no se muestra). */
+export const formatSpec = (format: SpecFormat, v: unknown): string | string[] | null => {
+  if (v === null || v === undefined) return null;
+  if (format === 'list') {
+    const items = (Array.isArray(v) ? v : [v])
+      .filter((x): x is string | number => (typeof x === 'string' && x.trim() !== '') || typeof x === 'number')
+      .map((x) => String(x).trim());
+    return items.length > 0 ? items : null;
+  }
+  if (format === 'bool') return typeof v === 'boolean' ? (v ? 'Sí' : 'No') : null;
+  if (typeof v === 'number') {
+    if (!Number.isFinite(v)) return null;
+    if (format === 'money') return `$${numFmt(v)}`;
+    if (format === 'kg') return `${numFmt(v)} kg`;
+    return numFmt(v);
+  }
+  if (typeof v === 'string') {
+    const t = v.trim();
+    if (t === '') return null;
+    if (format === 'money' && /^\d+(\.\d+)?$/.test(t)) return `$${numFmt(Number(t))}`;
+    if (format === 'kg' && /^\d+(\.\d+)?$/.test(t)) return `${numFmt(Number(t))} kg`;
+    return t;
+  }
+  if (typeof v === 'boolean') return v ? 'Sí' : 'No';
+  return null;
+};
+
+/** Ficha técnica agrupada y ordenada; sin filas vacías ni claves técnicas. `[]` si no hay atributos. */
+export const specGroupsOf = (e: Entity): SpecGroup[] => {
+  const meta = metaOf(e);
+  return SPEC_GROUPS.flatMap((g): SpecGroup[] => {
+    const rows = g.defs.flatMap((d): SpecRow[] => {
+      const value = formatSpec(d.format, meta[d.key]);
+      return value === null ? [] : [{ key: d.key, label: d.label, value }];
+    });
+    return rows.length > 0 ? [{ id: g.id, title: g.title, rows }] : [];
+  });
 };
 
 // ---- Capas del mapa ------------------------------------------------------------------
