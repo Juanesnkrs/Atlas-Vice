@@ -233,6 +233,15 @@ function PipelineCard() {
             <button type="button" disabled={blocked} onClick={() => trigger.mutate()} className={PRIMARY}>
               {est.enCurso || trigger.isPending ? 'Sincronizando…' : 'Sincronizar ahora'}
             </button>
+            {last && !last.dryRun && (
+              <button
+                type="button"
+                onClick={() => goTo('comunidad', 'aportes', { origin: 'pipeline', runId: last.id, st: 'pending', ty: '', reason: '', p: '1' })}
+                className={SMALL_BTN}
+              >
+                Revisar aportes de este lote
+              </button>
+            )}
             {isSuper && (
               <button type="button" onClick={() => goTo('control', 'auditoria', { label: 'system:pipeline', p: '1' })} className={SMALL_BTN}>
                 Ver en Auditoría
