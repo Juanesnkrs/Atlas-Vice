@@ -1,16 +1,19 @@
 // Gestor del catálogo por categorías (ADMIN+). Los campos reflejan server/src/models/Entity.ts; la UI es cosmética
 // (el servidor aplica RBAC y valida con Zod). Con `fixedModule` (guías en Editorial) el módulo no es filtrable.
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
 import { entityHref, entitySlug, type EntityWithSlug } from '../../data/seed';
 import { FormModal, SafeDelete, useCrud } from './StaffForms';
 import { ObjectHistory } from './StaffHistory';
 import { CONTENT_INVALIDATE, SLUG_RE, useModules } from './StaffModules';
 import { useMarkers } from './StaffMap';
 import { useBlockFilters } from './StaffNav';
-import { DANGER_BTN, Field, formGet, INPUT, Pager, PRIMARY, PublicLink, QueryState, ROW, SELECT, SMALL_BTN, staffFetch } from './StaffKit';
+import { DANGER_BTN, Field, formGet, INPUT, Pager, PRIMARY, PublicLink, QueryState, ROW, SELECT, SMALL_BTN, staffFetch, toast } from './StaffKit';
 
 const PER_PAGE = 20;
-const FILTER_DEFAULTS = { q: '', m: '', p: '1' };
+const FILTER_DEFAULTS = { q: '', m: '', p: '1', prov: '' };
+const REPLACE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const REPLACE_MAX_BYTES = 12 * 1024 * 1024;
 
 interface EntityPage {
   items: EntityWithSlug[];
@@ -30,10 +33,57 @@ const parseJsonObject = (raw: string): Record<string, unknown> | null => {
   }
 };
 
+/** Botón «Reemplazar imagen»: envía el original (JPG/PNG/WebP) y el servidor lo optimiza a WebP ≤ 400 KB. */
+function ReplaceImageButton({ entity, onDone }: { entity: EntityWithSlug; onDone: () => void }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const onFile = async (file: File | undefined) => {
+    if (input.current) input.current.value = '';
+    if (!file) return;
+    if (!REPLACE_TYPES.includes(file.type)) return toast.err('Usa una imagen JPG, PNG o WebP.');
+    if (file.size > REPLACE_MAX_BYTES) return toast.err('La imagen pesa más de 12 MB.');
+    setBusy(true);
+    try {
+      await staffFetch(`/api/admin/entities/${entity.id}/image`, { method: 'POST', body: file, headers: { 'content-type': file.type } });
+      toast.ok(`Imagen de «${entity.titulo}» reemplazada.`);
+      onDone();
+    } catch (err) {
+      toast.err(err instanceof Error ? err.message : 'No se pudo reemplazar la imagen.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <input
+        ref={input}
+        type="file"
+        accept={REPLACE_TYPES.join(',')}
+        className="sr-only"
+        tabIndex={-1}
+        aria-hidden="true"
+        onChange={(ev) => void onFile(ev.target.files?.[0])}
+      />
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => input.current?.click()}
+        className={SMALL_BTN}
+        aria-label={`Reemplazar imagen de ${entity.titulo}`}
+      >
+        {busy ? 'Subiendo…' : 'Reemplazar imagen'}
+      </button>
+    </>
+  );
+}
+
 export function CatalogManager({ fixedModule }: { fixedModule?: string }) {
   const modules = useModules();
   const markers = useMarkers();
   const { f, set, search, page, setPage } = useBlockFilters(fixedModule ?? 'catalogo', FILTER_DEFAULTS);
+  const qc = useQueryClient();
   const crud = useCrud<EntityWithSlug>({
     draftType: 'entity',
     saveUrl: (id) => (id ? `/api/entities/${id}` : '/api/entities'),
@@ -44,17 +94,21 @@ export function CatalogManager({ fixedModule }: { fixedModule?: string }) {
 
   const moduleFilter = fixedModule ?? f.m;
   const q = f.q;
+  const provisional = f.prov === '1';
+  const refreshContent = () => {
+    for (const key of ['staff', ...CONTENT_INVALIDATE]) void qc.invalidateQueries({ queryKey: [key] });
+  };
   const mods = modules.data ?? [];
   const slugOf = (id: string): string => mods.find((m) => m.id === id)?.slug ?? '';
   const nameOf = (id: string): string => mods.find((m) => m.id === id)?.nombre ?? '…';
   const withPin = new Set((markers.data ?? []).flatMap((mk) => (mk.entity_id ? [mk.entity_id] : [])));
 
   const list = useQuery({
-    queryKey: ['staff', 'entities', moduleFilter, q, page],
+    queryKey: ['staff', 'entities', moduleFilter, q, page, provisional],
     placeholderData: keepPreviousData,
     queryFn: () =>
       staffFetch<EntityPage>(
-        `/api/entities?envelope=1&limit=${PER_PAGE}&page=${page}${moduleFilter ? `&module=${encodeURIComponent(moduleFilter)}` : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}`,
+        `/api/entities?envelope=1&limit=${PER_PAGE}&page=${page}${moduleFilter ? `&module=${encodeURIComponent(moduleFilter)}` : ''}${q ? `&q=${encodeURIComponent(q)}` : ''}${provisional ? '&provisional=1' : ''}`,
         { cache: 'no-cache' },
       ),
   });
@@ -103,6 +157,15 @@ export function CatalogManager({ fixedModule }: { fixedModule?: string }) {
           </select>
         )}
         <input type="search" aria-label="Buscar por nombre o slug" placeholder="Buscar por nombre o slug…" {...search} className={`${INPUT} min-w-0 flex-1`} />
+        <label className="flex min-h-11 items-center gap-2 rounded-xl bg-white/10 px-3 text-sm">
+          <input
+            type="checkbox"
+            checked={provisional}
+            onChange={(ev) => set({ prov: ev.target.checked ? '1' : '', p: '1' })}
+            className="h-4 w-4 accent-vice-cyan"
+          />
+          Imagen provisional
+        </label>
         <button type="button" onClick={crud.openNew} className={PRIMARY}>
           Nueva ficha
         </button>
@@ -133,6 +196,9 @@ export function CatalogManager({ fixedModule }: { fixedModule?: string }) {
                 <span className="ml-2 text-xs text-vice-text/70">
                   {nameOf(it.module_id)} · {it.categoria} · /{slug}
                 </span>
+                {it.capturaPropiaPendiente === true && (
+                  <span className="ml-2 rounded-full border border-vice-gold/50 px-2 py-0.5 text-[11px] font-bold">Imagen provisional</span>
+                )}
                 {markers.data && (
                   <span className={`ml-2 rounded-full px-2 py-0.5 text-[11px] font-bold ${hasPin ? 'bg-vice-cyan text-vice-ink' : 'bg-white/10'}`}>
                     Pin: {hasPin ? 'sí' : 'no'}
@@ -142,6 +208,7 @@ export function CatalogManager({ fixedModule }: { fixedModule?: string }) {
               <span className="flex flex-wrap gap-2">
                 {mSlug && <PublicLink href={entityHref(it, mSlug)}>Ver</PublicLink>}
                 {markers.data && <PublicLink href={`/mapa?editor=1&entity=${encodeURIComponent(slug)}`}>{hasPin ? 'Ver pin' : 'Situar pin'}</PublicLink>}
+                <ReplaceImageButton entity={it} onDone={refreshContent} />
                 <button type="button" onClick={() => crud.openEdit(it)} className={SMALL_BTN} aria-label={`Editar ${it.titulo}`}>
                   Editar
                 </button>
