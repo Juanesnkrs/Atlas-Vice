@@ -28,6 +28,10 @@ const envSchema = z.object({
   SMTP_PASS: optional,
   SMTP_FROM: z.string().default('LeonidApp <no-reply@localhost>'),
   SUPER_ADMIN_EMAIL: optional,
+  /** Secreto Bearer de POST /api/pipeline/ingest (>= 32 caracteres; sin el, la ingesta responde 404). */
+  PIPELINE_INGEST_TOKEN: optional,
+  /** URL https a la que se avisa al pulsar «Sincronizar ahora» en /_staff (opcional). */
+  PIPELINE_WEBHOOK_URL: optional,
 });
 
 export type Env = z.infer<typeof envSchema>;

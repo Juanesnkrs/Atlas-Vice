@@ -19,6 +19,7 @@ import { registerConfigRoutes } from './routes/config.js';
 import { registerHeroRoutes } from './routes/hero.js';
 import { registerMediaRoutes } from './routes/media.js';
 import { registerForumRoutes } from './routes/forum.js';
+import { registerPipelineRoutes } from './routes/pipeline.js';
 import { registerProgressRoutes } from './routes/progress.js';
 import { API_POLICY, buildHtmlCsp } from './services/csp.js';
 import { HttpError } from './services/validate.js';
@@ -64,7 +65,7 @@ async function optionalModule<T>(relative: string): Promise<T | null> {
 
 export async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({
-    logger: { level: isProd ? 'info' : 'debug' },
+    logger: { level: env.NODE_ENV === 'test' ? 'silent' : isProd ? 'info' : 'debug' },
     trustProxy: isProd,
     bodyLimit: 1_048_576,
   });
@@ -94,6 +95,8 @@ export async function buildApp(): Promise<FastifyInstance> {
     if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return;
     // Apple form_post: exencion unicamente para el callback exacto de los 3 proveedores OAuth (path sin query).
     if (OAUTH_CALLBACK_RE.test(req.url.split('?')[0] ?? '')) return;
+    // Ingesta del pipeline (maquina a maquina): sin sesion/cookies; su unica credencial es el Bearer.
+    if ((req.url.split('?')[0] ?? '') === '/api/pipeline/ingest') return;
     const origin = req.headers.origin;
     if (origin && !allowedOrigins.has(origin)) throw new HttpError(403, 'Origen no permitido');
   });
@@ -142,6 +145,7 @@ export async function buildApp(): Promise<FastifyInstance> {
   await registerMediaRoutes(app);
   await registerAdminRoutes(app);
   await registerAdminPanelRoutes(app);
+  await registerPipelineRoutes(app);
   await registerAuthRoutes(app);
   await registerCatalogRoutes(app);
   await registerProgressRoutes(app);
