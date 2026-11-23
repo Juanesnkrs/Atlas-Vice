@@ -10,12 +10,14 @@ export interface AuditEntry {
   target_id: string | null;
   metadata?: Record<string, unknown>;
   ip?: string | null;
+  /** Etiqueta de actores no humanos, p. ej. 'system:pipeline' (Arquitectura §2.10). */
+  actor_label?: string | null;
 }
 
 /** Insercion directa (acciones automaticas con actor 'system'). Inmutable: solo insert. */
 export async function writeAuditEntry(entry: AuditEntry, session?: ClientSession | null): Promise<void> {
   await AuditLog.create(
-    [{ ...entry, metadata: entry.metadata ?? {}, ip: entry.ip ?? null }],
+    [{ ...entry, metadata: entry.metadata ?? {}, ip: entry.ip ?? null, actor_label: entry.actor_label ?? null }],
     session ? { session } : undefined,
   );
 }

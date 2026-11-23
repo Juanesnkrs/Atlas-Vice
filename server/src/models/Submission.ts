@@ -24,6 +24,9 @@ const submissionBase = z.object({
 });
 
 /** Entrada de usuarios con sesion (POST /api/submissions): solo aportes, no Footer. */
+export const SUBMISSION_ORIGINS = ['user', 'pipeline'] as const;
+export type SubmissionOrigin = (typeof SUBMISSION_ORIGINS)[number];
+
 export const submissionCreateSchema = submissionBase
   .refine((v) => !isFooterType(v.type), { message: 'Tipo no permitido', path: ['type'] });
 export type SubmissionCreate = z.infer<typeof submissionCreateSchema>;
@@ -33,6 +36,7 @@ export const submissionSchema = submissionBase
   .extend({
     id: z.uuid().optional(),
     userId: z.uuid().nullable(),
+    origin: z.enum(SUBMISSION_ORIGINS).default('user'),
     status: submissionStatusSchema.default('pending'),
     reviewedBy: z.union([z.uuid(), z.literal('system')]).nullable().default(null),
     promotedTo: z
@@ -42,8 +46,8 @@ export const submissionSchema = submissionBase
     reviewNote: z.string().trim().max(500).optional(),
     createdAt: z.coerce.date().optional(),
   })
-  .refine((v) => v.userId !== null || isFooterType(v.type), {
-    message: 'userId solo puede ser null en contact/newsletter',
+  .refine((v) => v.userId !== null || isFooterType(v.type) || v.origin === 'pipeline', {
+    message: 'userId solo puede ser null en contact/newsletter o con origin pipeline',
     path: ['userId'],
   });
 export type SubmissionDTO = z.infer<typeof submissionSchema>;
@@ -56,6 +60,7 @@ export const submissionReviewSchema = z
 export interface SubmissionDoc {
   _id: string;
   userId: string | null;
+  origin?: SubmissionOrigin;
   moduleSlug: string;
   type: SubmissionType;
   title: string;
@@ -72,6 +77,7 @@ const s = new Schema<SubmissionDoc>(
   {
     _id: idField,
     userId: { type: String, default: null, index: true },
+    origin: { type: String, enum: SUBMISSION_ORIGINS, default: 'user' },
     moduleSlug: { type: String, required: true },
     type: { type: String, enum: SUBMISSION_TYPES, required: true },
     title: { type: String, required: true },
@@ -85,6 +91,7 @@ const s = new Schema<SubmissionDoc>(
   { timestamps: { createdAt: 'createdAt', updatedAt: false }, versionKey: false, minimize: false },
 );
 s.index({ status: 1, createdAt: -1 });
+s.index({ origin: 1, status: 1, createdAt: -1 });
 
 export const Submission: Model<SubmissionDoc> = model<SubmissionDoc>('Submission', s);
 export default Submission;
@@ -92,6 +99,7 @@ export default Submission;
 export const toSubmissionDTO = (d: SubmissionDoc) => ({
   id: d._id,
   userId: d.userId ?? null,
+  origin: d.origin ?? 'user',
   moduleSlug: d.moduleSlug,
   type: d.type,
   title: d.title,

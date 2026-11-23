@@ -12,3 +12,4 @@ export * from './OfficialNews.js';
 export * from './AuditLog.js';
 export * from './Submission.js';
 export * from './MediaAsset.js';
+export * from './PipelineRun.js';

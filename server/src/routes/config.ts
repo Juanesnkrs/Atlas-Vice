@@ -123,6 +123,7 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
         actor_id: z.uuid().optional(),
         action: z.string().trim().max(60).optional(), // prefijo: "config" o "user.role"
         target_type: z.string().trim().max(40).optional(),
+        actor_label: z.string().trim().max(60).optional(),
         from: z.coerce.date().optional(),
         to: z.coerce.date().optional(),
       }),
@@ -132,6 +133,7 @@ export async function registerConfigRoutes(app: FastifyInstance): Promise<void> 
     if (q.actor_id) filter['actor_id'] = q.actor_id;
     if (q.action) filter['action'] = new RegExp('^' + escapeRx(q.action));
     if (q.target_type) filter['target_type'] = q.target_type;
+    if (q.actor_label) filter['actor_label'] = q.actor_label;
     if (q.from || q.to) filter['created_at'] = { ...(q.from ? { $gte: q.from } : {}), ...(q.to ? { $lte: q.to } : {}) };
     const [total, logs, actions, targetTypes] = await Promise.all([
       AuditLog.countDocuments(filter),
