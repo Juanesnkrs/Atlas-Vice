@@ -151,12 +151,33 @@ export const heroSlideSchema = z.object({
 | `imagen_url` | String \| null | `.nullable().optional()` | |
 | `stats_json` | Mixed | `jsonRecordSchema` | Fuente del comparador NUI (valores numéricos). |
 | `metadata_json` | Mixed | `jsonRecordSchema` | En guías: `body_md`, `lore_refs[]` y `steps[]` = `{ id, title, body }` ordenados (fuente del progreso por pasos y del JSON-LD `HowTo`). |
-| **Δ** `contentHash` | String \| null | `z.string().regex(/^[a-f0-9]{64}$/).nullable().optional()` | SHA-256 (hex) del contenido canónico de la ficha (`titulo`, `subtitulo`, `categoria`, `imagen_url`, `stats_json`, `metadata_json` con claves ordenadas). Lo calcula el pipeline (§2.12) para la idempotencia: mismo hash → `sin_cambios`, sin escritura (si la ficha existente no lo tiene, se calcula al vuelo). `PATCH /api/entities/:id` lo recalcula y añade a `manualEdits` los campos de contenido que cambia; el cliente nunca los envía. No se expone en el DTO público. |
+| **Δ** `contentHash` | String \| null | `z.string().regex(/^[a-f0-9]{64}$/).nullable().optional()` | SHA-256 (hex) del contenido canónico de la ficha (`titulo`, `subtitulo`, `categoria`, `imagen_url`, `stats_json`, `metadata_json` con claves ordenadas). Lo calcula el pipeline (§2.12) para la idempotencia: mismo hash → `sin_cambios`, sin escritura (si la ficha existente no lo tiene, se calcula al vuelo). `PATCH /api/entities/:id` lo recalcula y añade a `manualEdits` los campos de contenido que cambia; el cliente nunca los envía. No se expone en el DTO público. Con `marker` o `tarjeta` en la ficha del pipeline también entran en el hash (ver §2.12). |
 | **Δ** `manualEdits` | String[] (por defecto `[]`) | `z.array(z.string().max(60)).default([])` | Campos de la ficha editados a mano en `/_staff`. El pipeline nunca los sobrescribe: si un lote cambia uno de ellos, el ítem se registra como `conflicto` y entra como `Submission` de origen `pipeline` (§2.8). |
-| **Δ** `capturaPropiaPendiente` | Boolean (por defecto `false`) | `z.boolean().default(false)` | `true` mientras la ficha no tiene captura propia (`imagen_url: null` permitida). Permite listar en el panel las fichas sin imagen. |
+| **Δ** `capturaPropiaPendiente` | Boolean (por defecto `false`) | `z.boolean().default(false)` | `true` mientras la ficha no tiene captura propia (`imagen_url: null` permitida). Permite listar en el panel las fichas sin imagen. Se expone como booleano en el DTO público (`toEntityDTO`) para que la UI marque la tarjeta como provisional; `contentHash` y `manualEdits` siguen sin exponerse. |
 | `created_at` | Date | — | |
 
 Los tres campos nuevos son opcionales: las 243 fichas existentes siguen siendo válidas sin migración. La política de `imagen_url` para lotes del pipeline es: solo `null` o una ruta interna permitida (cero hotlinking, §2.12).
+
+**Claves canónicas de `metadata_json` (contrato de ingesta).** `metadata_json` sigue siendo un registro libre (`jsonRecordSchema`, sin campos nuevos en `Entity`), pero la ingesta (`services/catalogIngest.ts`, función pura `canonicalizeMetadata`, usada por `POST /api/pipeline/ingest` y por `import:catalog`) lo lleva a estas claves, que son las que lee el cliente:
+
+| Clave canónica | Alias aceptados en la ingesta | Notas |
+| --- | --- | --- |
+| `descripcion` | 1er nivel de la ficha: `descripcion`, `descripcion_es`, `description`, `summary`; dentro de `metadata`: `descripcion`, `descripcion_es`, `description`, `summary` | Texto original en español, ≤ 4000 caracteres tras `trim`. Manda el primer valor no vacío (1er nivel antes que `metadata`); todos los alias se eliminan. Un valor no textual o por encima del límite **rechaza la ficha** con motivo. Es la fuente de la `description` de SSR-lite (§1.6 de Rutas) y del texto largo de la ficha. |
+| `steps` | `steps` o `pasos`, en 1er nivel o en `metadata` | `[{ id?, title, body }]` (máx. 50 pasos; `title` ≤ 160, `body` ≤ 4000, si no se rechaza la ficha). Acepta ítems `{ title, body }`, `{ titulo, texto }`, `{ name, text }` o un texto suelto (`title: "Paso n"`). `pasos` nunca se duplica; un ítem vacío se descarta con aviso. Alimenta el `HowTo` de las guías. |
+| `marca` | `fabricante` | Vehículos y armas. |
+| `plazas` | `asientos` | Vehículos. |
+| `municion` | `cargador` | Armas. |
+| `ubicacion` | `lugar` | Guías y puntos de interés. |
+
+Si llegan a la vez el alias y la clave canónica con valor, **manda la canónica** y el alias se elimina. Claves que se conservan tal cual: `clase`, `traccion`, `marchas`, `peso_kg`, `basado_en`, `apariciones`, `carroceria`, `precio`, `velocidad_punta`, `aceleracion`, `adquisicion`, `slot`, `dano`, `cadencia`, `alcance`, `genero`, `presentador`, `num_pistas`, `numero_mision`, `tipo_mision`, `capitulo`, `protagonistas`, `requisito_100`, `recompensa_dinero`, `recompensa_logro`, `region`. Las pone el servidor: `fuente`, `confianza`, `evidencia`, `stats_juego` y `notas` (solo notas editoriales; no las de plantilla). `fuente_url` puede permanecer.
+
+Reglas de limpieza de `metadata`:
+
+- **No se guardan nulos ni vacíos:** valores `null`, `undefined` o texto en blanco se eliminan.
+- **Ruido de pipeline que no llega a `metadata_json` público:** `requiere_redaccion`, `estado_verificacion`, `stats_verificadas`, `howto_pendiente`, `fuente_ruta`, `fuente_dato` y las `notas` de plantilla (las que empiezan por «Redactar…»).
+- **`captura_propia_pendiente`** (en `metadata`) y **`capturaPropiaPendiente`** (1er nivel) se convierten en el flag de servidor `capturaPropiaPendiente` del payload del `Submission` y se quitan de `metadata`.
+- **Nada se descarta en silencio:** una clave de 1er nivel desconocida se ignora pero se informa en `details[].avisos` de la respuesta de ingesta (no cambia `resultado`); no se rechaza por ello.
+- La `Entity` no tiene un campo propio de descripción: el texto largo vive en `metadata_json.descripcion`.
 
 ### 2.5 `MapMarker` — `models/MapMarker.ts`
 
@@ -222,6 +243,7 @@ Escritura exclusiva del worker `server/src/workers/officialNewsWorker.ts`.
 | **Δ** `reviewNote` | String (opcional, sin valor por defecto) | `z.string().trim().max(500).optional()` | Motivo del rechazo, visible solo en moderación (`/_staff`). Se guarda solo al rechazar (`PATCH /api/admin/submissions/:id` con `{ status: 'rejected', reviewNote? }`) y se expone en el DTO como `reviewNote`. |
 | **Δ** `promotedTo` | `{ collection: 'MapMarker' \| 'Entity', id: string } \| null` | `z.object(...).nullable()` | Resultado de la promoción (§5). |
 | **Δ** `origin` | `'user' \| 'pipeline'` (por defecto `'user'`) | `z.enum(['user','pipeline']).default('user')` | Origen del aporte. `'pipeline'` marca los ítems que llegan por `POST /api/pipeline/ingest` (§2.12): `userId: null`, `type: 'entity'`, `payload` = ficha validada y el motivo (`nueva`, `actualizada` o `conflicto`) en `payload.pipeline_reason`. Nunca se aprueban automáticamente (§5): requieren moderación. La regla «`userId` solo puede ser `null` en `contact`/`newsletter`» se amplía a «… o `origin = 'pipeline'`». |
+| **Δ** `payload` de origen `pipeline` | Mixed | `jsonRecordSchema` | Ficha validada y normalizada (claves canónicas de §2.4) más: `contentHash`, `pipeline_reason` (`nueva`/`actualizada`/`conflicto`), `pipeline_run_id`, `conflict_fields?`, `capturaPropiaPendiente?` (flag de servidor), `marker?` y **`tarjeta?: { mime: 'image/webp', base64, sha256, bytes }`**. La tarjeta es una imagen provisional WebP 1600×900 ≤ 400 KB validada con la misma lógica que `POST /api/admin/media` (firma real y cabecera); una tarjeta inválida **rechaza solo esa ficha** y no entra en la `Submission`. `tarjeta` e `imagen_url` son excluyentes. El `base64` **nunca** se devuelve en JSON (listados y `PATCH`): `toSubmissionDTO` lo sustituye por `{ bytes, sha256 }` y la miniatura se lee con `GET /api/admin/submissions/:id/tarjeta.webp` (MODERATOR+, §1.6 de Rutas). No se copia a `Entity`, `AuditLog` ni logs. |
 | `createdAt` | Date | — | |
 
 ### 2.9 Foro — `ForumThread`, `ForumPost`, `ForumVote`
@@ -272,7 +294,7 @@ Inmutable: solo `insert` mediante `services/audit.ts#writeAudit`. Se escribe en 
 
 ### 2.11 `MediaAsset` — `models/MediaAsset.ts`
 
-Imágenes subidas desde el panel (solo las diapositivas del Hero, §2.2). Se guardan en MongoDB como binario: sin disco, sin servicio externo y sin librerías.
+Imágenes subidas desde el panel (diapositivas del Hero, §2.2) y tarjetas provisionales de fichas del pipeline (§2.12). Se guardan en MongoDB como binario: sin disco, sin servicio externo y sin librerías.
 
 | Campo | Tipo Mongoose | Zod | Notas |
 | --- | --- | --- | --- |
@@ -281,12 +303,13 @@ Imágenes subidas desde el panel (solo las diapositivas del Hero, §2.2). Se gua
 | `width` / `height` | Number | `z.literal(1600)` / `z.literal(900)` | Leídos de la cabecera real del archivo. |
 | `bytes` | Number | `z.number().int().positive().max(409600)` | ≤ 400 KB. |
 | `data` | Buffer | `z.instanceof(Buffer)` | Contenido binario; nunca viaja en JSON. |
-| `created_by` | String (UUID de `User`) | `z.uuid()` | Quién la subió. |
+| `created_by` | String (UUID de `User` o `'system'`) | `z.union([z.uuid(), z.literal('system')])` | Quién la subió; `'system'` si la crea `promote()` desde la tarjeta de una ficha del pipeline sin revisor humano. |
 | `created_at` | Date | `z.coerce.date().optional()` | Solo creación. |
 
 - Subida: `POST /api/admin/media` (ADMIN+, 404 uniforme sin staff) con cuerpo **binario** (`Content-Type: image/webp` o `image/jpeg`, sin multipart; parser de cuerpo crudo propio solo en esa ruta, `bodyLimit` 600 KB). El servidor valida tipo, **firma mágica real** (WebP `RIFF…WEBP`; JPEG `FFD8FF`), tamaño ≤ 400 KB y dimensiones exactas 1600×900 leídas de la cabecera (JPEG: marcador SOF; WebP: VP8 / VP8L / VP8X), con código propio. Rate-limit 20/min por IP. Auditoría `media.upload`. Responde `201 { id, url: '/media/<id>', mime, width, height, bytes }`.
 - Lectura pública: `GET /media/:id` (solo imágenes; `Content-Type` correcto, `X-Content-Type-Options: nosniff`, `Cache-Control: public, max-age=31536000, immutable`, `ETag`; 404 `text/plain` si no existe). **Sin listados ni enumeración** y fuera de `sitemap.xml`.
 - Orfandad: el `MediaAsset` se borra al eliminar la diapositiva o reemplazar su imagen (best effort, solo si nadie más lo referencia). Una subida cuyo guardado posterior falla puede quedar huérfana; limitación aceptada.
+- **Δ Tarjetas del pipeline:** `promote()` de un aporte `origin: 'pipeline'` con `payload.tarjeta` crea un `MediaAsset` (`created_by` = UUID del revisor, o `'system'` si lo promueve el sistema; el Zod admite `uuid` o el literal `'system'`) **dentro de la misma transacción** que la `Entity` y fija `imagen_url = '/media/<id>'` con `capturaPropiaPendiente = true` (imagen provisional). No se crea nada si el aporte se rechaza o no se aprueba. En una ficha existente la tarjeta solo reemplaza una `imagen_url` vacía o ya `/media/…`; si `manualEdits` incluye `imagen_url` (o la imagen es un asset editorial `/assets/…`) no se aplica ni se crea el `MediaAsset`. El asset reemplazado queda huérfano (limitación aceptada, como en §2.11).
 
 ### 2.12 `PipelineRun` — `models/PipelineRun.ts`
 
@@ -298,7 +321,7 @@ Registro de cada ejecución del pipeline de datos y catálogo (ETL externo que e
 | `startedAt` | Date | `z.coerce.date()` | Inicio de la ejecución. |
 | `finishedAt` | Date \| null | `z.coerce.date().nullable()` | `null` mientras `status` es `queued` o `running`. |
 | `status` | String enum | `z.enum(['queued','running','ok','error'])` | |
-| `trigger` | String enum | `z.enum(['push','manual'])` | `push`: el pipeline envía el lote; `manual`: lo pide el staff con «Sincronizar ahora». |
+| `trigger` | String enum | `z.enum(['push','manual','scheduled'])` | `push`: el pipeline envía el lote; `manual`: lo pide el staff con «Sincronizar ahora» (o, en noticias, un disparo manual del worker); `scheduled`: ciclo del cron del worker de noticias. |
 | `source` | String | `z.string().min(1).max(40)` | Origen declarado del lote (p. ej. `gtabase`). |
 | `modulo` | String | `z.string().min(1).max(60)` | Slug de `Module` destino. |
 | `archivo` | String \| null | `z.string().max(160).nullable()` | Nombre del archivo del lote, si lo hay. |
@@ -315,6 +338,9 @@ Registro de cada ejecución del pipeline de datos y catálogo (ETL externo que e
 - Idempotencia por `contentHash`: si el hash de la ficha entrante coincide con el de la `Entity` existente (`module_id` + `slug`), cuenta como `sin_cambios` y no se escribe nada.
 - Todo ítem **nuevo, actualizado o en conflicto** se guarda como `Submission` con `origin: 'pipeline'`; el pipeline **no publica directo** en `Entity`. La promoción sigue la revisión manual de §5 (`MODERATOR+`) y, al promover, se actualiza `contentHash`.
 - Cada ejecución crea su `PipelineRun` y un evento resumen `pipeline.batch` en `AuditLog` (`actor_id: 'system'`, `actor_role: 'system'`, `actor_label: 'system:pipeline'`, `target_type: 'pipeline_run'`, `target_id: <runId>`, `metadata = { source, modulo, archivo, dryRun, counts }`).
+- **Δ Ciclos del worker de noticias (`kind: 'noticias'`):** cada ciclo de `workers/officialNewsWorker.ts` se registra como un `PipelineRun` con `source: 'news'`, `modulo: 'noticias'`, `trigger: 'scheduled'` (cron de 15 min) o `'manual'` (disparo desde el panel), `counts.created` = noticias insertadas, `counts.rejected` = fuentes con error (cada una en `rejected` como `{ slug: <id de fuente>, reason }`), `status: 'ok'` si ninguna falló y `'error'` si alguna falló, y un `AuditLog` `news.batch` (`actor_id: 'system'`, `actor_role: 'system'`, `actor_label: 'system:news'`, `target_type: 'pipeline_run'`). El DTO añade `kind: 'catalogo' | 'noticias'` (derivado de `modulo`); `GET /api/admin/pipeline/runs` excluye los de noticias de `runs` y de `estado` salvo `?kind=noticias|todos` (los de noticias nunca cuentan para «activo»/«en curso» del ETL de catálogo ni bloquean «Sincronizar ahora»).
+- **Δ Marker y tarjeta en el hash:** el `contentHash` de ingesta incluye el `marker` de la ficha (`region`, `coord_x`, `coord_y`, `descripcion`, `slug?`) **solo cuando existe**, y el `sha256` de la tarjeta (con `imagen_url` fijado a `null` en el hash) **solo cuando hay tarjeta**; así los hashes de fichas sin marker ni tarjeta no cambian. Añadir, quitar o mover el marker o cambiar la tarjeta hace la ficha `actualizada`.
+- **Δ Módulos fuera de los cinco base:** el catálogo editorial cubre `armas`, `vehiculos`, `coleccionables`, `guias` y `mapa`. Cualquier otro `modulo` (p. ej. `radio`) exige un `Module` activo y una vista en el cliente: es una **decisión pendiente**; hoy no se crean módulos nuevos y un lote hacia un módulo inexistente responde `422`.
 
 ---
 
@@ -386,6 +412,8 @@ PROHIBIDO tokens en `localStorage`, `sessionStorage`, IndexedDB o en la URL. El 
 | `correction` | `payload = { target: 'Entity' \| 'MapMarker', id, patch }`; `patch` valida con el schema `.partial()` | `updateOne` del documento destino |
 | `contact`, `newsletter` | — | **Nunca se promueven.** Solo bandeja ADMIN; `approved` = atendido. |
 
+- **Δ Pipeline en `promote()`:** además de lo anterior, una ficha con `payload.tarjeta` crea su `MediaAsset` y fija `imagen_url` (§2.11); el slug del pin del `marker` es único: si `payload.marker.slug` (o el slug de la ficha) ya existe se usa `-2`, `-3`… en lugar de omitirlo; y `capturaPropiaPendiente = true` en el payload se aplica a la ficha existente al actualizarla.
+
 Reglas:
 
 1. Si la validación Zod del `payload` falla, la `Submission` queda `pending` y la API responde `422` con los errores; nada se escribe.
@@ -407,7 +435,7 @@ Reglas:
 | `MapMarker` | `{ coord: '2d' }` (min 0, max 1000) · `{ region }` · **Δ** `{ slug }` único *sparse* · **Δ** `{ entity_id }` |
 | `UserProgress` | `{ user_id, target_type, target_id }` único |
 | `OfficialNews` | `sourceUrl` único · `publishedAt: -1` · **Δ** `slug` único |
-| `Submission` | `userId` · `{ status, createdAt: -1 }` · **Δ** `{ origin, status, createdAt: -1 }` |
+| `Submission` | `userId` · `{ status, createdAt: -1 }` · **Δ** `{ origin, status, createdAt: -1 }` · **Δ** `{ origin, 'payload.pipeline_run_id', status }` (filtro por lote) |
 | `ForumThread` | `{ categoria, created_at: -1 }` · `entity_id` parcial |
 | `ForumPost` | `thread_id` |
 | `ForumVote` | `{ user_id, target_type, target_id }` único |
