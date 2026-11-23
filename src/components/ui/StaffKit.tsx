@@ -12,6 +12,12 @@ export type SubStatus = 'pending' | 'approved' | 'rejected';
 export interface SubmissionDTO {
   id: string;
   userId: string | null;
+  /** `pipeline` para los aportes del ETL; ausente o `user` para los de usuarios. */
+  origin?: 'user' | 'pipeline';
+  /** Solo origen `pipeline`: nueva / actualizada / conflicto, lote y campos en conflicto. */
+  pipeline_reason?: string | null;
+  pipeline_run_id?: string | null;
+  conflict_fields?: string[];
   moduleSlug: string;
   type: string;
   title: string;
@@ -48,6 +54,8 @@ export const GHOST = `${BTN} bg-white/10 hover:bg-white/20`;
 export const SMALL_BTN = `${BTN} bg-white/10 px-3 text-sm hover:bg-white/20`;
 export const DANGER_BTN = `${BTN} border border-vice-rose/60 px-3 text-sm text-vice-rose hover:bg-white/10`;
 export const ROW = 'flex flex-wrap items-center justify-between gap-2 rounded-xl bg-white/5 px-3 py-2';
+/** Barra `sticky` de acciones elevada sobre el dock flotante (alto + margen + área segura). */
+export const DOCK_STICKY = 'sticky bottom-[var(--dock-reserve)] z-10';
 /** Margen inferior de toda vista del panel: el dock flotante y el área segura de iOS nunca tapan las acciones. */
 export const PAGE_PAD = 'pb-[calc(7rem+env(safe-area-inset-bottom))]';
 
@@ -139,13 +147,14 @@ export function ToastHost() {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-[calc(6.5rem+env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 px-4"
+      /* Bajo la cabecera de ViceShell (~68 px + safe-top): nunca tapa logo, % ni dock; sin interacción, no bloquea toques. */
+      className="pointer-events-none fixed inset-x-0 top-[calc(5rem+var(--safe-top))] z-[60] flex flex-col items-center gap-2 px-4"
     >
       {items.map((t) => (
         <p
           key={t.id}
           role={t.ok ? 'status' : 'alert'}
-          className={`pointer-events-auto glass max-w-xl rounded-xl px-4 py-2 text-sm font-semibold ${t.ok ? 'text-vice-cyan' : 'text-vice-gold'}`}
+          className={`glass max-w-xl rounded-xl px-4 py-2 text-sm font-semibold ${t.ok ? 'text-vice-cyan' : 'text-vice-gold'}`}
         >
           {t.text}
         </p>
