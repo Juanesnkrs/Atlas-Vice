@@ -20,9 +20,9 @@
 
 ---
 
-## 2. Las 11 colecciones
+## 2. Las 12 colecciones
 
-Las colecciones aprobadas son 11 grupos lógicos (el grupo Foro se compone de 3 modelos):
+Las colecciones aprobadas son 12 grupos lógicos (el grupo Foro se compone de 3 modelos):
 
 1. `User`
 2. `AppConfig`
@@ -35,6 +35,7 @@ Las colecciones aprobadas son 11 grupos lógicos (el grupo Foro se compone de 3 
 9. Foro: `ForumThread` / `ForumPost` / `ForumVote`
 10. `AuditLog`
 11. **Δ** `MediaAsset` (imágenes subidas desde el panel, §2.11; aprobada por el propietario el 2026-11-21)
+12. **Δ** `PipelineRun` (registro de cada ejecución del pipeline de datos y catálogo, §2.12)
 
 ### 2.1 `User` — `models/User.ts`
 
@@ -150,7 +151,12 @@ export const heroSlideSchema = z.object({
 | `imagen_url` | String \| null | `.nullable().optional()` | |
 | `stats_json` | Mixed | `jsonRecordSchema` | Fuente del comparador NUI (valores numéricos). |
 | `metadata_json` | Mixed | `jsonRecordSchema` | En guías: `body_md`, `lore_refs[]` y `steps[]` = `{ id, title, body }` ordenados (fuente del progreso por pasos y del JSON-LD `HowTo`). |
+| **Δ** `contentHash` | String \| null | `z.string().regex(/^[a-f0-9]{64}$/).nullable().optional()` | SHA-256 (hex) del contenido canónico de la ficha (`titulo`, `subtitulo`, `categoria`, `imagen_url`, `stats_json`, `metadata_json` con claves ordenadas). Lo calcula el pipeline (§2.12) para la idempotencia: mismo hash → `sin_cambios`, sin escritura (si la ficha existente no lo tiene, se calcula al vuelo). `PATCH /api/entities/:id` lo recalcula y añade a `manualEdits` los campos de contenido que cambia; el cliente nunca los envía. No se expone en el DTO público. |
+| **Δ** `manualEdits` | String[] (por defecto `[]`) | `z.array(z.string().max(60)).default([])` | Campos de la ficha editados a mano en `/_staff`. El pipeline nunca los sobrescribe: si un lote cambia uno de ellos, el ítem se registra como `conflicto` y entra como `Submission` de origen `pipeline` (§2.8). |
+| **Δ** `capturaPropiaPendiente` | Boolean (por defecto `false`) | `z.boolean().default(false)` | `true` mientras la ficha no tiene captura propia (`imagen_url: null` permitida). Permite listar en el panel las fichas sin imagen. |
 | `created_at` | Date | — | |
+
+Los tres campos nuevos son opcionales: las 243 fichas existentes siguen siendo válidas sin migración. La política de `imagen_url` para lotes del pipeline es: solo `null` o una ruta interna permitida (cero hotlinking, §2.12).
 
 ### 2.5 `MapMarker` — `models/MapMarker.ts`
 
@@ -215,6 +221,7 @@ Escritura exclusiva del worker `server/src/workers/officialNewsWorker.ts`.
 | `reviewedBy` | String \| null | `z.uuid().nullable()` | `'system'` en aprobación automática. |
 | **Δ** `reviewNote` | String (opcional, sin valor por defecto) | `z.string().trim().max(500).optional()` | Motivo del rechazo, visible solo en moderación (`/_staff`). Se guarda solo al rechazar (`PATCH /api/admin/submissions/:id` con `{ status: 'rejected', reviewNote? }`) y se expone en el DTO como `reviewNote`. |
 | **Δ** `promotedTo` | `{ collection: 'MapMarker' \| 'Entity', id: string } \| null` | `z.object(...).nullable()` | Resultado de la promoción (§5). |
+| **Δ** `origin` | `'user' \| 'pipeline'` (por defecto `'user'`) | `z.enum(['user','pipeline']).default('user')` | Origen del aporte. `'pipeline'` marca los ítems que llegan por `POST /api/pipeline/ingest` (§2.12): `userId: null`, `type: 'entity'`, `payload` = ficha validada y el motivo (`nueva`, `actualizada` o `conflicto`) en `payload.pipeline_reason`. Nunca se aprueban automáticamente (§5): requieren moderación. La regla «`userId` solo puede ser `null` en `contact`/`newsletter`» se amplía a «… o `origin = 'pipeline'`». |
 | `createdAt` | Date | — | |
 
 ### 2.9 Foro — `ForumThread`, `ForumPost`, `ForumVote`
@@ -247,6 +254,7 @@ Escritura exclusiva del worker `server/src/workers/officialNewsWorker.ts`.
 | `_id` | UUID | |
 | `actor_id` | String | `'system'` para acciones automáticas. |
 | `actor_role` | String | Rol en el momento de la acción. |
+| **Δ** `actor_label` | String \| null (opcional) | Etiqueta legible para actores que no son usuarios, p. ej. `"system:pipeline"`; se usa junto a `actor_id: 'system'` para saber qué proceso actuó. El panel permite filtrar por ella. `z.string().max(60).nullable().optional()`. |
 | `action` | String | `dominio.verbo`, p. ej. `submission.approved`, `user.role_changed`, `config.updated`. |
 | `target_type` / `target_id` | String / String \| null | |
 | `metadata` | Mixed | Diff `{ from, to }`. Nunca tokens ni secretos. |
@@ -279,6 +287,34 @@ Imágenes subidas desde el panel (solo las diapositivas del Hero, §2.2). Se gua
 - Subida: `POST /api/admin/media` (ADMIN+, 404 uniforme sin staff) con cuerpo **binario** (`Content-Type: image/webp` o `image/jpeg`, sin multipart; parser de cuerpo crudo propio solo en esa ruta, `bodyLimit` 600 KB). El servidor valida tipo, **firma mágica real** (WebP `RIFF…WEBP`; JPEG `FFD8FF`), tamaño ≤ 400 KB y dimensiones exactas 1600×900 leídas de la cabecera (JPEG: marcador SOF; WebP: VP8 / VP8L / VP8X), con código propio. Rate-limit 20/min por IP. Auditoría `media.upload`. Responde `201 { id, url: '/media/<id>', mime, width, height, bytes }`.
 - Lectura pública: `GET /media/:id` (solo imágenes; `Content-Type` correcto, `X-Content-Type-Options: nosniff`, `Cache-Control: public, max-age=31536000, immutable`, `ETag`; 404 `text/plain` si no existe). **Sin listados ni enumeración** y fuera de `sitemap.xml`.
 - Orfandad: el `MediaAsset` se borra al eliminar la diapositiva o reemplazar su imagen (best effort, solo si nadie más lo referencia). Una subida cuyo guardado posterior falla puede quedar huérfana; limitación aceptada.
+
+### 2.12 `PipelineRun` — `models/PipelineRun.ts`
+
+Registro de cada ejecución del pipeline de datos y catálogo (ETL externo que envía lotes por `POST /api/pipeline/ingest`; contrato en `docs/LeonidApp-Rutas-SEO-Monetizacion.md` §1.6). Colección #12.
+
+| Campo | Tipo Mongoose | Zod | Notas |
+| --- | --- | --- | --- |
+| `_id` | String (UUID) | `z.uuid().optional()` | Es el `runId` de la respuesta. |
+| `startedAt` | Date | `z.coerce.date()` | Inicio de la ejecución. |
+| `finishedAt` | Date \| null | `z.coerce.date().nullable()` | `null` mientras `status` es `queued` o `running`. |
+| `status` | String enum | `z.enum(['queued','running','ok','error'])` | |
+| `trigger` | String enum | `z.enum(['push','manual'])` | `push`: el pipeline envía el lote; `manual`: lo pide el staff con «Sincronizar ahora». |
+| `source` | String | `z.string().min(1).max(40)` | Origen declarado del lote (p. ej. `gtabase`). |
+| `modulo` | String | `z.string().min(1).max(60)` | Slug de `Module` destino. |
+| `archivo` | String \| null | `z.string().max(160).nullable()` | Nombre del archivo del lote, si lo hay. |
+| `dryRun` | Boolean | `z.boolean()` | En simulación no se escribe ninguna `Submission`, pero sí el `PipelineRun`. |
+| `counts` | `{ created, updated, unchanged, conflicts, rejected }` | `z.object({ …: z.number().int().min(0) })` | Equivalen a `nuevas`, `actualizadas`, `sin_cambios`, `conflictos` y `rechazados` de la respuesta. |
+| `rejected` | `{ slug, reason }[]` | `z.array(z.object({ slug: z.string(), reason: z.string().max(300) }))` | Ítems descartados por validación Zod, con su motivo (máx. 200 por ejecución). |
+
+Índice `{ startedAt: -1 }`. Solo se actualizan `status`, `finishedAt`, `counts` y `rejected` al cerrar la ejecución.
+
+**Reglas de datos del pipeline:**
+
+- Validación Zod **ítem por ítem** sin abortar el lote: un ítem inválido va a `rejected` y el resto continúa.
+- `imagen_url` solo puede ser `null` o una ruta interna permitida (cero hotlinking); una URL externa rechaza el ítem.
+- Idempotencia por `contentHash`: si el hash de la ficha entrante coincide con el de la `Entity` existente (`module_id` + `slug`), cuenta como `sin_cambios` y no se escribe nada.
+- Todo ítem **nuevo, actualizado o en conflicto** se guarda como `Submission` con `origin: 'pipeline'`; el pipeline **no publica directo** en `Entity`. La promoción sigue la revisión manual de §5 (`MODERATOR+`) y, al promover, se actualiza `contentHash`.
+- Cada ejecución crea su `PipelineRun` y un evento resumen `pipeline.batch` en `AuditLog` (`actor_id: 'system'`, `actor_role: 'system'`, `actor_label: 'system:pipeline'`, `target_type: 'pipeline_run'`, `target_id: <runId>`, `metadata = { source, modulo, archivo, dryRun, counts }`).
 
 ---
 
@@ -346,7 +382,7 @@ PROHIBIDO tokens en `localStorage`, `sessionStorage`, IndexedDB o en la URL. El 
 | `type` | Validación previa | Resultado |
 | --- | --- | --- |
 | `marker` | `coords` no nulo (al aprobar, `PATCH /api/admin/submissions/:id` admite `coords: {x,y}` en el cuerpo para ubicar el pin; sin ellas responde 422 «Falta ubicar el pin…» y el aporte sigue `pending`); `payload` valida con `mapMarkerSchema` (`region`, `titulo`, `descripcion?`, `entity_id?`, `media_url?`) | `MapMarker.create({ ...payload, coord: coords })` |
-| `entity` | `moduleSlug` existe y `activo`; `payload` valida con `entitySchema` (sin `module_id`, que se resuelve desde `moduleSlug`) | `Entity.create({ ...payload, module_id })` |
+| `entity` | `moduleSlug` existe y `activo`; `payload` valida con `entitySchema` (sin `module_id`, que se resuelve desde `moduleSlug`) | `Entity.create({ ...payload, module_id })`. Con `origin: 'pipeline'` y una ficha ya existente (`module_id` + `payload.slug`) **actualiza esa ficha** (sin tocar `slug`, `manualEdits` ni `capturaPropiaPendiente`; fija `contentHash`) en lugar de crear otra; `payload.marker` hace `upsert` del pin por `entity_id` |
 | `correction` | `payload = { target: 'Entity' \| 'MapMarker', id, patch }`; `patch` valida con el schema `.partial()` | `updateOne` del documento destino |
 | `contact`, `newsletter` | — | **Nunca se promueven.** Solo bandeja ADMIN; `approved` = atendido. |
 
@@ -371,16 +407,18 @@ Reglas:
 | `MapMarker` | `{ coord: '2d' }` (min 0, max 1000) · `{ region }` · **Δ** `{ slug }` único *sparse* · **Δ** `{ entity_id }` |
 | `UserProgress` | `{ user_id, target_type, target_id }` único |
 | `OfficialNews` | `sourceUrl` único · `publishedAt: -1` · **Δ** `slug` único |
-| `Submission` | `userId` · `{ status, createdAt: -1 }` |
+| `Submission` | `userId` · `{ status, createdAt: -1 }` · **Δ** `{ origin, status, createdAt: -1 }` |
 | `ForumThread` | `{ categoria, created_at: -1 }` · `entity_id` parcial |
 | `ForumPost` | `thread_id` |
 | `ForumVote` | `{ user_id, target_type, target_id }` único |
 | `MediaAsset` | solo `_id` |
+| `PipelineRun` | **Δ** `{ startedAt: -1 }` |
 | `AuditLog` | `{ created_at: -1 }` · `{ actor_id, created_at: -1 }` · **Δ** `{ target_type, target_id, created_at: -1 }` (historial de un objeto) |
 
 ## Anexo. Exposición pública y respuestas uniformes
 
 - **Hero y medios:** `GET /api/hero` (público, `Cache-Control: public, max-age=30`, ETag débil) solo expone las diapositivas activas sin `activa` ni `orden`; `GET /api/admin/hero` y `PUT /api/admin/hero` (ADMIN+) y `POST /api/admin/media` (ADMIN+) devuelven el 404 uniforme sin sesión de staff (RBAC antes que Zod y antes del parser binario). `GET /media/:id` es público, sin listados, con `nosniff` y caché inmutable; un id inexistente responde 404 `text/plain`.
+- **Pipeline de datos:** `POST /api/pipeline/ingest` queda fuera de `/api/admin/*` y de la sesión por cookies (solo `Authorization: Bearer <PIPELINE_INGEST_TOKEN>`, verificado con `timingSafeEqual`); sin token válido devuelve el 404 uniforme antes de parsear el cuerpo. `GET /api/admin/pipeline/runs` y `POST /api/admin/pipeline/trigger` son `ADMIN+` y dan el 404 uniforme sin staff. Contrato en `docs/LeonidApp-Rutas-SEO-Monetizacion.md` §1.6.
 - **Foro público:** la proyección pública de autores expone solo `id`, `username` y `avatar_url` (nunca `rol` ni `email`).
 - **Superficie administrativa:** `/api/admin/*` y los POST/PATCH/DELETE administrativos de catálogo, mapa, roles, configuración y auditoría devuelven un **404 genérico** (idéntico al de una ruta inexistente) a quien no tenga sesión de staff autorizada; el RBAC se evalúa antes que la validación Zod. Lectura de `AuditLog`, cambio de roles, revocación de sesiones, configuración, salud del sistema y caché: `SUPER_ADMIN`. Moderación de aportes y foro: `MODERATOR+`. Catálogo, mapa, módulos y estado/ejecución del worker de noticias: `ADMIN+`.
 - **Panel `/_staff` (resumen, historial, restauración, dependientes):** `GET /api/admin/overview` (Resumen Operativo, `MODERATOR+`, `Cache-Control: private, no-store`; contenido filtrado por rol: MODERATOR ve los aportes de moderación —sin contact/newsletter— y sus propias acciones; ADMIN+ añade worker de noticias, cobertura del catálogo y pines huérfanos; SUPER_ADMIN ve las últimas 10 acciones de todos), `GET /api/admin/submissions/pending-count` (`MODERATOR+`, insignia de pendientes), `GET /api/admin/dependents/:type/:id` (`type ∈ thread|entity|marker|module`; `thread` MODERATOR+, el resto ADMIN+; recuentos y títulos para la confirmación de borrado), `GET /api/admin/history?target_type&target_id` (`MODERATOR+`; SUPER_ADMIN ve todo el historial del objeto, el resto solo sus propias entradas y sin `snapshot`) y `POST /api/admin/audit-logs/:id/restore` (`SUPER_ADMIN`). Todos devuelven el 404 uniforme a quien no corresponda.

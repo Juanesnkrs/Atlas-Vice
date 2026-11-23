@@ -343,3 +343,13 @@ Solo para el equipo (`isStaff()`; el RBAC real sigue en la API). Objetivo: que u
 - **Escritorio y tableta (≥ 768 px):** el panel ocupa la columna izquierda en lugar del control de capas (que se oculta mientras se edita) y cabe sin scroll; no se muestra la ficha del pin seleccionado a la vez.
 - **Móvil:** panel acoplado sobre el dock (portal fuera del lienzo táctil, con scroll propio, máx. 46 % del alto) que **arranca plegado** como una barra («Toca el mapa para fijar el punto») para dejar el mapa libre; al fijar el punto se abre y el lienzo reserva ese espacio, acerca el mapa y centra el punto en la zona visible. Se puede ocultar/abrir y salir desde la barra. El zoom sube de posición para no quedar tapado.
 - **Mira:** trazo dorado con contorno oscuro para que se lea sobre el terreno claro.
+
+### 7.14 Tarjeta «Pipeline de datos y catálogo (ETL)» en el panel
+
+Solo para el equipo ADMIN+ (`isStaff()`; el RBAC real sigue en la API). Vive en `/_staff` → **Editorial y automatización**, **debajo** de la tarjeta de «Noticias oficiales», con el mismo patrón de tarjeta HUD (glassmorphism Vice NUI, título con icono SVG inline, `pb-28`/safe-area en móvil). Sin librerías nuevas ni archivos fuera del árbol aprobado (se integra en `src/components/ui/StaffEditorial.tsx`).
+
+- **Estado (insignia):** «Activo» (verde) si el último lote llegó hace menos de 24 h; «En espera» (ámbar) tras 24 h sin lotes o si nunca hubo uno. Junto a la insignia, fecha y hora del último lote y su origen (`source` · `modulo`).
+- **Métricas del último lote:** cinco contadores en rejilla (2 columnas en móvil, 5 en escritorio): **Creados**, **Actualizados**, **Sin cambios**, **Conflictos** y **Rechazados**. Si el lote fue una simulación se muestra la etiqueta «Simulación». Sin ejecuciones: estado vacío claro («Aún no ha llegado ningún lote»).
+- **Rechazados:** al pulsar el contador se despliega la lista de motivos por `slug` (`slug` en mono + motivo), con scroll propio (máx. 240 px) y sin saltos de diseño (CLS = 0).
+- **Auditoría:** enlace «Ver en Auditoría» que abre `/_staff` → Auditoría ya filtrada por la etiqueta `system:pipeline` (visible solo a SUPER_ADMIN; para ADMIN se oculta el enlace).
+- **Sincronizar ahora:** botón primario (PalmButton, ≥ 44 px) que llama a `POST /api/admin/pipeline/trigger`. Queda **desactivado** con el aviso «Configura PIPELINE_WEBHOOK_URL para sincronizar desde aquí» cuando la API informa de que la variable no está configurada, y también mientras hay una ejecución en curso («Sincronizando…»). Tras pulsar se refresca la tarjeta con `GET /api/admin/pipeline/runs`.

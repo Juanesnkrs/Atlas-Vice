@@ -124,6 +124,34 @@ Reglas:
 - Rate-limit por IP en cubos separados: lecturas públicas de API 3000/min, SSR-lite/estáticos/sitemap 1500/min y el resto (auth, escrituras, foro, progreso, admin) 200/min con los topes por ruta intactos. Las rutas de moderación del foro (`DELETE /api/forum/threads|posts/:id`, `PATCH …/pin`) devuelven el 404 genérico sin rol MODERATOR+.
 - Categorías vacías: `200` con `noindex,follow`, título/descripción de categoría vacía, sin `canonical` ni `og:url` ni JSON-LD. Mayúsculas en la ruta (`/catalogo/ARMAS`, `/MAPA`) responden `301` a minúsculas cuando el destino existe.
 
+## 1.6 Pipeline de datos y catálogo: ingesta y control
+
+Ruta de máquina a máquina, **fuera de `/api/admin/*`** y sin sesión de cookies ni CSRF. No es indexable ni aparece en `robots.txt` (cubierta por `Disallow: /api/`) ni en `sitemap.xml`. Colección de registro: `PipelineRun` (`docs/LeonidApp-Arquitectura-Datos-MongoDB.md` §2.12).
+
+**`POST /api/pipeline/ingest`**
+
+- **Autenticación:** solo `Authorization: Bearer <PIPELINE_INGEST_TOKEN>`, comparado con `crypto.timingSafeEqual` (longitudes igualadas antes de comparar). Si la cabecera falta, el token falla o la variable no está configurada, responde el **404 uniforme** (`{"error":"No encontrado"}`) **antes de parsear el cuerpo**. No lee ni emite cookies y queda exenta de la comprobación de `Origin`; rate-limit propio (20/min por IP) que aplica a las peticiones autenticadas (el 404 por token inválido ocurre antes y es uniforme) y `bodyLimit` de 16 MB solo en esta ruta (máx. 5000 fichas por lote).
+- **Cuerpo:** `{ source: string, modulo: string, archivo?: string, dryRun?: boolean, fichas: unknown[] }`. La simulación también se pide con `?dry=1` (equivale a `dryRun: true`; si ambos llegan, basta uno).
+- **Respuesta `200`:** `{ ok: true, runId, dryRun, nuevas, actualizadas, sin_cambios, conflictos, rechazados, errores, details }`. `runId` es el `_id` del `PipelineRun`; `errores` es el número de ítems con fallo inesperado de escritura; `details` lista, por ítem no neutro (todos salvo `sin_cambios`), `{ slug, resultado: 'nueva' | 'actualizada' | 'conflicto' | 'rechazada', motivo? }`; `motivo` acompaña a `conflicto` (campos editados a mano o fuente distinta) y `rechazada` (motivo de validación o `error de escritura`), y a un ítem cuyo aporte pendiente idéntico ya existe (no se duplica). Un ítem sin `slug` válido se identifica como `#<índice>`. El cliente de referencia (`import-atlas.ts` del repositorio hermano FireCrawl) envía `{ source, modulo, archivo, dryRun, fichas }` y consume `nuevas`, `actualizadas`, `conflictos` y `errores`; los campos adicionales son aditivos y no lo rompen.
+- **Reglas de procesamiento:**
+  1. Validación Zod **ítem por ítem** sin abortar el lote (un ítem inválido cuenta en `rechazados` con su motivo por `slug`).
+  2. `imagen_url` solo `null` o una ruta interna permitida (cero hotlinking).
+  3. `contentHash` idempotente: hash igual al de la ficha existente → `sin_cambios`, sin escribir.
+  4. Todo ítem nuevo, actualizado o en conflicto (campo del ítem presente en `manualEdits`) entra como `Submission` con `origin: 'pipeline'`: moderación obligatoria, nunca publica directo en `Entity`.
+  5. Cada ejecución queda en `PipelineRun` y genera el evento resumen `pipeline.batch` en `AuditLog` con `actor_label: 'system:pipeline'`.
+  6. Con `dryRun` se valida y se cuenta, pero no se escribe ninguna `Submission` (el `PipelineRun` y el evento de auditoría sí se registran).
+  7. `conflicto` también cubre una ficha existente cuya `metadata_json.fuente` es distinta de la `source` del lote (nunca se pisa contenido de otra fuente). Si no llega `imagen_url`, la comparación y el hash usan la imagen de la ficha existente.
+  8. No se duplica una `Submission` pendiente con el mismo `slug` + `contentHash` (el ítem se cuenta igualmente según su clasificación).
+  9. La primera ingesta tras «Sincronizar ahora» adopta la ejecución `queued` (pasa a `running` y toma `source`/`modulo`/`archivo` del lote); una ejecución sin cerrar tras 15 minutos se cierra como `error`. Los lotes con errores de escritura (`errores > 0`) cierran con `status: 'error'`; esos ítems constan en `rejected` con motivo `error de escritura: …` pero no suman a `counts.rejected`.
+- **Errores tras autenticar:** `400` cuerpo no válido (forma del sobre) · `422` `modulo` inexistente · `413` lote por encima de `bodyLimit`.
+
+**Control desde el staff (ADMIN+, 404 uniforme sin sesión de staff; RBAC antes que Zod):**
+
+- `GET /api/admin/pipeline/runs?limit=` — últimas ejecuciones de `PipelineRun` (por defecto 20, máx. 100), más recientes primero, `Cache-Control: private, no-store`. Respuesta `{ runs: PipelineRun[], estado: { activo, ventanaHoras: 24, ultimoLoteAt, enCurso, webhookConfigurado, ingestaConfigurada } }`; cada run es `{ id, startedAt, finishedAt, status, trigger, source, modulo, archivo, dryRun, counts: { created, updated, unchanged, conflicts, rejected }, rejected: [{ slug, reason }] }` (fechas ISO). `activo` es `true` si hubo alguna ejecución no encolada en las últimas 24 h; `ultimoLoteAt` es la fecha de la última ejecución no encolada (o `null`).
+- `POST /api/admin/pipeline/trigger` — pide al pipeline externo una sincronización: llama por `POST` a `PIPELINE_WEBHOOK_URL` y registra un `PipelineRun` con `trigger: 'manual'` y `status: 'queued'`. Responde `202` con el `PipelineRun` en `queued` (`source: 'manual'`, `modulo: '*'`). Si la variable no está configurada responde `409` con `code: "PIPELINE_WEBHOOK_UNSET"` (ya autenticado como staff); una ejecución en curso responde `409` con `code: "PIPELINE_BUSY"`; si el webhook no responde 2xx en 8 s, `502` con `code: "PIPELINE_WEBHOOK_FAILED"` y el run queda en `error`. El cuerpo enviado al webhook es `{ event: 'pipeline.sync', runId, requestedAt, nonce }`. Auditoría `pipeline.trigger` (sin la URL).
+
+**Variables de entorno (`server/.env`):** `PIPELINE_INGEST_TOKEN` (secreto ≥ 32 caracteres; se recomienda `openssl rand -hex 32`; sin él, la ingesta queda desactivada y responde 404) y `PIPELINE_WEBHOOK_URL` (opcional; URL `https` a la que el servidor avisa al pulsar «Sincronizar ahora»). Ninguna se expone al cliente ni se registra en logs o en `AuditLog`.
+
 ## 4. `GET /sitemap.xml` y `robots.txt`
 
 - `GET /sitemap.xml` (Fastify, `server/src/routes/seo.ts`) genera **URLs limpias sin `#`** y sin parámetros de consulta.

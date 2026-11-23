@@ -43,7 +43,7 @@ Cifras vigentes (verificadas contando `server/data/*-editorial.json`):
 | `mapmarkers` | **10** | uno por ficha de mapa (bloque `marker` del lote editorial) |
 | `officialnews` | **1** | `take-two-ir` (únicamente fuentes oficiales Rockstar / Take-Two) |
 
-El catálogo se alimenta de lotes editoriales 100 % originales en `server/data/*-editorial.json`, importados con `pnpm --dir server import:catalog <archivo.json> --apply --source editorial`. Las 11 colecciones (las 10 originales más `MediaAsset`, aprobada el 2026-11-21 para las imágenes del carrusel del Hero) y sus campos siguen cerrados según `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`.
+El catálogo se alimenta de lotes editoriales 100 % originales en `server/data/*-editorial.json`, importados con `pnpm --dir server import:catalog <archivo.json> --apply --source editorial`. Las 12 colecciones (las 10 originales más `MediaAsset`, aprobada el 2026-11-21 para las imágenes del carrusel del Hero, y `PipelineRun`, para el registro del pipeline de datos) y sus campos siguen cerrados según `docs/LeonidApp-Arquitectura-Datos-MongoDB.md`.
 
 ### 0.3 Mapa (`/mapa`)
 
@@ -86,6 +86,7 @@ El panel se organiza por **módulo público que gobierna**, no por tecnología. 
 | **Comunidad y moderación** (MODERATOR+) | Aportes | Bandeja de `/aportar`: revisar, aprobar (crea/actualiza la entidad o el marcador con auditoría) o rechazar. Contacto y suscripciones solo para ADMIN+ | `/aportar` | `GET /api/admin/submissions?status&limit` y `PATCH /api/admin/submissions/:id` (MODERATOR) |
 | | Foro | Hilos y respuestas: fijar, cerrar (`is_locked`), editar título/contenido/categoría/spoiler, eliminar (con sus votos) | `/foro` | `GET /api/admin/forum/threads?q&categoria&page`, `GET /api/admin/forum/threads/:id`, `PATCH /api/admin/forum/threads/:id`, `PATCH /api/admin/forum/posts/:id`, `DELETE /api/forum/threads/:id`, `DELETE /api/forum/posts/:id` (todos MODERATOR). Los aportes muestran el payload formateado, tabla Actual vs Propuesto en correcciones, errores 422 desglosados, rechazo con motivo (`Submission.reviewNote`), selección múltiple con cola de 3 peticiones concurrentes y enlace «Ver ficha»/«Ver pin» (`promotedTo`). Aprobar un aporte `entity` con `payload.marker` crea en la misma transacción el `MapMarker` vinculado |
 | **Editorial y automatización** (ADMIN+) | Worker de noticias | Estado del worker de noticias oficiales (fuentes en lista blanca, último ciclo, resultado por fuente, próximo ciclo, noticias por fuente) y ejecución manual (una a la vez, 409 si ya corre, limitada por cuota) | `/noticias` | `GET /api/admin/news/status`, `POST /api/admin/news/sync` (ADMIN) |
+| | Pipeline de datos y catálogo (ETL) | Tarjeta bajo «Noticias oficiales»: estado activo/en espera, métricas del último lote (creados, actualizados, sin cambios, conflictos, rechazados con motivos por `slug`), enlace a Auditoría filtrada por `system:pipeline` y botón «Sincronizar ahora» (desactivado con aviso si falta `PIPELINE_WEBHOOK_URL`) | `/catalogo` | `GET /api/admin/pipeline/runs`, `POST /api/admin/pipeline/trigger` (ADMIN) |
 | | Guías | Guías publicadas (módulo `guias`): lista, edición y enlace a su página pública con `HowTo`/`Article` | `/guias`, `/guias/:slug` | los de Catálogo con `module=guias` |
 | **Control Total** (SUPER_ADMIN) | Configuración | `announcement` (Hub), `maintenance_mode` (aviso en acceso), proveedores de acceso (1 a 4, sin duplicados), `feature_flags`, redes sociales (footer) | `/`, `/hub`, footer | `GET /api/config`; `PATCH /api/admin/config` |
 | | Monetización | `AppConfig.monetization`: interruptor global, proveedor, `publisher_id`, hasta 20 slots; el servidor valida ruta/posición permitidas (Rutas §6.1), máximo 2 slots activos por ruta, ids únicos y `publisher_id` si AdSense está activo. Verificación de cada ruta contra una página real (`HEAD`) | `/guias`, `/noticias`, `/catalogo/:categoria/:itemSlug`, `/foro` | `PATCH /api/admin/config` |
@@ -263,7 +264,7 @@ Ningún módulo está en 🟢: el producto es una **pre-alfa funcional** (primer
 | Nombre de producto | LeonidApp (wordmark heredado "ATLAS VICE" ya no visible); paquete cliente `atlas-vice` v0.1.0; servidor `leonidapp-server` v0.1.0 |
 | Tipo | SPA + API REST, repositorio único (cliente en raíz, servidor en `server/`); ambos `"type": "module"` |
 | Gestor de paquetes | pnpm (scripts `pnpm --dir server ...`) |
-| Persistencia | MongoDB (único motor), 11 colecciones lógicas (13 archivos de modelo con `MediaAsset`); local en `127.0.0.1:27017`, base `leonidapp` |
+| Persistencia | MongoDB (único motor), 12 colecciones lógicas (14 archivos de modelo con `MediaAsset` y `PipelineRun`); local en `127.0.0.1:27017`, base `leonidapp` |
 | Tiempo de ejecución servidor | Node.js (usa `--env-file-if-exists` y `--watch`); ES2023, `module: NodeNext` |
 | TypeScript | `^7.0.2` en cliente y servidor; `strict`, `noUncheckedIndexedAccess`, `noUnusedLocals/Parameters` |
 | Enrutado del cliente | Propio, sobre History API + Zustand (`src/store/useRouteStore.ts`); sin react-router |
@@ -365,7 +366,7 @@ flowchart LR
   end
 
   subgraph Datos["MongoDB"]
-    DB[("leonidapp: 11 colecciones")]
+    DB[("leonidapp: 12 colecciones")]
   end
 
   subgraph Worker["Worker de noticias (node-cron cada 15 min)"]
@@ -859,9 +860,9 @@ Resumen (detalle por colección en §10): `Entity {module_id, categoria}` y `{mo
 
 ### 8.1 Colecciones reales
 
-Hay **12 modelos Mongoose** (12 archivos de entidad en `server/src/models/`, más `common.ts` e `index.ts`). El documento maestro los agrupa en **11 colecciones lógicas** (la undécima, `MediaAsset`, se añadió el 2026-11-21; el recuento de 12 modelos y de archivos de este párrafo es anterior y pasa a 13) porque cuenta el foro (`ForumThread`, `ForumPost`, `ForumVote`) como una sola. Físicamente hay 12 colecciones en MongoDB.
+Hay **14 modelos Mongoose** (14 archivos de entidad en `server/src/models/`, más `common.ts` e `index.ts`: 16 archivos en total) y **14 colecciones físicas** en MongoDB. El documento maestro las agrupa en **12 colecciones lógicas** porque cuenta el foro (`ForumThread`, `ForumPost`, `ForumVote`) como una sola; `MediaAsset` y `PipelineRun` se añadieron el 2026-11-21 con el pipeline de datos. Entity suma `contentHash`, `manualEdits` y `capturaPropiaPendiente`; `Submission` admite `origin: 'pipeline'` y `AuditLog` admite `actor_label` (detalle en el maestro de datos §2.4, §2.8, §2.10 y §2.12).
 
-> ⚠️ **Brecha (conteo):** el inventario del backend habla de "11 modelos"; el recuento de archivos y de llamadas a `model<>()` da 12. Aquí se documenta 12.
+> Conteo vigente (comprobado en `server/src/models`): 14 modelos Mongoose, 14 colecciones físicas y 12 colecciones lógicas (el foro cuenta como una).
 
 | # | Colección lógica (doc maestro) | Modelo(s) Mongoose | Colección MongoDB | Propósito | Documentos hoy |
 |---|---|---|---|---|---|
@@ -1988,6 +1989,18 @@ Datos con formato inválido sí devuelven 400. No se envía correo de confirmaci
 
 > 🟡 **Nota:** no hay `@fastify/static`; la API sirve el cliente compilado (`dist/`) ella misma. En desarrollo el cliente corre en Vite y la API no sirve la SPA.
 
+### 15.11 Pipeline de datos y catálogo (`routes/pipeline.ts`, ingesta externa)
+
+Contrato vigente definido en `docs/LeonidApp-Rutas-SEO-Monetizacion.md` §1.6 (manda ese documento ante cualquier diferencia). Registro: `PipelineRun` (`docs/LeonidApp-Arquitectura-Datos-MongoDB.md` §2.12).
+
+| Método y ruta | Guarda | Respuesta | Lógica |
+|---|---|---|---|
+| POST `/api/pipeline/ingest` (`?dry=1` simula) | Fuera de `/api/admin/*`, sin cookies ni CSRF: `Authorization: Bearer <PIPELINE_INGEST_TOKEN>` con `timingSafeEqual`; falta o fallo → 404 uniforme **antes de parsear el cuerpo** | `{ ok: true, runId, dryRun, nuevas, actualizadas, sin_cambios, conflictos, rechazados, errores, details }` | Cuerpo `{ source, modulo, archivo?, dryRun?, fichas: unknown[] }` (el que envía `import-atlas.ts` de FireCrawl). Zod ítem por ítem sin abortar el lote; `imagen_url` solo `null` o ruta interna (cero hotlinking); `contentHash` igual → `sin_cambios` sin escribir; nuevo/actualizado/conflicto → `Submission` con `origin: 'pipeline'` (moderación obligatoria, no publica directo); crea `PipelineRun` y evento `pipeline.batch` en `AuditLog` con `actor_label: 'system:pipeline'` |
+| GET `/api/admin/pipeline/runs` | ADMIN+ (404 uniforme sin staff) | Lista de `PipelineRun`, más recientes primero, `no-store` | Alimenta la tarjeta del panel |
+| POST `/api/admin/pipeline/trigger` | ADMIN+ (404 uniforme sin staff) | `202` con el `PipelineRun` en `queued` | Avisa a `PIPELINE_WEBHOOK_URL`; `409` si no está configurada (`PIPELINE_WEBHOOK_UNSET`) o ya hay una ejecución en curso (`PIPELINE_BUSY`); auditoría `pipeline.trigger` |
+
+> Implementado en el backend (`server/src/routes/pipeline.ts`, `services/catalogIngest.ts`, `models/PipelineRun.ts`). La respuesta de `GET /api/admin/pipeline/runs` es `{ runs, estado }` (forma exacta en `LeonidApp-Rutas-SEO-Monetizacion.md` §1.6); `POST /trigger` devuelve el `PipelineRun` encolado. `GET /api/admin/audit-logs` admite `?actor_label=system:pipeline`.
+
 ---
 
 ## 16. Servicios y worker de noticias oficiales
@@ -2320,7 +2333,7 @@ Atlas Vice/
 │  └─ src/
 │     ├─ app.ts  index.ts
 │     ├─ config/                 db.ts, env.ts
-│     ├─ models/                 12 archivos, 11 modelos Mongoose, 10 colecciones lógicas
+│     ├─ models/                 14 archivos de modelo (+ common.ts e index.ts), 14 modelos Mongoose, 12 colecciones lógicas
 │     ├─ plugins/                auth.ts
 │     ├─ routes/                 auth, catalog, config, contact, forum, news, progress, seo, submissions
 │     ├─ services/               audit, mailer, oauth, session, ssrLite, submissions, users, validate
@@ -2396,6 +2409,8 @@ Se validan con Zod al importar el módulo. Una cadena vacía equivale a ausente.
 | `SMTP_USER`, `SMTP_PASS` | texto opc. | — | Según el proveedor SMTP | Autenticación (solo si hay `SMTP_USER`) |
 | `SMTP_FROM` | texto | `LeonidApp <no-reply@localhost>` | No (cambiar en producción) | Remitente |
 | `SUPER_ADMIN_EMAIL` | texto opc. | — | Recomendada | Bootstrap: ese email verificado entra como SUPER_ADMIN |
+| `PIPELINE_INGEST_TOKEN` | texto ≥32 opc. | — | Sí para activar el pipeline | Secreto Bearer de `POST /api/pipeline/ingest` (comparación `timingSafeEqual`); sin él la ruta responde 404. Genéralo con `openssl rand -hex 32` |
+| `PIPELINE_WEBHOOK_URL` | URL https opc. | — | No | Destino del aviso de «Sincronizar ahora» en `/_staff`; sin ella el botón queda desactivado |
 | `NEWS_WORKER_ENABLED` | texto | activo | No | Leída con `process.env` fuera de `env.ts`; `'false'` desactiva el worker |
 | `CLIENT_DIST_INDEX` | ruta | `<repo>/dist/index.html` | No | Leída fuera de `env.ts`; ubicación del `index.html` compilado |
 
