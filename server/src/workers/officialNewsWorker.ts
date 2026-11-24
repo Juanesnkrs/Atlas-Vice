@@ -124,7 +124,7 @@ const toDate = (v: unknown): Date | null => {
   return Number.isNaN(d.getTime()) ? null : d;
 };
 
-function parseFeed(body: string, source: NewsSourceConfig): unknown[] {
+export function parseFeed(body: string, source: NewsSourceConfig): unknown[] {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const doc = xml.parse(body) as Record<string, any>;
   const out: unknown[] = [];

@@ -6,6 +6,9 @@
  * - Take-Two IR: RSS oficial de notas de prensa, permitido por robots.txt.
  * - Rockstar Newswire (www.rockstargames.com/newswire): robots.txt lo permite, pero es un
  *   shell de microfrontends sin RSS ni API publica documentada; no se ingiere.
+ *   Reverificado el 2026-11-23: /newswire/{rss,feed,rss.xml,atom,get-posts.json}, /rss, /feed, /atom.xml y
+ *   /sitemap*.xml devuelven 404; sin <link rel="alternate"> de feed. Sigue sin fuente utilizable (ver docs Rutas-SEO §7.3).
+ * - Take-Two IR /rss/events.xml y /rss/sec-filings.xml existen pero no tratan de GTA VI/Leonida: no se añaden.
  * - YouTube (/feeds/videos.xml): robots.txt lo prohibe (Disallow: /feeds/videos.xml); descartado.
  */
 export type NewsSourceId = 'rockstar-newswire' | 'rockstar-youtube' | 'take-two-ir';

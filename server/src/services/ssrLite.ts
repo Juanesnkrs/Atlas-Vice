@@ -66,7 +66,19 @@ export interface PageMeta {
   noCanonical?: boolean;
   jsonLd: JsonLd[];
   publishedTime?: string;
+  /** Texto SSR minimo para rastreadores sin JS (h1 + descripcion), dentro de <noscript> en #root. Solo paginas legales. */
+  body?: { h1: string; text: string };
+  /** Imagen LCP a precargar (solo `/`): debe coincidir con el srcset/sizes del <img> del hero (HeroCarousel.tsx). */
+  preloadImage?: { href: string; srcset: string; sizes: string; type: string };
 }
+
+/** Artwork por defecto del hero: mismo srcset/sizes que HERO_DEFAULT_SRCSET en src/components/ui/HeroCarousel.tsx. */
+export const HERO_PRELOAD = {
+  href: '/assets/hero-gas-station-800.webp',
+  srcset: '/assets/hero-gas-station-800.webp 800w, /assets/hero-gas-station.jpg 1080w',
+  sizes: '(min-width: 768px) 55vw, 100vw',
+  type: 'image/webp',
+} as const;
 
 export type Resolved = { kind: 'page'; meta: PageMeta } | { kind: 'redirect'; to: string };
 
@@ -183,6 +195,63 @@ const STATIC_PAGES: Record<string, { title: string; description: string; collect
     collection: 'Foro',
   },
 };
+/**
+ * Paginas legales (S6.3). El texto visible vive en el cliente (src/data/legalDocs.ts); aqui solo van titulo,
+ * descripcion y fecha de revision para la meta SSR y el sitemap. Una prueba comprueba que no se desincronizan.
+ */
+export const LEGAL_LASTMOD = '2026-11-23';
+export const LEGAL_PAGES: Record<string, { title: string; description: string }> = {
+  '/legal/privacidad': {
+    title: 'Política de privacidad',
+    description:
+      'Qué datos trata LeonidApp, para qué los usa, dónde se almacenan y cómo puedes ejercer tus derechos de acceso, rectificación y supresión.',
+  },
+  '/legal/cookies': {
+    title: 'Política de cookies',
+    description:
+      'Qué cookies y almacenamiento local usa LeonidApp, la diferencia entre necesarias y de marketing, y cómo cambiar tu decisión en cualquier momento.',
+  },
+  '/legal/terminos': {
+    title: 'Términos de uso',
+    description:
+      'Condiciones de uso de LeonidApp: cuenta, contenido de la comunidad y aportes, conducta, moderación, ausencia de garantías y limitación de responsabilidad.',
+  },
+  '/legal/marcas': {
+    title: 'Aviso de marca y propiedad intelectual',
+    description:
+      'LeonidApp es un proyecto de aficionados no afiliado a Rockstar Games ni Take-Two Interactive. Información sobre marcas, imágenes de terceros y su procedencia.',
+  },
+  '/legal/retirada': {
+    title: 'Retirada de contenido y derechos de autor',
+    description:
+      'Canal para titulares de derechos: cómo notificar a LeonidApp una infracción, qué datos incluir, plazo de respuesta y retirada en 72 horas y contra-notificación.',
+  },
+};
+
+const legalPage = (path: string, lp: { title: string; description: string }): PageMeta =>
+  base({
+    path,
+    title: lp.title,
+    description: lp.description,
+    body: { h1: lp.title, text: lp.description },
+    jsonLd: [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'WebPage',
+        name: lp.title,
+        description: lp.description,
+        url: baseUrl() + path,
+        inLanguage: 'es',
+        dateModified: LEGAL_LASTMOD,
+        isPartOf: { '@type': 'WebSite', name: SITE_NAME, url: baseUrl() + '/' },
+      },
+      crumbs([
+        ['Inicio', '/'],
+        [lp.title, path],
+      ]),
+    ],
+  });
+
 const CATALOG_ROOT = {
   title: 'Catalogo de Leonida',
   description: 'Catalogo de vehiculos, armas, coleccionables y mas elementos de Leonida con sus estadisticas.',
@@ -200,6 +269,7 @@ const LANDING_DESCRIPTION =
 const landing = (): PageMeta =>
   base({
     path: '/',
+    preloadImage: { ...HERO_PRELOAD },
     title: 'Mapa, catálogo y guías de Leonida',
     description: LANDING_DESCRIPTION,
     jsonLd: [
@@ -520,6 +590,8 @@ export async function resolveRoute(pathname: string, search: URLSearchParams): P
     };
   }
   if (path === '/catalogo') return catalogRoot(search);
+  const legal = Object.hasOwn(LEGAL_PAGES, path) ? LEGAL_PAGES[path] : undefined;
+  if (legal) return { kind: 'page', meta: legalPage(path, legal) };
   const st = STATIC_PAGES[path];
   if (st) {
     const item = path === '/noticias' ? search.get('item') : null;
@@ -614,6 +686,12 @@ export function renderHead(meta: PageMeta): string {
     `<meta name="twitter:description" content="${e(desc)}" />`,
     `<meta name="twitter:image" content="${e(meta.image)}" />`,
   );
+  if (meta.status === 200 && meta.preloadImage) {
+    const p = meta.preloadImage;
+    lines.push(
+      `<link rel="preload" as="image" href="${e(p.href)}" type="${e(p.type)}" imagesrcset="${e(p.srcset)}" imagesizes="${e(p.sizes)}" fetchpriority="high" />`,
+    );
+  }
   if (meta.status === 200) {
     for (const ld of meta.jsonLd) lines.push(`<script type="application/ld+json">${safeJsonLd(ld)}</script>`);
   }
@@ -623,7 +701,18 @@ export function renderHead(meta: PageMeta): string {
 const MARK_RE = /<!--ssr-head-->[\s\S]*?<!--\/ssr-head-->/;
 
 /** Reemplaza los marcadores `<!--ssr-head-->`; si no existen, retira title/description/robots/canonical previos e inyecta antes de `</head>`. */
+const ROOT_RE = /<div id="root"><\/div>/;
+
+/** Fallback para rastreadores sin JS: dentro de <noscript> (no se muestra con JS, asi que no hay parpadeo ni CLS). */
+const renderBody = (meta: PageMeta): string =>
+  meta.body ? `<div id="root"><noscript><main><h1>${escHtml(meta.body.h1)}</h1><p>${escHtml(meta.body.text)}</p></main></noscript></div>` : '';
+
 export function injectHead(template: string, meta: PageMeta): string {
+  const out = injectHeadOnly(template, meta);
+  return meta.body && meta.status === 200 && ROOT_RE.test(out) ? out.replace(ROOT_RE, () => renderBody(meta)) : out;
+}
+
+function injectHeadOnly(template: string, meta: PageMeta): string {
   const block = renderHead(meta);
   if (MARK_RE.test(template)) {
     return template.replace(MARK_RE, () => `<!--ssr-head-->\n    ${block}\n    <!--/ssr-head-->`);

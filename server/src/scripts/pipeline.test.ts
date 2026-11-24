@@ -1633,3 +1633,516 @@ describe('(t) excepcion de transicion: extracto de confianza baja se actualiza, 
     assert.equal((e?.metadata_json as Record<string, unknown>)['fuente_imagen'], 'www.gtabase.com');
   });
 });
+
+describe('S2.3 politica de conflicto: compare y resolve', () => {
+  type Cmp = {
+    submission_id: string;
+    estado: string;
+    reason: string;
+    entity: { id: string; slug: string; imagen_url: string | null; capturaPropiaPendiente: boolean } | null;
+    actual: { titulo: string; descripcion: string | null; metadata: Record<string, unknown> } | null;
+    propuesta: { titulo: string; descripcion: string | null; fuente: string | null; fuente_url: string | null };
+    diferencias: Array<{ campo: string; actual: unknown; propuesta: unknown }>;
+    imagen: { actual_url: string | null; propuesta: { bytes: number; sha256: string } | null; thumb_url_propuesta: string | null };
+    puede_solo_imagen: boolean;
+    puede_aceptar: boolean;
+  };
+  const compare = async (id: string, rol: 'MODERATOR' | 'ADMIN' | 'USER' = 'MODERATOR') => asStaff('GET', `/api/admin/submissions/${id}/compare`, rol);
+  const resolve = async (id: string, body: unknown, rol: 'MODERATOR' | 'ADMIN' | 'USER' = 'MODERATOR') => asStaff('POST', `/api/admin/submissions/${id}/resolve`, rol, body);
+  /** Ficha editorial publicada (sin imagen salvo `img`) y un aporte de otra fuente que choca (conflicto) con tarjeta opcional. */
+  async function conflict(slug: string, opts: { card?: boolean; img?: string; manual?: string[] } = {}): Promise<string> {
+    await ok([ficha(slug, { metadata: { descripcion: 'Texto editorial vigente' } })]);
+    await promoteSlug(slug);
+    await Submission.deleteMany({ 'payload.slug': slug });
+    if (opts.img || opts.manual) await Entity.updateOne({ slug }, { $set: { ...(opts.img ? { imagen_url: opts.img } : {}), ...(opts.manual ? { manualEdits: opts.manual } : {}) } });
+    const r = await ok(
+      [ficha(slug, { categoria: 'Rifles', metadata: { descripcion: 'Texto del pipeline', fuente_imagen: 'www.ejemplo.test', fuente_url: 'https://www.ejemplo.test/x' }, ...(opts.card ? { tarjeta: tarjetaOf() } : {}) })],
+      { source: 'otra-fuente' },
+    );
+    assert.equal(r.conflictos, 1, JSON.stringify(r.details));
+    return (await subOf(slug))!._id;
+  }
+  const entityTextOf = async (slug: string) => {
+    const e = (await Entity.findOne({ slug }).lean())!;
+    const m = { ...(e.metadata_json as Record<string, unknown>) };
+    delete m['fuente_imagen'];
+    delete m['fuente_url'];
+    return JSON.stringify({ t: e.titulo, s: e.subtitulo, c: e.categoria, m, st: e.stats_json, h: e.contentHash, me: e.manualEdits });
+  };
+
+  it('compare: conflicto con diferencias y sin base64; nueva sin ficha; actualizada', async () => {
+    const id = await conflict('cf-cmp', { card: true });
+    const res = await compare(id);
+    assert.equal(res.statusCode, 200, res.body);
+    assert.ok(!res.body.includes(tarjetaOf().base64), 'sin base64');
+    assert.ok(!res.body.includes('"base64"'));
+    assert.match(String(res.headers['cache-control']), /no-store/);
+    const c = res.json<Cmp>();
+    assert.equal(c.reason, 'conflicto');
+    assert.equal(c.estado, 'pending');
+    assert.equal(c.entity?.slug, 'cf-cmp');
+    assert.equal(c.actual?.descripcion, 'Texto editorial vigente');
+    assert.equal(c.propuesta.descripcion, 'Texto del pipeline');
+    assert.equal(c.propuesta.fuente, 'otra-fuente');
+    assert.equal(c.propuesta.fuente_url, 'https://www.ejemplo.test/x');
+    const campos = c.diferencias.map((d) => d.campo);
+    assert.ok(campos.includes('categoria') && campos.includes('descripcion') && campos.includes('metadata.fuente'), campos.join(','));
+    assert.deepEqual(c.diferencias.find((d) => d.campo === 'categoria'), { campo: 'categoria', actual: 'Pistolas', propuesta: 'Rifles' });
+    assert.ok(!campos.includes('titulo'));
+    assert.equal(c.imagen.actual_url, null);
+    assert.equal(c.imagen.propuesta?.bytes, 64);
+    assert.match(c.imagen.propuesta?.sha256 ?? '', /^[a-f0-9]{64}$/);
+    assert.equal(c.imagen.thumb_url_propuesta, `/api/admin/submissions/${id}/tarjeta.webp`);
+    assert.equal(c.puede_solo_imagen, true);
+    assert.equal(c.puede_aceptar, true);
+
+    // nueva: sin ficha actual
+    await ok([ficha('cf-nueva')]);
+    const n = (await compare((await subOf('cf-nueva'))!._id)).json<Cmp>();
+    assert.equal(n.reason, 'nueva');
+    assert.equal(n.entity, null);
+    assert.equal(n.actual, null);
+    assert.deepEqual(n.diferencias, []);
+    assert.equal(n.puede_solo_imagen, false);
+    assert.equal(n.imagen.propuesta, null);
+    assert.equal(n.imagen.thumb_url_propuesta, null);
+
+    // actualizada
+    await ok([ficha('cf-upd')]);
+    await promoteSlug('cf-upd');
+    await ok([ficha('cf-upd', { categoria: 'Rifles' })]);
+    const u = (await compare((await subOf('cf-upd'))!._id)).json<Cmp>();
+    assert.equal(u.reason, 'actualizada');
+    assert.deepEqual(u.diferencias.map((d) => d.campo), ['categoria']);
+  });
+
+  it('compare: puede_solo_imagen false con imagen previa o imagen_url protegida; 404 inexistente; 422 si no es del pipeline', async () => {
+    const withImg = await conflict('cf-img', { card: true, img: '/assets/propia.jpg' });
+    const a = (await compare(withImg)).json<Cmp>();
+    assert.equal(a.puede_solo_imagen, false);
+    assert.equal(a.imagen.actual_url, '/assets/propia.jpg');
+    const prot = await conflict('cf-prot', { card: true, manual: ['imagen_url'] });
+    assert.equal((await compare(prot)).json<Cmp>().puede_solo_imagen, false);
+    assert.equal((await compare(randomUUID())).statusCode, 404);
+    const user = await Submission.create({ userId: randomUUID(), moduleSlug: MODULE, type: 'entity', title: 'Aporte usuario', payload: {}, status: 'pending' });
+    assert.equal((await compare(user._id)).statusCode, 422);
+  });
+
+  it('mantener: rechaza con el motivo y no toca la ficha; doble resolucion -> 409', async () => {
+    const id = await conflict('cf-keep', { card: true });
+    const before = JSON.stringify(await Entity.findOne({ slug: 'cf-keep' }).lean());
+    const assets = await MediaAsset.countDocuments();
+    const res = await resolve(id, { accion: 'mantener', nota: 'decision del propietario' });
+    assert.equal(res.statusCode, 200, res.body);
+    const out = res.json<{ ok: boolean; accion: string; submission: { status: string; reviewNote: string } }>();
+    assert.equal(out.submission.status, 'rejected');
+    assert.match(out.submission.reviewNote, /^Se mantiene la ficha editorial\. decision del propietario/);
+    assert.equal(JSON.stringify(await Entity.findOne({ slug: 'cf-keep' }).lean()), before);
+    assert.equal(await MediaAsset.countDocuments(), assets);
+    assert.equal((await resolve(id, { accion: 'mantener' })).statusCode, 409);
+    assert.equal((await resolve(id, { accion: 'solo_imagen' })).statusCode, 409);
+    assert.equal((await compare(id)).json<Cmp>().puede_aceptar, false);
+  });
+
+  it('aceptar: sin manualEdits aplica la version del pipeline; con manualEdits -> 422 y nada cambia', async () => {
+    const ok1 = await conflict('cf-acc');
+    const res = await resolve(ok1, { accion: 'aceptar' });
+    assert.equal(res.statusCode, 200, res.body);
+    const e = await Entity.findOne({ slug: 'cf-acc' }).lean();
+    assert.equal(e?.categoria, 'Rifles');
+    assert.equal((e?.metadata_json as Record<string, unknown>)['descripcion'], 'Texto del pipeline');
+    assert.equal((await Submission.findById(ok1).lean())?.status, 'approved');
+    assert.equal((await resolve(ok1, { accion: 'aceptar' })).statusCode, 409);
+
+    const locked = await conflict('cf-lock', { manual: ['titulo'] });
+    const before = await entityTextOf('cf-lock');
+    const bad = await resolve(locked, { accion: 'aceptar' });
+    assert.equal(bad.statusCode, 422, bad.body);
+    assert.match(bad.body, /titulo/);
+    assert.equal(await entityTextOf('cf-lock'), before);
+    assert.equal((await Submission.findById(locked).lean())?.status, 'pending');
+  });
+
+  it('solo_imagen: sin imagen previa fija solo imagen_url, capturaPropiaPendiente y fuente_imagen/fuente_url', async () => {
+    const id = await conflict('cf-solo', { card: true });
+    const text = await entityTextOf('cf-solo');
+    const before = (await Entity.findOne({ slug: 'cf-solo' }).lean())!;
+    const res = await resolve(id, { accion: 'solo_imagen' });
+    assert.equal(res.statusCode, 200, res.body);
+    assert.ok(!res.body.includes(tarjetaOf().base64));
+    const after = (await Entity.findOne({ slug: 'cf-solo' }).lean())!;
+    assert.match(after.imagen_url ?? '', /^\/media\/[0-9a-f-]{36}$/);
+    assert.equal(after.capturaPropiaPendiente, true);
+    const m = after.metadata_json as Record<string, unknown>;
+    assert.equal(m['fuente_imagen'], 'www.ejemplo.test');
+    assert.equal(m['fuente_url'], 'https://www.ejemplo.test/x');
+    assert.equal(await entityTextOf('cf-solo'), text, 'texto, stats, confianza, fuente y hash intactos');
+    assert.equal(after.contentHash, before.contentHash);
+    assert.equal(m['descripcion'], 'Texto editorial vigente');
+    assert.ok(!(after.manualEdits ?? []).includes('imagen_url'));
+    const asset = await MediaAsset.findById(after.imagen_url!.replace('/media/', '')).lean();
+    assert.equal(asset?.mime, 'image/webp');
+    assert.equal(asset?.width, 1600);
+    assert.notEqual(asset?.created_by, 'system');
+    const sub = await Submission.findById(id).lean();
+    assert.equal(sub?.status, 'approved');
+    assert.match(sub?.reviewNote ?? '', /^Solo imagen/);
+    assert.equal((sub?.payload as { pipeline_resolution?: string }).pipeline_resolution, 'solo_imagen');
+    assert.deepEqual(sub?.promotedTo, { collection: 'Entity', id: after._id });
+    assert.equal((await resolve(id, { accion: 'solo_imagen' })).statusCode, 409);
+  });
+
+  it('solo_imagen: con imagen previa, protegida, sin tarjeta o sin ficha -> 422 y nada cambia', async () => {
+    const withImg = await conflict('cf-s-img', { card: true, img: '/assets/propia.jpg' });
+    const noCard = await conflict('cf-s-nocard');
+    const prot = await conflict('cf-s-prot', { card: true, manual: ['imagen_url'] });
+    await ok([ficha('cf-s-nueva', { tarjeta: tarjetaOf() })]);
+    const nueva = (await subOf('cf-s-nueva'))!._id;
+    const assets = await MediaAsset.countDocuments();
+    for (const id of [withImg, noCard, prot, nueva]) {
+      const r = await resolve(id, { accion: 'solo_imagen' });
+      assert.equal(r.statusCode, 422, r.body);
+      assert.equal((await Submission.findById(id).lean())?.status, 'pending');
+    }
+    assert.equal(await MediaAsset.countDocuments(), assets);
+    assert.equal((await Entity.findOne({ slug: 'cf-s-img' }).lean())?.imagen_url, '/assets/propia.jpg');
+    assert.equal((await Entity.findOne({ slug: 'cf-s-nocard' }).lean())?.imagen_url ?? null, null);
+  });
+
+  it('valida el cuerpo y RBAC: sin sesion y USER -> 404 uniforme (antes que Zod)', async () => {
+    const id = await conflict('cf-rbac', { card: true });
+    assert.equal((await resolve(id, { accion: 'borrar' })).statusCode, 400);
+    assert.equal((await resolve(id, { accion: 'mantener', nota: 'x'.repeat(301) })).statusCode, 400);
+    const ref = await app.inject({ method: 'GET', url: '/api/admin/no-existe-xyz', remoteAddress: nextIp() });
+    assert.equal((await compare(id, 'USER')).statusCode, 404);
+    assert.equal((await resolve(id, { accion: 'borrar' }, 'USER')).statusCode, 404, 'RBAC antes que Zod');
+    const anonGet = await app.inject({ method: 'GET', url: `/api/admin/submissions/${id}/compare`, remoteAddress: nextIp() });
+    const anonPost = await app.inject({ method: 'POST', url: `/api/admin/submissions/${id}/resolve`, remoteAddress: nextIp(), headers: { 'content-type': 'application/json' }, payload: '{"accion":"mantener"}' });
+    assert.equal(anonGet.statusCode, 404);
+    assert.equal(anonGet.body, ref.body);
+    assert.equal(anonPost.statusCode, 404);
+    assert.equal((await Submission.findById(id).lean())?.status, 'pending');
+  });
+
+  it('audita submission.resolve con accion y entity_id (sin base64)', async () => {
+    const a = await conflict('cf-aud-a', { card: true });
+    const b = await conflict('cf-aud-b');
+    await resolve(a, { accion: 'solo_imagen' });
+    await resolve(b, { accion: 'mantener' });
+    const ea = (await Entity.findOne({ slug: 'cf-aud-a' }).lean())!;
+    const eb = (await Entity.findOne({ slug: 'cf-aud-b' }).lean())!;
+    const la = await AuditLog.findOne({ action: 'submission.resolve', target_id: a }).lean();
+    const lb = await AuditLog.findOne({ action: 'submission.resolve', target_id: b }).lean();
+    assert.equal((la?.metadata as Record<string, unknown>)['accion'], 'solo_imagen');
+    assert.equal((la?.metadata as Record<string, unknown>)['entity_id'], ea._id);
+    assert.equal((lb?.metadata as Record<string, unknown>)['accion'], 'mantener');
+    assert.equal((lb?.metadata as Record<string, unknown>)['entity_id'], eb._id);
+    assert.ok(!JSON.stringify([la, lb]).includes(tarjetaOf().base64));
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// S6.4 / S5.5: validacion SEO tecnica (matriz ruta -> resultado) y parseo de la fuente de noticias.
+// ---------------------------------------------------------------------------------------------
+const { LEGAL_PAGES, LEGAL_LASTMOD } = await import('../services/ssrLite.js');
+const { parseFeed, officialNewsSchema } = await import('../workers/officialNewsWorker.js');
+const { NEWS_SOURCES: NEWS_SOURCE_LIST, isAllowedUrl, isRelevant } = await import('../workers/sources.js');
+const { mkdtempSync, writeFileSync, rmSync } = await import('node:fs');
+const { tmpdir } = await import('node:os');
+const { join, resolve: resolvePath } = await import('node:path');
+
+describe('(S6.4) validacion SEO: JSON-LD, canonical, 301/404, sitemap y robots', () => {
+  const realIndex = process.env['CLIENT_DIST_INDEX'];
+  let dir: string;
+  let armasId: string;
+  let guiasId: string;
+  let radioId: string;
+  const get = (url: string) => app.inject({ method: 'GET', url, remoteAddress: nextIp() });
+  const ldBlocks = (html: string): Array<Record<string, unknown>> =>
+    [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]!) as Record<string, unknown>);
+  const typesOf = (html: string): string[] => ldBlocks(html).map((b) => String(b['@type']));
+  const tag = (html: string, re: RegExp): string | undefined => re.exec(html)?.[1];
+  const canonicals = (html: string): string[] => [...html.matchAll(/<link rel="canonical" href="([^"]*)"/g)].map((m) => m[1]!);
+  const robotsOf = (html: string) => tag(html, /<meta name="robots" content="([^"]*)"/);
+  const descOf = (html: string) => tag(html, /<meta name="description" content="([^"]*)"/);
+  const titleOf = (html: string) => tag(html, /<title>([^<]*)<\/title>/);
+  const html200: Array<{ path: string; html: string }> = [];
+  const page = async (path: string) => {
+    const r = await get(path);
+    assert.equal(r.statusCode, 200, `${path}: ${r.statusCode}`);
+    html200.push({ path, html: r.body });
+    return r.body;
+  };
+  const sitemapLocs = async (): Promise<string[]> => {
+    const r = await get('/sitemap.xml');
+    assert.equal(r.statusCode, 200);
+    return [...r.body.matchAll(/<loc>([^<]*)<\/loc>/g)].map((m) => m[1]!);
+  };
+  const GUIDE_STEPS = [1, 2, 3, 4].map((n) => ({ id: `paso-${n}`, title: `Paso ${n} de la guia`, body: `Texto original del paso ${n} para la guia de prueba.` }));
+
+  before(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'leonidapp-seo-'));
+    const idx = join(dir, 'index.html');
+    writeFileSync(idx, '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>x</title></head><body><div id="root"></div></body></html>');
+    process.env['CLIENT_DIST_INDEX'] = idx;
+    await Promise.all([Module.deleteMany({}), Entity.deleteMany({}), OfficialNews.deleteMany({})]);
+    armasId = randomUUID();
+    guiasId = randomUUID();
+    radioId = randomUUID();
+    await Module.create([
+      { _id: armasId, slug: 'armas', nombre: 'Armas', icono: 'gun', activo: true, orden: 1 },
+      { _id: guiasId, slug: 'guias', nombre: 'Guias', icono: 'book', activo: true, orden: 2 },
+      { _id: randomUUID(), slug: 'vehiculos', nombre: 'Vehiculos', icono: 'car', activo: true, orden: 3 }, // activo pero sin fichas
+      { _id: radioId, slug: 'radio', nombre: 'Radio', icono: 'radio', activo: false, orden: 4 },
+    ]);
+    await OfficialNews.create({
+      title: 'Rockstar Games anuncia novedades de prueba',
+      summary: 'Resumen oficial de prueba.',
+      sourceUrl: 'https://ir.take2games.com/news-releases/prueba-seo',
+      source: 'take-two-ir',
+      publishedAt: new Date('2026-11-03T10:00:00Z'),
+      slug: 'rockstar-games-anuncia-novedades-de-prueba-abcd1234',
+    });
+    clearSsrCache();
+  });
+
+  // El beforeEach raiz vacia Entity en cada prueba: las fichas de esta suite se vuelven a sembrar.
+  beforeEach(async () => {
+    await Entity.create([
+      { _id: randomUUID(), module_id: armasId, slug: 'pistola-uno', titulo: 'Pistola Uno', categoria: 'Pistolas', metadata_json: { descripcion: 'Descripcion editorial original de la pistola uno.' } },
+      { _id: randomUUID(), module_id: armasId, slug: 'pistola-dos', titulo: 'Pistola Dos', categoria: 'Pistolas', metadata_json: { descripcion: 'Descripcion editorial original de la pistola dos.' } },
+      { _id: randomUUID(), module_id: armasId, slug: 'fusil-tres', titulo: 'Fusil Tres', categoria: 'Fusiles', subtitulo: 'Subtitulo propio del fusil tres' },
+      { _id: randomUUID(), module_id: guiasId, slug: 'guia-pasos', titulo: 'Guia con pasos', categoria: 'Misiones', metadata_json: { descripcion: 'Guia original con pasos.', steps: GUIDE_STEPS } },
+      { _id: randomUUID(), module_id: radioId, slug: 'emisora-oculta', titulo: 'Emisora oculta', categoria: 'Radio' },
+    ]);
+    clearSsrCache();
+  });
+
+  after(() => {
+    if (realIndex === undefined) delete process.env['CLIENT_DIST_INDEX'];
+    else process.env['CLIENT_DIST_INDEX'] = realIndex;
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('landing: WebSite con SearchAction y Organization, y canonical absoluto', async () => {
+    const h = await page('/');
+    const lds = ldBlocks(h);
+    const site = lds.find((b) => b['@type'] === 'WebSite');
+    assert.ok(site, 'WebSite');
+    assert.equal((site['potentialAction'] as Record<string, unknown>)['@type'], 'SearchAction');
+    assert.ok(lds.some((b) => b['@type'] === 'Organization'), 'Organization');
+    assert.deepEqual(canonicals(h), [baseUrl() + '/']);
+  });
+
+  it('preload de la imagen LCP del hero solo en /, igual al srcset/sizes del <img>', async () => {
+    const preloads = (html: string) => [...html.matchAll(/<link rel="preload"[^>]*>/g)].map((m) => m[0]);
+    const h = await page('/');
+    const p = preloads(h);
+    assert.equal(p.length, 1);
+    assert.ok(p[0]!.includes('as="image"') && p[0]!.includes('fetchpriority="high"') && p[0]!.includes('type="image/webp"'));
+    assert.ok(p[0]!.includes('href="/assets/hero-gas-station-800.webp"'));
+    assert.ok(p[0]!.includes('imagesrcset="/assets/hero-gas-station-800.webp 800w, /assets/hero-gas-station.jpg 1080w"'));
+    assert.ok(p[0]!.includes('imagesizes="(min-width: 768px) 55vw, 100vw"'));
+    assert.ok(h.indexOf('rel="preload"') < h.indexOf('</head>'));
+    for (const path of ['/mapa', '/noticias', '/guias/guia-pasos', '/catalogo/armas/pistola-uno']) {
+      assert.equal(preloads((await get(path)).body).length, 0, path);
+    }
+  });
+
+  it('ficha: CreativeWork + BreadcrumbList; guia: HowTo con >= 3 HowToStep + BreadcrumbList', async () => {
+    const f = await page('/catalogo/armas/pistola-uno');
+    assert.deepEqual(typesOf(f), ['CreativeWork', 'BreadcrumbList']);
+    const g = await page('/guias/guia-pasos');
+    assert.deepEqual(typesOf(g), ['HowTo', 'BreadcrumbList']);
+    const steps = ldBlocks(g)[0]!['step'] as Array<Record<string, unknown>>;
+    assert.ok(steps.length >= 3);
+    assert.ok(steps.every((s) => s['@type'] === 'HowToStep' && typeof s['name'] === 'string' && typeof s['text'] === 'string'));
+  });
+
+  it('noticias: /noticias CollectionPage y /noticias/:slug NewsArticle', async () => {
+    assert.deepEqual(typesOf(await page('/noticias')), ['CollectionPage', 'BreadcrumbList']);
+    const n = await page('/noticias/rockstar-games-anuncia-novedades-de-prueba-abcd1234');
+    assert.deepEqual(typesOf(n), ['NewsArticle', 'BreadcrumbList']);
+  });
+
+  it('categoria con fichas: CollectionPage; categoria activa vacia: 200 noindex sin canonical ni JSON-LD', async () => {
+    assert.deepEqual(typesOf(await page('/catalogo/armas')), ['CollectionPage', 'BreadcrumbList']);
+    const v = await get('/catalogo/vehiculos');
+    assert.equal(v.statusCode, 200);
+    assert.equal(robotsOf(v.body), 'noindex,follow');
+    assert.equal(canonicals(v.body).length, 0);
+    assert.equal(typesOf(v.body).length, 0);
+  });
+
+  it('legales: 5 rutas con WebPage + BreadcrumbList, meta propia, canonical, og/twitter, h1 SSR y sin 404', async () => {
+    for (const [path, lp] of Object.entries(LEGAL_PAGES)) {
+      const h = await page(path);
+      assert.deepEqual(typesOf(h), ['WebPage', 'BreadcrumbList'], path);
+      assert.equal(robotsOf(h), 'index,follow', path);
+      assert.deepEqual(canonicals(h), [baseUrl() + path], path);
+      assert.ok(titleOf(h)!.startsWith(lp.title), String(titleOf(h)));
+      assert.equal(descOf(h), lp.description);
+      assert.ok(/<meta property="og:image" content="https?:\/\//.test(h), 'og:image');
+      assert.ok(h.includes('name="twitter:card"') && h.includes('name="twitter:image"'));
+      assert.ok(h.includes(`<noscript><main><h1>${lp.title}</h1><p>`), 'h1 SSR en noscript');
+    }
+    assert.equal((await get('/legal/xyz')).statusCode, 404);
+    assert.equal((await get('/legal')).statusCode, 404);
+    assert.equal((await get('/LEGAL/PRIVACIDAD')).statusCode, 301);
+  });
+
+  it('legales: titulo y descripcion coinciden con src/data/legalDocs.ts (el texto visible)', () => {
+    const file = resolvePath(process.cwd(), '..', 'src', 'data', 'legalDocs.ts');
+    if (!existsSync(file)) return; // ejecucion fuera del repo completo
+    const src = readFileSync(file, 'utf8').replace(/\s+/g, ' ');
+    for (const [path, lp] of Object.entries(LEGAL_PAGES)) {
+      assert.ok(src.includes(`path: '${path}'`), path);
+      assert.ok(src.includes(`title: '${lp.title}'`), `titulo ${path}`);
+      assert.ok(src.includes(`description: '${lp.description}'`), `descripcion ${path}`);
+    }
+    assert.ok(src.includes(`LEGAL_UPDATED = '${LEGAL_LASTMOD}'`), 'fecha de revision');
+  });
+
+  it('canonical unico y absoluto en toda pagina indexable; titulos y descripciones unicos por ficha', async () => {
+    for (const p of ['/mapa', '/guias', '/foro', '/catalogo/armas/pistola-dos', '/catalogo/armas/fusil-tres']) await page(p);
+    const seen = new Set<string>();
+    for (const { path, html } of html200) {
+      if (robotsOf(html)?.startsWith('noindex')) continue;
+      const c = canonicals(html);
+      assert.equal(c.length, 1, `${path}: ${c.length} canonical`);
+      assert.ok(/^https?:\/\//.test(c[0]!), String(c[0]));
+      assert.ok(!c[0]!.includes('#') && !c[0]!.includes('?'), String(c[0]));
+      assert.ok(!seen.has(c[0]!) || html200.filter((h) => h.path === path).length > 1, `canonical repetido: ${c[0]}`);
+      seen.add(c[0]!);
+    }
+    const fichas = html200.filter((h) => h.path.startsWith('/catalogo/armas/'));
+    assert.equal(fichas.length, 3);
+    assert.equal(new Set(fichas.map((f) => titleOf(f.html))).size, fichas.length, 'titulos unicos');
+    assert.equal(new Set(fichas.map((f) => descOf(f.html))).size, fichas.length, 'descripciones unicas');
+  });
+
+  it('/catalogo redirige 301 a la primera categoria visible; /catalogo/mapa a /mapa', async () => {
+    const r = await get('/catalogo');
+    assert.equal(r.statusCode, 301);
+    assert.equal(r.headers['location'], '/catalogo/armas');
+    assert.equal((await get('/catalogo/mapa')).headers['location'], '/mapa');
+  });
+
+  it('404 real con noindex y sin canonical ni JSON-LD: inexistentes y categorias ocultas', async () => {
+    for (const p of ['/ruta-que-no-existe', '/legal/xyz', '/catalogo/radio', '/catalogo/radio/emisora-oculta', '/catalogo/armas/no-existe', '/noticias/no-existe', '/guias/no-existe', '/catalogo/no-existe']) {
+      const r = await get(p);
+      assert.equal(r.statusCode, 404, p);
+      assert.equal(robotsOf(r.body), 'noindex,nofollow', p);
+      assert.equal(canonicals(r.body).length, 0, p);
+      assert.equal(typesOf(r.body).length, 0, p);
+    }
+  });
+
+  it('/_staff y /api/admin/*: 404 uniforme para anonimo (igual que una ruta inexistente)', async () => {
+    const miss = await get('/ruta-que-no-existe');
+    for (const p of ['/_staff', '/_staff/', '/_staff/anything', '/%5Fstaff', '/_STAFF']) {
+      const r = await get(p);
+      assert.equal(r.statusCode, 404, p);
+      assert.equal(r.body, miss.body, p);
+    }
+    const apiMiss = await get('/api/admin/no-existe-xyz');
+    assert.equal(apiMiss.statusCode, 404);
+    for (const p of ['/api/admin/overview', '/api/admin/pipeline/runs', '/api/admin/submissions']) {
+      const r = await get(p);
+      assert.equal(r.statusCode, 404, p);
+      assert.equal(r.body, apiMiss.body, p);
+    }
+  });
+
+  it('ningun HTML SSR incluye texto de depuracion', async () => {
+    const all = [...html200.map((h) => h.html), (await get('/ruta-que-no-existe')).body, (await get('/catalogo/vehiculos')).body];
+    for (const h of all) {
+      assert.ok(!/undefined|\[object Object\]|\bNaN\b|\bnull\b|Traceback|Error:|stack|console\.|TODO|FIXME|lorem ipsum/i.test(h), 'texto de depuracion en el HTML');
+    }
+  });
+
+  it('robots.txt: Allow /, Disallow /api/, Sitemap absoluto y sin /_staff', async () => {
+    const r = await get('/robots.txt');
+    assert.equal(r.statusCode, 200);
+    assert.ok(r.body.includes('User-agent: *\nAllow: /\nDisallow: /api/'));
+    assert.ok(r.body.includes(`Sitemap: ${baseUrl()}/sitemap.xml`));
+    assert.ok(!/staff/i.test(r.body));
+  });
+
+  it('sitemap.xml: sin hash/staff/duplicados, sin modulos inactivos ni categorias vacias, legales con prioridad 0.3, lastmod valido', async () => {
+    const r = await get('/sitemap.xml');
+    assert.match(String(r.headers['content-type']), /xml/);
+    const locs = await sitemapLocs();
+    assert.equal(new Set(locs).size, locs.length, 'duplicados');
+    assert.ok(locs.length <= 50_000);
+    assert.ok(locs.every((l) => l.startsWith(baseUrl()) && !l.includes('#') && !l.includes('?') && !/staff|\/api\//i.test(l)));
+    const must = ['/', '/mapa', '/guias', '/noticias', '/foro', '/catalogo/armas', '/catalogo/armas/pistola-uno', '/guias/guia-pasos', '/noticias/rockstar-games-anuncia-novedades-de-prueba-abcd1234', ...Object.keys(LEGAL_PAGES)];
+    for (const m of must) assert.ok(locs.includes(baseUrl() + m), `falta ${m}`);
+    for (const m of ['/catalogo/radio', '/catalogo/radio/emisora-oculta', '/catalogo/vehiculos', '/catalogo']) assert.ok(!locs.includes(baseUrl() + m), `sobra ${m}`);
+    const legalBlocks = [...r.body.matchAll(/<url><loc>[^<]*\/legal\/[^<]*<\/loc>([^]*?)<\/url>/g)];
+    assert.equal(legalBlocks.length, 5);
+    for (const b of legalBlocks) assert.ok(b[1]!.includes('<priority>0.3</priority>') && b[1]!.includes(`<lastmod>${LEGAL_LASTMOD}`), String(b[1]));
+    for (const m of r.body.matchAll(/<lastmod>([^<]*)<\/lastmod>/g)) assert.ok(!Number.isNaN(Date.parse(m[1]!)), String(m[1]));
+    assert.equal([...r.body.matchAll(/<priority>/g)].length, 5, 'solo las legales declaran priority');
+  });
+
+  it('sitemap y SSR se actualizan al instante: promote anade la URL; DELETE de la ficha la retira', async () => {
+    const slug = 'sitemap-nueva';
+    await ok([ficha(slug, { titulo: 'Ficha de sitemap' })]);
+    const antes = await sitemapLocs();
+    assert.ok(!antes.includes(`${baseUrl()}/catalogo/armas/${slug}`), 'pendiente: aun no esta');
+    await promoteSlug(slug);
+    const t0 = Date.now();
+    const trasPromote = await sitemapLocs();
+    assert.ok(trasPromote.includes(`${baseUrl()}/catalogo/armas/${slug}`), 'promote -> sitemap');
+    assert.equal(trasPromote.length, antes.length + 1);
+    assert.equal((await get(`/catalogo/armas/${slug}`)).statusCode, 200);
+    const e = (await Entity.findOne({ slug }).lean())!;
+    const del = await app.inject({ method: 'DELETE', url: `/api/entities/${e._id}`, remoteAddress: nextIp(), headers: { cookie: await staffCookie('ADMIN') } });
+    assert.equal(del.statusCode, 204, del.body);
+    const trasDelete = await sitemapLocs();
+    assert.ok(!trasDelete.includes(`${baseUrl()}/catalogo/armas/${slug}`), 'DELETE -> sitemap');
+    assert.equal(trasDelete.length, antes.length);
+    assert.equal((await get(`/catalogo/armas/${slug}`)).statusCode, 404, 'DELETE invalida la cache SSR');
+    assert.ok(Date.now() - t0 < 2000, 'actualizacion inmediata (sin cache de sitemap en servidor)');
+  });
+
+  it('GET /api/news valida con Zod: limite fuera de rango 400, fuente desconocida 400, lista publica', async () => {
+    assert.equal((await get('/api/news?limit=0')).statusCode, 400);
+    assert.equal((await get('/api/news?limit=51')).statusCode, 400);
+    assert.equal((await get('/api/news?source=medio-tercero')).statusCode, 400);
+    const ok200 = await get('/api/news?limit=5');
+    assert.equal(ok200.statusCode, 200);
+    const rows = ok200.json<Array<{ slug: string; sourceUrl: string; source: string }>>();
+    assert.ok(rows.length >= 1 && rows.every((n) => isAllowedUrl(n.sourceUrl)));
+  });
+});
+
+describe('(S5.5) noticias oficiales: parseo con respuesta real de ir.take2games.com y lista blanca', () => {
+  // Respuesta real de https://ir.take2games.com/rss/news-releases.xml (2026-11-23), recortada a 4 items.
+  const FIXTURE: string = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<rss xmlns:dc=\"http://purl.org/dc/elements/1.1/\" version=\"2.0\" xml:base=\"https://ir.take2games.com/\">\n  <channel>\n    <title>Take-Two Interactive Software, Inc. News Releases</title>\n    <link>https://ir.take2games.com/</link>\n    <description>Take-Two Interactive Software, Inc. News Releases</description>\n    <language>en</language>\n<item>\n  <title>Take-Two Interactive Software, Inc. to Report Second Quarter Fiscal Year 2027 Results on Monday, November 9, 2026</title>\n  <link>https://ir.take2games.com/news-releases/news-release-details/take-two-interactive-software-inc-report-second-quarter-fiscal-8</link>\n  <description>NEW YORK --(BUSINESS WIRE)--Oct. 13, 2026-- Take-Two Interactive Software, Inc. (NASDAQ: TTWO) today announced that it plans to report financial results for its second quarter of fiscal year 2027, ended September 30, 2026, after the market close on Monday, November 9, 2026.</description>\n  <pubDate>Tue, 13 Oct 2026 08:00:00 -0400</pubDate>\n    <dc:creator>Take-Two Interactive Software, Inc. News Releases</dc:creator>\n    <guid isPermaLink=\"false\">32631</guid>\n    </item>\n<item>\n  <title>Ball Over Everything in NBA® 2K27 Now Available Worldwide</title>\n  <link>https://ir.take2games.com/news-releases/news-release-details/ball-over-everything-nbar-2k27-now-available-worldwide</link>\n  <description>Experience balanced two-way gameplay, run the first Co-Ed City featuring new environments, rewrite history in the all-new MyCAREER Eras mode, and more E xecutive Summary: Now Available Worldwide: NBA 2K27 is now available on PS5, XBOX Series X|S, PC via Steam, and Nintendo Switch™ 2 in three</description>\n  <pubDate>Fri, 04 Sep 2026 10:00:00 -0400</pubDate>\n    <dc:creator>Take-Two Interactive Software, Inc. News Releases</dc:creator>\n    <guid isPermaLink=\"false\">32491</guid>\n    </item>\n<item>\n  <title>Rockstar Games Announces Pre-Orders for Grand Theft Auto VI</title>\n  <link>https://ir.take2games.com/news-releases/news-release-details/rockstar-games-announces-pre-orders-grand-theft-auto-vi</link>\n  <description>Starting at Midnight Local Time on June 25, 2026 NEW YORK --(BUSINESS WIRE)--Jun. 24, 2026-- Rockstar Games ®, a publishing label of Take-Two Interactive Software, Inc. (NASDAQ: TTWO), is excited to announce that pre-orders for Grand Theft Auto VI will begin on June 25, 2026, at midnight local</description>\n  <pubDate>Wed, 24 Jun 2026 06:15:00 -0400</pubDate>\n    <dc:creator>Take-Two Interactive Software, Inc. News Releases</dc:creator>\n    <guid isPermaLink=\"false\">32311</guid>\n    </item>\n<item>\n  <title>Take-Two Interactive Software, Inc. Reports Results for Fourth Quarter and Fiscal Year 2026</title>\n  <link>https://ir.take2games.com/news-releases/news-release-details/take-two-interactive-software-inc-reports-results-fourth-2</link>\n  <description>$1.58 billion fiscal fourth quarter Net Bookings, above Company's guidance range $6.72 billion fiscal year 2026 Net Bookings Initial outlook for fiscal 2027 includes Net Bookings of $8.0 to $8.2 billion NEW YORK --(BUSINESS WIRE)--May 21, 2026-- Take-Two Interactive Software, Inc.</description>\n  <pubDate>Thu, 21 May 2026 16:05:00 -0400</pubDate>\n    <dc:creator>Take-Two Interactive Software, Inc. News Releases</dc:creator>\n    <guid isPermaLink=\"false\">32161</guid>\n    </item>\n</channel></rss>";
+  const src = NEWS_SOURCE_LIST[0]!;
+
+  it('parsea 4 items, valida con Zod y el filtro de relevancia deja solo la nota de Rockstar/GTA', () => {
+    const raw = parseFeed(FIXTURE, src);
+    assert.equal(raw.length, 4);
+    const items = raw.map((r) => officialNewsSchema.safeParse(r)).flatMap((p) => (p.success ? [p.data] : []));
+    assert.equal(items.length, 4);
+    const rel = items.filter((i) => isRelevant(src, i.title, i.summary));
+    assert.equal(rel.length, 1);
+    assert.match(rel[0]!.title, /Grand Theft Auto VI/);
+    assert.equal(rel[0]!.source, 'take-two-ir');
+    assert.ok(rel[0]!.sourceUrl.startsWith('https://ir.take2games.com/news-releases/'));
+    assert.ok(rel[0]!.summary.length <= 283, 'extracto breve, no el articulo completo');
+    assert.ok(rel[0]!.publishedAt instanceof Date && !Number.isNaN(rel[0]!.publishedAt.getTime()));
+  });
+
+  it('lista blanca: rechaza hosts de terceros, http y suplantaciones de dominio', () => {
+    assert.equal(isAllowedUrl('https://ir.take2games.com/x'), true);
+    assert.equal(isAllowedUrl('https://www.rockstargames.com/newswire'), true);
+    for (const bad of ['https://www.ign.com/x', 'http://ir.take2games.com/x', 'https://ir.take2games.com.evil.com/x', 'https://evil.com/?u=ir.take2games.com', 'javascript:alert(1)']) {
+      assert.equal(isAllowedUrl(bad), false, bad);
+    }
+    assert.equal(officialNewsSchema.safeParse({ title: 'Tres', summary: 'x', sourceUrl: 'https://www.ign.com/a', source: 'take-two-ir', publishedAt: new Date() }).success, false);
+  });
+});

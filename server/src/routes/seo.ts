@@ -7,7 +7,7 @@ import Module from '../models/Module.js';
 import { ROLE_RANK } from '../models/User.js';
 import { buildHtmlCsp } from '../services/csp.js';
 import OfficialNews from '../models/OfficialNews.js';
-import { baseUrl, clientDistDir, escHtml, injectHead, loadTemplate, resolveRoute } from '../services/ssrLite.js';
+import { LEGAL_LASTMOD, LEGAL_PAGES, baseUrl, clientDistDir, escHtml, injectHead, loadTemplate, resolveRoute } from '../services/ssrLite.js';
 
 const MAX_URLS = 50_000;
 const GUIDES_MODULE = 'guias';
@@ -19,6 +19,8 @@ const STATIC_PATHS = ['/', '/mapa', '/guias', '/noticias', '/foro'];
 interface UrlEntry {
   loc: string; // ruta limpia, sin '#' ni query
   lastmod?: Date;
+  /** Solo paginas de baja prioridad (legales); el resto no declara <priority>. */
+  priority?: number;
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Doc = Record<string, any>;
@@ -85,7 +87,8 @@ export async function collectUrls(): Promise<UrlEntry[]> {
   const statics = STATIC_PATHS.map((p) => ({ loc: p, lastmod: staticLastmod[p] }));
   // Sin duplicados por URL (la primera aparicion gana).
   const seen = new Set<string>();
-  return [...statics, ...categories, ...catalog, ...guides, ...newsUrls].filter((u) => !seen.has(u.loc) && !!seen.add(u.loc));
+  const legal: UrlEntry[] = Object.keys(LEGAL_PAGES).map((loc) => ({ loc, lastmod: new Date(LEGAL_LASTMOD), priority: 0.3 }));
+  return [...statics, ...categories, ...catalog, ...guides, ...newsUrls, ...legal].filter((u) => !seen.has(u.loc) && !!seen.add(u.loc));
 }
 
 const lm = (d?: Date) => (d ? `<lastmod>${d.toISOString()}</lastmod>` : '');
@@ -94,7 +97,7 @@ const NS = 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"';
 
 const urlset = (urls: UrlEntry[], base: string) =>
   `${XML}<urlset ${NS}>${urls
-    .map((u) => `<url><loc>${escHtml(base + (u.loc === '/' ? '/' : u.loc))}</loc>${lm(u.lastmod)}</url>`)
+    .map((u) => `<url><loc>${escHtml(base + (u.loc === '/' ? '/' : u.loc))}</loc>${lm(u.lastmod)}${u.priority !== undefined ? `<priority>${u.priority.toFixed(1)}</priority>` : ''}</url>`)
     .join('')}</urlset>`;
 
 const MIME: Record<string, string> = {
@@ -198,7 +201,7 @@ async function sendStatic(
 
 export async function registerSeoRoutes(app: FastifyInstance): Promise<void> {
   const sendXml = (reply: import('fastify').FastifyReply, body: string) =>
-    reply.header('Cache-Control', 'public, max-age=3600').type('application/xml; charset=utf-8').send(body);
+    reply.header('Cache-Control', 'public, max-age=300').type('application/xml; charset=utf-8').send(body);
 
   app.get('/sitemap.xml', async (_req, reply) => {
     const base = baseUrl();
