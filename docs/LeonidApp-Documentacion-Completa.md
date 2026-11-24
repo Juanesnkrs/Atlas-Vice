@@ -398,7 +398,7 @@ flowchart LR
 |---|---|---|
 | **Offline-first** | La app arranca con datos de IndexedDB y semilla; la red solo sincroniza. El progreso se guarda local y se empuja cuando hay sesión y conexión | 🟡 Progreso offline sí (`useProgressStore.ts`); la caché de datos del servidor vive solo en memoria (sin `persistQueryClient`) y no hay service worker |
 | **History API sin router externo** | URLs limpias (`/catalogo/armas/pistola`) con un router propio; migra `#/ruta` a `/ruta` | ✅ `useRouteStore.ts:390-503` |
-| **SSR-lite en Fastify** | El servidor sirve el `index.html` del cliente con `<title>`, descripción, canonical, Open Graph, Twitter y JSON-LD según la ruta, sin renderizar React en servidor; 404 reales con `noindex`; caché de 5 min | ✅ `server/src/services/ssrLite.ts`; 🟡 la caché no se invalida en el CRUD de administración |
+| **SSR-lite en Fastify** | El servidor sirve el `index.html` del cliente con `<title>`, descripción, canonical, Open Graph, Twitter y JSON-LD según la ruta, sin renderizar React en servidor; 404 reales con `noindex`; caché de 5 min. En `/` (solo ahí) inyecta además un **hero estático** `#ssr-hero` con CSS crítico en línea y un preload único de la imagen LCP, y difiere el arranque del cliente hasta que ese hero se pinta (`server/src/services/ssrHero.ts`; contrato de geometría con el cliente en `docs/LeonidApp-Rutas-SEO-Monetizacion.md` §3.1). CSP de HTML sin Google Fonts (`font-src 'self'`; fuentes en `/fonts/`) | ✅ `server/src/services/ssrLite.ts`, `ssrHero.ts`; 🟡 la caché no se invalida en el CRUD de administración |
 | **RBAC en servidor** | Jerarquía `GUEST < USER < MODERATOR < ADMIN < SUPER_ADMIN`; cada ruta aplica `requireAuth`/`requireRole`; el rol se lee de BD en cada petición; las guardas del cliente son cosméticas | ✅ `plugins/auth.ts:15-33` |
 | **Polimorfismo `Entity` + JSON** | Una sola colección `Entity` para armas, vehículos, mapa, guías y coleccionables, con `stats_json` y `metadata_json` flexibles y clave única `{module_id, slug}`; añadir un módulo no exige nuevas colecciones | ✅ `models/Entity.ts:48-49` |
 | **Sesión por cookie HttpOnly** | El cliente nunca lee el token; solo se guarda `guestMode` en IndexedDB | ✅ `useAuthStore.ts:262-267` |
@@ -452,7 +452,7 @@ En prosa: (1) la UI cambia el estado local y lo persiste en IndexedDB de inmedia
 | Datos del mundo | `useWorldData` arranca con `SEED_WORLD` y refresca desde la API; si la API falla conserva lo que hay; si devuelve 0 entidades y 0 marcadores usa la semilla | 🟡 La caché de consultas no se persiste: sin red tras recargar solo queda la semilla |
 | Noticias | Sin API la lista queda vacía; nunca usa semilla | ✅ (por diseño) |
 | Foro | Sin API publica solo "en esta sesión"; con API actualiza cada 20 s | 🟡 |
-| Service worker / manifest | Existen (`public/sw.js` v10, `manifest.webmanifest`, iconos 192/512/maskable, `apple-touch-icon`); instalable y con modo sin conexión. Detalle en DesignSpec §7.14 (S6.1, 2026-11-23) | ✅ |
+| Service worker / manifest | Existen (`public/sw.js` v11, `manifest.webmanifest`, iconos 192/512/maskable, `apple-touch-icon`); instalable y con modo sin conexión. Detalle en DesignSpec §7.14 (S6.1, 2026-11-23) | ✅ |
 | Claves heredadas | IndexedDB usa claves `atlas-vice-auth` y `atlas-vice-progress` (nombre antiguo) | ⚠️ cosmético |
 
 > ⚠️ **Brecha:** RNF-02 pide "carga < 2 s y catálogo/estado funcionando sin internet". Hoy lo que funciona offline es el progreso y la semilla embebida (23 entidades de ejemplo), no las 227 fichas reales, porque no se cachean en el dispositivo. La carga < 2 s no se midió (❓).
@@ -3230,12 +3230,12 @@ Control Total (SUPER_ADMIN):
 | Reserva de dock | `--dock-reserve: calc(92px + safe-bottom)`; 112 px en `md+` | Padding inferior |
 | Capas z | `--z-dock 40`, `--z-sheet-backdrop 50` (clase sin uso), `--z-sheet 55`, `--z-dialog 70` | Apilado |
 | Footer | Fondo `#000000` | `RockstarFooter` |
-| Fuentes | Display **Jost** (500/600/700), cuerpo **Poppins** (400/500/600) vía Google Fonts (`index.html:10-11`) | Sin red caen a `system-ui` |
+| Fuentes | Display **Jost** (variable 500-700), cuerpo **Poppins** (400/500/600), WOFF2 latino alojado en `public/fonts/` (SIL OFL 1.1) y declarado en `vice-nui.css` con respaldos de métricas ajustadas (`Poppins Fallback`, `Jost Fallback`) | Sin red siguen disponibles (cache-first del SW) |
 | Animaciones | `slide-up`, `slide-in-right` (0.28 s), `vice-pulse` (1.6 s) | Hojas y pulso |
 | Scrollbars | Oscuros globales con pulgar sunset | Todas |
 | `theme-color` | `#2E1A47` | Barra del navegador |
 
-> ⚠️ **Brecha:** las fuentes se cargan de Google Fonts en tiempo de ejecución (no empaquetadas): offline y en la app nativa sin red se usa `system-ui`, y hay una dependencia de tercero (privacidad/RGPD). Poppins 700 no se solicita pero se usa `font-bold` (síntesis del navegador, ❓).
+> ✅ **Cerrado (2026-11-24, G-10):** las fuentes ya no se piden a Google: se sirven desde el propio origen (`public/fonts/`), el sitio no hace peticiones a terceros al cargar y el CLS por cambio de fuente es 0 en la portada. Poppins 700 no se solicita pero se usa `font-bold`: el navegador usa el peso 600 más cercano (sin síntesis).
 
 ### 28.2 Componentes
 
@@ -3400,7 +3400,7 @@ Acceso: `RequireAccount`. Sin API todos los envíos quedan desactivados.
 | Selector de idioma ES/EN | ⚠️ Guarda cookie `leonidapp_lang` pero **solo traduce el Footer**; no cambia `html lang` ni el resto de la app |
 | Consentimiento de cookies | ⚠️ La cookie `leonidapp_consent` se crea solo al guardar en "Ajustes de cookies"; no hay banner en el primer arranque y **nada en el cliente la lee** (AdSlot no la consulta) |
 | Pantalla "No encontrada" / módulo desactivado | `Unavailable` con botón "Volver al Hub"; sin meta propia |
-| Fuentes | Google Fonts en ejecución |
+| Fuentes | WOFF2 propio en `public/fonts/` (sin terceros) |
 
 ---
 
