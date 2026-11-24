@@ -1,3 +1,4 @@
+import { V1_HIDDEN_PATHS } from '../services/v1.js';
 import { createReadStream, realpath as realpathCb } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { pipeline } from 'node:stream';
@@ -17,7 +18,7 @@ const GUIDES_MODULE = 'guias';
 /** Módulos con fichas que no se indexan en el sitemap (el mapa ya tiene su propia ruta /mapa). */
 const SITEMAP_EXCLUDED_MODULES = new Set(['mapa']);
 // Rutas publicas indexables de docs §1.1 (sin /aportar, que es noindex).
-const STATIC_PATHS = ['/', '/mapa', '/guias', '/noticias', '/foro'];
+const STATIC_PATHS = ['/', '/mapa', '/guias', '/noticias', '/foro'].filter((p) => !V1_HIDDEN_PATHS.has(p));
 
 interface UrlEntry {
   loc: string; // ruta limpia, sin '#' ni query

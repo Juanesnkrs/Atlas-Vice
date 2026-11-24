@@ -1,5 +1,6 @@
 import { Entity } from '../models/Entity.js';
 import { MapMarker } from '../models/MapMarker.js';
+import { COMMUNITY_ENABLED } from './v1.js';
 import { HttpError } from './validate.js';
 
 /**
@@ -19,7 +20,8 @@ export const MODULE_ROUTES: Readonly<Record<string, ModuleRouteInfo>> = {
   armas: { ruta_publica: '/catalogo/armas', tipo: 'categoria', staff_seccion: 'Contenido público → Catálogo' },
   vehiculos: { ruta_publica: '/catalogo/vehiculos', tipo: 'categoria', staff_seccion: 'Contenido público → Catálogo' },
   coleccionables: { ruta_publica: '/catalogo/coleccionables', tipo: 'categoria', staff_seccion: 'Contenido público → Catálogo' },
-  foro: { ruta_publica: '/foro', tipo: 'seccion', staff_seccion: 'Comunidad y moderación → Foro' },
+  // v1: el foro está oculto (services/v1.ts); sin ruta pública no puede activarse.
+  ...(COMMUNITY_ENABLED ? { foro: { ruta_publica: '/foro', tipo: 'seccion' as const, staff_seccion: 'Control Total → Foro' } } : {}),
   guias: { ruta_publica: '/guias', tipo: 'categoria', staff_seccion: 'Editorial y automatización → Guías publicadas' },
 };
 

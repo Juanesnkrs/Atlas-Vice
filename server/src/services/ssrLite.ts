@@ -1,3 +1,4 @@
+import { V1_HIDDEN_PATHS } from './v1.js';
 import { readFileSync, statSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -259,7 +260,7 @@ const NOINDEX_PAGES: Record<string, string> = {
 };
 
 const LANDING_DESCRIPTION =
-  'Explora el mapa interactivo de Leonida, el catálogo de armas, vehículos y coleccionables, guías, noticias oficiales y el foro de la comunidad.';
+  'Explora el mapa interactivo de Leonida, el catálogo de armas y vehículos, guías y noticias oficiales.';
 
 const landing = (hero: HeroView = defaultHero()): PageMeta =>
   base({
@@ -580,6 +581,8 @@ export async function resolveRoute(pathname: string, search: URLSearchParams): P
     return r.kind === 'page' ? { kind: 'page', meta: notFound() } : r;
   }
 
+  // v1 «enciclopedia»: Hub, Progreso, Foro y Aportar están ocultos y se tratan como rutas inexistentes (404 real).
+  if (V1_HIDDEN_PATHS.has(path)) return { kind: 'page', meta: notFound() };
   if (path === '/aportes') return { kind: 'redirect', to: '/aportar' };
   if (path === '/') return { kind: 'page', meta: landing(await loadHero()) };
   if (NOINDEX_PAGES[path]) {

@@ -52,7 +52,7 @@ const ASSET_RE = /^\/assets\/[A-Za-z0-9_./-]+$/;
 const DEFAULT_HERO: HeroView = {
   kicker: 'Guía comunitaria de Leonida',
   titulo: 'Todo Leonida, en un solo mapa',
-  descripcion: 'Mapa, catálogo, guías y foro. Marca lo que ya encontraste.',
+  descripcion: 'Mapa, catálogo, guías y noticias de Leonida.',
   alt: 'Lucía y Jason con pañuelos sobre el rostro frente a una gasolinera al atardecer',
   isDefault: true,
   image: {

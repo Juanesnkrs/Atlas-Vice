@@ -1475,11 +1475,11 @@ describe('(k) modulos: registro modulo<->ruta, 422 y overview de staff', () => {
   let radioId: string;
   let foroId: string;
   before(async () => {
-    await Module.deleteMany({ slug: { $in: ['radio', 'foro', 'extra-sin-ruta'] } });
+    await Module.deleteMany({ slug: { $in: ['radio', 'foro', 'mapa', 'extra-sin-ruta'] } });
     radioId = randomUUID();
     foroId = randomUUID();
     await Module.create({ _id: radioId, slug: 'radio', nombre: 'Radio', icono: 'radio', activo: false, orden: 7 });
-    await Module.create({ _id: foroId, slug: 'foro', nombre: 'Foro', icono: 'chat', activo: false, orden: 5 });
+    await Module.create({ _id: foroId, slug: 'mapa', nombre: 'Mapa', icono: 'map', activo: false, orden: 5 });
   });
 
   it('(a) activar un modulo sin ruta publica -> 422 MODULE_WITHOUT_PUBLIC_ROUTE y no cambia nada', async () => {
@@ -1537,12 +1537,12 @@ describe('(k) modulos: registro modulo<->ruta, 422 y overview de staff', () => {
     assert.equal(armas['ruta_publica'], '/catalogo/armas');
     assert.equal(armas['fichas'], 2);
     assert.equal(armas['visible_en_publico'], true);
-    // Categoria activa sin fichas no es visible; seccion activa (foro) si.
+    // Categoria activa sin fichas no es visible; seccion activa (mapa) si.
     await Module.updateOne({ _id: foroId }, { $set: { activo: true } });
     await Entity.deleteMany({});
     const again = (await asStaff('GET', '/api/admin/modules/overview', 'ADMIN')).json<Ov>().modules;
     assert.equal(again.find((m) => m.slug === MODULE)!['visible_en_publico'], false);
-    assert.equal(again.find((m) => m.slug === 'foro')!['visible_en_publico'], true);
+    assert.equal(again.find((m) => m.slug === 'mapa')!['visible_en_publico'], true);
     await Module.updateOne({ _id: foroId }, { $set: { activo: false } });
   });
 
@@ -1974,6 +1974,27 @@ describe('(S6.4) validacion SEO: JSON-LD, canonical, 301/404, sitemap y robots',
     assert.equal(typesOf(v.body).length, 0);
   });
 
+  it('v1 enciclopedia: Hub, Progreso, Foro y Aportar responden 404 real (noindex), no entran al sitemap y el foro no se puede activar', async () => {
+    for (const p of ['/foro', '/hub', '/progreso', '/aportar', '/aportes', '/FORO']) {
+      const r = await get(p);
+      assert.equal(r.statusCode, 404, p);
+      assert.equal(robotsOf(r.body), 'noindex,nofollow', p);
+      assert.equal(canonicals(r.body).length, 0, p);
+    }
+    const sm = await get('/sitemap.xml');
+    for (const hidden of ['/foro', '/hub', '/progreso', '/aportar']) assert.ok(!sm.body.includes(baseUrl() + hidden), `sitemap sin ${hidden}`);
+    // Siguen visibles las seis secciones públicas de la v1.
+    for (const ok of ['/', '/mapa', '/guias', '/noticias']) assert.equal((await get(ok)).statusCode, 200, ok);
+    // El módulo foro no tiene pantalla pública: no puede activarse.
+    await Module.deleteMany({ slug: 'foro' });
+    const foroId = randomUUID();
+    await Module.create({ _id: foroId, slug: 'foro', nombre: 'Foro', icono: 'chat', activo: false, orden: 9 });
+    const r = await asStaff('PATCH', `/api/modules/${foroId}`, 'ADMIN', { activo: true });
+    assert.equal(r.statusCode, 422, r.body);
+    assert.equal(r.json<{ code: string }>().code, 'MODULE_WITHOUT_PUBLIC_ROUTE');
+    await Module.deleteMany({ slug: 'foro' });
+  });
+
   it('legales: 5 rutas con WebPage + BreadcrumbList, meta propia, canonical, og/twitter, h1 SSR y sin 404', async () => {
     for (const [path, lp] of Object.entries(LEGAL_PAGES)) {
       const h = await page(path);
@@ -2004,7 +2025,7 @@ describe('(S6.4) validacion SEO: JSON-LD, canonical, 301/404, sitemap y robots',
   });
 
   it('canonical unico y absoluto en toda pagina indexable; titulos y descripciones unicos por ficha', async () => {
-    for (const p of ['/mapa', '/guias', '/foro', '/catalogo/armas/pistola-dos', '/catalogo/armas/fusil-tres']) await page(p);
+    for (const p of ['/mapa', '/guias', '/noticias', '/catalogo/armas/pistola-dos', '/catalogo/armas/fusil-tres']) await page(p);
     const seen = new Set<string>();
     for (const { path, html } of html200) {
       if (robotsOf(html)?.startsWith('noindex')) continue;
@@ -2076,7 +2097,7 @@ describe('(S6.4) validacion SEO: JSON-LD, canonical, 301/404, sitemap y robots',
     assert.equal(new Set(locs).size, locs.length, 'duplicados');
     assert.ok(locs.length <= 50_000);
     assert.ok(locs.every((l) => l.startsWith(baseUrl()) && !l.includes('#') && !l.includes('?') && !/staff|\/api\//i.test(l)));
-    const must = ['/', '/mapa', '/guias', '/noticias', '/foro', '/catalogo/armas', '/catalogo/armas/pistola-uno', '/guias/guia-pasos', '/noticias/rockstar-games-anuncia-novedades-de-prueba-abcd1234', ...Object.keys(LEGAL_PAGES)];
+    const must = ['/', '/mapa', '/guias', '/noticias', '/catalogo/armas', '/catalogo/armas/pistola-uno', '/guias/guia-pasos', '/noticias/rockstar-games-anuncia-novedades-de-prueba-abcd1234', ...Object.keys(LEGAL_PAGES)];
     for (const m of must) assert.ok(locs.includes(baseUrl() + m), `falta ${m}`);
     for (const m of ['/catalogo/radio', '/catalogo/radio/emisora-oculta', '/catalogo/vehiculos', '/catalogo']) assert.ok(!locs.includes(baseUrl() + m), `sobra ${m}`);
     const legalBlocks = [...r.body.matchAll(/<url><loc>[^<]*\/legal\/[^<]*<\/loc>([^]*?)<\/url>/g)];

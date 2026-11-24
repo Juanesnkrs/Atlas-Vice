@@ -58,7 +58,7 @@ async function main(): Promise<void> {
   const session = await signSession(userId, minutes * 60);
 
   const claimPath = `/${randomBytes(24).toString('hex')}`;
-  const landing = `${env.CLIENT_ORIGIN.replace(/\/+$/, '')}${flagValue('ir') ?? '/aportar'}`;
+  const landing = `${env.CLIENT_ORIGIN.replace(/\/+$/, '')}${flagValue('ir') ?? '/_staff'}`;
   let claimed = false;
   let closing = false;
   const servers: Server[] = [];
