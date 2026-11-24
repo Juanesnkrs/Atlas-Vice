@@ -29,6 +29,7 @@
 | `/noticias` | Listado de noticias oficiales | `OfficialNews` | Sí |
 | `/noticias/:slug` | Noticia oficial (título, extracto, enlace al original) | `OfficialNews.slug` | Sí |
 | `/foro` | P07 Foro (`ForumPage.tsx`) | `ForumThread` | Sí |
+| `/legal/privacidad`, `/legal/cookies`, `/legal/terminos`, `/legal/marcas`, `/legal/retirada` | Páginas legales (`LegalPage.tsx`, S6.3), enlazadas desde el footer y entre sí; `index,follow`, canonical = su ruta | Estático (`src/data/legalDocs.ts`; meta SSR en `LEGAL_PAGES` de `ssrLite.ts`, §7) | Sí (prioridad `0.3`) |
 | `/aportar` | P06 Aportar: buzón comunitario 100 % público (sugerencias de marcadores, fichas y correcciones; sin referencias a moderación ni administración) | `Submission` | No (`noindex`) |
 
 ### 1.2 Rutas de aplicación (no indexables, `noindex`, fuera del sitemap)
@@ -155,6 +156,8 @@ Ruta de máquina a máquina, **fuera de `/api/admin/*`** y sin sesión de cookie
 - `GET /api/admin/submissions` (MODERATOR+) admite además los filtros `origin=user|pipeline`, `runId=<uuid del PipelineRun>` y `reason=nueva|actualizada|conflicto` (sobre `payload.pipeline_run_id` / `payload.pipeline_reason`), y cada aporte de origen `pipeline` expone en el nivel superior `pipeline_reason`, `pipeline_run_id` y `conflict_fields: string[]`. `payload.tarjeta` se devuelve siempre como `{ bytes, sha256 }` (nunca el base64). Ejemplo de ítem: `{ id, origin: 'pipeline', moduleSlug, type: 'entity', title, payload: { …, tarjeta: { bytes, sha256 } }, pipeline_reason, pipeline_run_id, conflict_fields, status, createdAt, … }`.
 - `GET /api/admin/submissions/:id/tarjeta.webp` — MODERATOR+; sirve la miniatura (`Content-Type: image/webp`, `Cache-Control: private, no-store`, `nosniff`). 404 uniforme sin staff y 404 si el aporte no existe, no es del pipeline o no tiene tarjeta.
 - `POST /api/admin/submissions/bulk` — MODERATOR+ (404 uniforme sin staff; RBAC en `onRequest`, antes que Zod), rate-limit 10/min, `Cache-Control: private, no-store`. Cuerpo: `{ action: 'approve' | 'reject', ids?: uuid[] (1–200), filter?: { origin: 'pipeline', status: 'pending', runId?: uuid, reason?: 'nueva'|'actualizada'|'conflicto' }, reviewNote?: string (≤ 500, solo con reject) }`; hay que enviar **exactamente uno** de `ids` o `filter`. Con `filter`, `approve` **excluye por defecto los `conflicto`** salvo que se pida `reason: 'conflicto'`; `reject` no excluye ninguno. Procesa en secuencia reutilizando `reviewSubmission()`/`promote()` (mismas reglas, transacción y `AuditLog` por ítem que el `PATCH` individual) y **no aborta** ante un fallo. Tope duro de **500** aportes por llamada con `filter` (si hay más, `truncated: true`: repetir). Respuesta `200`: `{ action, requested, ok, failed, truncated, results: [{ id, ok, error? }] }`. Además deja un `AuditLog` `submission.bulk` (`{ action, requested, ok, failed }`). Los aportes `contact`/`newsletter` fallan por ítem para MODERATOR (solo ADMIN+).
+- `GET /api/admin/submissions/:id/compare` — MODERATOR+ (404 uniforme sin staff), `Cache-Control: private, no-store`. Solo aportes `origin: 'pipeline'` de tipo `entity` (404 si no existe, 422 si no aplica). Responde `{ submission_id, estado, reason: 'nueva'|'actualizada'|'conflicto', entity: { id, slug, titulo, categoria, subtitulo, imagen_url, capturaPropiaPendiente, confianza, fuente } | null, actual: { titulo, subtitulo, categoria, descripcion, metadata } | null, propuesta: { titulo, subtitulo, categoria, descripcion, metadata, confianza, fuente, fuente_url }, diferencias: [{ campo, actual, propuesta }], imagen: { actual_url, propuesta: { bytes, sha256 } | null, thumb_url_propuesta: '/api/admin/submissions/:id/tarjeta.webp' | null }, puede_solo_imagen, puede_aceptar }`. `diferencias` lista `titulo`, `subtitulo`, `categoria`, `descripcion` (= `metadata_json.descripcion`), `metadata.<clave>` y `stats.<clave>` que difieren (vacía si no hay ficha o ya coincide). Nunca devuelve el base64. `puede_solo_imagen` = estado `pending` + hay tarjeta válida + la ficha existe + sin `imagen_url` + `imagen_url` no está en `manualEdits`; `puede_aceptar` = estado `pending`.
+- `POST /api/admin/submissions/:id/resolve` — **política de conflicto** (MODERATOR+, RBAC en `onRequest` antes que Zod, rate-limit 60/min). Cuerpo `{ accion: 'mantener'|'aceptar'|'solo_imagen', nota?: string (≤ 300) }`; solo aportes `pending` del pipeline (`409` si ya procesado, `422` si la acción no procede). `mantener`: el aporte queda `rejected` con `reviewNote` «Se mantiene la ficha editorial» (+ nota) y la ficha no cambia. `aceptar`: aplica la versión del pipeline vía `reviewSubmission()`/`promote()`; `422` si la ficha tiene `manualEdits` (nunca se pisan). `solo_imagen`: crea el `MediaAsset` desde la tarjeta (misma validación `parseTarjeta`, `created_by` = moderador) y fija **solo** `imagen_url`, `capturaPropiaPendiente = true` y `metadata_json.fuente_imagen`/`fuente_url` de la propuesta (ni texto, ni confianza, ni stats, ni `contentHash`); no añade `imagen_url` a `manualEdits` (la imagen es provisional y se puede reemplazar). `422` si no hay ficha, no hay tarjeta, la ficha ya tiene imagen o `imagen_url` está protegida. El aporte queda `approved` con `reviewNote` «Solo imagen: …», `payload.pipeline_resolution = 'solo_imagen'` y `promotedTo = { Entity, id }` (sin campos nuevos de colección). Respuesta `200`: `{ ok: true, accion, entity_id, submission }` (DTO del aporte). Atómico (transacción Mongo; degrada sin sesión en standalone) y audita `submission.resolve` `{ accion, entity_id, slug, nota? }`; limpia la caché SSR cuando cambia la ficha.
 - `GET /api/admin/pipeline/runs` admite `kind=catalogo|noticias|todos` (por defecto `catalogo`): los ciclos del worker de noticias (`modulo: 'noticias'`, `trigger: 'scheduled'|'manual'`, `source: 'news'`) tienen `kind: 'noticias'` en cada run y **no** cuentan en `estado` (`activo`, `ultimoLoteAt`, `enCurso`) ni bloquean `POST /trigger`.
 
 - **SSR-lite de fichas:** la `description` (meta/Open Graph, recortada a ~160 caracteres) de `/catalogo/:modulo/:slug` y `/guias/:slug` es `metadata_json.descripcion` si existe, luego `subtitulo` y, por último, el texto por defecto; el JSON-LD (`CreativeWork`, `HowTo`, `Article`) lleva la descripción completa y `image` con la `imagen_url` de la ficha (o la imagen por defecto).
@@ -168,7 +171,10 @@ Ruta de máquina a máquina, **fuera de `/api/admin/*`** y sin sesión de cookie
 - Incluye: rutas estáticas de §1.1 (excepto `/aportar`), una URL por categoría (`/catalogo/:categoria`, solo módulos `activo` distintos de `guias` con al menos una ficha; **no** se lista `/catalogo` a secas), una URL por `Entity` (`/catalogo/:categoria/:itemSlug`, de módulos `activo`), una por guía (`/guias/:slug`) y una por `OfficialNews` (`/noticias/:slug`).
 - `lastmod` real: `Entity.created_at`, `OfficialNews.updatedAt` / `publishedAt`; las estáticas y las categorías usan la fecha máxima de sus fichas. Sin duplicados ni URLs antiguas (`?modulo=`, `?entity=`).
 - Límite 50 000 URLs por archivo; si se supera, `GET /sitemap.xml` devuelve un `sitemapindex` con `/sitemap-<n>.xml`.
-- `Content-Type: application/xml; charset=utf-8`, `Cache-Control: public, max-age=3600`.
+- Páginas legales (§1.1): 5 URLs con `<lastmod>` = fecha de revisión (`LEGAL_LASTMOD`) y `<priority>0.3</priority>` (única prioridad declarada en el archivo). Sin módulos inactivos (p. ej. `radio`), sin categorías sin fichas, sin `mapa` (excluido) y sin `/_staff`.
+- **Caché y actualización (S6.4):** el servidor **no** cachea el sitemap: se genera en cada petición a partir de MongoDB, así que `promote` de una `Submission`, `resolve`, `DELETE /api/entities/:id`, el reemplazo de imagen y el worker de noticias se reflejan en la siguiente petición (latencia medida en la prueba: < 50 ms; tope de la prueba 2 s). Lo único con TTL es la caché HTTP del cliente/CDN (`max-age=300`, 5 min) y la caché SSR por ruta (TTL 5 min, máx. 500 entradas), que `clearSsrCache()` vacía en promote, resolve, altas/cambios/borrados de fichas y módulos, reemplazo de imagen, restauración, foro, configuración, hero y worker de noticias. No existe `clearSitemapCache`: no hace falta.
+- **Límites:** 50 000 URLs por archivo (hoy 393); superado, `/sitemap.xml` pasa a `sitemapindex` con `/sitemap-<n>.xml` (ya implementado). Si el catálogo supera ≈ 10 000 URLs conviene cachear el sitemap en memoria con invalidación por `clearSsrCache`; hoy no hay riesgo.
+- `Content-Type: application/xml; charset=utf-8`, `Cache-Control: public, max-age=300`.
 - `robots.txt` (dinámico en `server/src/routes/seo.ts`): `Allow: /`, **únicamente `Disallow: /api/`**, `Sitemap: <PUBLIC_SITE_URL>/sitemap.xml`. Las rutas privadas (`/aportar`, `/hub`, `/progreso`, `/entrar`) se excluyen con `noindex` por meta, no listándolas en robots. La ruta oculta `/_staff` no aparece ni en robots ni en sitemap.
 
 ---
@@ -203,6 +209,8 @@ Reglas: sin enlaces rotos (solo se renderiza si el destino existe), anclas descr
 
 Configuración en `AppConfig.monetization` (ver documento de datos §2.2). Componente único: `src/components/ui/AdSlot.tsx`.
 
+**Decisión D-09 (v1 sin anuncios):** la v1 sale con `ads_enabled=false`. En ese estado `<AdSlot/>` devuelve `null`: no reserva espacio, no inyecta el script de AdSense ni hace peticiones a terceros, aunque el usuario haya aceptado «Marketing». Con `ads_enabled=true` sigue exigiendo consentimiento Marketing (`leonidapp_consent`); sin él tampoco se carga nada. Máximo 2 bloques por página (registro por ruta) y el hueco se reserva antes del primer pintado (`useLayoutEffect` + `aspect-ratio`).
+
 ### 6.1 Dónde SÍ (solo páginas editoriales con scroll)
 
 | Ruta | Posiciones permitidas |
@@ -232,3 +240,48 @@ Máximo **2 `AdSlot` por página**.
 5. Etiqueta visible `Publicidad` / `Advertisement` sobre la superficie HUD (`rgba(20,14,36,0.78)` + borde cálido).
 6. En Capacitor nativo (iOS/Android) los `AdSlot` web están desactivados.
 7. Ningún anuncio se presenta como contenido oficial de Rockstar Games / Take-Two.
+
+---
+
+## 7. Páginas legales SSR-lite y validación SEO técnica (S6.4)
+
+### 7.1 Páginas legales
+
+`resolveRoute()` resuelve `/legal/privacidad`, `/legal/cookies`, `/legal/terminos`, `/legal/marcas` y `/legal/retirada` (tabla `LEGAL_PAGES` en `server/src/services/ssrLite.ts`, con el mismo título y descripción que `src/data/legalDocs.ts`; una prueba automática detecta desajustes). Cada una responde `200` con `<title>` «`<título> · LeonidApp`», `description`, `canonical` = su ruta, Open Graph/Twitter con la imagen de respaldo (`/assets/hero-gas-station.jpg`), `robots: index,follow`, JSON-LD `WebPage` + `BreadcrumbList` (Inicio › página) y un fallback para rastreadores sin JS dentro de `<noscript>` en `#root` (`<h1>` + descripción; con JS no se ve, así que no hay parpadeo ni CLS). Cualquier otra ruta `/legal/*` (p. ej. `/legal/xyz`, `/legal`) es `404` real.
+
+### 7.2 Matriz ruta → resultado esperado (cubierta por la suite `(S6.4)` de `server/src/scripts/pipeline.test.ts`)
+
+| Ruta | Estado | `robots` | Canonical | JSON-LD (`@type`) |
+| --- | --- | --- | --- | --- |
+| `/` | 200 | `index,follow` | `/` | `WebSite` (con `SearchAction`), `Organization` |
+| `/mapa`, `/guias`, `/foro` | 200 | `index,follow` | su ruta | `CollectionPage`, `BreadcrumbList` |
+| `/noticias` | 200 | `index,follow` | `/noticias` | `CollectionPage`, `BreadcrumbList` |
+| `/noticias/:slug` | 200 / 404 si no existe | `index,follow` / `noindex,nofollow` | su ruta / ninguno | `NewsArticle`, `BreadcrumbList` |
+| `/catalogo` | **301** a la categoría por defecto (`armas` si está activa; si no, la primera activa por `orden`); `/catalogo/mapa` → 301 `/mapa` | — | — | — |
+| `/catalogo/:categoria` con fichas | 200 | `index,follow` | su ruta | `CollectionPage`, `BreadcrumbList` |
+| `/catalogo/:categoria` activa sin fichas | 200 (estado vacío de la SPA) | `noindex,follow` | ninguno | ninguno |
+| `/catalogo/:categoria` inactiva u oculta (p. ej. `/catalogo/radio`) o inexistente | **404** | `noindex,nofollow` | ninguno | ninguno |
+| `/catalogo/:categoria/:slug` | 200 / 404 | `index,follow` / `noindex,nofollow` | su ruta (única) | `CreativeWork`, `BreadcrumbList` |
+| `/guias/:slug` con ≥ 3 pasos | 200 | `index,follow` | su ruta | `HowTo` (≥ 3 `HowToStep`), `BreadcrumbList` |
+| `/legal/{privacidad,cookies,terminos,marcas,retirada}` | 200 | `index,follow` | su ruta | `WebPage`, `BreadcrumbList` |
+| `/legal/xyz`, `/legal`, rutas inexistentes | **404** | `noindex,nofollow` | ninguno | ninguno |
+| `/LEGAL/PRIVACIDAD` (mayúsculas) | 301 a la ruta en minúsculas | — | — | — |
+| `/_staff`, `/_staff/*` (sin sesión de staff) | 404 idéntico al de una ruta inexistente | `noindex,nofollow` | ninguno | ninguno |
+| `/api/admin/*` (sin sesión de staff) | 404 JSON idéntico al de `/api/admin/no-existe` | — | — | — |
+| `/robots.txt` | 200 `text/plain`: `Allow: /`, `Disallow: /api/`, `Sitemap: <PUBLIC_SITE_URL>/sitemap.xml`, sin `/_staff` | — | — | — |
+| `/sitemap.xml` | 200 `application/xml`, sin `#`/query/`/_staff`/duplicados, sin módulos inactivos ni categorías vacías | — | — | — |
+
+Reglas verificadas: canonical único, absoluto y sin `#`/query en cada página indexable; título y descripción únicos por ficha; ningún HTML SSR contiene texto de depuración (`undefined`, `null`, `[object Object]`, trazas); el HTML del 404 de `/_staff` es byte a byte el de una ruta inexistente. La validación con la herramienta de resultados enriquecidos de Google no se puede ejecutar sin dominio público: la prueba comprueba que el JSON-LD es parseable y trae los `@type` y campos requeridos; la comprobación externa queda para el despliegue (S7).
+
+### 7.3 Noticias oficiales: fuentes evaluadas (S5.5, 2026-11-23, `User-Agent: LeonidAppNewsBot/1.0`)
+
+| URL probada | Resultado | Decisión |
+| --- | --- | --- |
+| `rockstargames.com/robots.txt` | 200; solo bloquea bots de IA/archivo (`ClaudeBot`, `GPTBot`, `CCBot`…); no bloquea `*` | — |
+| `rockstargames.com/newswire` | 200, HTML de 4 KB (shell de microfrontends sin contenido); sin `<link rel="alternate" type="application/rss+xml">` | Sin feed: no se ingiere |
+| `/newswire/rss`, `/newswire/feed`, `/newswire/rss.xml`, `/newswire.rss`, `/newswire/atom`, `/newswire/get-posts.json`, `/rss`, `/feed`, `/atom.xml`, `/sitemap.xml`, `/sitemap_index.xml` (todas bajo `www.rockstargames.com`) | todas **404** | No existe feed ni sitemap público documentado |
+| `ir.take2games.com/rss/news-releases.xml` | 200 RSS, 10 notas de prensa; robots permite `/rss/`; **fuente vigente** | Activa (`take-two-ir`) |
+| `ir.take2games.com/rss/events.xml`, `/rss/sec-filings.xml` | 200 RSS oficial (llamadas de resultados, presentaciones SEC); ninguno trata de GTA VI/Leonida | No se añaden: el filtro de relevancia los descartaría todos |
+| `ir.take2games.com/rss/pressrelease.aspx`, `/rss/press-releases.xml`, `take2games.com/{feed,rss,news}` | 404 | — |
+
+**Decisión:** hay **una** fuente oficial utilizable (Take-Two IR, que incluye las notas de Rockstar Games como la de las reservas de GTA VI). Rockstar Newswire no ofrece RSS/Atom/API pública: extraer su contenido exigiría scraping del front o de endpoints internos no documentados, lo que está prohibido. No se añaden fuentes de terceros. Para una segunda fuente haría falta que Rockstar publique un feed o API oficial documentada (bastaría añadir una entrada a `NEWS_SOURCES` en `server/src/workers/sources.ts`, el host a `ALLOWED_HOSTS` y, si procede, el id al enum del modelo `OfficialNews`) o un acuerdo explícito con el titular de derechos. El parseo se valida con una respuesta real guardada (fixture de la suite `(S5.5)`) y la ingesta con inserción real se comprobó contra la base `_test` (1 inserción: «Rockstar Games Announces Pre-Orders for Grand Theft Auto VI»).
