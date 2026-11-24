@@ -87,7 +87,7 @@ Fastify **no** renderiza React. La lógica vive en `server/src/services/ssrLite.
 | `<title>` | `<Título de la página> · LeonidApp` (≤ 60 chars) |
 | `<meta name="description">` | 120–160 chars, derivado del contenido visible (`subtitulo`, `summary`, intro de guía) |
 | `<link rel="canonical">` | `PUBLIC_SITE_URL` + ruta limpia, sin query ni hash |
-| Open Graph | `og:title`, `og:description`, `og:url` (= canonical), `og:type` (`website` / `article`), `og:image` (`imagen_url` / `imageUrl` / `hero-gas-station.jpg`), `og:locale` |
+| Open Graph | `og:title`, `og:description`, `og:url` (= canonical), `og:type` (`website` / `article`), `og:image` (imagen propia de la ficha vía `socialImageOf`: `/media/<uuid>` absoluta con `og:image:width/height/alt`; si no hay o no es válida, `hero-gas-station.jpg`; noticias: `imageUrl`), `og:locale` |
 | Twitter | `twitter:card=summary_large_image` + título/descripción/imagen |
 | `robots` | `index,follow` en §1.1 (excepto `/aportar`); `noindex,nofollow` en §1.2, `/aportar` y `404` |
 | `hreflang` | `es` y `en` + `x-default` cuando la página tenga ambos idiomas |
@@ -158,6 +158,7 @@ Ruta de máquina a máquina, **fuera de `/api/admin/*`** y sin sesión de cookie
 - `GET /api/admin/pipeline/runs` admite `kind=catalogo|noticias|todos` (por defecto `catalogo`): los ciclos del worker de noticias (`modulo: 'noticias'`, `trigger: 'scheduled'|'manual'`, `source: 'news'`) tienen `kind: 'noticias'` en cada run y **no** cuentan en `estado` (`activo`, `ultimoLoteAt`, `enCurso`) ni bloquean `POST /trigger`.
 
 - **SSR-lite de fichas:** la `description` (meta/Open Graph, recortada a ~160 caracteres) de `/catalogo/:modulo/:slug` y `/guias/:slug` es `metadata_json.descripcion` si existe, luego `subtitulo` y, por último, el texto por defecto; el JSON-LD (`CreativeWork`, `HowTo`, `Article`) lleva la descripción completa y `image` con la `imagen_url` de la ficha (o la imagen por defecto).
+- **Imagen social por ficha (S4.4, `socialImageOf(entity)` en `server/src/services/ssrLite.ts`):** único punto de decisión de `og:image`, `twitter:image` y `image` del JSON-LD (`CreativeWork`, `HowTo`, `Article` de guías). `Entity.imagen_url` `/media/<uuid>` → URL absoluta `PUBLIC_SITE_URL + /media/<uuid>` y se emiten además `og:image:width=1600`, `og:image:height=900` y `og:image:alt` (título de la ficha); `/assets/...` interno permitido → absoluta; `https://` válida sin credenciales → tal cual; `null` u otro valor (`javascript:`, `//host`, `http:`, rutas no permitidas, `..`) → respaldo `/assets/hero-gas-station.jpg` (sin width/height/alt). Los tres campos coinciden siempre. Con las variantes del Sprint 3 (1600×900 y 800×450 con `?w=`) solo cambia la URL elegida en esa función.
 
 **Variables de entorno (`server/.env`):** `PIPELINE_INGEST_TOKEN` (secreto ≥ 32 caracteres; se recomienda `openssl rand -hex 32`; sin él, la ingesta queda desactivada y responde 404) y `PIPELINE_WEBHOOK_URL` (opcional; URL `https` a la que el servidor avisa al pulsar «Sincronizar ahora»). Ninguna se expone al cliente ni se registra en logs o en `AuditLog`.
 

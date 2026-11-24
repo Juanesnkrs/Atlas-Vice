@@ -2131,7 +2131,7 @@ No hay renderizado de React en servidor. El servidor Fastify lee una vez `dist/i
 | `<title>` | `… · LeonidApp`, truncado a 60 caracteres |
 | Description | Tope 160 (sin mínimo de 120) |
 | Canonical y `og:url` | Solo en respuestas 200, sin query |
-| Open Graph | `og:type` website/article, título, descripción, imagen (por defecto `/assets/hero-gas-station.jpg`), `og:locale` fijo `es_ES`; `article:published_time` en noticias |
+| Open Graph | `og:type` website/article, título, descripción, imagen (dinámica por ficha: `/media/<uuid>` propia en absoluto con `og:image:width=1600`/`height=900`/`alt` y el mismo valor en `twitter:image` y JSON-LD `image`; respaldo `/assets/hero-gas-station.jpg` si no hay imagen o no es válida; ver Rutas-SEO, SSR-lite de fichas), `og:locale` fijo `es_ES`; `article:published_time` en noticias |
 | Twitter | `summary_large_image` |
 | Escape | `escHtml` en meta; `safeJsonLd` neutraliza `<`, `>`, `&`, U+2028/2029; `absolute()` solo admite http/https o rutas que empiecen por `/` |
 | Fallo de BD | Cabecera de landing con `noindex,nofollow` y HTTP 200 |
