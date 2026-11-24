@@ -3,7 +3,7 @@
 // apilan en la misma celda de una rejilla: el alto lo marca el texto más largo y no cambia al avanzar (CLS = 0).
 // Sin diapositivas activas, mientras cargan los datos o si una imagen falla, se muestra la diapositiva por defecto.
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
-import { DEFAULT_HERO_SLIDE } from '../../data/seed';
+import { DEFAULT_HERO_SLIDE, imageAttrs } from '../../data/seed';
 import { API_URL } from '../../store/useAuthStore';
 import type { HeroSlide } from '../../types/database';
 import { PalmButton } from './PalmButton';
@@ -97,7 +97,7 @@ function Slide({ slide, active, first, guest, inert, total, position, imageFaile
       >
         {!imageFailed && (
           <img
-            src={heroImageSrc(slide.imagen_url)}
+            {...imageAttrs(slide.imagen_url, 'full', '(min-width: 768px) 55vw, 100vw')}
             alt={active ? slide.imagen_alt : ''}
             decoding="async"
             {...(first ? { fetchPriority: 'high' as const } : { loading: 'lazy' as const })}

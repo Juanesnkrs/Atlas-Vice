@@ -27,6 +27,7 @@ import {
   seoDescription,
   entitySlug,
   forumCategoryLabel,
+  imageAttrs,
   loreRefs,
   mediaSrc,
   metaOf,
@@ -206,18 +207,46 @@ function CategoryGlyph({ kind, className = '' }: { kind?: string; className?: st
   );
 }
 
-function Artwork({ src, alt, kind, className }: { src: string | null; alt: string; kind?: string; className?: string }) {
+type Variant = 'thumb' | 'full';
+const SIZES: Record<Variant, string> = {
+  thumb: '(min-width: 1280px) 200px, (min-width: 768px) 25vw, 45vw',
+  full: '(min-width: 768px) 50vw, 100vw',
+};
+
+function Artwork({
+  src,
+  alt,
+  kind,
+  className,
+  variant = 'thumb',
+}: {
+  src: string | null;
+  alt: string;
+  kind?: string;
+  className?: string;
+  variant?: Variant;
+}) {
   const [failed, setFailed] = useState<string | null>(null);
   if (!src || failed === src) return <CategoryGlyph kind={kind} className={className} />;
-  return <img src={mediaSrc(src)} alt={alt} loading="lazy" decoding="async" className={className} onError={() => setFailed(src)} />;
+  return (
+    <img
+      {...imageAttrs(src, variant, SIZES[variant])}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      className={className}
+      onError={() => setFailed(src)}
+    />
+  );
 }
 
-/** Imagen de un ítem: artwork real, silueta SVG (armas/vehículos) o banner sunset. */
-function ItemVisual({ entity, kind, className = '' }: { entity: Entity; kind?: string; className?: string }) {
+/** Imagen de un ítem: artwork real, silueta SVG (armas/vehículos) o banner sunset. Listados: variante 800; ficha/visor: principal. */
+function ItemVisual({ entity, kind, className = '', variant = 'thumb' }: { entity: Entity; kind?: string; className?: string; variant?: Variant }) {
   if (entity.imagen_url) {
-    // Las tarjetas del pipeline (/media/…) son 16:9: se muestran completas, sin recortar el título.
-    const fit = entity.imagen_url.startsWith('/media/') ? 'object-contain' : 'object-cover';
-    return <Artwork src={entity.imagen_url} alt={entity.titulo} kind={kind} className={`${fit} ${className}`} />;
+    // Las tarjetas provisionales del pipeline (/media/…, capturaPropiaPendiente) son 16:9 de terceros: se muestran completas.
+    // Las imágenes propias (Estudio de Imágenes) ya son 16:9 limpias y rellenan el marco (cover).
+    const fit = entity.imagen_url.startsWith('/media/') && entity.capturaPropiaPendiente === true ? 'object-contain' : 'object-cover';
+    return <Artwork src={entity.imagen_url} alt={entity.titulo} kind={kind} variant={variant} className={`${fit} ${className}`} />;
   }
   if (metaOf(entity).silueta) {
     return <Silhouette entity={entity} className={className} />;
@@ -262,6 +291,7 @@ function Viewer({ entity, kind }: { entity: Entity; kind?: string }) {
             <ItemVisual
               entity={entity}
               kind={kind}
+              variant="full"
               className={
                 entity.imagen_url
                   ? 'absolute inset-0 h-full w-full'
@@ -1280,6 +1310,7 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
           <ItemVisual
             entity={entity}
             kind={modulo}
+            variant="full"
             className={entity.imagen_url ? 'absolute inset-0 h-full w-full' : 'relative h-4/5 w-4/5 drop-shadow-[0_10px_30px_rgba(225,48,126,0.5)]'}
           />
           {entity.imagen_url && entity.capturaPropiaPendiente === true && <ProvisionalChip className="absolute bottom-2 left-2" />}

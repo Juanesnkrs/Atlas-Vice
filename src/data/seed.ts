@@ -84,6 +84,23 @@ export const metaOf = (e: Entity): Record<string, unknown> => {
 /** URL usable de `imagen_url`: `/media/<id>` lo sirve la API (VITE_API_URL en producción); `/assets/...` y https se usan tal cual. */
 export const mediaSrc = (url: string): string => (url.startsWith('/media/') ? `${API_URL}${url}` : url);
 
+/** Variante de listado 800×450 de una imagen propia (`/media/<id>?w=800`); otras URLs se devuelven sin cambios. */
+export const thumbUrl = (url: string): string => (url.startsWith('/media/') ? `${mediaSrc(url)}?w=800` : url);
+
+/**
+ * `srcset` de una imagen propia (800w listado, 1600w principal). `undefined` para assets estáticos y enlaces https,
+ * que no tienen variantes. Úsalo siempre junto a `sizes` y a un contenedor de proporción fija (CLS = 0).
+ */
+export const imageSrcSet = (url: string): string | undefined =>
+  url.startsWith('/media/') ? `${thumbUrl(url)} 800w, ${mediaSrc(url)} 1600w` : undefined;
+
+/** Atributos `src`/`srcSet`/`sizes` de una `<img>`: listados con la variante 800 y ficha/Hero con la principal. */
+export const imageAttrs = (url: string, mode: 'thumb' | 'full', sizes: string): { src: string; srcSet?: string; sizes?: string } => {
+  const srcSet = imageSrcSet(url);
+  if (!srcSet) return { src: url };
+  return { src: mode === 'thumb' ? thumbUrl(url) : mediaSrc(url), srcSet, sizes };
+};
+
 const norm = (t: string): string => t.replace(/\s+/g, ' ').trim().toLowerCase();
 
 /** Párrafos de `metadata_json.descripcion` (texto plano; se renderiza SIEMPRE como texto React, nunca HTML). */
