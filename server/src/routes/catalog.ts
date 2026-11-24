@@ -8,6 +8,7 @@ import { clearSsrCache } from '../services/ssrLite.js';
 import { diffFields, toSnapshot, writeAudit } from '../services/audit.js';
 import { withManualEdits } from '../services/catalogIngest.js';
 import { sendPublicJson } from '../services/httpCache.js';
+import { assertActivatable, countEntitiesByModule } from '../services/moduleRoutes.js';
 import { HttpError, idParamsSchema, parse, resourceNotFound } from '../services/validate.js';
 
 /** Paginacion de GET /api/entities: el catalogo actual (~250 fichas) cabe en una pagina por defecto. */
@@ -32,12 +33,15 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const all = z.object({ all: z.enum(['1']).optional() }).parse(req.query).all === '1';
     const canSeeAll = all && req.authUser && ['ADMIN', 'SUPER_ADMIN'].includes(req.authUser.rol);
     const rows = await Module.find(canSeeAll ? {} : { activo: true }).sort({ orden: 1 }).lean<ModuleDoc[]>();
+    // `fichas` es un campo DERIVADO de solo lectura (conteo de Entity del modulo): no existe en el esquema.
+    const counts = await countEntitiesByModule();
+    const dtos = rows.map((m) => ({ ...toModuleDTO(m), fichas: counts.get(m._id) ?? 0 }));
     // Con ?all=1 el contenido depende de la sesion: nunca se cachea publicamente.
     if (all) {
       void reply.header('Cache-Control', 'private, no-store').header('Vary', 'Cookie');
-      return rows.map(toModuleDTO);
+      return dtos;
     }
-    return sendPublicJson(req, reply, rows.map(toModuleDTO));
+    return sendPublicJson(req, reply, dtos);
   });
 
   // Consulta por slug (URLs limpias /catalogo/:modulo/:slug y /guias/:slug). Solo modulos activos.
@@ -63,6 +67,8 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
   app.post('/api/modules', admin, async (req, reply) => {
     const body = parse(moduleSchema, req.body);
     const { id, ...rest } = body;
+    // `activo` por defecto es true: un slug sin ruta publica solo se crea con activo:false explicito (si no, 422).
+    assertActivatable(rest.slug, rest.activo);
     const doc = await Module.create({ ...rest, ...(id ? { _id: id } : {}) });
     await writeAudit(req, 'module.create', 'Module', doc._id, { slug: doc.slug });
     clearSsrCache();
@@ -74,6 +80,7 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const { id: _ignored, ...patch } = parse(moduleUpdateSchema, req.body);
     const prev = await Module.findById(id).lean<ModuleDoc>();
     if (!prev) throw resourceNotFound('Modulo no encontrado');
+    assertActivatable(patch.slug ?? prev.slug, patch.activo ?? prev.activo);
     const doc = await Module.findByIdAndUpdate(id, { $set: patch }, { returnDocument: 'after' }).lean<ModuleDoc>();
     if (!doc) throw resourceNotFound('Modulo no encontrado');
     await writeAudit(req, 'module.update', 'Module', id, diffFields(prev as unknown as Record<string, unknown>, patch));

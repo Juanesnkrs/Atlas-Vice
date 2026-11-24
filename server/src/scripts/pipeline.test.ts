@@ -1079,3 +1079,96 @@ describe('POST /api/admin/entities/:id/image (reemplazo manual de imagen)', () =
     assert.ok(!slugs.includes('prov-no'));
   });
 });
+
+describe('(k) modulos: registro modulo<->ruta, 422 y overview de staff', () => {
+  type Ov = { modules: Array<Record<string, unknown> & { slug: string }> };
+  const mkEntity = (slug: string) => Entity.create({ _id: randomUUID(), module_id: moduleId, slug, titulo: `Ficha ${slug}`, categoria: 'Pistolas' });
+  let radioId: string;
+  let foroId: string;
+  before(async () => {
+    await Module.deleteMany({ slug: { $in: ['radio', 'foro', 'extra-sin-ruta'] } });
+    radioId = randomUUID();
+    foroId = randomUUID();
+    await Module.create({ _id: radioId, slug: 'radio', nombre: 'Radio', icono: 'radio', activo: false, orden: 7 });
+    await Module.create({ _id: foroId, slug: 'foro', nombre: 'Foro', icono: 'chat', activo: false, orden: 5 });
+  });
+
+  it('(a) activar un modulo sin ruta publica -> 422 MODULE_WITHOUT_PUBLIC_ROUTE y no cambia nada', async () => {
+    const r = await asStaff('PATCH', `/api/modules/${radioId}`, 'ADMIN', { activo: true });
+    assert.equal(r.statusCode, 422, r.body);
+    assert.equal(r.json<{ code?: string }>().code, 'MODULE_WITHOUT_PUBLIC_ROUTE');
+    assert.equal((await Module.findById(radioId).lean())?.activo, false);
+    // Crear uno nuevo sin ruta con activo por defecto (true) tambien se rechaza; con activo:false se crea.
+    const c = await asStaff('POST', '/api/modules', 'ADMIN', { slug: 'extra-sin-ruta', nombre: 'Extra', icono: 'x' });
+    assert.equal(c.statusCode, 422, c.body);
+    assert.equal(c.json<{ code?: string }>().code, 'MODULE_WITHOUT_PUBLIC_ROUTE');
+    const c2 = await asStaff('POST', '/api/modules', 'ADMIN', { slug: 'extra-sin-ruta', nombre: 'Extra', icono: 'x', activo: false });
+    assert.equal(c2.statusCode, 201, c2.body);
+  });
+
+  it('(b)(c) desactivar siempre se permite; activar uno con ruta publica funciona', async () => {
+    const on = await asStaff('PATCH', `/api/modules/${foroId}`, 'ADMIN', { activo: true });
+    assert.equal(on.statusCode, 200, on.body);
+    assert.equal(on.json<{ activo: boolean }>().activo, true);
+    const off = await asStaff('PATCH', `/api/modules/${foroId}`, 'ADMIN', { activo: false });
+    assert.equal(off.statusCode, 200, off.body);
+    // Un modulo sin ruta que ya estuviera activo (dato heredado) siempre puede desactivarse.
+    await Module.updateOne({ _id: radioId }, { $set: { activo: true } });
+    const offRadio = await asStaff('PATCH', `/api/modules/${radioId}`, 'ADMIN', { activo: false });
+    assert.equal(offRadio.statusCode, 200, offRadio.body);
+  });
+
+  it('(d) overview: sin sesion y MODERATOR -> 404 uniforme; ADMIN -> 200 con la forma del contrato', async () => {
+    const missing = await app.inject({ method: 'GET', url: '/api/admin/no-existe-xyz', remoteAddress: nextIp() });
+    const anon = await app.inject({ method: 'GET', url: '/api/admin/modules/overview', remoteAddress: nextIp() });
+    assert.equal(anon.statusCode, 404);
+    assert.equal(anon.body, missing.body);
+    const mod = await asStaff('GET', '/api/admin/modules/overview', 'MODERATOR');
+    assert.equal(mod.statusCode, 404);
+    assert.equal(mod.body, missing.body);
+
+    await Entity.deleteMany({});
+    await mkEntity('ov-1');
+    await mkEntity('ov-2');
+    const ok = await asStaff('GET', '/api/admin/modules/overview', 'ADMIN');
+    assert.equal(ok.statusCode, 200, ok.body);
+    const { modules } = ok.json<Ov>();
+    const bySlug = new Map(modules.map((m) => [m.slug, m]));
+    const radio = bySlug.get('radio')!;
+    assert.deepEqual(
+      { tipo: radio['tipo'], ruta: radio['ruta_publica'], staff: radio['staff_seccion'], vis: radio['visible_en_publico'], activo: radio['activo'] },
+      { tipo: 'sin_pantalla', ruta: null, staff: null, vis: false, activo: false },
+    );
+    const armas = bySlug.get(MODULE)!;
+    assert.deepEqual(
+      Object.keys(armas).sort(),
+      ['activo', 'fichas', 'id', 'nombre', 'orden', 'pines', 'ruta_publica', 'slug', 'staff_seccion', 'tipo', 'visible_en_publico'],
+    );
+    assert.equal(armas['tipo'], 'categoria');
+    assert.equal(armas['ruta_publica'], '/catalogo/armas');
+    assert.equal(armas['fichas'], 2);
+    assert.equal(armas['visible_en_publico'], true);
+    // Categoria activa sin fichas no es visible; seccion activa (foro) si.
+    await Module.updateOne({ _id: foroId }, { $set: { activo: true } });
+    await Entity.deleteMany({});
+    const again = (await asStaff('GET', '/api/admin/modules/overview', 'ADMIN')).json<Ov>().modules;
+    assert.equal(again.find((m) => m.slug === MODULE)!['visible_en_publico'], false);
+    assert.equal(again.find((m) => m.slug === 'foro')!['visible_en_publico'], true);
+    await Module.updateOne({ _id: foroId }, { $set: { activo: false } });
+  });
+
+  it('(e) GET /api/modules incluye `fichas` numerico derivado (publico y ?all=1)', async () => {
+    await Entity.deleteMany({});
+    await mkEntity('cnt-1');
+    await mkEntity('cnt-2');
+    await mkEntity('cnt-3');
+    const pub = await app.inject({ method: 'GET', url: '/api/modules', remoteAddress: nextIp() });
+    assert.equal(pub.statusCode, 200, pub.body);
+    const arm = pub.json<Array<{ slug: string; fichas: number }>>().find((m) => m.slug === MODULE)!;
+    assert.equal(typeof arm.fichas, 'number');
+    assert.equal(arm.fichas, 3);
+    const all = await app.inject({ method: 'GET', url: '/api/modules?all=1', remoteAddress: nextIp(), headers: { cookie: await staffCookie('ADMIN') } });
+    const radio = all.json<Array<{ slug: string; fichas: number }>>().find((m) => m.slug === 'radio')!;
+    assert.equal(radio.fichas, 0);
+  });
+});

@@ -10,6 +10,7 @@ import { MapMarker } from '../models/MapMarker.js';
 import { Module, type ModuleDoc } from '../models/Module.js';
 import { Submission } from '../models/Submission.js';
 import { ROLE_RANK, User } from '../models/User.js';
+import { countEntitiesByModule, countMarkersByModule, routeInfoOf } from '../services/moduleRoutes.js';
 import { restoreFromAudit } from '../services/restore.js';
 import { HttpError, idParamsSchema, parse, resourceNotFound } from '../services/validate.js';
 import { getNewsWorkerStatus } from '../workers/officialNewsWorker.js';
@@ -21,7 +22,38 @@ const uniformNotFound = (): HttpError => new HttpError(404, 'No encontrado');
 
 export async function registerAdminPanelRoutes(app: FastifyInstance): Promise<void> {
   const moderation = { onRequest: requireStaffRole('MODERATOR') };
+  const contentAdmin = { onRequest: requireStaffRole('ADMIN') };
   const superAdmin = { onRequest: requireStaffRole('SUPER_ADMIN') };
+
+  /** Vista de solo lectura modulo <-> pantalla publica (S1.4/S1.5). RBAC en el hook, antes de cualquier otra cosa. */
+  app.get('/api/admin/modules/overview', contentAdmin, async (_req, reply) => {
+    const [mods, fichasBy, pins] = await Promise.all([
+      Module.find({}).sort({ orden: 1 }).lean<ModuleDoc[]>(),
+      countEntitiesByModule(),
+      countMarkersByModule(),
+    ]);
+    const modules = mods.map((m) => {
+      const info = routeInfoOf(m.slug);
+      const fichas = fichasBy.get(m._id) ?? 0;
+      const tipo = info?.tipo ?? 'sin_pantalla';
+      return {
+        id: m._id,
+        slug: m.slug,
+        nombre: m.nombre,
+        activo: m.activo,
+        orden: m.orden,
+        tipo,
+        ruta_publica: info?.ruta_publica ?? null,
+        staff_seccion: info?.staff_seccion ?? null,
+        fichas,
+        // Los pines pertenecen a la seccion del mapa: su total; el resto, los enlazados a fichas del modulo.
+        pines: m.slug === 'mapa' ? pins.total : (pins.byModule.get(m._id) ?? 0),
+        visible_en_publico: m.activo && info !== null && (tipo === 'seccion' || fichas > 0),
+      };
+    });
+    void reply.header('Cache-Control', NO_STORE);
+    return { modules };
+  });
 
   /** Resumen Operativo: pantalla de entrada de /_staff, filtrada por rol. */
   app.get('/api/admin/overview', moderation, async (req, reply) => {

@@ -136,6 +136,11 @@ export const heroSlideSchema = z.object({
 | `orden` | Number, default `0` | `z.number().int()` |
 | `created_at` | Date | — |
 
+**API de módulos y registro módulo↔ruta (`services/moduleRoutes.ts`, fuente única).** Un módulo solo puede estar `activo` si su `slug` figura en el registro: `mapa` (`/mapa`, sección), `armas`, `vehiculos`, `coleccionables` (`/catalogo/<slug>`, categoría), `foro` (`/foro`, sección) y `guias` (`/guias`, categoría). `radio` no está registrado (su pantalla pública es v1.1): se siembra `activo:false` y no puede activarse.
+
+- `POST /api/modules` y `PATCH /api/modules/:id` responden `422` con `code: "MODULE_WITHOUT_PUBLIC_ROUTE"` si el resultado dejaría `activo: true` un slug sin registrar. Como `activo` es `true` por defecto, un módulo nuevo sin ruta solo se crea con `activo:false` explícito. Desactivar siempre se permite.
+- `GET /api/modules` (público y `?all=1`) añade el campo **derivado** de solo lectura `fichas: number` (conteo de `Entity` del módulo, una consulta agregada). No existe en el esquema Mongoose ni en `moduleSchema`; el cliente lo usa para ocultar pestañas de categoría vacías. Mantiene el caché público (`sendPublicJson`).
+- `GET /api/admin/modules/overview` (ADMIN+; 404 uniforme sin staff, RBAC antes de Zod) devuelve `{ modules: [{ id, slug, nombre, activo, orden, tipo: 'seccion'|'categoria'|'sin_pantalla', ruta_publica, staff_seccion, fichas, pines, visible_en_publico }] }`. `visible_en_publico = activo && ruta_publica !== null && (tipo === 'seccion' || fichas > 0)`; `pines` es el total de `MapMarker` para `mapa` y los enlazados por `entity_id` a fichas del módulo para el resto.
 `slug` es el segmento `:modulo` de `/catalogo/:categoria/:itemSlug`. El módulo con `slug: 'guias'` aloja las guías (`/guias/:slug`).
 
 ### 2.4 `Entity` — `models/Entity.ts`
