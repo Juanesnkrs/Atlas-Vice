@@ -22,6 +22,7 @@
 // =============================================================================
 import { lazy, Suspense, useEffect, useMemo, type ReactNode } from 'react';
 import { BottomDock, DOCK_ITEMS } from './components/layout/BottomDock';
+import { FEATURES } from './data/v1';
 import { ViceShell } from './components/layout/ViceShell';
 import { PalmButton } from './components/ui/PalmButton';
 import type { LegalId } from './data/legalDocs';
@@ -99,7 +100,7 @@ const STATIC_META: Partial<Record<RouteId, PageMeta>> = {
   landing: {
     title: 'Mapa, catálogo y guías de Leonida',
     description:
-      'LeonidApp reúne el mapa interactivo de Leonida, el catálogo de armas, vehículos y coleccionables, guías y noticias oficiales.',
+      'LeonidApp reúne el mapa interactivo de Leonida, el catálogo de armas y vehículos, guías y noticias oficiales.',
     robots: 'index,follow',
     canonicalPath: '/',
   },
@@ -117,7 +118,7 @@ const STATIC_META: Partial<Record<RouteId, PageMeta>> = {
   contribute: { title: 'Aportar', robots: NOINDEX },
 };
 
-/** Ítem del dock resaltado por ruta (portada, guías, noticias y progreso no resaltan ninguno). */
+/** Ítem del dock resaltado por ruta (dock completo, oculto en la v1). */
 const DOCK_ACTIVE: Partial<Record<RouteId, string>> = {
   hub: 'hub',
   map: 'map',
@@ -125,6 +126,36 @@ const DOCK_ACTIVE: Partial<Record<RouteId, string>> = {
   forum: 'forum',
   contribute: 'contribute',
 };
+
+/** Ítem resaltado del dock de la v1 según la ruta y la categoría del catálogo. */
+function dockActiveV1(route: RouteId, categoria: string | undefined): string | undefined {
+  switch (route) {
+    case 'landing':
+      return 'home';
+    case 'map':
+      return 'map';
+    case 'guides':
+    case 'guide':
+      return 'guides';
+    case 'news':
+    case 'newsItem':
+      return 'news';
+    case 'catalog':
+      return categoria === 'vehiculos' ? 'vehicles' : categoria === 'armas' ? 'weapons' : undefined;
+    default:
+      return undefined;
+  }
+}
+
+/** Rutas ocultas en la v1: se comportan como inexistentes (vista 404). */
+const HIDDEN_ROUTES: ReadonlyArray<readonly [RouteId, boolean]> = [
+  ['hub', FEATURES.hub],
+  ['progress', FEATURES.progress],
+  ['forum', FEATURES.forum],
+  ['contribute', FEATURES.contribute],
+  ['legacyContribute', FEATURES.contribute],
+];
+const isHiddenRoute = (route: RouteId): boolean => HIDDEN_ROUTES.some(([id, on]) => id === route && !on);
 
 // ---- Navegación (dock único): los módulos inactivos no aparecen ----------------------------
 function useDock() {
@@ -135,6 +166,9 @@ function useDock() {
         if (item.id === 'map') return isActive('mapa');
         if (item.id === 'catalog') return catalogActive;
         if (item.id === 'forum') return isActive('foro');
+        if (item.id === 'vehicles') return catalogActive && isActive('vehiculos');
+        if (item.id === 'weapons') return catalogActive && isActive('armas');
+        if (item.id === 'guides') return isActive('guias');
         return true;
       }),
     [isActive, catalogActive],
@@ -155,28 +189,32 @@ function HeaderEnd() {
 
   return (
     <div className="flex items-center gap-2">
-      <nav aria-label="Secciones" className="mr-2 hidden items-center gap-1 md:flex">
-        {[
-          { href: '/guias', label: 'Guías' },
-          { href: '/noticias', label: 'Noticias' },
-        ].map((l) => (
-          <a
-            key={l.href}
-            href={l.href}
-            className="flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-vice-text hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
-          >
-            {l.label}
-          </a>
-        ))}
-      </nav>
-      <a
-        href="/progreso"
-        className={`${HEADER_PILL} gap-2 justify-center min-[400px]:min-w-[8.5rem]`}
-        aria-label={`Mi avance ${summary.percent}%. Abrir mi avance`}
-      >
-        <span className="hidden text-xs font-medium text-vice-text/85 min-[400px]:inline">Mi avance</span>
-        <span className="font-display text-vice-orange">{summary.percent}%</span>
-      </a>
+      {FEATURES.progress && (
+        <nav aria-label="Secciones" className="mr-2 hidden items-center gap-1 md:flex">
+          {[
+            { href: '/guias', label: 'Guías' },
+            { href: '/noticias', label: 'Noticias' },
+          ].map((l) => (
+            <a
+              key={l.href}
+              href={l.href}
+              className="flex min-h-11 items-center rounded-full px-3 text-sm font-semibold text-vice-text hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-vice-gold"
+            >
+              {l.label}
+            </a>
+          ))}
+        </nav>
+      )}
+      {FEATURES.progress && (
+        <a
+          href="/progreso"
+          className={`${HEADER_PILL} gap-2 justify-center min-[400px]:min-w-[8.5rem]`}
+          aria-label={`Mi avance ${summary.percent}%. Abrir mi avance`}
+        >
+          <span className="hidden text-xs font-medium text-vice-text/85 min-[400px]:inline">Mi avance</span>
+          <span className="font-display text-vice-orange">{summary.percent}%</span>
+        </a>
+      )}
       {authenticated ? (
         <button
           type="button"
@@ -191,11 +229,11 @@ function HeaderEnd() {
           <span className="hidden max-w-[9ch] truncate md:inline">{profile?.username ?? user?.email?.split('@')[0] ?? 'Cuenta'}</span>
           <span className="text-vice-orange">Salir</span>
         </button>
-      ) : (
+      ) : FEATURES.accountsUi ? (
         <a href="/entrar" className={`${HEADER_PILL} min-w-[5.5rem] justify-center`}>
           Entrar
         </a>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -249,8 +287,8 @@ function Unavailable({ title, text }: { title: string; text: string }) {
         </h1>
         <p className="mt-3 text-vice-text/85">{text}</p>
         <div className="mt-6 flex justify-center">
-          <PalmButton as="a" href="/hub">
-            Volver al Hub
+          <PalmButton as="a" href={FEATURES.hub ? '/hub' : '/'}>
+            {FEATURES.hub ? 'Volver al Hub' : 'Ir al inicio'}
           </PalmButton>
         </div>
       </section>
@@ -271,6 +309,8 @@ export default function App() {
   let route: RouteId | 'notfound' = match?.id ?? 'notfound';
   // Ruta reservada: sin rol confirmado es indistinguible de una ruta inexistente (vista 404 estándar).
   if (route === 'staff' && ready && !staffConfirmed) route = 'notfound';
+  // v1 «enciclopedia»: Hub, Progreso, Foro y Aportar están ocultos (src/data/v1.ts) y se ven como rutas inexistentes.
+  if (route !== 'notfound' && isHiddenRoute(route)) route = 'notfound';
 
   // Metadatos por ruta (guías, noticias y catálogo los gestionan ellas mismas).
   const meta: PageMeta | null = route === 'notfound' ? null : (STATIC_META[route] ?? null);
@@ -278,7 +318,7 @@ export default function App() {
 
   // Redirección de cliente (replaceState): /aportes -> /aportar.
   useEffect(() => {
-    if (route === 'legacyContribute') navigate('/aportar', { replace: true });
+    if (route === 'legacyContribute' && FEATURES.contribute) navigate('/aportar', { replace: true });
   }, [route]);
 
   if (route === 'legacyContribute') return null;
@@ -360,7 +400,12 @@ export default function App() {
       page = <Unavailable title="Página no encontrada" text="La ruta que buscas no existe en LeonidApp." />;
   }
 
-  const activeId = route === 'notfound' ? undefined : DOCK_ACTIVE[route];
+  const activeId =
+    route === 'notfound'
+      ? undefined
+      : FEATURES.hub || FEATURES.forum || FEATURES.contribute
+        ? DOCK_ACTIVE[route]
+        : dockActiveV1(route, categoria);
   // La ficha completa (?vista=ficha) es una página con scroll; el Inspector es un HUD de altura fija.
   const fichaView = route === 'catalog' && itemSlug !== undefined && params.get('vista') === 'ficha';
   const locked = route !== 'notfound' && LOCKED.has(route) && !fichaView;

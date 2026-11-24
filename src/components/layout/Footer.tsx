@@ -1,3 +1,4 @@
+import { FEATURES } from '../../data/v1';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Modal } from '../ui/Modal';
 import { ApiError, apiFetch } from '../../store/useAuthStore';
@@ -647,17 +648,21 @@ function FooterBody({
             {t.contactCta}
           </button>
         </nav>
-        <nav aria-label={t.collaborate} className="flex flex-col items-start">
-          <h2 className={colTitle}>{t.collaborate}</h2>
-          <a className={LINK} href="/aportar">
-            {t.contribute}
-          </a>
-        </nav>
+        {FEATURES.contribute && (
+          <nav aria-label={t.collaborate} className="flex flex-col items-start">
+            <h2 className={colTitle}>{t.collaborate}</h2>
+            <a className={LINK} href="/aportar">
+              {t.contribute}
+            </a>
+          </nav>
+        )}
         <nav aria-label={t.community} className="flex flex-col items-start">
           <h2 className={colTitle}>{t.community}</h2>
-          <a className={LINK} href="/foro">
-            {t.forum}
-          </a>
+          {FEATURES.forum && (
+            <a className={LINK} href="/foro">
+              {t.forum}
+            </a>
+          )}
           <a className={LINK} href="/catalogo">
             {t.catalog}
           </a>

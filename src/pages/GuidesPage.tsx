@@ -2,6 +2,7 @@
 // El avance por paso vive en useProgressStore (IndexedDB); al completar todos los pasos la guía
 // se marca como completada (ENTITY) y esa marca se sincroniza con MongoDB. AdSlot solo aquí
 // (zona editorial con scroll), máx. 2 por página: docs/LeonidApp-Rutas-SEO-Monetizacion.md §6.
+import { FEATURES } from '../data/v1';
 import { useEffect, useMemo, useState } from 'react';
 import { AdSlot } from '../components/ui/AdSlot';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
@@ -321,6 +322,7 @@ function GuideDetail({ slug }: { slug: string }) {
           </section>
         )}
 
+        {FEATURES.forum && (
         <section aria-labelledby="foro-title" className="mt-6">
           <h2 id="foro-title" className="font-display text-xl font-bold">
             Comunidad
@@ -341,6 +343,7 @@ function GuideDetail({ slug }: { slug: string }) {
             Abrir hilo sobre esta guía
           </a>
         </section>
+        )}
 
         <AdSlot position="after-content" className="mt-8" />
       </article>

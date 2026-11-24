@@ -23,7 +23,7 @@ const safeNext = (next: string | null): string =>
   !next.includes('\\') &&
   !/[\r\n]/.test(next)
     ? next
-    : '/hub';
+    : '/';
 
 // ---- Iconos de proveedor ------------------------------------------------------------
 const glyph = (d: string) => (
@@ -208,7 +208,7 @@ export default function LandingAuthPage({ next }: { next: string | null }) {
 
   const goGuest = () => {
     continueAsGuest();
-    navigate('/hub', { replace: true });
+    navigate('/', { replace: true });
   };
 
   const onProvider = async (id: ProviderId) => {

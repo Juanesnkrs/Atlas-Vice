@@ -1,5 +1,6 @@
 // Detalle resumido de un ítem del catálogo. Único componente compartido por el panel derecho
 // (tablet/escritorio) y por el BottomSheet móvil de /catalogo/:categoria/:itemSlug.
+import { FEATURES } from '../../data/v1';
 import { PalmButton } from './PalmButton';
 import { StatBar, type StatAccent } from './StatBar';
 import {
@@ -83,6 +84,9 @@ export function SpecSheet({ entity, extra = [] }: { entity: Entity; extra?: Spec
 }
 
 /** Los Invitados no pueden abrir hilos concretos: se les lleva al listado del foro. */
+/** Columnas de la fila de acciones según cuántas se muestran (clases estáticas para Tailwind). */
+const ACTION_COLS: Record<number, string> = { 1: 'grid-cols-1', 2: 'grid-cols-2', 3: 'grid-cols-3' };
+
 export const forumHref = (guest: boolean, path: string): string => (guest ? '/foro' : path);
 
 export function MapPinIcon({ off = false }: { off?: boolean }) {
@@ -178,7 +182,7 @@ export function EntityDetailPanel({
 
         <SpecSheet entity={entity} extra={extra} />
 
-        {threads.length > 0 && (
+        {FEATURES.forum && threads.length > 0 && (
           <ul aria-label="Hilos relacionados" className="flex flex-col text-sm">
             {threads.slice(0, 2).map((t) => (
               <li key={t.id}>
@@ -198,16 +202,18 @@ export function EntityDetailPanel({
       </div>
 
       <div className="flex shrink-0 flex-col gap-3">
-        <button
-          type="button"
-          aria-pressed={done}
-          onClick={onToggle}
-          className={`min-h-11 whitespace-nowrap rounded-xl px-4 font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-            done ? 'bg-vice-gold text-vice-ink' : 'bg-white/10 hover:bg-white/20'
-          }`}
-        >
-          {done ? `${doneLabel} al 100% (quitar)` : `Marcar como ${doneLabel.toLowerCase()}`}
-        </button>
+        {FEATURES.progress && (
+          <button
+            type="button"
+            aria-pressed={done}
+            onClick={onToggle}
+            className={`min-h-11 whitespace-nowrap rounded-xl px-4 font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
+              done ? 'bg-vice-gold text-vice-ink' : 'bg-white/10 hover:bg-white/20'
+            }`}
+          >
+            {done ? `${doneLabel} al 100% (quitar)` : `Marcar como ${doneLabel.toLowerCase()}`}
+          </button>
+        )}
 
         {pin ? (
           <PalmButton as="a" href={`/mapa?marker=${pin.id}`} fullWidth className="h-12! min-h-12! whitespace-nowrap text-base!">
@@ -220,7 +226,7 @@ export function EntityDetailPanel({
           </p>
         )}
 
-        <div className={`grid gap-2 ${compareTarget ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        <div className={`grid gap-2 ${ACTION_COLS[1 + (compareTarget ? 1 : 0) + (FEATURES.forum ? 1 : 0)]}`}>
           <a href={fichaHref} aria-label={`Ver ficha completa de ${entity.titulo}`} className={ACTION}>
             Ver ficha
           </a>
@@ -239,13 +245,15 @@ export function EntityDetailPanel({
               Comparar
             </a>
           )}
-          <a
-            href={forumHref(guest, `/foro?entity=${entity.id}`)}
-            aria-label={`Discutir ${entity.titulo} en el foro (${threads.length} hilos)`}
-            className={ACTION}
-          >
-            Discutir ({threads.length})
-          </a>
+          {FEATURES.forum && (
+            <a
+              href={forumHref(guest, `/foro?entity=${entity.id}`)}
+              aria-label={`Discutir ${entity.titulo} en el foro (${threads.length} hilos)`}
+              className={ACTION}
+            >
+              Discutir ({threads.length})
+            </a>
+          )}
         </div>
       </div>
     </div>

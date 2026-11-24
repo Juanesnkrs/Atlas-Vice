@@ -1,5 +1,6 @@
 // Portada pública `/` (DesignSpec §7.2): hero compacto, "Explora Leonida", noticias oficiales,
 // guías, foro en vivo (§7.5) y franja de registro. Cabecera, dock y Footer los pone App.tsx.
+import { FEATURES } from '../data/v1';
 import { useMemo, useRef, useState } from 'react';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { HeroCarousel } from '../components/ui/HeroCarousel';
@@ -339,14 +340,15 @@ export default function HomePage() {
   usePageMeta({
     title: 'Mapa, catálogo y guías de Leonida',
     description:
-      'LeonidApp reúne el mapa interactivo de Leonida, el catálogo de armas, vehículos y coleccionables, guías y noticias oficiales.',
+      'LeonidApp reúne el mapa interactivo de Leonida, el catálogo de armas y vehículos, guías y noticias oficiales.',
     canonicalPath: '/',
   });
   const authenticated = useAuthStore((s) => s.status === 'authenticated');
   // Solo lo necesario: totales por módulo (consulta de 1 elemento), marcadores y las guías del módulo `guias`.
   const { data: world, loading: worldLoading, unavailable: worldDown, error: worldError, retry: retryWorld } = useWorldData(HOME_SCOPE);
   const { isActive, catalogActive } = useModuleGate();
-  const { retry: retryForum } = useForumData();
+  // Con el foro oculto (v1) no se pide su contenido; el interruptor es constante, así que el orden de hooks no cambia.
+  const retryForum = FEATURES.forum ? useForumData().retry : (): void => undefined;
   const heroSlides = useHeroSlides();
   const { news, loading: newsLoading, error: newsError, retry: retryNews } = useOfficialNews('all', 50);
 
@@ -373,13 +375,13 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-10 pt-2 md:gap-12 md:px-8">
-      <HeroCarousel slides={heroSlides} guest={!authenticated} />
+      <HeroCarousel slides={heroSlides} guest={FEATURES.accountsUi && !authenticated} />
       <ExploreSection cards={cards} pending={worldLoading && !worldDown && world.modules.length === 0} />
       {worldDown && <ApiErrorState compact title="No pudimos cargar el catálogo" message={worldError ?? ''} onRetry={retryAll} />}
       <NewsSection news={news} loading={newsLoading} error={newsError} onRetry={retryAll} />
       {isActive('guias') && guides.length > 0 && <GuidesSection guides={guides} />}
-      {isActive('foro') && <ForumSection authenticated={authenticated} onRetryAll={retryAll} />}
-      {!authenticated && (
+      {FEATURES.forum && isActive('foro') && <ForumSection authenticated={authenticated} onRetryAll={retryAll} />}
+      {FEATURES.accountsUi && !authenticated && (
         <section aria-labelledby="registro-title" className={`glass flex flex-col items-start gap-4 rounded-3xl p-6 md:flex-row md:items-center md:justify-between md:p-8 ${DEFER} [contain-intrinsic-size:auto_200px] md:[contain-intrinsic-size:auto_154px]`}>
           <div>
             <h2 id="registro-title" className="font-display text-2xl font-bold">

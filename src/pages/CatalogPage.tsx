@@ -5,6 +5,7 @@
 //   /catalogo/:categoria/:itemSlug   -> Inspector con el ítem preseleccionado (sheet móvil abierto)
 //   ...?vista=ficha                  -> ficha completa del ítem (misma URL canónica)
 //   ?comparar=a,b[,c]  comparador sobre la URL vigente · ?q= búsqueda · ?modulo= / ?entity= heredados
+import { FEATURES } from '../data/v1';
 import { useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AdSlot } from '../components/ui/AdSlot';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
@@ -1349,7 +1350,7 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
             <p className="text-sm text-vice-text/70">Sin estadísticas numéricas.</p>
           )}
           <SpecSheet entity={entity} />
-          {trackable && (
+          {FEATURES.progress && trackable && (
             <button
               type="button"
               aria-pressed={done}
@@ -1380,11 +1381,13 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
               Sin ubicación en el mapa
             </p>
           )}
-          <a href={forumHref(guest, `/foro?entity=${entity.id}`)} className={LINK}>
-            Abrir hilo sobre {entity.titulo}
-          </a>
+          {FEATURES.forum && (
+            <a href={forumHref(guest, `/foro?entity=${entity.id}`)} className={LINK}>
+              Abrir hilo sobre {entity.titulo}
+            </a>
+          )}
         </div>
-        {threads.length > 0 && (
+        {FEATURES.forum && threads.length > 0 && (
           <div className="mt-3">
             <h3 className="font-display text-base font-bold">Hilos relacionados</h3>
             <ul className="mt-1 flex flex-col text-sm">

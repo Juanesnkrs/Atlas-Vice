@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
+import { FEATURES } from '../../data/v1';
 
-export type DockIconId = 'hub' | 'map' | 'catalog' | 'forum' | 'contribute';
+export type DockIconId = 'hub' | 'map' | 'catalog' | 'forum' | 'contribute' | 'home' | 'vehicles' | 'weapons' | 'guides' | 'news';
 
 export interface DockItem {
   id: DockIconId;
@@ -8,14 +9,27 @@ export interface DockItem {
   href: string;
 }
 
-/** Lista única del dock (escritorio y móvil), en el orden del DesignSpec §3. */
-export const DOCK_ITEMS: readonly DockItem[] = [
+/** Dock completo (Hub, Mapa, Catálogo, Foro, Aportar), en el orden del DesignSpec §3. Oculto en la v1 (ver src/data/v1.ts). */
+export const DOCK_ITEMS_FULL: readonly DockItem[] = [
   { id: 'hub', label: 'Hub', href: '/hub' },
   { id: 'map', label: 'Mapa', href: '/mapa' },
   { id: 'catalog', label: 'Catálogo', href: '/catalogo' },
   { id: 'forum', label: 'Foro', href: '/foro' },
   { id: 'contribute', label: 'Aportar', href: '/aportar' },
 ];
+
+/** Dock de la v1 «enciclopedia» (escritorio y móvil): solo contenido público. */
+export const DOCK_ITEMS_V1: readonly DockItem[] = [
+  { id: 'home', label: 'Inicio', href: '/' },
+  { id: 'vehicles', label: 'Vehículos', href: '/catalogo/vehiculos' },
+  { id: 'weapons', label: 'Armas', href: '/catalogo/armas' },
+  { id: 'guides', label: 'Guías', href: '/guias' },
+  { id: 'map', label: 'Mapa', href: '/mapa' },
+  { id: 'news', label: 'Noticias', href: '/noticias' },
+];
+
+/** Lista que usa la app (la v1 muestra el dock simplificado). */
+export const DOCK_ITEMS: readonly DockItem[] = FEATURES.hub || FEATURES.forum || FEATURES.contribute ? DOCK_ITEMS_FULL : DOCK_ITEMS_V1;
 
 function Svg({ children }: { children: ReactNode }) {
   return (
@@ -38,6 +52,7 @@ function Svg({ children }: { children: ReactNode }) {
 
 function DockIcon({ id }: { id: DockIconId }) {
   switch (id) {
+    case 'home':
     case 'hub':
       return (
         <Svg>
@@ -65,6 +80,36 @@ function DockIcon({ id }: { id: DockIconId }) {
       return (
         <Svg>
           <path d="M4 5h16v11H9l-5 4V5z" />
+        </Svg>
+      );
+    case 'vehicles':
+      return (
+        <Svg>
+          <path d="M3 15v-3.5L5.5 6h13L21 11.5V15M3 15h18M3 15v2.5M21 15v2.5" />
+          <path d="M5.5 11.5h13" />
+          <circle cx="7.5" cy="15" r="1.6" />
+          <circle cx="16.5" cy="15" r="1.6" />
+        </Svg>
+      );
+    case 'weapons':
+      return (
+        <Svg>
+          <circle cx="12" cy="12" r="6.5" />
+          <path d="M12 3v4M12 17v4M3 12h4M17 12h4" />
+        </Svg>
+      );
+    case 'guides':
+      return (
+        <Svg>
+          <path d="M4 5.5A2.5 2.5 0 016.5 3H20v15H6.5A2.5 2.5 0 004 20.5v-15z" />
+          <path d="M8 7h8M8 10.5h6" />
+        </Svg>
+      );
+    case 'news':
+      return (
+        <Svg>
+          <path d="M4 5h13v14H6.5A2.5 2.5 0 014 16.5V5z" />
+          <path d="M17 8h3v8.5a2.5 2.5 0 01-2.5 2.5H17M7.5 8.5h6M7.5 12h6M7.5 15.5h3.5" />
         </Svg>
       );
     case 'contribute':
@@ -102,7 +147,7 @@ export function BottomDock({ items = DOCK_ITEMS, activeId, className = '' }: Bot
             key={item.id}
             href={item.href}
             aria-current={active ? 'page' : undefined}
-            className={`flex h-14 min-w-[44px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[28px] text-[11px] no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold md:w-[108px] md:flex-none ${
+            className={`flex h-14 min-w-[44px] flex-1 flex-col items-center justify-center gap-[3px] rounded-[28px] ${items.length > 5 ? "text-[10px]" : "text-[11px]"} no-underline transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold md:w-[108px] md:flex-none ${
               active
                 ? 'bg-vice-accent font-bold text-vice-ink'
                 : 'font-medium text-vice-text hover:bg-white/10'

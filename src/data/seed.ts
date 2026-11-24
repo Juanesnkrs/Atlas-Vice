@@ -602,7 +602,7 @@ export const DEFAULT_HERO_SLIDE: HeroSlide = {
   id: 'default',
   kicker: 'Guía comunitaria de Leonida',
   titulo: 'Todo Leonida, en un solo mapa',
-  descripcion: 'Mapa, catálogo, guías y foro. Marca lo que ya encontraste.',
+  descripcion: 'Mapa, catálogo, guías y noticias de Leonida.',
   boton_texto: 'Abrir el mapa',
   boton_enlace: '/mapa',
   boton_secundario_texto: 'Crear cuenta gratis',

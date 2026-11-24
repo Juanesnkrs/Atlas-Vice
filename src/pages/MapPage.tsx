@@ -1,6 +1,7 @@
 // P04 - Mapa interactivo de Leonida: motor SVG propio (MapCanvas) sobre cartografía vectorial original,
 // filtros combinados sincronizados con la URL, buscador instantáneo, ficha de marcador con check 100%
 // (P04.3), drawer de hilos (P07.3) y Modo Editor de coordenadas para ADMIN+.
+import { FEATURES } from '../data/v1';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -156,22 +157,26 @@ function MarkerCard({ marker, entityTitle, entityId, catalogHref, done, guest, c
           </div>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            aria-pressed={done}
-            onClick={onToggle}
-            className={`flex min-h-12 flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-sm font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-              done ? 'bg-vice-gold text-vice-ink' : 'bg-vice-accent text-vice-ink'
-            }`}
-          >
-            {done ? 'Completado (quitar)' : 'Marcar completado'}
-          </button>
-          <a
-            href={forumLink(`/foro?marker=${marker.id}`)}
-            className="glass flex min-h-12 items-center justify-center whitespace-nowrap rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold"
-          >
-            Hilos ({threads.length})
-          </a>
+          {FEATURES.progress && (
+            <button
+              type="button"
+              aria-pressed={done}
+              onClick={onToggle}
+              className={`flex min-h-12 flex-1 items-center justify-center whitespace-nowrap rounded-full px-3 text-sm font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
+                done ? 'bg-vice-gold text-vice-ink' : 'bg-vice-accent text-vice-ink'
+              }`}
+            >
+              {done ? 'Completado (quitar)' : 'Marcar completado'}
+            </button>
+          )}
+          {FEATURES.forum && (
+            <a
+              href={forumLink(`/foro?marker=${marker.id}`)}
+              className="glass flex min-h-12 items-center justify-center whitespace-nowrap rounded-full px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold"
+            >
+              Hilos ({threads.length})
+            </a>
+          )}
         </div>
         {entityTitle && entityId && (
           <a
@@ -202,16 +207,19 @@ function MarkerCard({ marker, entityTitle, entityId, catalogHref, done, guest, c
           Ver ficha: {entityTitle}
         </a>
       )}
-      <button
-        type="button"
-        aria-pressed={done}
-        onClick={onToggle}
-        className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-          done ? 'bg-vice-gold text-vice-ink' : 'bg-vice-accent text-vice-ink'
-        }`}
-      >
-        {done ? 'Completado al 100% (quitar)' : 'Marcar como completado'}
-      </button>
+      {FEATURES.progress && (
+        <button
+          type="button"
+          aria-pressed={done}
+          onClick={onToggle}
+          className={`flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
+            done ? 'bg-vice-gold text-vice-ink' : 'bg-vice-accent text-vice-ink'
+          }`}
+        >
+          {done ? 'Completado al 100% (quitar)' : 'Marcar como completado'}
+        </button>
+      )}
+      {FEATURES.forum && (
       <section aria-label="Comentarios contextuales" className="rounded-xl border border-white/10 bg-white/5 p-3">
         <h4 className="font-display text-base font-bold">Hilos ({threads.length})</h4>
         {threads.length === 0 ? (
@@ -236,6 +244,7 @@ function MarkerCard({ marker, entityTitle, entityId, catalogHref, done, guest, c
           Discutir este punto
         </PalmButton>
       </section>
+      )}
       <button
         type="button"
         onClick={onClose}
