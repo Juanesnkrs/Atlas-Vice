@@ -125,7 +125,8 @@ function ExploreSection({ cards }: { cards: ExploreCard[] }) {
               </span>
               <span className="flex flex-col px-3 pb-3 pt-2">
                 <span className="font-display text-lg font-bold leading-tight">{c.title}</span>
-                {c.count && <span className="text-xs font-semibold text-vice-orange">{c.count}</span>}
+                {/* Línea reservada aunque el conteo llegue después de la API: evita el salto de diseño (CLS). */}
+                <span className="min-h-4 text-xs font-semibold text-vice-orange">{c.count ?? ' '}</span>
               </span>
             </a>
           </li>

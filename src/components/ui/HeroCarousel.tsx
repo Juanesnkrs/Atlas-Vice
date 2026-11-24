@@ -98,6 +98,7 @@ function Slide({ slide, active, first, guest, inert, total, position, imageFaile
         {!imageFailed && (
           <img
             {...imageAttrs(slide.imagen_url, 'full', '(min-width: 768px) 55vw, 100vw')}
+            {...(isDefault ? HERO_DEFAULT_SRCSET : {})}
             alt={active ? slide.imagen_alt : ''}
             decoding="async"
             {...(first ? { fetchPriority: 'high' as const } : { loading: 'lazy' as const })}
@@ -110,6 +111,12 @@ function Slide({ slide, active, first, guest, inert, total, position, imageFaile
     </div>
   );
 }
+
+/** Variante WebP 800 px (67 KB) del artwork por defecto: el navegador la elige en móvil y deja el JPG 1080 px (153 KB) para pantallas grandes. */
+const HERO_DEFAULT_SRCSET = {
+  srcSet: '/assets/hero-gas-station-800.webp 800w, /assets/hero-gas-station.jpg 1080w',
+  sizes: '(min-width: 768px) 55vw, 100vw',
+} as const;
 
 export function HeroCarousel({
   slides,
