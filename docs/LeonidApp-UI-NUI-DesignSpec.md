@@ -136,6 +136,7 @@ src/
 │   └── ui/            PalmButton.tsx · TipCard.tsx · StatBar.tsx · BottomSheet.tsx · EntityDetailPanel.tsx · AdSlot.tsx · Modal.tsx
 │                      MapCanvas.tsx (motor del mapa: pan/zoom/inercia/clustering sobre SVG + rAF) · mapPaint.ts (pintor <canvas> de la pirámide de teselas del referente)
 │                      HeroCarousel.tsx (carrusel del Hero, §7.12) · StaffHero.tsx + StaffHeroImage.tsx (módulo «Portada (Hero)» del panel oculto: gestor y subida de imagen)
+│                      StaffImages.tsx + StaffImagesBulk.tsx (subpestaña «Imágenes» del panel: cola, carga individual y carga masiva, §7.15)
 ├── data/              seed.ts (capa offline-first y fallback) · leonidaMap.ts (marco de coordenadas, `MARKER_SPOTS` y metadatos de las teselas)
 ├── pages/             HomePage.tsx · LandingAuthPage.tsx · DashboardPage.tsx · MapPage.tsx · CatalogPage.tsx
 │                      ForumPage.tsx · AdminSubmitPage.tsx · GuidesPage.tsx · NewsPage.tsx
@@ -344,6 +345,17 @@ Solo para el equipo (`isStaff()`; el RBAC real sigue en la API). Objetivo: que u
 - **Escritorio y tableta (≥ 768 px):** el panel ocupa la columna izquierda en lugar del control de capas (que se oculta mientras se edita) y cabe sin scroll; no se muestra la ficha del pin seleccionado a la vez.
 - **Móvil:** panel acoplado sobre el dock (portal fuera del lienzo táctil, con scroll propio, máx. 46 % del alto) que **arranca plegado** como una barra («Toca el mapa para fijar el punto») para dejar el mapa libre; al fijar el punto se abre y el lienzo reserva ese espacio, acerca el mapa y centra el punto en la zona visible. Se puede ocultar/abrir y salir desde la barra. El zoom sube de posición para no quedar tapado.
 - **Mira:** trazo dorado con contorno oscuro para que se lea sobre el terreno claro.
+
+### 7.15 Estudio de imágenes en el panel y calidad en la app pública (S3, 2026-11-23)
+
+**Subpestaña «Imágenes»** (`/_staff` → Contenido público → `?b=imagenes`, ADMIN+; chunk `staff-panel`). Sin librerías: Tailwind sobre los tokens Vice NUI y SVG inline.
+- **Cabecera:** bloque «Qué hace» (imágenes ya editadas en Photoshop a 1600×900 en 16:9; la app recorta si hace falta y genera la versión grande y la de listados) y medidor «Imágenes propias: N de 40» (barra con `role="progressbar"`; «a partir de 40 se pueden activar anuncios») con contadores Sin imagen, Provisionales y Propias.
+- **Una a una:** cola paginada (50) de fichas pendientes (alternable a «Todas»), filtros por módulo con conteo y buscador con retardo. Cada fila: miniatura (`?w=800`) o silueta del sistema, título, slug, chip Sin imagen / Provisional / Propia y zona de soltar con botón «Elegir imagen» (accesible por teclado). Al soltar o elegir se abre un diálogo (hoja inferior en móvil) con ANTES y DESPUÉS en marco 16:9; si la proporción no es 16:9 el DESPUÉS es un recorte `cover` con foco ajustable (clic o toque en el marco, o dos deslizadores de 0–100 %). Avisos: menor de 1600×900, tipo no admitido o > 12 MB bloquean «Guardar imagen»; proporción distinta, «Se recortará; ajusta el foco». Texto alternativo opcional (≤ 200). Tras guardar se muestran los pesos reales (grande y de listado) y «recortada»/«sin recorte»; la fila sale de «Pendientes» si ya no lo es.
+- **Carga masiva por slug:** zona grande «Soltar varios archivos» / «Elegir archivos»; archivos `<slug>.png|jpg|jpeg|webp`. Validación local, emparejado de solo lectura con el servidor (lotes ≤ 200), tabla de simulación (Lista, No encontrada, Ambigua con selector de módulo, No válida, Repetida: se usa el último), «Aplicar N imágenes» (cola de 3, barra de progreso, errores por archivo) y reporte final copiable con «Cargar más». Cero escrituras durante la simulación.
+- **Estados:** esqueleto de carga, vacío («No hay fichas pendientes: ¡todo tiene imagen propia!»), error con «Reintentar» y aviso de red caída. Tap targets ≥ 44 px, foco visible y resultados en regiones `aria-live`.
+- «Reemplazar imagen» (Catálogo) se mantiene y muestra «Usa 1600×900 px (16:9)» con enlace a «Imágenes»; el «Mapa de la PWA» añade el acceso directo «Imágenes de las fichas».
+
+**App pública.** Las imágenes propias `/media/<id>` llevan `srcset` 800w/1600w con `sizes`, `loading="lazy"`, `decoding="async"`, marco de tamaño fijo (CLS = 0) y `object-fit: cover`: listados y teselas usan `?w=800`; ficha, visor del Inspector y Hero, la principal. Helper único en `src/data/seed.ts` (`thumbUrl`, `imageSrcSet`, `imageAttrs`); assets estáticos y https no usan `srcset`. El diseño del catálogo no cambia; las fichas sin imagen conservan sus siluetas.
 
 ### 7.14 Tarjeta «Pipeline de datos y catálogo (ETL)» en el panel
 
