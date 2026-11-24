@@ -199,17 +199,23 @@ Camino crítico: **S1 → S2 → S3 → S5**. S6 y la parte de infraestructura d
 | S2.6 | **Política de stats:** v1 sin comparador numérico real. Los datos 0–10 de gameta se conservan en el ledger, no se publican como «medidos». | Propietario + 00 | 0,25 | ADR escrito; el comparador muestra estado «sin datos verificados» coherente, sin cifras inventadas. |
 | S2.7 | Pruebas del exportador (fixtures) para `gtabase` y `gameta` y de aislamiento de fuentes. | 06 | 1 | Test automatizado: ninguna escritura de gameta modifica filas de gtabase; el export de cada fuente es independiente. |
 
-### Sprint 3 — Módulo «Imágenes» (Photoshop → PWA) (≈ 9–12 d)
+### Sprint 3 — Estudio de Imágenes «Photoshop → PWA» (≈ 8–11 d)
 **Meta:** que el propietario pueda subir, uno a uno o en lote, imágenes editadas en Photoshop y que la PWA las sirva en calidad editorial móvil.
 
-**Especificación de entrada recomendada para Photoshop:** 16:9, **2400×1350 px** (mínimo 1600×900), sRGB, margen seguro del 8 % en los bordes, JPG/PNG/WebP, hasta 12 MB.
+**Especificación de entrada para Photoshop (decisión del propietario, 2026-11-23):** exportar en **1600×900 px, relación 16:9 limpia**, sRGB, margen seguro del 8 % en los bordes, JPG/PNG/WebP, hasta 12 MB (se aceptan 2400×1350 y se reducen).
+
+**Especificación de procesamiento (vinculante para S3.1–S3.4):** toda carga manual se procesa con `sharp` usando **`fit: "cover"`** (recorte centrado o con foco, **sin barras laterales oscuras `#0b0f1f`** y sin `contain`) y genera exactamente dos salidas WebP:
+- **`1600×900` WebP, ≤ 600 KB** (ficha, Hero, `og:image`).
+- **`800×450` WebP** (listados y tarjetas móviles; objetivo ≤ 180 KB).
+
+Reglas: no se amplía una fuente menor que la salida (se avisa y se rechaza o se marca `capturaPropiaPendiente` según el caso); fuente con proporción distinta de 16:9 → vista previa del recorte antes de guardar y foco (`object-position`) ajustable; calidad que baja desde 82 hasta un mínimo de 60 y aviso si no cabe en el tope. El `contain` con fondo `#0b0f1f` queda reservado solo al flujo transitorio de tarjetas del pipeline (imágenes de terceros) hasta que se sustituyan.
 
 | ID | Historia | Resp. | Días | CA |
 |---|---|---|---|---|
 | S3.1 | **Pantalla «Imágenes»** en `/_staff` → Contenido público: cola de fichas «sin imagen / provisional», arrastrar y soltar, **vista previa antes/después**, peso, dimensiones, avisos (fuente < 1600 px, proporción ≠ 16:9), **texto alternativo editable** (`metadata_json.imagen_alt`). | 03 + 02 | 3 | Flujo completo en ≤ 3 clics por imagen; ProvisionalChip desaparece al guardar; funciona en 1440 px y en 390 px; accesible por teclado. |
 | S3.2 | **Subida masiva por nombre de archivo = slug** (`buccaneer.png`): emparejado por módulo + slug normalizado, **simulación previa** (coincide / ambiguo / no encontrado / error) y «Aplicar»; cola de 3 en paralelo. | 03 + 01 | 3 | Informe descargable; 0 escrituras en simulación; 50 archivos mezclados se procesan sin bloquear la UI; errores por archivo, no por lote. |
-| S3.3 | **Calidad de conversión:** `withoutEnlargement`, `cover` con foco opcional (`object-position`) o `contain` a elección, tope de la variante grande **600 KB**, calidad mínima 60 y aviso si no se alcanza, **conservar el original** (almacén de originales). | 01 | 2 | Una imagen de 800×450 no se amplía; fotos de prueba (degradado, cromo, escena compleja) sin bandas visibles a 100 % en revisión del supervisor. |
-| S3.4 | **Variantes responsivas:** 480 / 800 / 1200 / 1600 px en WebP (AVIF opcional), `srcset/sizes` en tarjetas, ficha y Hero; URL estable normalizada para caché (`/media/<id>?w=`), aspect-ratio fijo (CLS = 0). | 01 + 03 + 05 | 4–5 | Listado móvil descarga la variante ≤ 800 px (≤ 180 KB por tarjeta); detalle usa 1200/1600; documentación §2.11 y Zod actualizados; Cloudflare cachea sin variar por query no normalizada. |
+| S3.3 | **Calidad de conversión:** `fit: "cover"` **obligatorio** en la carga manual (sin barras `#0b0f1f`), `withoutEnlargement`, foco opcional (`object-position`), tope de la variante grande **600 KB**, calidad mínima 60 y aviso si no se alcanza, **conservar el original** (almacén de originales). Esto sustituye al `contain`/400 KB actual de «Reemplazar imagen». | 01 | 2 | Ninguna salida con barras laterales oscuras; una fuente de 800×450 no se amplía a 1600×900; fotos de prueba (degradado, cromo, escena compleja) sin bandas visibles a 100 % en revisión del supervisor. |
+| S3.4 | **Variantes responsivas:** dos salidas WebP, **1600×900 (≤ 600 KB)** y **800×450**, con `srcset/sizes` en tarjetas, ficha y Hero; URL estable normalizada para caché (p. ej. `/media/<id>?w=800|1600`), aspect-ratio fijo 16:9 (CLS = 0). AVIF y variantes intermedias quedan para v1.1. | 01 + 03 + 05 | 3 | Listado móvil descarga la variante 800×450 (≤ 180 KB por tarjeta); ficha, Hero y `og:image` usan 1600×900; documentación §2.11 y Zod actualizados; Cloudflare cachea sin variar por query no normalizada. |
 | S3.5 | Auditoría y trazabilidad: `AuditLog` por subida, reemplazo y borrado; informe de «huérfanos» (media sin ficha). | 01 | 0,5 | Cada acción deja rastro; script/listado de huérfanos sin falsos positivos. |
 
 **Decisión de almacenamiento (ADR D-08, a firmar en S3.4):** v1 guarda variantes en `MediaAsset` (MongoDB) → exige **Atlas M10 o superior** (no M0), o bien almacén de objetos (R2) con `storage_provider`. Recomendación: MongoDB en v1 si el tamaño total estimado < 300 MB; migrar a R2 en la versión siguiente.
