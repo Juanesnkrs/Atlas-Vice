@@ -17,11 +17,12 @@ const SUBS: ReadonlyArray<{ id: Sub; label: string }> = [
   { id: 'hero', label: 'Portada (Hero)' },
 ];
 
-export default function StaffContent() {
-  const [sub, setSub] = useBlockTab('contenido', SUBS);
+export default function StaffContent({ visible }: { visible?: ReadonlyArray<Sub> } = {}) {
+  const tabs = visible ? SUBS.filter((t) => visible.includes(t.id)) : SUBS;
+  const [sub, setSub] = useBlockTab('contenido', tabs);
   return (
     <div className="flex flex-col gap-4">
-      <SubTabs label="Contenido público" tabs={SUBS} value={sub} onChange={setSub} />
+      {!visible && <SubTabs label="Contenido público" tabs={SUBS} value={sub} onChange={setSub} />}
       {sub === 'catalogo' && (
         <Block
           id="blk-catalogo"

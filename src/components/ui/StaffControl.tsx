@@ -17,11 +17,12 @@ const SUBS: ReadonlyArray<{ id: Sub; label: string }> = [
   { id: 'salud', label: 'Salud' },
 ];
 
-export default function StaffControl() {
-  const [sub, setSub] = useBlockTab('control', SUBS);
+export default function StaffControl({ visible }: { visible?: ReadonlyArray<Sub> } = {}) {
+  const tabs = visible ? SUBS.filter((t) => visible.includes(t.id)) : SUBS;
+  const [sub, setSub] = useBlockTab('control', tabs);
   return (
     <div className="flex flex-col gap-4">
-      <SubTabs label="Control Total" tabs={SUBS} value={sub} onChange={setSub} />
+      {!visible && <SubTabs label="Control Total" tabs={SUBS} value={sub} onChange={setSub} />}
       {sub === 'config' && <StaffConfig />}
       {sub === 'monetizacion' && <StaffMonetization />}
       {sub === 'identidades' && <StaffIdentity />}

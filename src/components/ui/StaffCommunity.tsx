@@ -11,11 +11,12 @@ const SUBS: ReadonlyArray<{ id: Sub; label: string }> = [
   { id: 'foro', label: 'Foro' },
 ];
 
-export default function StaffCommunity() {
-  const [sub, setSub] = useBlockTab('comunidad', SUBS);
+export default function StaffCommunity({ visible }: { visible?: ReadonlyArray<Sub> } = {}) {
+  const tabs = visible ? SUBS.filter((t) => visible.includes(t.id)) : SUBS;
+  const [sub, setSub] = useBlockTab('comunidad', tabs);
   return (
     <div className="flex flex-col gap-4">
-      <SubTabs label="Comunidad y moderación" tabs={SUBS} value={sub} onChange={setSub} />
+      {!visible && <SubTabs label="Comunidad y moderación" tabs={SUBS} value={sub} onChange={setSub} />}
       {sub === 'aportes' ? <StaffModeration /> : <StaffForum />}
     </div>
   );
