@@ -29,7 +29,12 @@ const staffChunk = (id: string): string | undefined => {
   // Resto del panel (MODERATOR+): cualquier otro Staff*.tsx, la pagina y su estado en memoria.
   if (/\/(components\/ui\/Staff[A-Za-z]+|pages\/StaffPage)\.tsx$|\/store\/useStaffStore\.ts$/.test(p)) return 'staff-panel';
   // Las dependencias compartidas van a un chunk publico propio: sin esto el bundler las aloja en un chunk staff-*.
+  // React/react-dom (cambian poco: cache estable entre despliegues) aparte de las librerias de datos (query, zustand, idb-keyval).
+  if (/\/node_modules\/(?:\.pnpm\/[^/]+\/node_modules\/)?(?:react|react-dom|scheduler)\//.test(p)) return 'react';
   if (p.includes('/node_modules/')) return 'vendor';
+  // El pie y los textos legales no se necesitan en el primer pintado: el Footer es lazy en ViceShell y legalDocs solo lo usa LegalPage.
+  if (/\/components\/layout\/Footer\.tsx$/.test(p)) return 'footer';
+  if (/\/data\/legalDocs\.ts$/.test(p)) return 'legal-docs';
   if (/\/src\/(data|store|types|components\/layout)\//.test(p)) return 'core';
   return undefined;
 };

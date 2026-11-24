@@ -5,7 +5,7 @@
 //   /catalogo/:categoria/:itemSlug   -> Inspector con el ítem preseleccionado (sheet móvil abierto)
 //   ...?vista=ficha                  -> ficha completa del ítem (misma URL canónica)
 //   ?comparar=a,b[,c]  comparador sobre la URL vigente · ?q= búsqueda · ?modulo= / ?entity= heredados
-import { useEffect, useId, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
+import { useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AdSlot } from '../components/ui/AdSlot';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { BottomSheet } from '../components/ui/BottomSheet';
@@ -603,6 +603,10 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
     itemIdx >= 0 ? Math.ceil((itemIdx + 1) / PAGE_SIZE) * PAGE_SIZE : 0,
   );
   const shown = list.length > limit ? list.slice(0, limit) : list;
+  // Escritorio: las tarjetas se pintan en una pasada de baja prioridad (interrumpible) y la ficha y el visor no esperan a las 24 tarjetas (TBT).
+  // En móvil el grid fluye con la página: diferirlo movería lo que hay debajo (CLS), así que allí se pinta en el mismo commit.
+  const shownDeferred = useDeferredValue(shown);
+  const gridShown = isDesktop ? shownDeferred : shown;
   const loadMore = (): void => {
     loadedMemo.set(pageKey, limit + PAGE_SIZE);
     bumpLoaded();
@@ -876,7 +880,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
           {tabDef.label}
           {cat !== 'Todas' && <span className="text-vice-orange"> // {cat}</span>}
         </h1>
-        <div role="tablist" aria-label="Categorías del catálogo" className="scrollbar-none flex max-w-full gap-2 overflow-x-auto max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,#000_90%,transparent)]">
+        <div role="tablist" aria-label="Categorías del catálogo" className="scrollbar-none flex min-h-11 max-w-full gap-2 overflow-x-auto max-md:w-full max-md:pr-6 max-md:[mask-image:linear-gradient(to_right,#000_90%,transparent)]">
           {tabs.map((t) => (
             <button
               key={t.slug}
@@ -908,6 +912,11 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
           className="h-11 w-full rounded-full border border-vice-orange/25 bg-[rgba(20,14,36,0.78)] px-4 text-sm text-vice-text backdrop-blur-[14px] placeholder:text-vice-text/60 focus-visible:outline-2 focus-visible:outline-vice-gold md:h-10 md:max-w-sm"
         />
       </div>
+
+      {categories.length <= 2 && entitiesPending && (
+        // Reserva el botón «Filtros» móvil y el hueco del selector plegado (44 + 12 px) mientras llegan las fichas (CLS = 0).
+        <div aria-hidden="true" className="h-14 shrink-0 md:hidden" />
+      )}
 
       {categories.length > 2 && (
         <button
@@ -986,9 +995,26 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
             <h2 className="text-xs font-semibold uppercase tracking-widest text-vice-text/90">{tabDef.label}</h2>
             <span className="text-xs text-vice-text/80">{list.length} en total</span>
           </div>
-          {list.length === 0 ? (
+          {list.length === 0 && entitiesPending ? (
+            // Esqueleto con la misma caja que las tarjetas reales: al llegar las fichas el panel no cambia de altura (CLS = 0).
+            <ul
+              role="status"
+              aria-label="Cargando fichas"
+              aria-busy="true"
+              className="grid grid-cols-2 content-start gap-x-3 gap-y-4 pb-1 md:min-h-0 md:flex-1 md:grid-cols-2 md:gap-x-3 md:gap-y-3 md:overflow-y-auto lg:grid-cols-3 xl:gap-x-2.5"
+            >
+              {Array.from({ length: PAGE_SIZE }, (_, i) => (
+                <li key={i} className="min-w-0" aria-hidden="true">
+                  <span className="flex w-full flex-col gap-1.5">
+                    <span className="block aspect-square w-full rounded-[14px] border border-vice-orange/30 bg-[linear-gradient(160deg,#3A1E55,#1E1030)]" />
+                    <span className="block h-[2.5em] px-0.5 text-sm leading-tight xl:text-[11px]" />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : list.length === 0 ? (
             <p role="status" className="p-4 text-vice-text/70">
-              {entitiesPending ? 'Cargando…' : 'No hay fichas para mostrar.'}
+              No hay fichas para mostrar.
             </p>
           ) : (
             <ul
@@ -996,7 +1022,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
               onScroll={(ev) => scrollMemo.current.set(gridKeyRef.current, ev.currentTarget.scrollTop)}
               className="grid grid-cols-2 content-start gap-x-3 gap-y-4 pb-1 md:min-h-0 md:flex-1 md:grid-cols-2 md:gap-x-3 md:gap-y-3 md:overflow-y-auto lg:grid-cols-3 xl:gap-x-2.5"
             >
-              {shown.map((e) => {
+              {gridShown.map((e) => {
                 const sel = selected?.id === e.id;
                 return (
                   <li key={e.id} className="min-w-0">
@@ -1036,11 +1062,11 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
               })}
             </ul>
           )}
-          {list.length > 0 && (
+          {(list.length > 0 || entitiesPending) && (
             // Altura reservada (min-h-11): el contador y el botón no mueven el contenido (CLS = 0).
             <div className="mt-3 flex min-h-11 shrink-0 flex-wrap items-center justify-between gap-2 px-1">
               <span role="status" className="text-xs text-vice-text/80">
-                Mostrando {shown.length} de {list.length}
+                {list.length > 0 ? `Mostrando ${shown.length} de ${list.length}` : ''}
               </span>
               {shown.length < list.length && (
                 <button

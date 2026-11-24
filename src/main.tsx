@@ -1,4 +1,4 @@
-import { StrictMode } from 'react';
+import { StrictMode, startTransition } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
@@ -21,9 +21,12 @@ void useAuthStore.getState().init();
 
 // PWA ligera: el Service Worker solo se registra en produccion.
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
+  // Con la puerta de pintado este modulo arranca tras `load`: si ya paso, se registra de inmediato.
+  const registerServiceWorker = (): void => {
     navigator.serviceWorker.register('/sw.js').catch(() => undefined);
-  });
+  };
+  if (document.readyState === 'complete') registerServiceWorker();
+  else window.addEventListener('load', registerServiceWorker);
 }
 
 // Recuperacion ante un despliegue nuevo: si el navegador pide un chunk/CSS con un hash que ya no existe,
@@ -61,10 +64,13 @@ window.setTimeout(() => {
 const rootElement = document.getElementById('root');
 if (!rootElement) throw new Error('No se encontró el elemento #root');
 
-createRoot(rootElement).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <App />
-    </QueryClientProvider>
-  </StrictMode>,
-);
+// El primer render va en una transición: React lo reparte en tramos de ~5 ms y cede el hilo entre ellos (sin tareas largas: TBT).
+startTransition(() => {
+  createRoot(rootElement).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <App />
+      </QueryClientProvider>
+    </StrictMode>,
+  );
+});

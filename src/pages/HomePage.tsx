@@ -26,9 +26,19 @@ import type { Entity, ForumThread } from '../types/database';
 
 const HOME_SCOPE: WorldScope = { entities: ['guias'], markers: true, counts: ['armas', 'vehiculos', 'coleccionables'] };
 const NEWSWIRE_URL = 'https://www.rockstargames.com/newswire';
+// Secciones bajo el pliegue: el navegador no calcula su layout ni las pinta hasta que se acercan al viewport (menos trabajo en el
+// primer render = menos TBT). `contain-intrinsic-size: auto` reserva su alto estimado (y recuerda el real); el margen de recorte
+// evita que se corte el anillo de foco de los enlaces del borde.
+const DEFER = '[content-visibility:auto] [overflow-clip-margin:8px]';
 const FOCUS = 'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice-gold';
 const SOURCE_LABEL: Record<string, string> = Object.fromEntries(NEWS_SOURCES.map((s) => [s.value, s.label]));
-const fmtDate = (iso: string): string => new Date(iso).toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
+// Fecha corta («23 nov 2026») sin Intl: la primera llamada a toLocaleDateString('es') inicializa los datos ICU y costaba
+// ~100 ms de hilo principal (CPU 4x) en el primer render de la portada (TBT).
+const MESES_CORTOS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sept', 'oct', 'nov', 'dic'] as const;
+const fmtDate = (iso: string): string => {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : `${d.getDate()} ${MESES_CORTOS[d.getMonth()]} ${d.getFullYear()}`;
+};
 
 interface Crop {
   /** Texto accesible de la tarjeta (el degradado es decorativo, no lleva imagen de terceros). */
@@ -111,11 +121,13 @@ interface ExploreCard {
   crop: Crop;
 }
 
-function ExploreSection({ cards }: { cards: ExploreCard[] }) {
+function ExploreSection({ cards, pending }: { cards: ExploreCard[]; pending: boolean }) {
   return (
     <section aria-labelledby="explora-title" className="flex flex-col gap-4">
       <SectionHead id="explora-title" title="Explora Leonida" />
-      <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+      {/* Mientras no se sabe qué categorías tienen fichas, el bloque ocupa su sitio pero no se pinta: así las tarjetas que
+          desaparecen al llegar los datos no provocan un salto de diseño (CLS = 0). */}
+      <ul aria-hidden={pending || undefined} className={`grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 ${pending ? 'invisible' : ''}`}>
         {cards.map((c) => (
           <li key={c.title}>
             <a href={c.href} className={`group glass flex h-full min-h-11 flex-col overflow-hidden rounded-2xl hover:border-vice-orange ${FOCUS}`}>
@@ -149,7 +161,7 @@ function NewsSection({
 }) {
   const shown = news.slice(0, 6);
   return (
-    <section aria-labelledby="noticias-title" className="flex flex-col gap-4">
+    <section aria-labelledby="noticias-title" className={`flex flex-col gap-4 ${DEFER} [contain-intrinsic-size:auto_520px] md:[contain-intrinsic-size:auto_300px]`}>
       <SectionHead id="noticias-title" title="Noticias oficiales" href="/noticias" label="Ver todas" />
       <div aria-live="polite">
         {loading ? (
@@ -217,7 +229,7 @@ function GuideCard({ guide }: { guide: Entity }) {
 
 function GuidesSection({ guides }: { guides: Entity[] }) {
   return (
-    <section aria-labelledby="guias-title" className="flex flex-col gap-4">
+    <section aria-labelledby="guias-title" className={`flex flex-col gap-4 ${DEFER} [contain-intrinsic-size:auto_940px] md:[contain-intrinsic-size:auto_500px] lg:[contain-intrinsic-size:auto_350px]`}>
       <SectionHead id="guias-title" title="Guías" href="/guias" label="Ver todas" />
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {guides.slice(0, 6).map((g) => (
@@ -288,7 +300,7 @@ function ForumSection({ authenticated, onRetryAll }: { authenticated: boolean; o
     [data.threads],
   );
   return (
-    <section aria-labelledby="foro-title" className="flex flex-col gap-4">
+    <section aria-labelledby="foro-title" className={`flex flex-col gap-4 ${DEFER} [contain-intrinsic-size:auto_620px] md:[contain-intrinsic-size:auto_420px]`}>
       <div className="flex items-end justify-between gap-3">
         <h2 id="foro-title" className="flex flex-wrap items-center gap-3 font-display text-2xl font-bold md:text-3xl">
           Foro en vivo
@@ -332,7 +344,7 @@ export default function HomePage() {
   });
   const authenticated = useAuthStore((s) => s.status === 'authenticated');
   // Solo lo necesario: totales por módulo (consulta de 1 elemento), marcadores y las guías del módulo `guias`.
-  const { data: world, unavailable: worldDown, error: worldError, retry: retryWorld } = useWorldData(HOME_SCOPE);
+  const { data: world, loading: worldLoading, unavailable: worldDown, error: worldError, retry: retryWorld } = useWorldData(HOME_SCOPE);
   const { isActive, catalogActive } = useModuleGate();
   const { retry: retryForum } = useForumData();
   const heroSlides = useHeroSlides();
@@ -362,13 +374,13 @@ export default function HomePage() {
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 pb-10 pt-2 md:gap-12 md:px-8">
       <HeroCarousel slides={heroSlides} guest={!authenticated} />
-      <ExploreSection cards={cards} />
+      <ExploreSection cards={cards} pending={worldLoading && !worldDown && world.modules.length === 0} />
       {worldDown && <ApiErrorState compact title="No pudimos cargar el catálogo" message={worldError ?? ''} onRetry={retryAll} />}
       <NewsSection news={news} loading={newsLoading} error={newsError} onRetry={retryAll} />
       {isActive('guias') && guides.length > 0 && <GuidesSection guides={guides} />}
       {isActive('foro') && <ForumSection authenticated={authenticated} onRetryAll={retryAll} />}
       {!authenticated && (
-        <section aria-labelledby="registro-title" className="glass flex flex-col items-start gap-4 rounded-3xl p-6 md:flex-row md:items-center md:justify-between md:p-8">
+        <section aria-labelledby="registro-title" className={`glass flex flex-col items-start gap-4 rounded-3xl p-6 md:flex-row md:items-center md:justify-between md:p-8 ${DEFER} [contain-intrinsic-size:auto_200px] md:[contain-intrinsic-size:auto_154px]`}>
           <div>
             <h2 id="registro-title" className="font-display text-2xl font-bold">
               Guarda tu avance en todos tus dispositivos

@@ -72,7 +72,7 @@ function Slide({ slide, active, first, guest, inert, total, position, imageFaile
       }`}
     >
       <div className="relative z-10 flex max-w-xl flex-col items-start gap-3 px-5 pb-5 pt-0 max-md:-mt-6 md:w-[55%] md:px-10 md:py-10">
-        {slide.kicker !== '' && <p className="text-xs font-semibold uppercase tracking-[0.3em] text-vice-orange">{slide.kicker}</p>}
+        {slide.kicker !== '' && <p className="font-caps text-xs font-semibold uppercase tracking-[0.3em] text-vice-orange">{slide.kicker}</p>}
         <Title className="font-display text-[1.75rem] font-bold leading-[1.15] md:text-5xl">{slide.titulo}</Title>
         <p className="text-[15px] leading-relaxed text-vice-text/90 max-md:line-clamp-4 md:text-lg">{slide.descripcion}</p>
         <div className="mt-1 flex w-full flex-wrap items-center gap-2 md:mt-2 md:w-auto md:gap-3">

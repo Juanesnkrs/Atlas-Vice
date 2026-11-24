@@ -1,5 +1,24 @@
-import { useId, type CSSProperties, type ReactNode } from 'react';
-import Footer from './Footer';
+import { lazy, Suspense, useEffect, useId, useState, type CSSProperties, type ReactNode } from 'react';
+// El pie queda fuera del arranque (chunk `footer`): esta bajo el pliegue, se descarga y monta en un momento ocioso tras el
+// primer pintado y su altura (FOOTER_H) se reserva mientras tanto, de modo que no mueve nada (CLS = 0) ni suma al TBT.
+const Footer = lazy(() => import('./Footer'));
+const FOOTER_H = 'min-h-[980px] md:min-h-[580px] lg:min-h-[460px]';
+
+function DeferredFooter() {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    const go = (): void => setReady(true);
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(go, { timeout: 2500 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const id = window.setTimeout(go, 1200);
+    return () => window.clearTimeout(id);
+  }, []);
+  const placeholder = <div aria-hidden="true" className={FOOTER_H} />;
+  return ready ? <Suspense fallback={placeholder}><Footer /></Suspense> : placeholder;
+}
 
 /* ------------------------------------------------------------------ */
 /* SVG decorativos reutilizables (Vice Sunset NUI)                     */
@@ -291,7 +310,7 @@ export function ViceShell({
             className="relative z-20 shrink-0 bg-black"
             style={dock ? { paddingBottom: 'var(--dock-reserve)' } : undefined}
           >
-            <Footer />
+            <DeferredFooter />
           </div>
         )}
         {!withFooter && dock && !locked && (

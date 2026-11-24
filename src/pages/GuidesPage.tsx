@@ -168,7 +168,7 @@ function GuideDetail({ slug }: { slug: string }) {
 
   if (!guide) {
     return (
-      <div className="mx-auto w-full max-w-3xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-4">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-[calc(7rem+env(safe-area-inset-bottom))] pt-2 md:px-8">
         <p role="status" className="glass rounded-2xl p-6 text-center">
           {loading ? 'Cargando guía…' : 'No encontramos esta guía.'}{' '}
           <a href="/guias" className="font-semibold text-vice-orange underline">
