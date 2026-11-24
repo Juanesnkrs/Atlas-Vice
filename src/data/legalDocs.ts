@@ -2,7 +2,7 @@
 // Rutas: /legal/privacidad, /legal/cookies, /legal/terminos, /legal/marcas, /legal/retirada.
 // BORRADORES pendientes de revisión por un profesional del derecho antes de la publicación definitiva.
 
-export const LEGAL_UPDATED = '2026-11-23';
+export const LEGAL_UPDATED = '2026-11-24';
 
 export type LegalId = 'privacidad' | 'cookies' | 'terminos' | 'marcas' | 'retirada';
 
@@ -52,7 +52,7 @@ export const LEGAL_DOCS: readonly LegalDoc[] = [
           'Foro: tus hilos y respuestas, que son públicos para quien visite el foro.',
           'Formulario de Contacto: tu correo y el mensaje que escribes.',
           'Suscripción: tu correo y el idioma elegido para recibir novedades.',
-          'Almacenamiento local: IndexedDB y cookies de preferencias (idioma y decisión de cookies) en tu dispositivo, para que la app funcione sin conexión y recuerde tus ajustes.',
+          'Almacenamiento local: IndexedDB, la caché del service worker y cookies de preferencias (idioma y decisión de cookies) en tu dispositivo, para que la app funcione sin conexión y recuerde tus ajustes. Más abajo explicamos qué guardan y cómo borrarlos.',
           'Datos técnicos de conexión (como la dirección IP) que tratan nuestros proveedores para entregar el sitio, limitar abusos y mantener la seguridad.',
         ],
       },
@@ -74,6 +74,22 @@ export const LEGAL_DOCS: readonly LegalDoc[] = [
         ],
         paragraphs: [
           'Algunos de estos proveedores pueden tratar datos fuera de tu país. Al usarlos nos apoyamos en las garantías que cada proveedor ofrece.',
+        ],
+      },
+      {
+        id: 'sin-terceros',
+        heading: 'Sin peticiones a terceros al cargar el sitio',
+        paragraphs: [
+          'Las tipografías (Poppins y Jost, con licencia SIL Open Font License) se sirven desde nuestro propio dominio, igual que el resto de la app. Al cargar el sitio tu navegador no hace peticiones a servicios de fuentes ni a otros terceros: las únicas conexiones son con LeonidApp y con la infraestructura que la entrega (Cloudflare) y le da datos (MongoDB Atlas), descritas arriba.',
+          'Las peticiones a terceros solo ocurren si tú las inicias (por ejemplo, al abrir un enlace externo o al iniciar sesión con un proveedor de acceso).',
+        ],
+      },
+      {
+        id: 'almacenamiento-local',
+        heading: 'Service worker y cachés locales',
+        paragraphs: [
+          'Para que LeonidApp se pueda instalar y abrir sin conexión, el navegador registra un service worker que guarda en tu dispositivo, en cachés propias del origen, la portada de la app, sus archivos estáticos (código, estilos, tipografías e iconos), las teselas del mapa y las imágenes propias ya vistas. Las respuestas de la API no se guardan en esa caché. Esos datos no se envían a nadie: se quedan en tu dispositivo.',
+          'Puedes borrarlos cuando quieras desde los ajustes de tu navegador: en la configuración del sitio, elige «Borrar datos» o «Borrar datos de navegación» e incluye «Archivos e imágenes en caché» y «Datos de sitios». También puedes anular el registro del service worker desde las herramientas del navegador o desinstalar la app. La próxima vez que abras LeonidApp con conexión se volverá a crear lo necesario.',
         ],
       },
       {
@@ -121,7 +137,7 @@ export const LEGAL_DOCS: readonly LegalDoc[] = [
         id: 'que-son',
         heading: 'Qué usamos',
         paragraphs: [
-          'Las cookies son pequeños archivos que el navegador guarda en tu dispositivo. También usamos almacenamiento local (IndexedDB) para que el atlas funcione sin conexión.',
+          'Las cookies son pequeños archivos que el navegador guarda en tu dispositivo. También usamos almacenamiento local (IndexedDB y la caché del service worker) para que el atlas funcione sin conexión. Al cargar el sitio no se hacen peticiones a terceros: las tipografías se sirven desde nuestro propio dominio.',
         ],
       },
       {
@@ -131,6 +147,7 @@ export const LEGAL_DOCS: readonly LegalDoc[] = [
           'Cookies de sesión HttpOnly y de seguridad: mantienen tu sesión iniciada y protegen el acceso. Sin ellas no podrías iniciar sesión.',
           'leonidapp_consent: guarda tu decisión sobre las categorías de cookies (qué aceptas, la versión y la fecha). Dura un año.',
           'IndexedDB: copia local del catálogo y de tu avance como invitado para el uso sin conexión.',
+          'Service worker y cachés del navegador: guardan en tu dispositivo los archivos estáticos de la app (incluidas las tipografías, que se sirven desde nuestro propio dominio), las teselas del mapa y las imágenes propias ya vistas. No son cookies ni se envían a ningún servidor; puedes borrarlas desde los ajustes del navegador («Borrar datos de navegación», con «Archivos e imágenes en caché» y «Datos de sitios»).',
         ],
       },
       {
