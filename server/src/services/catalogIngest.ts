@@ -516,8 +516,16 @@ export async function ingestPipelineBatch(input: IngestInput): Promise<IngestRes
             reason = 'conflicto';
             motivo = `campos editados a mano: ${conflictFields.join(', ')}`;
           } else if (typeof prevSource === 'string' && prevSource !== source) {
-            reason = 'conflicto';
-            motivo = `la ficha pertenece a la fuente "${prevSource}"`;
+            // Excepción de transición (D-03): un extracto externo antiguo (confianza 'baja') sin ediciones a mano
+            // se actualiza; las fichas editoriales (confianza media/alta) o editadas a mano siguen en conflicto.
+            const prevConfianza = (existing.metadata_json as Record<string, unknown> | undefined)?.['confianza'];
+            if (prevConfianza === 'baja' && (existing.manualEdits ?? []).length === 0) {
+              reason = 'actualizada';
+              motivo = `sustituye un extracto de confianza baja de la fuente "${prevSource}"`;
+            } else {
+              reason = 'conflicto';
+              motivo = `la ficha pertenece a la fuente "${prevSource}"`;
+            }
           } else reason = 'actualizada';
         }
         if (reason === 'nueva') counts.created++;
