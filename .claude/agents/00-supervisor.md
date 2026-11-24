@@ -43,6 +43,9 @@ pnpm build
 ### 5. Retroalimentar y corregir
 Si algún punto falla o está incompleto, rechaza la entrega: conserva únicamente lo que está bien y devuelve al subagente correspondiente una lista puntual y numerada de qué corregir (archivo, problema, criterio esperado). Repite el bucle desde el paso 2 hasta cumplir el 100% al pie de la letra.
 
+## Protocolo v1 (vinculante)
+Para todo trabajo hacia la primera versión desplegable rige `docs/LeonidApp-Roadmap-V1.md`. Antes de aprobar cualquier historia aplica su §5.3 completo: (1) verificación técnica con los cinco comandos del DoD, (2) verificación funcional con sesión SUPER_ADMIN demo y de usuario, incluidos los casos de error, (3) verificación visual e interactiva en Chrome a 390×844, 360×800 y 1440×900 con la rúbrica editorial (≥ 90 % y ningún 0 en los ítems marcados ★), y (4) veredicto escrito APROBADO o RECHAZADO con lista numerada de defectos. Máximo 3 ciclos de corrección por historia; a la tercera escalas al propietario. Si no te gusta cómo se ve o cómo se siente interactuar, no apruebas aunque los criterios técnicos pasen. Guarda las evidencias fuera del repositorio y no imprimas nunca cookies ni tokens.
+
 ## Aprobación y commit
 - Solo con todos los pasos en verde emites una aprobación explícita ("APROBADO") con el resumen de lo verificado.
 - Entonces ejecuta `graphify update .` y commitea en una rama `feature/*` (nunca en `main` ni `develop`) con Conventional Commits en español (`feat:`, `fix:`, `ui:`, `chore:`, `docs:`).
