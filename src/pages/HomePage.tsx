@@ -343,14 +343,16 @@ export default function HomePage() {
     retryForum();
   };
   const countOf = (slug: string): number => world.counts[slug] ?? 0;
+  // Una categoría sin fichas no se enlaza desde la portada (S1.2); sin datos del servidor no se oculta nada.
+  const hasFichas = (slug: string): boolean => worldDown || world.modules.length === 0 || countOf(slug) > 0;
   const guides = world.entities;
   const plural = (n: number, one: string, many: string): string => (worldDown || world.modules.length === 0 ? '' : `${n} ${n === 1 ? one : many}`);
 
   const candidates: Array<ExploreCard | false> = [
     isActive('mapa') && { href: '/mapa', title: 'Mapa interactivo', count: plural(world.markers.length, 'lugar', 'lugares') || null, crop: CROPS.mapa },
-    catalogActive && isActive('armas') && { href: '/catalogo/armas', title: 'Armas', count: plural(countOf('armas'), 'ficha', 'fichas') || null, crop: CROPS.armas },
-    catalogActive && isActive('vehiculos') && { href: '/catalogo/vehiculos', title: 'Vehículos', count: plural(countOf('vehiculos'), 'ficha', 'fichas') || null, crop: CROPS.vehiculos },
-    catalogActive && isActive('coleccionables') && { href: '/catalogo/coleccionables', title: 'Coleccionables', count: plural(countOf('coleccionables'), 'ficha', 'fichas') || null, crop: CROPS.coleccionables },
+    catalogActive && isActive('armas') && hasFichas('armas') && { href: '/catalogo/armas', title: 'Armas', count: plural(countOf('armas'), 'ficha', 'fichas') || null, crop: CROPS.armas },
+    catalogActive && isActive('vehiculos') && hasFichas('vehiculos') && { href: '/catalogo/vehiculos', title: 'Vehículos', count: plural(countOf('vehiculos'), 'ficha', 'fichas') || null, crop: CROPS.vehiculos },
+    catalogActive && isActive('coleccionables') && hasFichas('coleccionables') && { href: '/catalogo/coleccionables', title: 'Coleccionables', count: plural(countOf('coleccionables'), 'ficha', 'fichas') || null, crop: CROPS.coleccionables },
     isActive('guias') && { href: '/guias', title: 'Guías', count: plural(guides.length, 'guía', 'guías') || null, crop: CROPS.guias },
     { href: '/noticias', title: 'Noticias oficiales', count: newsLoading || newsError ? null : plural(news.length, 'noticia', 'noticias'), crop: CROPS.noticias },
   ];

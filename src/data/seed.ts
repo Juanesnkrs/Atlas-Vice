@@ -452,10 +452,14 @@ export function useWorldData(scope: WorldScope = FULL_SCOPE): WorldResult {
     const counts: Record<string, number> = {};
     const modules = modulesQ.data ?? EMPTY_MODULES;
     const slugById = new Map(modules.map((m) => [m.id, m.slug]));
+    // Base: totales derivados que ya trae GET /api/modules (`fichas`); las fichas descargadas los afinan.
+    for (const m of modules) if (m.fichas !== undefined) counts[m.slug] = m.fichas;
+    const fromEntities: Record<string, number> = {};
     for (const e of entities) {
       const s = slugById.get(e.module_id);
-      if (s) counts[s] = (counts[s] ?? 0) + 1;
+      if (s) fromEntities[s] = (fromEntities[s] ?? 0) + 1;
     }
+    Object.assign(counts, fromEntities);
     const parts = countStamp.split(',');
     countSlugs.forEach((slug, i) => {
       const n = parts[i];

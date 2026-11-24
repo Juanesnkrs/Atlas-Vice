@@ -57,6 +57,8 @@ type Database = {
           icono: string;
           activo: boolean;
           orden: number;
+          /** Fichas del módulo (campo derivado de GET /api/modules; no se persiste). */
+          fichas?: number;
           created_at: string;
         };
         Insert: {

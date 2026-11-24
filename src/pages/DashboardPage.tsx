@@ -51,7 +51,7 @@ const QUICK: ReadonlyArray<{ href: string; title: string; text: string; crop: ke
   { href: '/noticias', title: 'Noticias oficiales', text: 'Rockstar Games y Take-Two.', crop: 'noticias' },
   { href: '/aportar', title: 'Aportar', text: 'Comparte lugares y correcciones.', crop: 'coleccionables' },
   { href: '/mapa', title: 'Mapa de Leonida', text: 'Lugares, capas y tu avance.', crop: 'mapa', module: 'mapa' },
-  { href: '/catalogo', title: 'Catálogo', text: 'Armas, vehículos y coleccionables.', crop: 'vehiculos', module: 'catalogo' },
+  { href: '/catalogo', title: 'Catálogo', text: 'Fichas de armas y vehículos de Leonida.', crop: 'vehiculos', module: 'catalogo' },
   { href: '/foro', title: 'Foro', text: 'Hilos, votos y spoilers.', crop: 'armas', module: 'foro' },
 ];
 

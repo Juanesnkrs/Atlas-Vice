@@ -5,7 +5,7 @@
 //   /catalogo/:categoria/:itemSlug   -> Inspector con el ítem preseleccionado (sheet móvil abierto)
 //   ...?vista=ficha                  -> ficha completa del ítem (misma URL canónica)
 //   ?comparar=a,b[,c]  comparador sobre la URL vigente · ?q= búsqueda · ?modulo= / ?entity= heredados
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AdSlot } from '../components/ui/AdSlot';
 import { ApiErrorState } from '../components/ui/ApiErrorState';
 import { BottomSheet } from '../components/ui/BottomSheet';
@@ -49,14 +49,23 @@ import {
 } from '../store/useRouteStore';
 import type { Entity } from '../types/database';
 
-type TabSlug = 'armas' | 'vehiculos' | 'coleccionables';
+type TabSlug = string;
+interface TabDef {
+  slug: TabSlug;
+  label: string;
+  doneLabel: string;
+}
 
-const TABS: ReadonlyArray<{ slug: TabSlug; label: string; doneLabel: string }> = [
-  { slug: 'armas', label: 'Armas', doneLabel: 'Obtenida' },
-  { slug: 'vehiculos', label: 'Vehículos', doneLabel: 'Obtenido' },
-  { slug: 'coleccionables', label: 'Coleccionables', doneLabel: 'Completado' },
-];
-const TAB_SLUGS = TABS.map((t) => t.slug);
+/** Etiqueta de «hecho» por categoría conocida; las demás usan «Completado». */
+const DONE_LABELS: Readonly<Record<string, string>> = { armas: 'Obtenida', vehiculos: 'Obtenido', coleccionables: 'Completado' };
+/** Módulos con pantalla propia (no son pestañas del catálogo). */
+const NON_CATALOG: ReadonlySet<string> = new Set(['mapa', 'foro', 'guias']);
+/** Respaldo de rótulo mientras no hay módulos cargados (p. ej. una URL de ficha antes de que responda la API). */
+const FALLBACK_TAB: TabDef = { slug: 'armas', label: 'Catálogo', doneLabel: 'Completado' };
+/** Fichas por tramo de «Cargar más» (S4.1). */
+const PAGE_SIZE = 24;
+/** Tramo cargado por (categoría, subcategoría, búsqueda): sobrevive a abrir una ficha y volver. */
+const loadedMemo = new Map<string, number>();
 
 const normalizeText = (t: string): string =>
   t
@@ -288,7 +297,7 @@ function Viewer({ entity, kind }: { entity: Entity; kind?: string }) {
 }
 
 /** Estado vacío de página completa (categoría inexistente). */
-function CatalogNotFound({ title, text }: { title: string; text: string }) {
+function CatalogNotFound({ title, text, href, label }: { title: string; text: string; href: string; label: string }) {
   return (
     <div className="flex min-h-[60dvh] items-center justify-center p-6">
       <section className="glass max-w-md rounded-2xl p-8 text-center" aria-labelledby="cat-nf-title" role="status">
@@ -297,8 +306,8 @@ function CatalogNotFound({ title, text }: { title: string; text: string }) {
         </h1>
         <p className="mt-3 text-vice-text/85">{text}</p>
         <div className="mt-6 flex justify-center">
-          <PalmButton as="a" href="/catalogo">
-            Ir al catálogo
+          <PalmButton as="a" href={href}>
+            {label}
           </PalmButton>
         </div>
       </section>
@@ -476,7 +485,6 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
   } = useWorldData({
     entities: legacyAll ? 'all' : mapRedirect || categoria === 'guias' ? [] : [scopeSlug],
     markers: true,
-    counts: TAB_SLUGS,
   });
   const { data: forum } = useForumData();
   const items = useProgressStore((s) => s.items);
@@ -485,19 +493,22 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
   const isDesktop = useIsDesktop();
 
   const modulesById = useMemo(() => new Map(data.modules.map((m) => [m.id, m])), [data.modules]);
-  const activeSlugs = useMemo(
-    () => new Set(data.modules.filter((m) => m.activo).map((m) => m.slug)),
-    [data.modules],
+  // Pestañas derivadas de GET /api/modules: solo módulos activos de catálogo con fichas (sin pestañas vacías).
+  const tabs = useMemo<TabDef[]>(
+    () =>
+      data.modules
+        .filter((m) => m.activo && !NON_CATALOG.has(m.slug) && (data.counts[m.slug] ?? 1) > 0)
+        .slice()
+        .sort((a, b) => a.orden - b.orden)
+        .map((m) => ({ slug: m.slug, label: m.nombre, doneLabel: DONE_LABELS[m.slug] ?? 'Completado' })),
+    [data.modules, data.counts],
   );
-  const tabs = TABS.filter((t) => activeSlugs.has(t.slug));
   const loaded = data.modules.length > 0;
-  const defaultTab = tabs.find((t) => t.slug === 'armas') ?? tabs[0];
+  const defaultTab = tabs[0];
 
   const [cat, setCat] = useState<string>('Todas');
   // Movil: los chips de subcategoria van tras un boton «Filtros».
   const [filtersOpen, setFiltersOpen] = useState(false);
-  // Una categoria sin fichas se anuncia como «Próximamente» en lugar de una pestaña vacía.
-  const comingSoon = (slug: string): boolean => loaded && data.counts[slug] === 0;
 
   // Buscador por URL: ?q=texto (SearchAction de ssrLite). Filtra por titulo, subtitulo, categoria y alias.
   const qParam = params.get('q') ?? '';
@@ -506,6 +517,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
   // URL -> caja (navegación externa); caja -> URL con replaceState (sin apilar historial ni recargar la ruta).
   useEffect(() => setSearch(qParam), [qParam]);
   const onSearch = (value: string) => {
+    loadedMemo.delete(`${tab ?? ''}|${cat}|${normalizeText(value)}`);
     setSearch(value);
     try {
       const url = new URL(window.location.href);
@@ -544,13 +556,27 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
     ? (tabs.find((t) => t.slug === categoria)?.slug ?? null)
     : (tabs.find((t) => t.slug === compareTab)?.slug ?? defaultTab?.slug ?? null);
   const categoryMissing = loaded && categoria !== undefined && categoria !== 'guias' && tab === null;
-  const tabDef = TABS.find((t) => t.slug === (tab ?? categoria)) ?? TABS[0]!;
+  const tabDef = tabs.find((t) => t.slug === (tab ?? categoria)) ?? FALLBACK_TAB;
   const moduleDef = tab ? data.modules.find((m) => m.slug === tab) : undefined;
   const catPath = `/catalogo/${tab ?? categoria ?? ''}`;
 
   const tabEntities = tab ? data.entities.filter((e) => modulesById.get(e.module_id)?.slug === tab && matchesQuery(e)) : [];
   const categories = ['Todas', ...Array.from(new Set(tabEntities.map((e) => e.categoria)))];
   const list = cat === 'Todas' ? tabEntities : tabEntities.filter((e) => e.categoria === cat);
+  // «Cargar más» (S4.1): tramos de PAGE_SIZE por (categoría, subcategoría, búsqueda). Un deep link a una ficha
+  // lejana amplía el tramo hasta incluirla; el tramo vive en memoria y sobrevive a abrir una ficha y volver.
+  const pageKey = `${tab ?? ''}|${cat}|${q}`;
+  const [, bumpLoaded] = useReducer((n: number) => n + 1, 0);
+  const itemIdx = itemSlug ? list.findIndex((e) => entitySlug(e) === itemSlug) : -1;
+  const limit = Math.max(
+    loadedMemo.get(pageKey) ?? PAGE_SIZE,
+    itemIdx >= 0 ? Math.ceil((itemIdx + 1) / PAGE_SIZE) * PAGE_SIZE : 0,
+  );
+  const shown = list.length > limit ? list.slice(0, limit) : list;
+  const loadMore = (): void => {
+    loadedMemo.set(pageKey, limit + PAGE_SIZE);
+    bumpLoaded();
+  };
   // Un cambio de categoría (pestaña) restablece el filtro de subcategoría.
   useEffect(() => setCat('Todas'), [tab]);
 
@@ -626,8 +652,9 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
       state: itemSlug ? undefined : { [OVERLAY_STATE_KEY]: true },
     });
   };
-  const selectTab = (slug: string) => comingSoon(slug) || navigate(`/catalogo/${slug}${buildQuery({ q: qValue })}`, { keepScroll: true });
+  const selectTab = (slug: string) => navigate(`/catalogo/${slug}${buildQuery({ q: qValue })}`, { keepScroll: true });
   const selectSub = (c: string) => {
+    loadedMemo.delete(`${tab ?? ''}|${c}|${q}`);
     setCat(c);
     if (itemSlug) navigate(`${catPath}${buildQuery({ q: qValue })}`, { replace: true, keepScroll: true });
   };
@@ -788,8 +815,10 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
   if (categoryMissing) {
     return (
       <CatalogNotFound
-        title="No encontramos esta categoría"
-        text="La categoría que buscas no existe en el catálogo o está desactivada."
+        title="Esta categoría aún no está disponible"
+        text="Todavía no tiene contenido publicado. Mientras tanto, puedes explorar el resto del catálogo."
+        href={defaultTab ? `/catalogo/${defaultTab.slug}` : '/'}
+        label={defaultTab ? `Ir a ${defaultTab.label}` : 'Ir al inicio'}
       />
     );
   }
@@ -824,14 +853,12 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
               type="button"
               role="tab"
               aria-selected={tab === t.slug}
-              aria-disabled={comingSoon(t.slug) || undefined}
               onClick={() => selectTab(t.slug)}
               className={`min-h-11 whitespace-nowrap rounded-full border border-vice-orange/30 px-5 text-sm font-bold focus-visible:outline-2 focus-visible:outline-vice-gold ${
-                tab === t.slug ? 'bg-vice-accent text-vice-ink' : comingSoon(t.slug) ? 'bg-white/5 text-vice-text/70' : 'bg-white/10 hover:bg-white/15'
+                tab === t.slug ? 'bg-vice-accent text-vice-ink' : 'bg-white/10 hover:bg-white/15'
               }`}
             >
               {t.label}
-              {comingSoon(t.slug) && <span className="ml-2 text-[11px] font-semibold text-vice-gold"><span className="md:hidden">Pronto</span><span className="hidden md:inline">Próximamente</span></span>}
             </button>
           ))}
         </div>
@@ -939,7 +966,7 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
               onScroll={(ev) => scrollMemo.current.set(gridKeyRef.current, ev.currentTarget.scrollTop)}
               className="grid grid-cols-2 content-start gap-x-3 gap-y-4 pb-1 md:min-h-0 md:flex-1 md:grid-cols-2 md:gap-x-3 md:gap-y-3 md:overflow-y-auto lg:grid-cols-3 xl:gap-x-2.5"
             >
-              {list.map((e) => {
+              {shown.map((e) => {
                 const sel = selected?.id === e.id;
                 return (
                   <li key={e.id} className="min-w-0">
@@ -978,6 +1005,23 @@ function CatalogInspector({ params, categoria: categoriaRaw, itemSlug }: Catalog
                 );
               })}
             </ul>
+          )}
+          {list.length > 0 && (
+            // Altura reservada (min-h-11): el contador y el botón no mueven el contenido (CLS = 0).
+            <div className="mt-3 flex min-h-11 shrink-0 flex-wrap items-center justify-between gap-2 px-1">
+              <span role="status" className="text-xs text-vice-text/80">
+                Mostrando {shown.length} de {list.length}
+              </span>
+              {shown.length < list.length && (
+                <button
+                  type="button"
+                  onClick={loadMore}
+                  className="min-h-11 rounded-full border border-vice-orange/40 bg-white/10 px-5 text-sm font-bold hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-vice-gold"
+                >
+                  Cargar más
+                </button>
+              )}
+            </div>
           )}
         </section>
 
@@ -1175,7 +1219,7 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
   const toggle = useProgressStore((s) => s.toggle);
 
   const moduleDef = data.modules.find((m) => m.slug === modulo);
-  const tabDef = TABS.find((t) => t.slug === modulo);
+  const tabDef: { label: string; doneLabel: string } | undefined = NON_CATALOG.has(modulo) ? undefined : { label: modulo, doneLabel: DONE_LABELS[modulo] ?? 'Completado' };
 
   const stats = statsOf(entity);
   const description = descriptionOf(entity);
