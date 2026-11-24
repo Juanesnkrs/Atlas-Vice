@@ -101,6 +101,7 @@ También son válidos, fuera del árbol aprobado, y `04-qa-mobile` NO debe borra
 - `android/` e `ios/` (proyectos nativos generados por Capacitor).
 - `src/data/seed.ts` (datos semilla de ejemplo y capa de acceso offline-first).
 - `public/map-tiles/` (pirámide de teselas WebP del área cartográfica del referente, colores originales + `manifest.json`, cargada bajo demanda por `/mapa`; fuera del bundle JS).
+- `public/fonts/` (WOFF2 latino de Poppins y Jost con sus licencias SIL OFL 1.1: el propietario autorizó alojar las fuentes en el propio origen para no hacer peticiones a terceros, G-10; las declara `src/styles/vice-nui.css`).
 - `public/ref Leonida map/` (referencias locales del mapa: ignoradas por git y eliminadas de `dist/` en el build; solo sirven de calca en el Modo Editor y de fuente para generar las teselas).
 - `Dockerfile`, `.dockerignore`, `docker-compose.yml` y `.env.production.example` (raíz): despliegue portable (Docker + MongoDB Atlas + Cloudflare); sin secretos reales.
 - `supabase/03_seed_data.sql` (datos de ejemplo generados desde `seed.ts`, mismos UUIDs; legado).

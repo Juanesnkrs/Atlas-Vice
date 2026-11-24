@@ -3,13 +3,14 @@
  *   guardada solo si no hay conexion. Evita pantallas en blanco tras un despliegue nuevo.
  * - /api/*: Network-First y NUNCA se cachea (sin respuestas obsoletas); sin red responde 503.
  * - Assets estaticos (/assets/*, iconos y manifest): Cache-First (sus nombres llevan hash).
+ * - Fuentes propias (/fonts/*.woff2, SIL OFL): Cache-First (nombre fijo, contenido inmutable; si cambian, subir la version de la cache).
  * - Manifiesto de teselas (/map-tiles/manifest.json): siempre red (una copia vieja desencaja la piramide).
  * - Teselas del mapa (/map-tiles/*?v=N): stale-while-revalidate; la version del manifiesto va en la URL.
  * - Imagenes propias (/media/<id>[?w=800]): cache-first en una cache aparte con tope de 80 entradas (URL inmutables).
  * - NUNCA se intercepta ni cachea: /_staff (area oculta), /api/* (incluye /api/auth/*), sitemap/robots y el propio sw.js.
  * - Sin red y sin copia de la shell se muestra una pagina offline propia (OFFLINE_HTML), no el dinosaurio del navegador.
  */
-const CACHE = 'leonidapp-static-v10';
+const CACHE = 'leonidapp-static-v11';
 const MEDIA_CACHE = 'leonidapp-media-v1';
 const MEDIA_MAX = 80;
 const SHELL = ['/', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/apple-touch-icon.png'];
@@ -147,7 +148,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Estaticos con hash o inmutables: Cache-First.
-  if (url.pathname.startsWith('/assets/') || STATIC_PATHS.has(url.pathname)) {
+  if (url.pathname.startsWith('/assets/') || url.pathname.startsWith('/fonts/') || STATIC_PATHS.has(url.pathname)) {
     event.respondWith(
       caches.match(req).then(
         (hit) =>

@@ -21,8 +21,8 @@ export default {
         },
       },
       fontFamily: {
-        display: ['Jost', 'system-ui', 'sans-serif'],
-        body: ['Poppins', 'system-ui', 'sans-serif'],
+        display: ['Jost', '"Jost Fallback"', 'system-ui', 'sans-serif'],
+        body: ['Poppins', '"Poppins Fallback"', 'system-ui', 'sans-serif'],
       },
       backgroundImage: {
         'vice-sunset':

@@ -1,6 +1,77 @@
 @import "tailwindcss";
 @config "../../tailwind.config.ts";
 
+/* Tipografías alojadas en el propio origen (privacidad: cero peticiones a terceros). Subconjunto latino de Google Fonts
+   (acentos, ñ, ¿ ¡ y puntuación), licencia SIL OFL 1.1 (public/fonts/OFL-*.txt). Poppins 400/500/600 y Jost variable 500-700. */
+@font-face {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/poppins-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/poppins-500-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/poppins-600-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Jost";
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: swap;
+  src: url("/fonts/jost-latin-var.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* Respaldos con métricas ajustadas a cada fuente (size-adjust + overrides): el texto no se mueve al llegar la fuente real.
+   Poppins: size-adjust 113 % sobre Arial (medido con textos reales de la UI: cuerpo 112 %, mayúsculas con tracking ~104 %); ascent 1,05/1,13,
+   descent 0,35/1,13, lineGap 0,10/1,13. Jost: size-adjust 97 % sobre Arial Bold (titular medido); ascent 1,07/0,97, descent 0,375/0,97, lineGap 0. */
+@font-face {
+  font-family: "Poppins Fallback";
+  font-weight: 400 600;
+  src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Roboto");
+  size-adjust: 113%;
+  ascent-override: 92.9%;
+  descent-override: 31%;
+  line-gap-override: 8.8%;
+}
+/* Variante para texto en MAYÚSCULAS con tracking (kicker del hero): en Arial las mayúsculas salen más anchas que en Poppins
+   respecto al texto en minúsculas, así que el respaldo se reduce a 96 % (98 % medido sobre Arial con negrita sintética, con margen) para que la línea no salte de renglón al llegar la fuente. */
+@font-face {
+  font-family: "Poppins Fallback Caps";
+  font-weight: 400 600;
+  src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Roboto");
+  size-adjust: 96%;
+  ascent-override: 109.4%;
+  descent-override: 36.5%;
+  line-gap-override: 10.4%;
+}
+.font-caps {
+  font-family: Poppins, "Poppins Fallback Caps", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@font-face {
+  font-family: "Jost Fallback";
+  font-weight: 500 700;
+  src: local("Arial Bold"), local("Arial-BoldMT"), local("Helvetica Bold"), local("Roboto Bold");
+  size-adjust: 97%;
+  ascent-override: 110.3%;
+  descent-override: 38.7%;
+  line-gap-override: 0%;
+}
+
 /* Vice Sunset NUI - tokens: CLAUDE.md sección 3 */
 :root {
   --vice-night: #2e1a47;
@@ -41,7 +112,7 @@ body,
   min-height: 100%;
   background: #2e1a47;
   color: var(--vice-text);
-  font-family: Poppins, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: Poppins, "Poppins Fallback", system-ui, -apple-system, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -63,7 +134,7 @@ select option:checked {
 h1,
 h2,
 h3 {
-  font-family: Jost, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: Jost, "Jost Fallback", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 /* Fondo sunset */
@@ -121,7 +192,7 @@ h3 {
   border-radius: 14px;
   background: var(--vice-accent);
   color: var(--vice-ink);
-  font-family: Jost, system-ui, sans-serif;
+  font-family: Jost, "Jost Fallback", system-ui, sans-serif;
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.02em;
