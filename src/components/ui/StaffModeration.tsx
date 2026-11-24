@@ -7,6 +7,7 @@ import { entityHref, mediaSrc, type EntityWithSlug } from '../../data/seed';
 import { ApiError, API_URL, apiFetch, useAuthStore } from '../../store/useAuthStore';
 import { useStaffStore } from '../../store/useStaffStore';
 import type { MapMarker, Module } from '../../types/database';
+import { CompareDialog } from './StaffCompare';
 import { FormModal } from './StaffForms';
 import {
   Block,
@@ -686,6 +687,7 @@ export default function StaffModeration() {
   const [bulkErr, setBulkErr] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<ApproveConfirm | null>(null);
   const [reject, setReject] = useState<RejectTarget | null>(null);
+  const [compare, setCompare] = useState<{ id: string; title: string } | null>(null);
   const [running, setRunning] = useState(false);
   const lock = useRef(false);
   const approveBtn = useRef<HTMLButtonElement>(null);
@@ -1166,6 +1168,17 @@ export default function StaffModeration() {
                 >
                   {expanded ? 'Ocultar detalle' : 'Ver detalle completo'}
                 </button>
+                {s.origin === 'pipeline' && (s.type === 'entity' || s.type === 'marker') && s.moduleSlug !== 'mapa' && (
+                  <button
+                    type="button"
+                    onClick={() => setCompare({ id: s.id, title: s.title })}
+                    className={`flex min-h-11 items-center rounded-xl px-4 text-sm font-semibold focus-visible:outline-2 focus-visible:outline-vice-gold ${
+                      s.pipeline_reason === 'conflicto' ? 'bg-vice-gold font-bold text-vice-ink' : 'bg-white/10 hover:bg-white/20'
+                    }`}
+                  >
+                    Comparar
+                  </button>
+                )}
                 <PromotedLinks sub={s} />
               </div>
               {s.status === 'pending' && s.type === 'marker' && s.coords === null && (
@@ -1220,6 +1233,17 @@ export default function StaffModeration() {
         })}
       </ul>
       {queue.data && queue.data.total > 0 && <Pager page={queue.data.page} pages={queue.data.pages} total={queue.data.total} onPage={setPage} />}
+
+      {compare && (
+        <CompareDialog
+          id={compare.id}
+          title={compare.title}
+          onClose={() => setCompare(null)}
+          onResolved={() => {
+            for (const key of ['staff', 'world', 'entity']) void qc.invalidateQueries({ queryKey: [key] });
+          }}
+        />
+      )}
 
       <FormModal
         open={reject !== null}

@@ -14,6 +14,8 @@ export interface ModalProps {
   closeLabel?: string;
   /** false = el clic en el fondo no cierra el diálogo (formularios con datos por perder). Por defecto cierra. */
   dismissOnBackdrop?: boolean;
+  /** Escritorio: ventana ancha (comparaciones lado a lado). */
+  wide?: boolean;
 }
 
 const MOBILE_QUERY = '(max-width: 767.98px)';
@@ -32,7 +34,7 @@ function useIsMobile(): boolean {
   );
 }
 
-function DesktopDialog({ onClose, title, children, footer, closeLabel, dismissOnBackdrop }: Omit<ModalProps, 'open'> & { closeLabel: string; dismissOnBackdrop: boolean }) {
+function DesktopDialog({ onClose, title, children, footer, closeLabel, dismissOnBackdrop, wide }: Omit<ModalProps, 'open'> & { closeLabel: string; dismissOnBackdrop: boolean }) {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   useDialogFocus(true, panelRef, onClose, true);
@@ -46,7 +48,7 @@ function DesktopDialog({ onClose, title, children, footer, closeLabel, dismissOn
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="glass relative flex max-h-[88dvh] w-full max-w-xl flex-col overflow-hidden rounded-3xl text-vice-text outline-none"
+        className={`glass relative flex max-h-[88dvh] w-full ${wide ? 'max-w-5xl' : 'max-w-xl'} flex-col overflow-hidden rounded-3xl text-vice-text outline-none`}
       >
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-6 py-3">
           <h2 id={titleId} className="font-display text-lg font-bold">
@@ -76,7 +78,7 @@ function DesktopDialog({ onClose, title, children, footer, closeLabel, dismissOn
  * Siempre en un portal a <body>, en la capa `.z-dialog` (sobre el dock y las hojas), con foco atrapado,
  * Esc y clic en el fondo para cerrar, y foco devuelto al disparador.
  */
-export function Modal({ open, onClose, title, children, footer, closeLabel = 'Cerrar', dismissOnBackdrop = true }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer, closeLabel = 'Cerrar', dismissOnBackdrop = true, wide = false }: ModalProps) {
   const mobile = useIsMobile();
   if (!open) return null;
   if (mobile) {
@@ -88,7 +90,7 @@ export function Modal({ open, onClose, title, children, footer, closeLabel = 'Ce
     );
   }
   return (
-    <DesktopDialog onClose={onClose} title={title} footer={footer} closeLabel={closeLabel} dismissOnBackdrop={dismissOnBackdrop}>
+    <DesktopDialog onClose={onClose} title={title} footer={footer} closeLabel={closeLabel} dismissOnBackdrop={dismissOnBackdrop} wide={wide}>
       {children}
     </DesktopDialog>
   );
