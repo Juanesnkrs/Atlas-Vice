@@ -7,6 +7,7 @@ import { Module, moduleSchema, moduleUpdateSchema, toModuleDTO, type ModuleDoc }
 import { clearSsrCache } from '../services/ssrLite.js';
 import { diffFields, toSnapshot, writeAudit } from '../services/audit.js';
 import { withManualEdits } from '../services/catalogIngest.js';
+import { removeOrphanMedia } from '../services/imageStudio.js';
 import { sendPublicJson } from '../services/httpCache.js';
 import { assertActivatable, countEntitiesByModule } from '../services/moduleRoutes.js';
 import { HttpError, idParamsSchema, parse, resourceNotFound } from '../services/validate.js';
@@ -202,6 +203,8 @@ export async function registerCatalogRoutes(app: FastifyInstance): Promise<void>
     const doc = await Entity.findByIdAndDelete(id).lean<EntityDoc>();
     if (!doc) throw resourceNotFound('Entidad no encontrada');
     await writeAudit(req, 'entity.delete', 'Entity', id, { titulo: doc.titulo, slug: doc.slug, snapshot: toSnapshot(doc) });
+    // S3.5: libera el MediaAsset propio si nadie mas lo usa (mejor esfuerzo: no hace fallar el borrado de la ficha).
+    await removeOrphanMedia(req, doc.imagen_url, id, 'entity.delete');
     clearSsrCache();
     return reply.code(204).send();
   });

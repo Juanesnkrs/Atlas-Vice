@@ -1085,7 +1085,7 @@ describe('(r) reviewSubmission: rechazo con guarda atomica (M6)', () => {
 
 describe('POST /api/admin/entities/:id/image (reemplazo manual de imagen)', () => {
   const sharpMod = import('sharp').then((m) => m.default);
-  const png = async (w = 900, h = 400): Promise<Buffer> =>
+  const png = async (w = 1600, h = 900): Promise<Buffer> =>
     (await sharpMod)({ create: { width: w, height: h, channels: 3, background: { r: 200, g: 60, b: 120 } } }).png().toBuffer();
   const post = async (id: string, body: Buffer | string, type: string, cookie?: string) =>
     app.inject({
@@ -1120,7 +1120,7 @@ describe('POST /api/admin/entities/:id/image (reemplazo manual de imagen)', () =
     assert.equal(r.statusCode, 404);
   });
 
-  it('optimiza a WebP 1600x900 <= 400 KB, borra el /media anterior, baja el flag y deja auditoria', async () => {
+  it('procesa a WebP 1600x900 <= 600 KB con miniatura, borra el /media anterior, baja el flag y deja auditoria', async () => {
     const { MediaAsset } = await import('../models/MediaAsset.js');
     const { AuditLog } = await import('../models/AuditLog.js');
     const { probeImage } = await import('../services/imageProbe.js');
@@ -1142,7 +1142,7 @@ describe('POST /api/admin/entities/:id/image (reemplazo manual de imagen)', () =
     assert.ok(doc?.manualEdits?.includes('imagen_url'));
     assert.equal(await MediaAsset.exists({ _id: oldId }), null, 'el asset anterior no debe quedar huerfano');
     const asset = await MediaAsset.findById(out.url.slice('/media/'.length));
-    assert.ok(asset && asset.bytes <= 409_600);
+    assert.ok(asset && asset.bytes <= 614_400 && asset.thumb_data);
     const info = probeImage(Buffer.from(asset.data));
     assert.deepEqual([info?.mime, info?.width, info?.height], ['image/webp', 1600, 900]);
     assert.ok(await AuditLog.exists({ action: 'entity.image.replace', target_id: id }));
@@ -1175,6 +1175,297 @@ describe('POST /api/admin/entities/:id/image (reemplazo manual de imagen)', () =
     const slugs = (r.json() as Array<{ slug: string; capturaPropiaPendiente: boolean }>).map((e) => e.slug);
     assert.ok(slugs.includes('prov-si'));
     assert.ok(!slugs.includes('prov-no'));
+  });
+});
+
+describe('Estudio de Imagenes (Sprint 3): procesamiento, variantes, cola, emparejado y limpieza', () => {
+  const sharpMod = import('sharp').then((m) => m.default);
+  const VIVID = { r: 230, g: 40, b: 120 };
+  const solid = async (w: number, h: number, fmt: 'png' | 'jpeg' = 'png'): Promise<Buffer> => {
+    const s = (await sharpMod)({ create: { width: w, height: h, channels: 3, background: VIVID } });
+    return fmt === 'png' ? s.png().toBuffer() : s.jpeg().toBuffer();
+  };
+  /** Degradado vertical (verde arriba -> magenta abajo) para distinguir recortes por foco. */
+  const vgrad = async (w: number, h: number): Promise<Buffer> => {
+    const raw = Buffer.alloc(w * h * 3);
+    for (let y = 0; y < h; y++) {
+      const t = y / (h - 1);
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 3;
+        raw[i] = Math.round(255 * t);
+        raw[i + 1] = Math.round(255 * (1 - t));
+        raw[i + 2] = 80;
+      }
+    }
+    return (await sharpMod)(raw, { raw: { width: w, height: h, channels: 3 } }).png().toBuffer();
+  };
+  const pixel = async (img: Buffer, x: number, y: number): Promise<[number, number, number]> => {
+    const { data, info } = await (await sharpMod)(img).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    const i = (y * info.width + x) * info.channels;
+    return [data[i] ?? 0, data[i + 1] ?? 0, data[i + 2] ?? 0];
+  };
+  const close = (a: [number, number, number], b: [number, number, number], tol = 12): boolean => a.every((v, i) => Math.abs(v - (b[i] ?? 0)) <= tol);
+  const FRAME: [number, number, number] = [0x0b, 0x0f, 0x1f];
+
+  const post = async (id: string, body: Buffer, type: string, query = '', cookie?: string) =>
+    app.inject({
+      method: 'POST',
+      url: `/api/admin/entities/${id}/image${query}`,
+      remoteAddress: nextIp(),
+      headers: { cookie: cookie ?? (await staffCookie('ADMIN')), 'content-type': type },
+      payload: body,
+    });
+  const mkEntity = async (slug: string, extra: Record<string, unknown> = {}, modId: string = moduleId) => {
+    const id = randomUUID();
+    await Entity.create({ _id: id, module_id: modId, slug, titulo: `Ficha ${slug}`, categoria: 'Pistolas', ...extra });
+    return id;
+  };
+  const mkMedia = async (thumb = false): Promise<string> => {
+    const { MediaAsset } = await import('../models/MediaAsset.js');
+    const sh = await sharpMod;
+    const data = await sh({ create: { width: 1600, height: 900, channels: 3, background: '#112233' } }).webp().toBuffer();
+    const extra = thumb
+      ? { thumb_data: await sh({ create: { width: 800, height: 450, channels: 3, background: '#445566' } }).webp().toBuffer(), thumb_width: 800, thumb_height: 450 }
+      : {};
+    const id = randomUUID();
+    await MediaAsset.create({ _id: id, mime: 'image/webp', width: 1600, height: 900, bytes: data.length, data, created_by: 'system', ...extra });
+    return id;
+  };
+  const dims = async (buf: Buffer): Promise<[number | undefined, number | undefined, string | undefined]> => {
+    const m = await (await sharpMod)(buf).metadata();
+    return [m.width, m.height, m.format];
+  };
+  type UploadOut = { id: string; url: string; bytes: number; thumb_bytes: number; width: number; height: number; cropped: boolean; capturaPropiaPendiente: boolean };
+  const getMedia = async (url: string, headers: Record<string, string> = {}) =>
+    app.inject({ method: 'GET', url, remoteAddress: nextIp(), headers });
+
+  it('(a) PNG 1600x900: principal 1600x900 WebP <= 600 KB, miniatura 800x450 y SIN barras #0b0f1f', async () => {
+    const { MediaAsset } = await import('../models/MediaAsset.js');
+    const id = await mkEntity('st-a');
+    const r = await post(id, await solid(1600, 900), 'image/png');
+    assert.equal(r.statusCode, 200, r.body);
+    const out = r.json<UploadOut>();
+    assert.deepEqual([out.width, out.height, out.cropped, out.capturaPropiaPendiente], [1600, 900, false, false]);
+    assert.ok(out.bytes <= 614_400 && out.thumb_bytes > 0);
+    const asset = await MediaAsset.findById(out.url.slice('/media/'.length));
+    assert.ok(asset?.thumb_data);
+    const main = Buffer.from(asset.data);
+    const thumb = Buffer.from(asset.thumb_data);
+    assert.deepEqual(await dims(main), [1600, 900, 'webp']);
+    assert.deepEqual(await dims(thumb), [800, 450, 'webp']);
+    assert.equal(asset.thumb_bytes, thumb.length);
+    for (const [x, y] of [[0, 0], [1599, 0], [0, 899], [1599, 899], [0, 450], [1599, 450], [800, 450]] as const) {
+      const p = await pixel(main, x, y);
+      assert.ok(!close(p, FRAME, 30), `barra detectada en ${x},${y}`);
+      assert.ok(close(p, [VIVID.r, VIVID.g, VIVID.b], 25), `color inesperado en ${x},${y}: ${p.join(',')}`);
+    }
+  });
+
+  it('(b) JPG 2400x1350 reduce a 1600x900 (16:9, sin recorte) y no amplia', async () => {
+    const id = await mkEntity('st-b');
+    const r = await post(id, await solid(2400, 1350, 'jpeg'), 'image/jpeg');
+    assert.equal(r.statusCode, 200, r.body);
+    const out = r.json<UploadOut>();
+    assert.deepEqual([out.width, out.height, out.cropped], [1600, 900, false]);
+    const media = await getMedia(out.url);
+    assert.deepEqual(await dims(media.rawPayload), [1600, 900, 'webp']);
+  });
+
+  it('(c) fuente 4:3 de 2000x1500: recorte cover 1600x900, cropped:true y el foco desplaza el recorte', async () => {
+    const src = await vgrad(2000, 1500);
+    const top = await post(await mkEntity('st-c1'), src, 'image/png', '?focus=50,0');
+    const bottom = await post(await mkEntity('st-c2'), src, 'image/png', '?focus=50,100');
+    const center = await post(await mkEntity('st-c3'), src, 'image/png');
+    for (const r of [top, bottom, center]) {
+      assert.equal(r.statusCode, 200, r.body);
+      assert.deepEqual([r.json<UploadOut>().width, r.json<UploadOut>().height, r.json<UploadOut>().cropped], [1600, 900, true]);
+    }
+    const px = async (r: { json: () => unknown }) => pixel((await getMedia((r.json() as UploadOut).url)).rawPayload, 800, 450);
+    const [pt, pb, pc] = [await px(top), await px(bottom), await px(center)];
+    assert.ok(!close(pt, pb, 20), `foco arriba/abajo deberian diferir: ${pt} vs ${pb}`);
+    assert.ok(pt[0] < pc[0] && pc[0] < pb[0], 'el centro queda entre los dos focos');
+  });
+
+  it('(c2) focus invalido -> 400; alt se guarda y, si no llega, no se toca el existente', async () => {
+    const id = await mkEntity('st-c4', { metadata_json: { imagen_alt: 'alt previo' } });
+    assert.equal((await post(id, await solid(1600, 900), 'image/png', '?focus=abc')).statusCode, 400);
+    assert.equal((await post(id, await solid(1600, 900), 'image/png', '?focus=150,10')).statusCode, 400);
+    assert.equal((await post(id, await solid(1600, 900), 'image/png', `?alt=${'x'.repeat(201)}`)).statusCode, 400);
+    assert.equal((await post(id, await solid(1600, 900), 'image/png')).statusCode, 200);
+    assert.equal(((await Entity.findById(id).lean())?.metadata_json as Record<string, unknown>)['imagen_alt'], 'alt previo');
+    assert.equal((await post(id, await solid(1600, 900), 'image/png', `?alt=${encodeURIComponent('Pistola sobre mesa')}`)).statusCode, 200);
+    assert.equal(((await Entity.findById(id).lean())?.metadata_json as Record<string, unknown>)['imagen_alt'], 'Pistola sobre mesa');
+  });
+
+  it('(d) fuente menor de 1600x900 -> 400 con el mensaje y sin escribir nada', async () => {
+    const { MediaAsset } = await import('../models/MediaAsset.js');
+    const before = await MediaAsset.countDocuments();
+    const id = await mkEntity('st-d');
+    const r = await post(id, await solid(1200, 800), 'image/png');
+    assert.equal(r.statusCode, 400);
+    assert.match(r.body, /al menos 1600×900 px \(recibida 1200×800\)/);
+    assert.equal((await post(id, await solid(1600, 899), 'image/png')).statusCode, 400);
+    assert.equal(await MediaAsset.countDocuments(), before);
+    assert.equal((await Entity.findById(id).lean())?.imagen_url ?? null, null);
+  });
+
+  it('(e) ruido incompresible que no cabe en 600 KB -> 400 claro y sin escribir nada', async () => {
+    const { randomBytes } = await import('node:crypto');
+    const { MediaAsset } = await import('../models/MediaAsset.js');
+    const before = await MediaAsset.countDocuments();
+    const noise = await (await sharpMod)(randomBytes(1600 * 900 * 3), { raw: { width: 1600, height: 900, channels: 3 } }).png().toBuffer();
+    const id = await mkEntity('st-e');
+    const r = await post(id, noise, 'image/png');
+    assert.equal(r.statusCode, 400);
+    assert.match(r.body, /no se puede comprimir por debajo de 600 KB/);
+    assert.equal(await MediaAsset.countDocuments(), before);
+  });
+
+  it('(f) /media/:id?w=800 sirve la miniatura; sin w el principal; ETag y 304 por variante; legacy sin variante sirve el principal', async () => {
+    const id = await mkEntity('st-f');
+    const out = (await post(id, await solid(1600, 900), 'image/png')).json<UploadOut>();
+    const mid = out.url.slice('/media/'.length);
+    const main = await getMedia(out.url);
+    const thumb = await getMedia(`${out.url}?w=800`);
+    assert.equal(main.statusCode, 200);
+    assert.equal(thumb.statusCode, 200);
+    assert.deepEqual(await dims(main.rawPayload), [1600, 900, 'webp']);
+    assert.deepEqual(await dims(thumb.rawPayload), [800, 450, 'webp']);
+    assert.equal(main.headers['etag'], `"${mid}"`);
+    assert.equal(thumb.headers['etag'], `"${mid}-800"`);
+    for (const r of [main, thumb]) {
+      assert.equal(r.headers['cache-control'], 'public, max-age=31536000, immutable');
+      assert.equal(r.headers['x-content-type-options'], 'nosniff');
+      assert.equal(r.headers['content-length'], String(r.rawPayload.length));
+    }
+    assert.equal(thumb.rawPayload.length, out.thumb_bytes);
+    assert.equal((await getMedia(`${out.url}?w=800`, { 'if-none-match': `"${mid}-800"` })).statusCode, 304);
+    assert.equal((await getMedia(out.url, { 'if-none-match': `"${mid}"` })).statusCode, 304);
+    const other = await getMedia(`${out.url}?w=400`);
+    assert.deepEqual(await dims(other.rawPayload), [1600, 900, 'webp']);
+    assert.equal(other.headers['etag'], `"${mid}"`);
+    const legacy = await mkMedia(false);
+    const lg = await getMedia(`/media/${legacy}?w=800`);
+    assert.equal(lg.statusCode, 200);
+    assert.deepEqual(await dims(lg.rawPayload), [1600, 900, 'webp']);
+    assert.equal(lg.headers['etag'], `"${legacy}"`);
+    const gone = await getMedia(`/media/${randomUUID()}?w=800`);
+    assert.equal(gone.statusCode, 404);
+    assert.match(String(gone.headers['content-type']), /text\/plain/);
+  });
+
+  it('(g) cola: filtros por modulo, q y estado, stats y 404 uniforme sin staff/MODERATOR', async () => {
+    const vehId = randomUUID();
+    await Module.create({ _id: vehId, slug: 'vehiculos', nombre: 'Vehiculos', icono: 'car', activo: true, orden: 2 });
+    const own = `/media/${randomUUID()}`;
+    await mkEntity('q-a');
+    await mkEntity('q-b', { imagen_url: '/assets/hero-gas-station.jpg', capturaPropiaPendiente: true });
+    await mkEntity('q-c', { imagen_url: own }, vehId);
+    await mkEntity('q-d', { imagen_url: '/assets/otra.jpg' }, vehId);
+    const cookie = await staffCookie('ADMIN');
+    const get = async (qs: string, c: string | null = cookie) =>
+      app.inject({ method: 'GET', url: `/api/admin/images/queue${qs}`, remoteAddress: nextIp(), headers: c ? { cookie: c } : {} });
+    type Stats = { total: number; sin_imagen: number; provisionales: number; propias: number };
+    type Q = {
+      items: Array<{ id: string; slug: string; module_slug: string; imagen_url: string | null; capturaPropiaPendiente: boolean; imagen_alt: string | null }>;
+      total: number;
+      page: number;
+      pages: number;
+      stats: Stats;
+      stats_por_modulo: Record<string, Stats>;
+    };
+    const def = await get('');
+    assert.equal(def.statusCode, 200, def.body);
+    assert.equal(def.headers['cache-control'], 'private, no-store');
+    const d = def.json<Q>();
+    assert.deepEqual(d.items.map((i) => i.slug).sort(), ['q-a', 'q-b']);
+    assert.equal(d.total, 2);
+    assert.deepEqual(d.stats, { total: 4, sin_imagen: 1, provisionales: 1, propias: 1 });
+    assert.deepEqual(d.stats_por_modulo['vehiculos'], { total: 2, sin_imagen: 0, provisionales: 0, propias: 1 });
+    assert.deepEqual(d.stats_por_modulo['armas'], { total: 2, sin_imagen: 1, provisionales: 1, propias: 0 });
+    const all = (await get('?estado=todas')).json<Q>();
+    assert.equal(all.total, 4);
+    assert.equal(all.items.find((i) => i.slug === 'q-c')?.module_slug, 'vehiculos');
+    assert.equal(all.items.find((i) => i.slug === 'q-b')?.capturaPropiaPendiente, true);
+    const veh = (await get('?module=vehiculos&estado=todas')).json<Q>();
+    assert.deepEqual(veh.items.map((i) => i.slug).sort(), ['q-c', 'q-d']);
+    assert.equal(veh.stats.total, 4, 'stats global, no filtrado');
+    assert.equal((await get('?module=vehiculos')).json<Q>().total, 0);
+    assert.equal((await get('?module=no-existe&estado=todas')).json<Q>().total, 0);
+    assert.deepEqual((await get('?q=Q-B&estado=todas')).json<Q>().items.map((i) => i.slug), ['q-b']);
+    assert.equal((await get('?q=.*&estado=todas')).json<Q>().total, 0, 'q se escapa como literal');
+    const pg = (await get('?estado=todas&limit=3&page=2')).json<Q>();
+    assert.deepEqual([pg.items.length, pg.page, pg.pages, pg.total], [1, 2, 2, 4]);
+    assert.equal((await get('?limit=101')).statusCode, 400);
+    assert.equal((await get('', null)).statusCode, 404);
+    assert.equal((await get('', await staffCookie('MODERATOR'))).statusCode, 404);
+    assert.equal((await get('?limit=999', await staffCookie('MODERATOR'))).statusCode, 404, 'RBAC antes que Zod');
+  });
+
+  it('(h) match: encontrada, ambigua, no_encontrada, filtro por modulo y RBAC', async () => {
+    let vehId = (await Module.findOne({ slug: 'vehiculos' }).lean())?._id;
+    if (!vehId) {
+      vehId = randomUUID();
+      await Module.create({ _id: vehId, slug: 'vehiculos', nombre: 'Vehiculos', icono: 'car', activo: true, orden: 2 });
+    }
+    await mkEntity('m-unica');
+    await mkEntity('m-dup');
+    await mkEntity('m-dup', {}, vehId);
+    const get = async (qs: string, c?: string) =>
+      app.inject({ method: 'GET', url: `/api/admin/images/match${qs}`, remoteAddress: nextIp(), headers: c ? { cookie: c } : {} });
+    type M = { matches: Record<string, { estado: string; candidatos: Array<{ module_slug: string; slug: string }> }> };
+    const r = await get('?slugs=M-Unica,m-dup,m-nada', await staffCookie('ADMIN'));
+    assert.equal(r.statusCode, 200, r.body);
+    assert.equal(r.headers['cache-control'], 'private, no-store');
+    const m = r.json<M>().matches;
+    assert.equal(m['m-unica']?.estado, 'encontrada');
+    assert.equal(m['m-unica']?.candidatos[0]?.module_slug, 'armas');
+    assert.equal(m['m-dup']?.estado, 'ambigua');
+    assert.deepEqual(m['m-dup']?.candidatos.map((c) => c.module_slug).sort(), ['armas', 'vehiculos']);
+    assert.deepEqual(m['m-nada'], { estado: 'no_encontrada', candidatos: [] });
+    const f = (await get('?slugs=m-dup&module=vehiculos', await staffCookie('ADMIN'))).json<M>().matches;
+    assert.equal(f['m-dup']?.estado, 'encontrada');
+    assert.equal(f['m-dup']?.candidatos[0]?.module_slug, 'vehiculos');
+    const many = Array.from({ length: 201 }, (_, i) => `s-${i}`).join(',');
+    assert.equal((await get(`?slugs=${many}`, await staffCookie('ADMIN'))).statusCode, 400);
+    assert.equal((await get('?slugs=m-unica')).statusCode, 404);
+    assert.equal((await get('?slugs=m-unica', await staffCookie('MODERATOR'))).statusCode, 404);
+    assert.equal((await get('', await staffCookie('MODERATOR'))).statusCode, 404, 'RBAC antes que Zod');
+  });
+
+  it('(i) DELETE de ficha borra su media y NO un media compartido (ni falla si no hay media)', async () => {
+    const { MediaAsset } = await import('../models/MediaAsset.js');
+    const { AuditLog } = await import('../models/AuditLog.js');
+    const cookie = await staffCookie('ADMIN');
+    const del = async (id: string) =>
+      app.inject({ method: 'DELETE', url: `/api/entities/${id}`, remoteAddress: nextIp(), headers: { cookie } });
+    const solo = await mkMedia(true);
+    const a = await mkEntity('d-solo', { imagen_url: `/media/${solo}` });
+    assert.equal((await del(a)).statusCode, 204);
+    assert.equal(await MediaAsset.exists({ _id: solo }), null);
+    assert.ok(await AuditLog.exists({ action: 'media.delete', target_id: solo }));
+    const shared = await mkMedia();
+    const b = await mkEntity('d-sh-a', { imagen_url: `/media/${shared}` });
+    await mkEntity('d-sh-b', { imagen_url: `/media/${shared}` });
+    assert.equal((await del(b)).statusCode, 204);
+    assert.ok(await MediaAsset.exists({ _id: shared }), 'el media compartido se conserva');
+    const c = await mkEntity('d-sin', { imagen_url: '/assets/hero-gas-station.jpg' });
+    assert.equal((await del(c)).statusCode, 204);
+  });
+
+  it('(j) reemplazo: borra el media anterior, audita bytes de ambas variantes y recorte', async () => {
+    const { AuditLog } = await import('../models/AuditLog.js');
+    const { MediaAsset } = await import('../models/MediaAsset.js');
+    const oldId = await mkMedia(true);
+    const id = await mkEntity('st-j', { imagen_url: `/media/${oldId}`, capturaPropiaPendiente: true });
+    const r = await post(id, await solid(2000, 1500), 'image/png');
+    assert.equal(r.statusCode, 200, r.body);
+    assert.equal(await MediaAsset.exists({ _id: oldId }), null);
+    const log = await AuditLog.findOne({ action: 'entity.image.replace', target_id: id }).lean();
+    const d = log?.metadata as Record<string, unknown>;
+    assert.equal(d['cropped'], true);
+    assert.equal(typeof d['thumb_bytes'], 'number');
+    assert.equal(typeof d['bytes'], 'number');
   });
 });
 
@@ -1268,5 +1559,77 @@ describe('(k) modulos: registro modulo<->ruta, 422 y overview de staff', () => {
     const all = await app.inject({ method: 'GET', url: '/api/modules?all=1', remoteAddress: nextIp(), headers: { cookie: await staffCookie('ADMIN') } });
     const radio = all.json<Array<{ slug: string; fichas: number }>>().find((m) => m.slug === 'radio')!;
     assert.equal(radio.fichas, 0);
+  });
+});
+
+describe('(t) excepcion de transicion: extracto de confianza baja se actualiza, la editorial gana', () => {
+  const SYS_ACTOR = { id: 'system', role: 'SYSTEM' } as const;
+  /** Siembra una ficha existente de la fuente "editorial" con la confianza dada y la promueve a Entity. */
+  async function seed(slug: string, confianza: string, manualEdits: string[] = []): Promise<void> {
+    await ok([ficha(slug, { confianza })]);
+    await promote((await subOf(slug))!._id, SYS_ACTOR);
+    if (manualEdits.length) await Entity.updateOne({ slug }, { $set: { manualEdits } });
+    await Submission.deleteMany({});
+  }
+
+  it('(a) confianza baja sin manualEdits + lote de otra fuente -> actualizada, con la nueva confianza y fuente', async () => {
+    await seed('tr-a', 'baja');
+    const before = await Entity.findOne({ slug: 'tr-a' }).lean();
+    const r = await ok([ficha('tr-a', { titulo: 'Titulo redactado', confianza: 'media' })], { source: 'gtabase' });
+    assert.equal(r.actualizadas, 1);
+    assert.equal(r.conflictos, 0);
+    assert.equal(r.details[0]?.resultado, 'actualizada');
+    await promoteSlug('tr-a');
+    const after = await Entity.findOne({ slug: 'tr-a' }).lean();
+    assert.equal(after?._id, before?._id);
+    assert.equal(after?.titulo, 'Titulo redactado');
+    const meta = after?.metadata_json as Record<string, unknown>;
+    assert.equal(meta['confianza'], 'media');
+    assert.equal(meta['fuente'], 'gtabase');
+  });
+
+  it('(b) confianza media -> conflicto', async () => {
+    await seed('tr-b', 'media');
+    const r = await ok([ficha('tr-b', { titulo: 'Otro' })], { source: 'gtabase' });
+    assert.equal(r.conflictos, 1);
+    assert.equal(r.actualizadas, 0);
+  });
+
+  it('(b2) confianza alta -> conflicto', async () => {
+    await seed('tr-b2', 'alta');
+    const r = await ok([ficha('tr-b2', { titulo: 'Otro' })], { source: 'gtabase' });
+    assert.equal(r.conflictos, 1);
+  });
+
+  it('(c) confianza baja con manualEdits -> conflicto', async () => {
+    await seed('tr-c', 'baja', ['subtitulo']);
+    const r = await ok([ficha('tr-c', { titulo: 'Otro' })], { source: 'gtabase' });
+    assert.equal(r.conflictos, 1);
+    assert.equal(r.actualizadas, 0);
+  });
+
+  it('(d) slug inexistente -> nueva', async () => {
+    const r = await ok([ficha('tr-d')], { source: 'gtabase' });
+    assert.equal(r.nuevas, 1);
+  });
+
+  it('(e) hash identico -> sin_cambios', async () => {
+    await ok([ficha('tr-e', { confianza: 'baja' })], { source: 'gtabase' });
+    await promoteSlug('tr-e');
+    await Submission.deleteMany({});
+    const r = await ok([ficha('tr-e', { confianza: 'baja' })], { source: 'gtabase' });
+    assert.equal(r.sin_cambios, 1);
+    assert.equal(await pendingPipeline('tr-e'), 0);
+  });
+
+  it('(f) la tarjeta se promueve a /media/... y deja capturaPropiaPendiente tras aprobar la actualizada', async () => {
+    await seed('tr-f', 'baja');
+    const r = await ok([ficha('tr-f', { titulo: 'Con tarjeta', confianza: 'media', tarjeta: tarjetaOf(), metadata: { fuente_imagen: 'www.gtabase.com' } })], { source: 'gtabase' });
+    assert.equal(r.actualizadas, 1);
+    await promoteSlug('tr-f');
+    const e = await Entity.findOne({ slug: 'tr-f' }).lean();
+    assert.match(e?.imagen_url ?? '', /^\/media\/[0-9a-f-]{36}$/);
+    assert.equal(e?.capturaPropiaPendiente, true);
+    assert.equal((e?.metadata_json as Record<string, unknown>)['fuente_imagen'], 'www.gtabase.com');
   });
 });

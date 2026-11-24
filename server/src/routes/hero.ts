@@ -45,7 +45,7 @@ async function deleteOrphans(req: FastifyRequest, before: Set<string>, after: Se
   for (const id of before) {
     if (after.has(id)) continue;
     try {
-      const gone = await MediaAsset.findOneAndDelete({ _id: id }, { projection: { data: 0 } }).lean();
+      const gone = await MediaAsset.findOneAndDelete({ _id: id }, { projection: { data: 0, thumb_data: 0 } }).lean();
       if (gone) await writeAudit(req, 'media.delete', 'MediaAsset', id, { mime: gone.mime, bytes: gone.bytes });
     } catch (err) {
       req.log.warn({ err, id }, 'No se pudo eliminar la imagen huerfana del Hero');
