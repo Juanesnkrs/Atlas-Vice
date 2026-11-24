@@ -443,7 +443,7 @@ export async function expireStaleRuns(): Promise<void> {
   );
 }
 
-const sameJson = (a: unknown, b: unknown): boolean => stable(a ?? null) === stable(b ?? null);
+export const sameJson = (a: unknown, b: unknown): boolean => stable(a ?? null) === stable(b ?? null);
 
 export async function ingestPipelineBatch(input: IngestInput): Promise<IngestResult> {
   const { source, modulo, archivo, dryRun, fichas } = input;

@@ -10,7 +10,15 @@ import {
   toSubmissionDTO,
   type SubmissionDoc,
 } from '../models/Submission.js';
-import { bulkReview, createUserSubmission, PIPELINE_REASONS, reviewSubmission } from '../services/submissions.js';
+import {
+  bulkReview,
+  compareSubmission,
+  createUserSubmission,
+  PIPELINE_REASONS,
+  RESOLVE_ACTIONS,
+  resolvePipelineSubmission,
+  reviewSubmission,
+} from '../services/submissions.js';
 import { parseTarjeta } from '../services/catalogIngest.js';
 import { writeAudit } from '../services/audit.js';
 import { HttpError, idParamsSchema, parse } from '../services/validate.js';
@@ -31,6 +39,8 @@ const bulkSchema = z
   })
   .refine((v) => (v.ids === undefined) !== (v.filter === undefined), { message: 'Indica ids o filter (uno solo)', path: ['ids'] })
   .refine((v) => v.action === 'reject' || v.reviewNote === undefined, { message: 'reviewNote solo se admite al rechazar', path: ['reviewNote'] });
+
+const resolveSchema = z.object({ accion: z.enum(RESOLVE_ACTIONS), nota: z.string().trim().max(300).optional() });
 
 export async function registerSubmissionRoutes(app: FastifyInstance): Promise<void> {
   app.post(
@@ -107,6 +117,22 @@ export async function registerSubmissionRoutes(app: FastifyInstance): Promise<vo
     const t = sub ? parseTarjeta((sub.payload as { tarjeta?: { mime?: unknown; base64?: unknown } }).tarjeta ?? {}) : null;
     if (!t || !t.ok) throw new HttpError(404, 'No encontrado');
     return reply.header('X-Content-Type-Options', 'nosniff').type('image/webp').send(t.buffer);
+  });
+
+  /** Comparativa ficha actual vs propuesta del pipeline (sin base64; la miniatura va por tarjeta.webp). */
+  app.get('/api/admin/submissions/:id/compare', moderation, async (req, reply) => {
+    void reply.header('Cache-Control', 'private, no-store');
+    const { id } = parse(idParamsSchema, req.params);
+    return compareSubmission(id);
+  });
+
+  /** Politica de conflicto del pipeline: mantener / aceptar / solo_imagen (RBAC en onRequest, antes de Zod). */
+  app.post('/api/admin/submissions/:id/resolve', { ...moderation, config: { rateLimit: { max: 60, timeWindow: '1 minute' } } }, async (req, reply) => {
+    void reply.header('Cache-Control', 'private, no-store');
+    const { id } = parse(idParamsSchema, req.params);
+    const { accion, nota } = parse(resolveSchema, req.body);
+    const r = await resolvePipelineSubmission(id, accion, nota, req.authUser!, req.ip);
+    return { ok: true, accion: r.accion, entity_id: r.entity_id, submission: toSubmissionDTO(r.submission) };
   });
 
   /**

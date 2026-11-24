@@ -13,7 +13,7 @@ import {
 } from '../models/Submission.js';
 import { ROLE_RANK, type Role } from '../models/User.js';
 import { writeAuditEntry } from './audit.js';
-import { parseTarjeta, withManualEdits } from './catalogIngest.js';
+import { parseTarjeta, sameJson, withManualEdits } from './catalogIngest.js';
 import { clearSsrCache } from './ssrLite.js';
 import { HttpError, resourceNotFound } from './validate.js';
 
@@ -471,4 +471,252 @@ export async function bulkReview(input: BulkInput, reviewer: { _id: string; rol:
   }
   const okCount = results.filter((r) => r.ok).length;
   return { action: input.action, requested: ids.length, ok: okCount, failed: results.length - okCount, truncated, results };
+}
+
+// ---- Politica de conflicto del pipeline (S2.3) ---------------------------------------
+
+export const RESOLVE_ACTIONS = ['mantener', 'aceptar', 'solo_imagen'] as const;
+export type ResolveAction = (typeof RESOLVE_ACTIONS)[number];
+
+const asStr = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v : null);
+const asRec = (v: unknown): Record<string, unknown> => (v !== null && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
+
+export interface CompareDiff {
+  campo: string;
+  actual: unknown;
+  propuesta: unknown;
+}
+export interface FichaView {
+  titulo: string;
+  subtitulo: string | null;
+  categoria: string;
+  descripcion: string | null;
+  metadata: Record<string, unknown>;
+}
+export interface SubmissionCompare {
+  submission_id: string;
+  estado: SubmissionDoc['status'];
+  reason: PipelineReason;
+  entity: {
+    id: string;
+    slug: string;
+    titulo: string;
+    categoria: string;
+    subtitulo: string | null;
+    imagen_url: string | null;
+    capturaPropiaPendiente: boolean;
+    confianza: string | null;
+    fuente: string | null;
+  } | null;
+  actual: FichaView | null;
+  propuesta: FichaView & { confianza: string | null; fuente: string | null; fuente_url: string | null };
+  diferencias: CompareDiff[];
+  imagen: {
+    actual_url: string | null;
+    propuesta: { bytes: number; sha256: string } | null;
+    thumb_url_propuesta: string | null;
+  };
+  puede_solo_imagen: boolean;
+  puede_aceptar: boolean;
+}
+
+interface PipelineContext {
+  sub: SubmissionDoc;
+  payload: Record<string, unknown>;
+  entity: EntityDoc | null;
+  tarjeta: { buffer: Buffer; value: { bytes: number; sha256: string } } | null;
+  /** Hay `payload.tarjeta` pero no es valida (nunca se aplica). */
+  tarjetaInvalida: boolean;
+}
+
+/** Carga el aporte del pipeline (404 si no existe, 422 si no es una ficha de entidad del pipeline) y su ficha actual. */
+async function loadPipelineContext(id: string): Promise<PipelineContext> {
+  const sub = await Submission.findById(id).lean<SubmissionDoc>();
+  if (!sub) throw resourceNotFound('Aporte no encontrado');
+  if (sub.origin !== 'pipeline' || sub.type !== 'entity') throw new HttpError(422, 'Solo aplica a aportes de ficha del pipeline');
+  const payload = asRec(sub.payload);
+  const slug = asStr(payload['slug']);
+  const mod = await Module.findOne({ slug: sub.moduleSlug }, { _id: 1 }).lean<{ _id: string }>();
+  const entity = slug && mod ? await Entity.findOne({ module_id: mod._id, slug }).lean<EntityDoc>() : null;
+  const raw = payload['tarjeta'];
+  let tarjeta: PipelineContext['tarjeta'] = null;
+  let tarjetaInvalida = false;
+  if (raw !== undefined && raw !== null) {
+    const t = parseTarjeta(asRec(raw));
+    if (t.ok) tarjeta = { buffer: t.buffer, value: { bytes: t.value.bytes, sha256: t.value.sha256 } };
+    else tarjetaInvalida = true;
+  }
+  return { sub, payload, entity: entity ?? null, tarjeta, tarjetaInvalida };
+}
+
+const canReplaceImage = (c: PipelineContext): boolean =>
+  c.tarjeta !== null && c.entity !== null && !c.entity.imagen_url && !(c.entity.manualEdits ?? []).includes('imagen_url');
+
+const reasonOf = (payload: Record<string, unknown>): PipelineReason => {
+  const r = payload['pipeline_reason'];
+  return (PIPELINE_REASONS as readonly string[]).includes(r as string) ? (r as PipelineReason) : 'nueva';
+};
+
+const fichaView = (src: { titulo?: unknown; subtitulo?: unknown; categoria?: unknown; metadata_json?: unknown }): FichaView => {
+  const metadata = asRec(src.metadata_json);
+  return { titulo: asStr(src.titulo) ?? '', subtitulo: asStr(src.subtitulo), categoria: asStr(src.categoria) ?? '', descripcion: asStr(metadata['descripcion']), metadata };
+};
+
+/** GET /api/admin/submissions/:id/compare — nunca incluye el base64 de la tarjeta. */
+export async function compareSubmission(id: string): Promise<SubmissionCompare> {
+  const c = await loadPipelineContext(id);
+  const reason = reasonOf(c.payload);
+  const propBase = fichaView(c.payload);
+  const actual = c.entity ? fichaView(c.entity) : null;
+  const diferencias: CompareDiff[] = [];
+  if (actual) {
+    const add = (campo: string, a: unknown, p: unknown): void => {
+      if (!sameJson(a, p)) diferencias.push({ campo, actual: a ?? null, propuesta: p ?? null });
+    };
+    add('titulo', actual.titulo, propBase.titulo);
+    add('subtitulo', actual.subtitulo, propBase.subtitulo);
+    add('categoria', actual.categoria, propBase.categoria);
+    add('descripcion', actual.descripcion, propBase.descripcion);
+    const { descripcion: _a, ...am } = actual.metadata;
+    const { descripcion: _p, ...pm } = propBase.metadata;
+    for (const k of [...new Set([...Object.keys(am), ...Object.keys(pm)])].sort()) add(`metadata.${k}`, am[k], pm[k]);
+    const as = asRec(c.entity?.stats_json);
+    const ps = asRec(c.payload['stats_json']);
+    for (const k of [...new Set([...Object.keys(as), ...Object.keys(ps)])].sort()) add(`stats.${k}`, as[k], ps[k]);
+  }
+  const em = c.entity ? asRec(c.entity.metadata_json) : {};
+  return {
+    submission_id: c.sub._id,
+    estado: c.sub.status,
+    reason,
+    entity: c.entity
+      ? {
+          id: c.entity._id,
+          slug: c.entity.slug,
+          titulo: c.entity.titulo,
+          categoria: c.entity.categoria,
+          subtitulo: c.entity.subtitulo ?? null,
+          imagen_url: c.entity.imagen_url || null,
+          capturaPropiaPendiente: c.entity.capturaPropiaPendiente === true,
+          confianza: asStr(em['confianza']),
+          fuente: asStr(em['fuente']),
+        }
+      : null,
+    actual,
+    propuesta: {
+      ...propBase,
+      confianza: asStr(propBase.metadata['confianza']),
+      fuente: asStr(propBase.metadata['fuente']),
+      fuente_url: asStr(propBase.metadata['fuente_url']),
+    },
+    diferencias,
+    imagen: {
+      actual_url: c.entity?.imagen_url || null,
+      propuesta: c.tarjeta ? c.tarjeta.value : null,
+      thumb_url_propuesta: c.tarjeta ? `/api/admin/submissions/${c.sub._id}/tarjeta.webp` : null,
+    },
+    puede_solo_imagen: c.sub.status === 'pending' && canReplaceImage(c),
+    puede_aceptar: c.sub.status === 'pending',
+  };
+}
+
+export interface ResolveResult {
+  submission: SubmissionDoc;
+  accion: ResolveAction;
+  entity_id: string | null;
+}
+
+/**
+ * POST /api/admin/submissions/:id/resolve — politica de conflicto del pipeline.
+ * mantener: rechaza el aporte y no toca la ficha. aceptar: aplica la version del pipeline (422 si la ficha tiene manualEdits).
+ * solo_imagen: crea el MediaAsset de la tarjeta y fija solo imagen_url + capturaPropiaPendiente + metadata_json.fuente_imagen/fuente_url;
+ * el aporte queda approved con reviewNote «Solo imagen…» y payload.pipeline_resolution = 'solo_imagen' (sin campos nuevos de coleccion).
+ */
+export async function resolvePipelineSubmission(
+  id: string,
+  accion: ResolveAction,
+  nota: string | undefined,
+  reviewer: { _id: string; rol: Role },
+  ip?: string | null,
+): Promise<ResolveResult> {
+  const c = await loadPipelineContext(id);
+  if (c.sub.status !== 'pending' || c.sub.promotedTo) throw new HttpError(409, 'Aporte ya procesado');
+  const actor: Actor = { id: reviewer._id, role: reviewer.rol, ip: ip ?? null };
+  const audit = (session: ClientSession | null, extra: Record<string, unknown> = {}) =>
+    writeAuditEntry(
+      {
+        actor_id: actor.id,
+        actor_role: actor.role,
+        ip: actor.ip ?? null,
+        action: 'submission.resolve',
+        target_type: 'Submission',
+        target_id: id,
+        metadata: { accion, entity_id: c.entity?._id ?? null, slug: asStr(c.payload['slug']), ...(nota ? { nota } : {}), ...extra },
+      },
+      session,
+    );
+  const withNote = (base: string): string => (nota ? `${base}. ${nota}` : base).slice(0, 500);
+
+  if (accion === 'mantener') {
+    const updated = await runAtomic(async (session) => {
+      const u = await Submission.findOneAndUpdate(
+        { _id: id, status: 'pending', promotedTo: null },
+        { $set: { status: 'rejected', reviewedBy: reviewer._id, reviewNote: withNote('Se mantiene la ficha editorial') } },
+        { returnDocument: 'after', session },
+      ).lean<SubmissionDoc>();
+      if (!u) throw new HttpError(409, 'Aporte ya procesado');
+      await audit(session);
+      return u;
+    });
+    return { submission: updated, accion, entity_id: c.entity?._id ?? null };
+  }
+
+  if (accion === 'aceptar') {
+    if (c.entity && (c.entity.manualEdits ?? []).length > 0) {
+      throw new HttpError(422, `La ficha tiene campos editados a mano (${(c.entity.manualEdits ?? []).join(', ')}): no se pueden pisar. Usa «mantener».`);
+    }
+    const done = await reviewSubmission(id, 'approved', reviewer, ip);
+    await audit(null, { promotedTo: done.promotedTo });
+    return { submission: done, accion, entity_id: done.promotedTo?.id ?? c.entity?._id ?? null };
+  }
+
+  // solo_imagen
+  if (!c.entity) throw new HttpError(422, 'No existe la ficha: no hay a que asignar la imagen');
+  if (!c.tarjeta) throw new HttpError(422, c.tarjetaInvalida ? 'La tarjeta del aporte no es valida' : 'El aporte no trae imagen provisional');
+  if (!canReplaceImage(c)) throw new HttpError(422, 'La ficha ya tiene imagen asignada o protegida: no se reemplaza');
+  const tarjeta = c.tarjeta;
+  const entity = c.entity;
+  const pm = asRec(c.payload['metadata_json']);
+  const protectedMeta = (entity.manualEdits ?? []).includes('metadata_json');
+  const done = await runAtomic(async (session) => {
+    const fresh = await Entity.findOne({ _id: entity._id }, { imagen_url: 1, manualEdits: 1 }).session(session).lean<{ imagen_url?: string | null; manualEdits?: string[] }>();
+    if (!fresh || fresh.imagen_url || (fresh.manualEdits ?? []).includes('imagen_url')) throw new HttpError(422, 'La ficha ya tiene imagen asignada o protegida: no se reemplaza');
+    const claimed = await Submission.findOneAndUpdate(
+      { _id: id, status: 'pending', promotedTo: null },
+      {
+        $set: {
+          status: 'approved',
+          reviewedBy: reviewer._id,
+          reviewNote: withNote('Solo imagen: se conserva el texto editorial'),
+          promotedTo: { collection: 'Entity', id: entity._id },
+          'payload.pipeline_resolution': 'solo_imagen',
+        },
+      },
+      { returnDocument: 'after', session },
+    ).lean<SubmissionDoc>();
+    if (!claimed) throw new HttpError(409, 'Aporte ya procesado');
+    const url = await createTarjetaAsset({ buffer: tarjeta.buffer, bytes: tarjeta.value.bytes }, reviewer._id, session);
+    const set: Record<string, unknown> = { imagen_url: url, capturaPropiaPendiente: true };
+    if (!protectedMeta) {
+      const fi = asStr(pm['fuente_imagen']);
+      const fu = asStr(pm['fuente_url']);
+      if (fi) set['metadata_json.fuente_imagen'] = fi;
+      if (fu) set['metadata_json.fuente_url'] = fu;
+    }
+    await Entity.updateOne({ _id: entity._id }, { $set: set }).session(session);
+    await audit(session, { imagen_url: url });
+    return claimed;
+  });
+  clearSsrCache();
+  return { submission: done, accion, entity_id: entity._id };
 }
