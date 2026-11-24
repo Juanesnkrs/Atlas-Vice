@@ -40,7 +40,7 @@ Los documentos `AtlasVice-v2.md`, `AtlasViceArquitecturaDatosSQL.md`, `AtlasVice
 - Artwork y recursos visuales (`public/assets/`): `public/assets/hero-gas-station.jpg` es el artwork protagonista de P01/P02 (recortado por debajo del título del póster con degradado de fusión superior). El resto de superficies visuales usan degradados Vice Sunset o ilustraciones SVG propias; no se conservan archivos huérfanos ni capturas de terceros.
 - Foro (P07): la categoría se muestra como `Guías / Ayuda` y se guarda como `'Guias/Ayuda'`. Scrollbars oscuros con pulgar sunset.
 - Escritorio: HUD flotante `100vw x 100vh` sin scroll vertical en Mapa (`P04`) e Inspector (`P05`).
-- Escritorio y móvil (iOS/Android): el mismo Bottom Dock de 5 ítems (`Hub`, `Mapa`, `Catálogo`, `Foro`, `Aportar`); el Progreso se abre desde el botón de % de la cabecera. En móvil, Bottom Sheets deslizables.
+- Escritorio y móvil (iOS/Android): el mismo Bottom Dock. **v1 «enciclopedia» (decisión del propietario, 2026-11-24): 6 ítems — `Inicio`, `Vehículos`, `Armas`, `Guías`, `Mapa`, `Noticias`**; `Hub`, `Progreso`, `Foro` y `Aportar` quedan ocultos (no borrados) con los interruptores de `src/data/v1.ts` y `server/src/services/v1.ts` y se reactivan en la v1.1 (el dock completo de 5 ítems —`Hub`, `Mapa`, `Catálogo`, `Foro`, `Aportar`— sigue en `DOCK_ITEMS_FULL`). En móvil, Bottom Sheets deslizables.
 
 ## 4. Arquitectura LeonidApp (MongoDB) y Enfoque Operativo
 

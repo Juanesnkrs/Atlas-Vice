@@ -36,6 +36,7 @@ Estas decisiones ya fueron tomadas por el propietario. Los agentes **no las reab
 | D-08 | *(reservada)* Almacenamiento de variantes de imagen (MongoDB vs R2): se firma en S3.4. | — | Ver W-29. |
 | D-09 | **La v1 sale sin anuncios activos** hasta superar **40 imágenes propias** cargadas. | W-41 resuelta para la v1: `ads_enabled=false`. S6.5 verifica solo el comportamiento de consentimiento. | — |
 | D-10 | **Prioridad de ejecución:** primero el bloque crítico de lanzamiento (Sprints 0, 1, 2, 3, 5, 6 y 7). Sprints 4 y 8 después, **con dos matices**: (a) los ítems de S4 necesarios para las puertas G-05/G-06 se adelantan (S4.1 paginación y S4.4 `og:image`); (b) **el acta Go/No-Go (S8.3) y las puertas G-01…G-10 siguen siendo obligatorias antes de publicar**. | Orden efectivo: S0 → S1 (+S4.1) → S2 → S3 → S5 → S6 → S7 → resto de S4 → S8. | Indexar cuanto antes no exime de la puerta de calidad. |
+| D-11 | **v1 simplificada «enciclopedia» (2026-11-24):** el menú público queda en **Inicio, Vehículos, Armas, Guías, Mapa y Noticias**; **Hub, Progreso, Foro y Aportar** (y la interfaz de cuentas de visitantes) se **ocultan sin borrar código** (interruptores `src/data/v1.ts` y `server/src/services/v1.ts`; rutas ocultas = 404 real y fuera del sitemap; `foro` no se puede activar). `/_staff` muestra en la barra principal solo **Aportes, Imágenes y Catálogo**; todo lo demás se agrupa en **Control Total**. El catálogo se cierra en **407 fichas** (vehículos 347, armas 21, guías 29, mapa 10) tras retirar de forma reversible 9 fichas marginales (respaldo en `evidencias-v1/respaldos/`). **Congelación de cambios de código** hasta el despliegue. | Menos superficie que probar, explicar y mantener; reactivación en v1.1. | El acceso del personal es `/entrar` y `/_staff` (sin enlaces públicos). |
 
 > **Firmada (S0.2):** el propietario aprobó la excepción de transición de §3.1 el 2026-11-23 y `CLAUDE.md §2` la recoge. Los agentes **no amplían** su alcance: se aplica solo a imágenes (nunca a textos), con las cuatro condiciones de §3.1.
 
@@ -431,7 +432,7 @@ Visitante invitado: inicio → catálogo → ficha → guía → mapa → foro (
 
 ## 9. Alcance cerrado de la v1 y backlog posterior
 
-**Dentro de la v1:** lo de §4. **Fuera (post-v1, sin excepciones sin ADR):** apps nativas en tiendas (Capacitor), funciones en línea/multijugador, comparador con estadísticas medidas, módulos de personajes/animales/propiedades/bandas (según S2.5), emisoras con pantalla propia (si S1.1 = A), migración de imágenes a R2/CDN propio, AVIF generalizado, internacionalización más allá del español, panel de métricas propio, CI completo con pruebas visuales automáticas.
+**Dentro de la v1:** lo de §4. **Fuera (post-v1, sin excepciones sin ADR):** Hub, Progreso, Foro y Aportar (ocultos, ver D-11), apps nativas en tiendas (Capacitor), funciones en línea/multijugador, comparador con estadísticas medidas, módulos de personajes/animales/propiedades/bandas (según S2.5), emisoras con pantalla propia (si S1.1 = A), migración de imágenes a R2/CDN propio, AVIF generalizado, internacionalización más allá del español, panel de métricas propio, CI completo con pruebas visuales automáticas.
 
 ---
 

@@ -25,6 +25,10 @@
 
 Esta sección recoge la arquitectura consolidada y las decisiones aprobadas por el propietario. Si un apartado posterior (instantánea histórica del 2026-11-18: «138 fichas», «0 marcadores», «lienzo SVG genérico», «datos de ejemplo», «AdSlot sin script», etc.) la contradice, **manda esta sección** y el apartado debe leerse como historia.
 
+### 0.0 v1 simplificada «enciclopedia» (2026-11-24)
+
+La primera versión pública se limita a seis secciones —Inicio, Vehículos, Armas, Guías, Mapa y Noticias— (dock de 6 ítems). **Hub, Progreso, Foro y Aportar quedan ocultos** (rutas 404, fuera del sitemap, sin enlaces ni botones; `foro` no puede activarse) y se reactivan en la v1.1 con los interruptores de `src/data/v1.ts` y `server/src/services/v1.ts`; las secciones y tablas de este documento que los describen siguen siendo válidas para la v1.1. El panel `/_staff` muestra en su barra principal **Aportes**, **Imágenes** y **Catálogo**, y agrupa el resto en **Control Total**. Catálogo vigente: 407 fichas (vehículos 347, armas 21, guías 29, mapa 10). Ver ADR D-11 del roadmap.
+
 ### 0.1 Stack
 
 | Capa | Tecnología |
