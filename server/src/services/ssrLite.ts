@@ -59,6 +59,8 @@ export interface PageMeta {
   path: string; // ruta limpia canonica (sin query ni hash)
   type: 'website' | 'article';
   image: string; // URL absoluta
+  /** Solo con imagen propia (/media): dimensiones y alt para og:image:width/height/alt. */
+  imageMeta?: { width: number; height: number; alt: string };
   robots: 'index,follow' | 'noindex,follow' | 'noindex,nofollow';
   /** Sin <link rel=canonical> ni og:url (p. ej. categoria vacia: no se declara una URL canonica engañosa). */
   noCanonical?: boolean;
@@ -74,6 +76,49 @@ export const absolute = (u: unknown): string => {
   if (s.startsWith('/') && !s.startsWith('//')) return baseUrl() + s;
   return baseUrl() + DEFAULT_IMAGE_PATH;
 };
+
+const OWN_MEDIA_RE = /^\/media\/[0-9a-f-]{36}$/i;
+const ASSET_PATH_RE = /^\/assets\/[A-Za-z0-9_./-]+$/;
+/** Tamano nominal de la imagen social propia (cover 1600x900, ver docs del Estudio). */
+const SOCIAL_W = 1600;
+const SOCIAL_H = 900;
+
+export interface SocialImage {
+  url: string; // absoluta
+  own: boolean; // imagen propia servida por la API (/media/<uuid>)
+  width?: number;
+  height?: number;
+  alt?: string;
+}
+
+/**
+ * Unico punto de decision de la imagen social (og:image, twitter:image, JSON-LD `image`) de una ficha o guia.
+ * - `/media/<uuid>`: imagen propia -> URL absoluta (cuando el Sprint 3 exponga variantes, solo cambia aqui, p. ej. `?w=1600`).
+ * - `/assets/...` interno permitido -> absoluta.
+ * - `https://` valido sin credenciales -> tal cual.
+ * - null/otro (javascript:, //host, http, rutas no permitidas, `..`) -> respaldo hero.
+ */
+export function socialImageOf(entity: { imagen_url?: unknown; titulo?: unknown }): SocialImage {
+  const fallback: SocialImage = { url: baseUrl() + DEFAULT_IMAGE_PATH, own: false };
+  const raw = typeof entity.imagen_url === 'string' ? entity.imagen_url.trim() : '';
+  if (!raw) return fallback;
+  if (OWN_MEDIA_RE.test(raw)) {
+    return { url: baseUrl() + raw, own: true, width: SOCIAL_W, height: SOCIAL_H, alt: String(entity.titulo ?? '') };
+  }
+  if (ASSET_PATH_RE.test(raw) && !raw.includes('..')) return { url: baseUrl() + raw, own: false };
+  if (/^https:\/\//i.test(raw)) {
+    try {
+      const u = new URL(raw);
+      if (u.protocol === 'https:' && !u.username && !u.password && u.hostname) return { url: u.href, own: false };
+    } catch {
+      /* cae al respaldo */
+    }
+  }
+  return fallback;
+}
+
+const imageMetaOf = (si: SocialImage): PageMeta['imageMeta'] =>
+  si.own && si.width && si.height ? { width: si.width, height: si.height, alt: si.alt ?? '' } : undefined;
 
 const base = (over: Partial<PageMeta> & { path: string }): PageMeta => ({
   status: 200,
@@ -242,7 +287,8 @@ async function guidePage(slug: string): Promise<PageMeta> {
   const description = truncate(longText || g.subtitulo || steps[0]?.body || `Guia de ${g.titulo} en LeonidApp.`, 160);
   /** JSON-LD: descripción completa si existe; si no, la misma de la meta. */
   const ldDescription = longText || description;
-  const image = absolute(g.imagen_url);
+  const social = socialImageOf(g);
+  const image = social.url;
   const published = g.created_at ? new Date(g.created_at).toISOString() : undefined;
   const main: JsonLd = steps.length
     ? {
@@ -274,6 +320,7 @@ async function guidePage(slug: string): Promise<PageMeta> {
     description,
     type: 'article',
     image,
+    imageMeta: imageMetaOf(social),
     publishedTime: published,
     jsonLd: [
       main,
@@ -365,7 +412,8 @@ async function entityPage(moduleSlug: string, slug: string): Promise<Resolved> {
   const path = `/catalogo/${moduleSlug}/${slug}`;
   const longText = descripcionOf((e.metadata_json ?? {}) as Doc);
   const description = truncate(longText || e.subtitulo || `${e.titulo}: ${e.categoria} de ${mod.nombre} en el catalogo de LeonidApp.`, 160);
-  const image = absolute(e.imagen_url);
+  const social = socialImageOf(e);
+  const image = social.url;
   return {
     kind: 'page',
     meta: base({
@@ -373,6 +421,7 @@ async function entityPage(moduleSlug: string, slug: string): Promise<Resolved> {
       title: e.titulo,
       description,
       image,
+      imageMeta: imageMetaOf(social),
       jsonLd: [
         {
           '@context': 'https://schema.org',
@@ -550,6 +599,13 @@ export function renderHead(meta: PageMeta): string {
     `<meta property="og:description" content="${e(desc)}" />`,
     `<meta property="og:image" content="${e(meta.image)}" />`,
   );
+  if (meta.imageMeta) {
+    lines.push(
+      `<meta property="og:image:width" content="${meta.imageMeta.width}" />`,
+      `<meta property="og:image:height" content="${meta.imageMeta.height}" />`,
+      `<meta property="og:image:alt" content="${e(truncate(meta.imageMeta.alt, 200))}" />`,
+    );
+  }
   if (withUrl) lines.push(`<meta property="og:url" content="${e(url)}" />`);
   if (meta.publishedTime) lines.push(`<meta property="article:published_time" content="${e(meta.publishedTime)}" />`);
   lines.push(

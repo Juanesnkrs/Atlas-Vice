@@ -484,7 +484,7 @@ const { MediaAsset } = await import('../models/MediaAsset.js');
 const { MapMarker } = await import('../models/MapMarker.js');
 const { AuditLog } = await import('../models/AuditLog.js');
 const { OfficialNews } = await import('../models/OfficialNews.js');
-const { clearSsrCache, resolveRoute } = await import('../services/ssrLite.js');
+const { clearSsrCache, resolveRoute, renderHead, socialImageOf, baseUrl, DEFAULT_IMAGE_PATH } = await import('../services/ssrLite.js');
 const { runOfficialNewsIngest } = await import('../workers/officialNewsWorker.js');
 const SYS = { id: 'system', role: 'SYSTEM' } as const;
 
@@ -883,6 +883,104 @@ describe('(p) DTO publico y SSR-lite con la descripcion canonica', () => {
     assert.ok(r.meta.description.startsWith('Descripcion editorial original'), r.meta.description + ' / ' + r.meta.title);
     const ld = JSON.stringify(r.meta.jsonLd);
     assert.ok(ld.includes(long), 'el JSON-LD lleva la descripcion completa');
+  });
+});
+
+describe('(s) og:image y JSON-LD image dinamicos por ficha (S4.4)', () => {
+  const UUID_A = randomUUID();
+  const UUID_B = randomUUID();
+  let guiasId: string;
+  const mk = (mod: string, slug: string, imagen_url: string | null) =>
+    Entity.create({ _id: randomUUID(), module_id: mod, slug, titulo: `Titulo ${slug}`, categoria: 'Pistolas', imagen_url });
+  const headOf = async (path: string) => {
+    clearSsrCache();
+    const r = await resolveRoute(path, new URLSearchParams());
+    assert.equal(r.kind, 'page');
+    if (r.kind !== 'page') throw new Error('redirect');
+    return { meta: r.meta, html: renderHead(r.meta) };
+  };
+  const og = (html: string, key: string) => new RegExp(`<meta (?:property|name)="${key}" content="([^"]*)"`).exec(html)?.[1];
+  const ldImages = (meta: { jsonLd: Array<Record<string, unknown>> }) => meta.jsonLd[0]!['image'] as string[];
+
+  before(async () => {
+    await Module.deleteMany({ slug: 'guias' });
+    guiasId = randomUUID();
+    await Module.create({ _id: guiasId, slug: 'guias', nombre: 'Guias', icono: 'book', activo: true, orden: 9 });
+  });
+
+  it('socialImageOf: reglas puras', () => {
+    const b = baseUrl();
+    assert.deepEqual(socialImageOf({ imagen_url: null }), { url: b + DEFAULT_IMAGE_PATH, own: false });
+    assert.equal(socialImageOf({ imagen_url: `/media/${UUID_A}`, titulo: 'T' }).url, `${b}/media/${UUID_A}`);
+    assert.equal(socialImageOf({ imagen_url: '/assets/x.webp' }).url, `${b}/assets/x.webp`);
+    assert.equal(socialImageOf({ imagen_url: 'https://cdn.example.com/a.jpg' }).url, 'https://cdn.example.com/a.jpg');
+    for (const bad of ['javascript:alert(1)', '//evil.com/a.jpg', 'http://x.com/a.jpg', '/api/admin/x', '/assets/../secret', '/media/no-uuid', 'https://u:p@x.com/a.jpg', 'data:image/png;base64,AA']) {
+      assert.equal(socialImageOf({ imagen_url: bad }).url, b + DEFAULT_IMAGE_PATH, bad);
+    }
+  });
+
+  it('(a) ficha sin imagen: respaldo hero en og, twitter y JSON-LD, sin width/height/alt', async () => {
+    await mk(moduleId, 'soc-sin', null);
+    const { meta, html } = await headOf('/catalogo/armas/soc-sin');
+    const hero = baseUrl() + DEFAULT_IMAGE_PATH;
+    assert.equal(og(html, 'og:image'), hero);
+    assert.equal(og(html, 'twitter:image'), hero);
+    assert.deepEqual(ldImages(meta), [hero]);
+    assert.equal(og(html, 'og:image:width'), undefined);
+    assert.equal(og(html, 'og:image:alt'), undefined);
+  });
+
+  it('(b) ficha con /media/<uuid>: og, twitter y JSON-LD coinciden, con width/height/alt', async () => {
+    await mk(moduleId, 'soc-propia', `/media/${UUID_A}`);
+    const { meta, html } = await headOf('/catalogo/armas/soc-propia');
+    const url = `${baseUrl()}/media/${UUID_A}`;
+    assert.equal(og(html, 'og:image'), url);
+    assert.equal(og(html, 'twitter:image'), url);
+    assert.deepEqual(ldImages(meta), [url]);
+    assert.equal(og(html, 'og:image:width'), '1600');
+    assert.equal(og(html, 'og:image:height'), '900');
+    assert.equal(og(html, 'og:image:alt'), 'Titulo soc-propia');
+  });
+
+  it('(c) dos fichas con imagenes distintas devuelven og:image distintos', async () => {
+    await mk(moduleId, 'soc-uno', `/media/${UUID_A}`);
+    await mk(moduleId, 'soc-dos', `/media/${UUID_B}`);
+    const a = og((await headOf('/catalogo/armas/soc-uno')).html, 'og:image');
+    const b = og((await headOf('/catalogo/armas/soc-dos')).html, 'og:image');
+    assert.notEqual(a, b);
+  });
+
+  it('(d) imagen_url manipulada no se inyecta y cae al respaldo', async () => {
+    await mk(moduleId, 'soc-js', 'javascript:alert(1)');
+    await mk(moduleId, 'soc-ruta', '/api/admin/users');
+    for (const slug of ['soc-js', 'soc-ruta']) {
+      const { meta, html } = await headOf(`/catalogo/armas/${slug}`);
+      const hero = baseUrl() + DEFAULT_IMAGE_PATH;
+      assert.equal(og(html, 'og:image'), hero);
+      assert.deepEqual(ldImages(meta), [hero]);
+      assert.ok(!html.includes('javascript:') && !html.includes('/api/admin'));
+      assert.equal(og(html, 'og:image:width'), undefined);
+    }
+  });
+
+  it('(e) guia con imagen aplica lo mismo (HowTo image, og, twitter, width/height/alt)', async () => {
+    await Entity.create({
+      _id: randomUUID(),
+      module_id: guiasId,
+      slug: 'soc-guia',
+      titulo: 'Guia social',
+      categoria: 'Guias',
+      imagen_url: `/media/${UUID_B}`,
+      metadata_json: { steps: [{ id: '1', title: 'Paso uno', body: 'Texto' }] },
+    });
+    const { meta, html } = await headOf('/guias/soc-guia');
+    const url = `${baseUrl()}/media/${UUID_B}`;
+    assert.equal(meta.jsonLd[0]!['@type'], 'HowTo');
+    assert.deepEqual(ldImages(meta), [url]);
+    assert.equal(og(html, 'og:image'), url);
+    assert.equal(og(html, 'twitter:image'), url);
+    assert.equal(og(html, 'og:image:width'), '1600');
+    assert.equal(og(html, 'og:image:alt'), 'Guia social');
   });
 });
 
