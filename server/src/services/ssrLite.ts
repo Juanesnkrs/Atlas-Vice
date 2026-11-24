@@ -6,6 +6,7 @@ import Entity from '../models/Entity.js';
 import Module from '../models/Module.js';
 import OfficialNews from '../models/OfficialNews.js';
 import { env } from '../config/env.js';
+import { clearHeroCache, defaultHero, gateBoot, heroPreload, loadHero, renderHeroBlock, HERO_CSS, type HeroView } from './ssrHero.js';
 
 /**
  * SSR-lite (docs/LeonidApp-Rutas-SEO-Monetizacion.md §3): no renderiza React; inyecta
@@ -69,16 +70,10 @@ export interface PageMeta {
   /** Texto SSR minimo para rastreadores sin JS (h1 + descripcion), dentro de <noscript> en #root. Solo paginas legales. */
   body?: { h1: string; text: string };
   /** Imagen LCP a precargar (solo `/`): debe coincidir con el srcset/sizes del <img> del hero (HeroCarousel.tsx). */
-  preloadImage?: { href: string; srcset: string; sizes: string; type: string };
+  preloadImage?: { href: string; srcset?: string; sizes: string; type?: string };
+  /** Hero estatico de `/` (ssrHero.ts): bloque `#ssr-hero` en #root + CSS critico en linea. Solo la portada. */
+  hero?: HeroView;
 }
-
-/** Artwork por defecto del hero: mismo srcset/sizes que HERO_DEFAULT_SRCSET en src/components/ui/HeroCarousel.tsx. */
-export const HERO_PRELOAD = {
-  href: '/assets/hero-gas-station-800.webp',
-  srcset: '/assets/hero-gas-station-800.webp 800w, /assets/hero-gas-station.jpg 1080w',
-  sizes: '(min-width: 768px) 55vw, 100vw',
-  type: 'image/webp',
-} as const;
 
 export type Resolved = { kind: 'page'; meta: PageMeta } | { kind: 'redirect'; to: string };
 
@@ -199,7 +194,7 @@ const STATIC_PAGES: Record<string, { title: string; description: string; collect
  * Paginas legales (S6.3). El texto visible vive en el cliente (src/data/legalDocs.ts); aqui solo van titulo,
  * descripcion y fecha de revision para la meta SSR y el sitemap. Una prueba comprueba que no se desincronizan.
  */
-export const LEGAL_LASTMOD = '2026-11-23';
+export const LEGAL_LASTMOD = '2026-11-24';
 export const LEGAL_PAGES: Record<string, { title: string; description: string }> = {
   '/legal/privacidad': {
     title: 'Política de privacidad',
@@ -266,10 +261,11 @@ const NOINDEX_PAGES: Record<string, string> = {
 const LANDING_DESCRIPTION =
   'Explora el mapa interactivo de Leonida, el catálogo de armas, vehículos y coleccionables, guías, noticias oficiales y el foro de la comunidad.';
 
-const landing = (): PageMeta =>
+const landing = (hero: HeroView = defaultHero()): PageMeta =>
   base({
     path: '/',
-    preloadImage: { ...HERO_PRELOAD },
+    preloadImage: heroPreload(hero),
+    hero,
     title: 'Mapa, catálogo y guías de Leonida',
     description: LANDING_DESCRIPTION,
     jsonLd: [
@@ -518,7 +514,10 @@ const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 /** Cache en memoria por ruta (TTL 5 min). Solo se cachean respuestas 200. */
 const cache = new Map<string, { exp: number; meta: PageMeta }>();
-export const clearSsrCache = (): void => cache.clear();
+export const clearSsrCache = (): void => {
+  cache.clear();
+  clearHeroCache();
+};
 export const ssrCacheSize = (): number => cache.size;
 
 /** `/catalogo`: `?entity` -> URL limpia del item; `?q`/`?comparar` sirven la shell; sin query o `?modulo` -> 301 a la categoria. */
@@ -582,7 +581,7 @@ export async function resolveRoute(pathname: string, search: URLSearchParams): P
   }
 
   if (path === '/aportes') return { kind: 'redirect', to: '/aportar' };
-  if (path === '/') return { kind: 'page', meta: landing() };
+  if (path === '/') return { kind: 'page', meta: landing(await loadHero()) };
   if (NOINDEX_PAGES[path]) {
     return {
       kind: 'page',
@@ -635,7 +634,8 @@ export async function resolveRoute(pathname: string, search: URLSearchParams): P
     return res;
   } catch {
     // Fallo de BD: cabecera generica de la landing y 200 (la SPA resuelve la vista).
-    return { kind: 'page', meta: { ...landing(), path, robots: 'noindex,nofollow' } };
+    const { hero: _hero, preloadImage: _preload, ...generic } = landing();
+    return { kind: 'page', meta: { ...generic, path, robots: 'noindex,nofollow' } };
   }
 }
 
@@ -689,9 +689,10 @@ export function renderHead(meta: PageMeta): string {
   if (meta.status === 200 && meta.preloadImage) {
     const p = meta.preloadImage;
     lines.push(
-      `<link rel="preload" as="image" href="${e(p.href)}" type="${e(p.type)}" imagesrcset="${e(p.srcset)}" imagesizes="${e(p.sizes)}" fetchpriority="high" />`,
+      `<link rel="preload" as="image" href="${e(p.href)}"${p.type ? ` type="${e(p.type)}"` : ''}${p.srcset ? ` imagesrcset="${e(p.srcset)}" imagesizes="${e(p.sizes)}"` : ''} fetchpriority="high" />`,
     );
   }
+  if (meta.status === 200 && meta.hero) lines.push(`<style id="ssr-hero-css">${HERO_CSS}</style>`);
   if (meta.status === 200) {
     for (const ld of meta.jsonLd) lines.push(`<script type="application/ld+json">${safeJsonLd(ld)}</script>`);
   }
@@ -708,8 +709,13 @@ const renderBody = (meta: PageMeta): string =>
   meta.body ? `<div id="root"><noscript><main><h1>${escHtml(meta.body.h1)}</h1><p>${escHtml(meta.body.text)}</p></main></noscript></div>` : '';
 
 export function injectHead(template: string, meta: PageMeta): string {
-  const out = injectHeadOnly(template, meta);
-  return meta.body && meta.status === 200 && ROOT_RE.test(out) ? out.replace(ROOT_RE, () => renderBody(meta)) : out;
+  // Portada: arranque del cliente diferido hasta que el hero estatico se pinte (ver ssrHero.ts); el resto de rutas, intactas.
+  const out = injectHeadOnly(meta.hero && meta.status === 200 ? gateBoot(template) : template, meta);
+  if (meta.status === 200 && ROOT_RE.test(out)) {
+    if (meta.hero) return out.replace(ROOT_RE, () => `<div id="root">${renderHeroBlock(meta.hero!)}</div>`);
+    if (meta.body) return out.replace(ROOT_RE, () => renderBody(meta));
+  }
+  return out;
 }
 
 function injectHeadOnly(template: string, meta: PageMeta): string {

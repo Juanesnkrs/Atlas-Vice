@@ -1,11 +1,14 @@
 import { createReadStream, realpath as realpathCb } from 'node:fs';
 import { stat } from 'node:fs/promises';
+import { pipeline } from 'node:stream';
+import { brotliCompressSync, constants as zc, createBrotliCompress, createGzip, gzipSync } from 'node:zlib';
 import { basename, extname, posix, relative, resolve, sep } from 'node:path';
-import type { FastifyInstance, FastifyReply } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import Entity from '../models/Entity.js';
 import Module from '../models/Module.js';
 import { ROLE_RANK } from '../models/User.js';
 import { buildHtmlCsp } from '../services/csp.js';
+import { gateBoot } from '../services/ssrHero.js';
 import OfficialNews from '../models/OfficialNews.js';
 import { LEGAL_LASTMOD, LEGAL_PAGES, baseUrl, clientDistDir, escHtml, injectHead, loadTemplate, resolveRoute } from '../services/ssrLite.js';
 
@@ -68,7 +71,10 @@ export async function collectUrls(): Promise<UrlEntry[]> {
   }
   const newsUrls: UrlEntry[] = news
     .filter((n) => n.slug)
-    .map((n) => ({ loc: `/noticias/${seg(n.slug)}`, lastmod: validDate(n.updatedAt) ?? validDate(n.publishedAt) }));
+    .map((n) => ({
+      loc: `/noticias/${seg(n.slug)}`,
+      lastmod: validDate(n.updatedAt) ?? validDate(n.publishedAt),
+    }));
 
   // Una pagina de categoria por modulo activo (no guias) con al menos una ficha.
   const catLastmod = new Map<string, Date | undefined>();
@@ -77,17 +83,27 @@ export async function collectUrls(): Promise<UrlEntry[]> {
     if (!mod || !e.slug || mod === GUIDES_MODULE || SITEMAP_EXCLUDED_MODULES.has(mod)) continue;
     catLastmod.set(mod, maxDate([catLastmod.get(mod), validDate(e.created_at)]));
   }
-  const categories: UrlEntry[] = [...catLastmod].map(([mod, lastmod]) => ({ loc: `/catalogo/${seg(mod)}`, lastmod }));
+  const categories: UrlEntry[] = [...catLastmod].map(([mod, lastmod]) => ({
+    loc: `/catalogo/${seg(mod)}`,
+    lastmod,
+  }));
 
   const staticLastmod: Record<string, Date | undefined> = {
     '/': maxDate(newsUrls.map((u) => u.lastmod)),
     '/guias': maxDate(guides.map((u) => u.lastmod)),
     '/noticias': maxDate(newsUrls.map((u) => u.lastmod)),
   };
-  const statics = STATIC_PATHS.map((p) => ({ loc: p, lastmod: staticLastmod[p] }));
+  const statics = STATIC_PATHS.map((p) => ({
+    loc: p,
+    lastmod: staticLastmod[p],
+  }));
   // Sin duplicados por URL (la primera aparicion gana).
   const seen = new Set<string>();
-  const legal: UrlEntry[] = Object.keys(LEGAL_PAGES).map((loc) => ({ loc, lastmod: new Date(LEGAL_LASTMOD), priority: 0.3 }));
+  const legal: UrlEntry[] = Object.keys(LEGAL_PAGES).map((loc) => ({
+    loc,
+    lastmod: new Date(LEGAL_LASTMOD),
+    priority: 0.3,
+  }));
   return [...statics, ...categories, ...catalog, ...guides, ...newsUrls, ...legal].filter((u) => !seen.has(u.loc) && !!seen.add(u.loc));
 }
 
@@ -97,7 +113,10 @@ const NS = 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"';
 
 const urlset = (urls: UrlEntry[], base: string) =>
   `${XML}<urlset ${NS}>${urls
-    .map((u) => `<url><loc>${escHtml(base + (u.loc === '/' ? '/' : u.loc))}</loc>${lm(u.lastmod)}${u.priority !== undefined ? `<priority>${u.priority.toFixed(1)}</priority>` : ''}</url>`)
+    .map(
+      (u) =>
+        `<url><loc>${escHtml(base + (u.loc === '/' ? '/' : u.loc))}</loc>${lm(u.lastmod)}${u.priority !== undefined ? `<priority>${u.priority.toFixed(1)}</priority>` : ''}</url>`,
+    )
     .join('')}</urlset>`;
 
 const MIME: Record<string, string> = {
@@ -121,13 +140,60 @@ const MIME: Record<string, string> = {
   '.mp4': 'video/mp4',
 };
 
+const COMPRESS_MIN = 1024;
+const COMPRESSIBLE = /^(text\/|application\/(javascript|json|xml|manifest\+json)|image\/svg\+xml)|\+(json|xml)$/i;
+const BR_OPTS = { params: { [zc.BROTLI_PARAM_QUALITY]: 5 } };
+
+/** Codificacion negociada (br > gzip) respetando q=0; null si el cliente no acepta ninguna. */
+function pickEncoding(header: string | undefined): 'br' | 'gzip' | null {
+  const q = new Map<string, number>();
+  for (const part of (header ?? '').split(',')) {
+    const [name, ...params] = part.trim().toLowerCase().split(';');
+    if (!name) continue;
+    const m = /^\s*q\s*=\s*([0-9.]+)/.exec(params.join(';'));
+    q.set(name.trim(), m ? Number(m[1]) : 1);
+  }
+  const ok = (e: string) => (q.get(e) ?? q.get('*') ?? 0) > 0;
+  return ok('br') ? 'br' : ok('gzip') ? 'gzip' : null;
+}
+
+type FileBody = { file: string; size: number };
+const isFile = (b: string | Buffer | FileBody): b is FileBody => typeof b === 'object' && !Buffer.isBuffer(b);
+
+/**
+ * El handler 404 (estaticos + SSR-lite) no recibe el onSend por ruta de @fastify/compress, asi que comprime aqui:
+ * br/gzip solo para tipos de texto >= 1 KiB; imagenes y fuentes (ya comprimidas) salen tal cual. Siempre Vary.
+ */
+function sendCompressed(req: FastifyRequest, reply: FastifyReply, body: string | Buffer | FileBody, headOnly = false): FastifyReply {
+  const vary = String(reply.getHeader('vary') ?? '');
+  if (!/accept-encoding/i.test(vary)) reply.header('Vary', vary ? `${vary}, Accept-Encoding` : 'Accept-Encoding');
+  const size = typeof body === 'string' ? Buffer.byteLength(body) : isFile(body) ? body.size : body.length;
+  const ct = String(reply.getHeader('content-type') ?? '');
+  const enc = COMPRESSIBLE.test(ct) && size >= COMPRESS_MIN ? pickEncoding(req.headers['accept-encoding']) : null;
+  if (!enc) {
+    if (isFile(body)) {
+      reply.header('Content-Length', body.size);
+      return headOnly ? reply.send() : reply.send(createReadStream(body.file));
+    }
+    return reply.send(body);
+  }
+  reply.header('Content-Encoding', enc);
+  if (isFile(body)) {
+    if (headOnly) return reply.send();
+    const z = enc === 'br' ? createBrotliCompress(BR_OPTS) : createGzip();
+    pipeline(createReadStream(body.file), z, () => undefined);
+    return reply.send(z);
+  }
+  const buf = Buffer.isBuffer(body) ? body : Buffer.from(body);
+  return reply.send(enc === 'br' ? brotliCompressSync(buf, BR_OPTS) : gzipSync(buf));
+}
+
 /**
  * Area restringida del panel (no se documenta en sitemap/robots/SSR publico). Se detecta sobre la ruta
  * decodificada y normalizada en minusculas para que variantes (%5F, `..`, mayusculas, barra invertida) no la eludan.
  */
 /** Ruta real (resuelve symlinks y nombres cortos 8.3 de Windows). */
-const realNative = (p: string): Promise<string> =>
-  new Promise((ok, fail) => realpathCb.native(p, (e, r) => (e ? fail(e) : ok(r))));
+const realNative = (p: string): Promise<string> => new Promise((ok, fail) => realpathCb.native(p, (e, r) => (e ? fail(e) : ok(r))));
 const STAFF_AREA = '_staff';
 const normalizeLower = (raw: string): string => {
   let s = raw;
@@ -148,6 +214,7 @@ const staffFileMinRank = (file: string): number =>
 
 /** Sirve un archivo de dist/ con proteccion de path traversal. 404 JSON si no existe o es directorio. */
 async function sendStatic(
+  req: FastifyRequest,
   pathname: string,
   headOnly: boolean,
   reply: FastifyReply,
@@ -190,13 +257,13 @@ async function sendStatic(
         ? 'private, max-age=3600'
         : rel === '/sw.js' || rel === '/index.html'
           ? 'no-cache'
-          : rel.startsWith('/assets/')
-            ? 'public, max-age=31536000, immutable'
+          : rel.startsWith('/assets/') || (rel.startsWith('/fonts/') && rel.endsWith('.woff2'))
+            ? // Las fuentes no llevan hash en el nombre, pero su contenido es estable: se aceptan como inmutables.
+              'public, max-age=31536000, immutable'
             : 'public, max-age=3600',
     )
-    .header('Content-Length', info.size)
     .type(MIME[extname(file).toLowerCase()] ?? 'application/octet-stream');
-  return headOnly ? reply.send() : reply.send(createReadStream(file));
+  return sendCompressed(req, reply, { file, size: info.size }, headOnly);
 }
 
 export async function registerSeoRoutes(app: FastifyInstance): Promise<void> {
@@ -224,27 +291,36 @@ export async function registerSeoRoutes(app: FastifyInstance): Promise<void> {
     reply
       .header('Cache-Control', 'public, max-age=86400')
       .type('text/plain; charset=utf-8')
-      .send(
-        `User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${baseUrl()}/sitemap.xml\n`,
-      ),
+      .send(`User-agent: *\nAllow: /\nDisallow: /api/\n\nSitemap: ${baseUrl()}/sitemap.xml\n`),
   );
 
   // Estaticos de dist/ (JS/CSS/imagenes del cliente) y fallback SPA con SSR-lite para rutas sin extension.
   app.setNotFoundHandler(async (req, reply) => {
-    const url = new URL(req.url, 'http://localhost');
+    // Se antepone el origen al texto crudo: `//` o `//host` se leerian como URL con autoridad y lanzarian TypeError.
+    let url: URL;
+    try {
+      url = new URL(`http://localhost${req.url.startsWith('/') ? '' : '/'}${req.url}`);
+    } catch {
+      return reply.code(404).send({ error: 'No encontrado' });
+    }
     const p = url.pathname;
+    if (p.startsWith('//')) return reply.code(404).send({ error: 'No encontrado' });
     const readOnly = req.method === 'GET' || req.method === 'HEAD';
     if (!readOnly || p.startsWith('/api/')) return reply.code(404).send({ error: 'No encontrado' });
 
     const staffRank = req.authUser ? ROLE_RANK[req.authUser.rol] : -1;
     if (/\.[a-z0-9]{1,12}$/i.test(p)) {
       if (p === '/sitemap.xml' || p === '/robots.txt') return reply.code(404).send({ error: 'No encontrado' });
-      return sendStatic(p, req.method === 'HEAD', reply, staffRank);
+      return sendStatic(req, p, req.method === 'HEAD', reply, staffRank);
     }
-    if (p.startsWith('/assets/')) return reply.code(404).header('Cache-Control', 'no-store').type('text/plain; charset=utf-8').send('No encontrado');
+    if (p.startsWith('/assets/'))
+      return reply.code(404).header('Cache-Control', 'no-store').type('text/plain; charset=utf-8').send('No encontrado');
 
     const template = loadTemplate();
-    if (!template) return reply.code(404).send({ error: 'Cliente no compilado (ejecuta pnpm build en la raiz)' });
+    if (!template)
+      return reply.code(404).send({
+        error: 'Cliente no compilado (ejecuta pnpm build en la raiz)',
+      });
 
     const csp = buildHtmlCsp(template);
 
@@ -253,25 +329,33 @@ export async function registerSeoRoutes(app: FastifyInstance): Promise<void> {
       const staff = staffRank >= ROLE_RANK.MODERATOR;
       const rr = await resolveRoute(staff ? '/' : '/nada-existe', new URLSearchParams());
       if (rr.kind === 'page') {
-        const meta = staff ? { ...rr.meta, title: 'Panel', robots: 'noindex,nofollow' as const, jsonLd: [] } : rr.meta;
+        const { hero: _hero, preloadImage: _preload, ...shell } = rr.meta; // el panel no lleva el hero estatico de la portada
+        const meta = staff
+          ? {
+              ...shell,
+              title: 'Panel',
+              robots: 'noindex,nofollow' as const,
+              jsonLd: [],
+            }
+          : rr.meta;
         reply.header('Content-Security-Policy', csp);
         if (staff) {
           void reply.header('Cache-Control', 'private, no-store').header('Vary', 'Cookie').header('X-Robots-Tag', 'noindex, nofollow');
         } else {
           void reply.header('Cache-Control', 'no-store');
         }
-        return reply.code(meta.status).type('text/html; charset=utf-8').send(injectHead(template, meta));
+        return sendCompressed(req, reply.code(meta.status).type('text/html; charset=utf-8'), injectHead(template, meta));
       }
     }
 
     const r = await resolveRoute(p, url.searchParams);
     if (r.kind === 'redirect') return reply.redirect(r.to, 301);
-    return reply
+    const page = reply
       .code(r.meta.status)
       .header('Cache-Control', r.meta.status === 200 ? 'no-cache' : 'no-store')
-      .header('Content-Security-Policy', csp)
-      .type('text/html; charset=utf-8')
-      .send(injectHead(template, r.meta));
+      // Portada: el cargador diferido del cliente es un script en linea; su hash va en la CSP (sin 'unsafe-inline').
+      .header('Content-Security-Policy', r.meta.hero && r.meta.status === 200 ? buildHtmlCsp(gateBoot(template)) : csp)
+      .type('text/html; charset=utf-8');
+    return sendCompressed(req, page, injectHead(template, r.meta));
   });
 }
-

@@ -2,7 +2,7 @@
 // Usan SIEMPRE una base separada (`..._test`): el guardian aborta si la URI no termina en `_test` y no es local.
 // Excluidas del build de produccion (tsconfig.json) y compiladas aparte a node_modules/.cache (tsconfig.test.json).
 import assert from 'node:assert/strict';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { after, before, beforeEach, describe, it } from 'node:test';
 
 const TEST_URI = process.env['TEST_MONGODB_URI'] ?? 'mongodb://127.0.0.1:27017/leonidapp_test';
@@ -2057,7 +2057,7 @@ describe('(S6.4) validacion SEO: JSON-LD, canonical, 301/404, sitemap y robots',
   it('ningun HTML SSR incluye texto de depuracion', async () => {
     const all = [...html200.map((h) => h.html), (await get('/ruta-que-no-existe')).body, (await get('/catalogo/vehiculos')).body];
     for (const h of all) {
-      assert.ok(!/undefined|\[object Object\]|\bNaN\b|\bnull\b|Traceback|Error:|stack|console\.|TODO|FIXME|lorem ipsum/i.test(h), 'texto de depuracion en el HTML');
+      assert.ok(!/undefined|\[object Object\]|\bNaN\b|\bnull\b|Traceback|Error:|stack|console\.|lorem ipsum/i.test(h) && !/\b(TODO|FIXME)\b/.test(h), 'texto de depuracion en el HTML');
     }
   });
 
@@ -2144,5 +2144,295 @@ describe('(S5.5) noticias oficiales: parseo con respuesta real de ir.take2games.
       assert.equal(isAllowedUrl(bad), false, bad);
     }
     assert.equal(officialNewsSchema.safeParse({ title: 'Tres', summary: 'x', sourceUrl: 'https://www.ign.com/a', source: 'take-two-ir', publishedAt: new Date() }).success, false);
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// S6.2: hero estatico en `/` (SSR-lite), preload unico, CSS critico en linea y CSP sin fuentes de terceros.
+// ---------------------------------------------------------------------------------------------
+const { AppConfig } = await import('../models/AppConfig.js');
+const { buildHtmlCsp } = await import('../services/csp.js');
+const { readFileSync: readFileSyncS62, existsSync: existsSyncS62 } = await import('node:fs');
+
+describe('(S6.2) hero estatico de la portada: #ssr-hero, CSS critico, preload unico y CSP sin Google Fonts', () => {
+  const realIndex = process.env['CLIENT_DIST_INDEX'];
+  const TEMPLATE =
+    '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>x</title><script type="module" crossorigin src="/assets/index-abc.js"></script><link rel="modulepreload" crossorigin href="/assets/vendor-abc.js"><link rel="modulepreload" crossorigin href="/assets/core-abc.js"><link rel="stylesheet" crossorigin href="/assets/index.css"></head><body><div id="root"></div></body></html>';
+  let dir: string;
+  const get = (url: string, cookie?: string) => app.inject({ method: 'GET', url, remoteAddress: nextIp(), ...(cookie ? { headers: { cookie } } : {}) });
+  const blockOf = (html: string): string => /<div id="ssr-hero">[\s\S]*?<\/section><\/div><\/div>/.exec(html)?.[0] ?? '';
+  const attr = (tag: string, name: string): string | undefined => new RegExp(`\\s${name}="([^"]*)"`).exec(tag)?.[1];
+  const imgOf = (html: string): string => /<img [^>]*>/.exec(blockOf(html))?.[0] ?? '';
+  const preloads = (html: string): string[] => [...html.matchAll(/<link rel="preload"[^>]*>/g)].map((m) => m[0]);
+  const MEDIA = '0b6f6f0e-1a2b-4c3d-8e4f-0123456789ab';
+  const slide = (over: Record<string, unknown>) => ({
+    id: randomUUID(), activa: true, orden: 0, kicker: 'Kicker', titulo: 'Titulo propio', descripcion: 'Descripcion propia del slide.',
+    boton_texto: 'Ver', boton_enlace: '/mapa', boton_secundario_texto: null, boton_secundario_enlace: null,
+    imagen_url: `/media/${MEDIA}`, imagen_alt: 'Alt propio', ...over,
+  });
+  const setSlides = async (slides: unknown[]) => {
+    await AppConfig.findOneAndUpdate({ key: 'global' }, { $set: { hero_slides: slides } }, { upsert: true });
+    clearSsrCache();
+  };
+
+  before(async () => {
+    dir = mkdtempSync(join(tmpdir(), 'leonidapp-hero-'));
+    const idx = join(dir, 'index.html');
+    writeFileSync(idx, TEMPLATE);
+    process.env['CLIENT_DIST_INDEX'] = idx;
+    await setSlides([]);
+  });
+  after(async () => {
+    await AppConfig.findOneAndUpdate({ key: 'global' }, { $set: { hero_slides: [] } });
+    clearSsrCache();
+    if (realIndex === undefined) delete process.env['CLIENT_DIST_INDEX'];
+    else process.env['CLIENT_DIST_INDEX'] = realIndex;
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('sin slides activos: hero por defecto con <img fetchpriority=high>, srcset, sizes, width/height y CSS critico < 3 KB en <head>', async () => {
+    await setSlides([slide({ activa: false })]);
+    const r = await get('/');
+    assert.equal(r.statusCode, 200);
+    const html = r.body;
+    assert.ok(html.includes('<div id="root"><div id="ssr-hero">'), '#ssr-hero dentro de #root');
+    const img = imgOf(html);
+    assert.equal(attr(img, 'fetchpriority'), 'high');
+    assert.equal(attr(img, 'decoding'), 'async');
+    assert.equal(attr(img, 'src'), '/assets/hero-gas-station.jpg');
+    assert.equal(attr(img, 'srcset'), '/assets/hero-gas-station-800.webp 800w, /assets/hero-gas-station.jpg 1080w');
+    assert.equal(attr(img, 'sizes'), '(min-width: 768px) 55vw, 100vw');
+    assert.equal(attr(img, 'width'), '1080');
+    assert.equal(attr(img, 'height'), '1350');
+    assert.match(blockOf(html), /<h1 class="sh-t">Todo Leonida, en un solo mapa<\/h1>/);
+    const css = /<style id="ssr-hero-css">([\s\S]*?)<\/style>/.exec(html);
+    assert.ok(css, 'CSS critico en linea');
+    assert.ok(Buffer.byteLength(css[1]!) < 3072, `CSS critico ${Buffer.byteLength(css[1]!)} B`);
+    assert.ok(html.indexOf('<style id="ssr-hero-css">') < html.indexOf('</head>'), 'en <head>');
+  });
+
+  it('preload unico y con la MISMA variante (href, imagesrcset, imagesizes) que el <img> estatico', async () => {
+    for (const slides of [[], [slide({})]]) {
+      await setSlides(slides);
+      const html = (await get('/')).body;
+      const pl = preloads(html);
+      assert.equal(pl.length, 1, `un solo preload: ${pl.join(' | ')}`);
+      const img = imgOf(html);
+      assert.equal(attr(pl[0]!, 'imagesrcset'), attr(img, 'srcset'));
+      assert.equal(attr(pl[0]!, 'imagesizes'), attr(img, 'sizes'));
+      assert.equal(attr(pl[0]!, 'fetchpriority'), 'high');
+      assert.ok(attr(img, 'srcset')!.startsWith(attr(pl[0]!, 'href')!), 'href = candidato pequeno del srcset');
+    }
+  });
+
+  it('con un slide activo usa su imagen (/media con ?w=800 + principal) y escapa el texto', async () => {
+    await setSlides([
+      slide({ activa: false, orden: 0, titulo: 'Inactivo' }),
+      slide({ orden: 1, kicker: '<i>k</i>', titulo: '<script>alert(1)</script> & "t"', descripcion: "d'esc <b>", imagen_alt: 'a"lt' }),
+      slide({ orden: 2, titulo: 'Segundo activo' }),
+    ]);
+    const html = (await get('/')).body;
+    const block = blockOf(html);
+    const api = env.API_PUBLIC_URL.replace(/\/+$/, '');
+    const img = imgOf(html);
+    assert.equal(attr(img, 'src'), `${api}/media/${MEDIA}`);
+    assert.equal(attr(img, 'srcset'), `${api}/media/${MEDIA}?w=800 800w, ${api}/media/${MEDIA} 1600w`);
+    assert.equal(attr(img, 'width'), '1600');
+    assert.equal(attr(img, 'height'), '900');
+    assert.equal(attr(preloads(html)[0]!, 'href'), `${api}/media/${MEDIA}?w=800`);
+    assert.ok(!block.includes('Inactivo') && !block.includes('Segundo activo'), 'solo el primer slide activo');
+    assert.ok(!block.includes('<script') && !block.includes('<i>') && !block.includes('<b>'), 'texto escapado');
+    assert.ok(block.includes('&lt;script&gt;alert(1)&lt;/script&gt; &amp; &quot;t&quot;'));
+    assert.ok(block.includes('d&#39;esc &lt;b&gt;') && block.includes('alt="a&quot;lt"'));
+    assert.ok(!block.includes('sh-def'), 'slide propio: imagen 16/9, no la variante por defecto');
+  });
+
+  it('imagen https del slide: src directo sin srcset; imagen invalida: se omite el slide (por defecto)', async () => {
+    await setSlides([slide({ imagen_url: 'https://cdn.example.com/a.jpg' })]);
+    let html = (await get('/')).body;
+    assert.equal(attr(imgOf(html), 'src'), 'https://cdn.example.com/a.jpg');
+    assert.equal(attr(imgOf(html), 'srcset'), undefined);
+    assert.equal(preloads(html).length, 1);
+    assert.equal(attr(preloads(html)[0]!, 'imagesrcset'), undefined);
+    await setSlides([{ ...slide({}), imagen_url: 'javascript:alert(1)' }]);
+    html = (await get('/')).body;
+    assert.equal(attr(imgOf(html), 'src'), '/assets/hero-gas-station.jpg');
+  });
+
+  it('el bloque no contiene <script>, enlaces, botones ni hosts de terceros', async () => {
+    await setSlides([]);
+    const block = blockOf((await get('/')).body);
+    assert.ok(block.length > 200);
+    assert.ok(!/<script|<a[\s>]|<link|<button|<form|<input|<iframe|\son[a-z]+=|href=/i.test(block), block);
+    assert.ok(!/https?:\/\//i.test(block), 'sin URLs absolutas (hero por defecto)');
+  });
+
+  it('solo en `/`: ninguna otra ruta (ni /_staff, ni 404, ni legales) lleva #ssr-hero, su CSS ni el preload', async () => {
+    const paths = ['/mapa', '/guias', '/noticias', '/foro', '/catalogo', '/hub', '/entrar', '/ruta-que-no-existe', '/_staff', '/_staff/x', ...Object.keys(LEGAL_PAGES)];
+    for (const p of paths) {
+      const r = await get(p);
+      assert.ok(!r.body.includes('ssr-hero'), `${p}: sin bloque ni CSS`);
+      assert.equal(preloads(r.body).length, 0, `${p}: sin preload`);
+    }
+    const staff = await get('/_staff', await staffCookie('MODERATOR'));
+    assert.equal(staff.statusCode, 200);
+    assert.ok(!staff.body.includes('ssr-hero') && preloads(staff.body).length === 0, 'panel de staff sin hero');
+    assert.match(staff.body, /<meta name="robots" content="noindex,nofollow"/);
+    const anon = await get('/_staff');
+    const nf = await get('/ruta-que-no-existe');
+    assert.equal(anon.statusCode, 404);
+    assert.equal(anon.body, nf.body, '/_staff sin sesion = 404 uniforme');
+  });
+
+  it('HTML valido: JSON-LD (WebSite + Organization) intacto, un canonical, #root cerrado y scripts del cliente despues', async () => {
+    await setSlides([]);
+    const html = (await get('/')).body;
+    const lds = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]!) as Record<string, unknown>);
+    assert.deepEqual(lds.map((b) => b['@type']).sort(), ['Organization', 'WebSite']);
+    assert.equal([...html.matchAll(/<link rel="canonical"/g)].length, 1);
+    assert.equal([...html.matchAll(/id="root"/g)].length, 1);
+    assert.equal([...html.matchAll(/<h1[ >]/g)].length, 1, 'un solo h1');
+    assert.ok(/<div id="root"><div id="ssr-hero">[\s\S]*<\/section><\/div><\/div><\/div><script>\(function\(\)/.test(html), 'estructura #root > #ssr-hero y cargador diferido despues');
+    const count = (re: RegExp, s: string) => (s.match(re) ?? []).length;
+    for (const t of ['div', 'section', 'p']) assert.equal(count(new RegExp(`<${t}[ >]`, 'g'), html), count(new RegExp(`</${t}>`, 'g'), html), `<${t}> balanceado`);
+    assert.ok(html.trimEnd().endsWith('</html>'));
+  });
+
+  it('puerta de pintado: en `/` el modulo principal y los modulepreload pasan a un cargador en linea con hash en la CSP; otras rutas, intactas', async () => {
+    await setSlides([]);
+    const r = await get('/');
+    const inline = [...r.body.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]!);
+    assert.equal(inline.length, 1, 'un solo script en linea (el cargador)');
+    const body = inline[0]!;
+    assert.ok(!/<script type="module"/.test(r.body), 'sin <script type=module> estatico');
+    assert.ok(!/<link[^>]*rel="modulepreload"/.test(r.body), 'sin modulepreload en el head (competirian con la imagen LCP)');
+    assert.ok(body.includes('import("/assets/index-abc.js")'), 'importa el modulo principal');
+    assert.ok(body.includes('["/assets/vendor-abc.js","/assets/core-abc.js"]'), 'recupera los modulepreload tras el pintado');
+    assert.ok(body.includes('largest-contentful-paint') && body.includes('#ssr-hero') && body.includes('setTimeout(m,2500)'), 'espera al pintado del hero con tope');
+    const hash = `'sha256-${createHash('sha256').update(body, 'utf8').digest('base64')}'`;
+    assert.ok(String(r.headers['content-security-policy']).includes(hash), 'hash del cargador en script-src');
+    assert.ok(!/script-src[^;]*'unsafe-inline'/.test(String(r.headers['content-security-policy'])), 'sin unsafe-inline en scripts');
+    for (const p of ['/mapa', '/guias', '/ruta-que-no-existe']) {
+      const o = await get(p);
+      assert.ok(o.body.includes('<script type="module" crossorigin src="/assets/index-abc.js">'), `${p}: modulo principal intacto`);
+      assert.equal([...o.body.matchAll(/<link[^>]*rel="modulepreload"/g)].length, 2, `${p}: modulepreload intactos`);
+      assert.ok(!/<script>\(function/.test(o.body), `${p}: sin cargador`);
+    }
+    // Plantilla desconocida (URL fuera de /assets/): no se transforma.
+    const { gateBoot } = await import('../services/ssrHero.js');
+    const raro = '<html><head><script type="module" src="https://evil.example/x.js"></script></head><body><div id="root"></div></body></html>';
+    assert.equal(gateBoot(raro), raro);
+  });
+
+  it('CSP de las respuestas HTML (portada, 404, legales, staff): sin Google Fonts; font-src self; style-src self + unsafe-inline', async () => {
+    const urls = ['/', '/ruta-que-no-existe', Object.keys(LEGAL_PAGES)[0]!, '/mapa'];
+    for (const u of urls) {
+      const r = await get(u);
+      const csp = String(r.headers['content-security-policy']);
+      assert.ok(!/fonts\.googleapis\.com|fonts\.gstatic\.com/.test(csp), `${u}: ${csp}`);
+      assert.ok(csp.includes("font-src 'self';"), u);
+      assert.ok(csp.includes("style-src 'self' 'unsafe-inline';"), u);
+      assert.ok(!/fonts\.googleapis\.com|fonts\.gstatic\.com/.test(r.body), `${u}: el HTML no referencia hosts de fuentes`);
+    }
+    const staff = await get('/_staff', await staffCookie('MODERATOR'));
+    assert.ok(!/fonts\.(googleapis|gstatic)\.com/.test(String(staff.headers['content-security-policy'])));
+  });
+
+  it('index.html de la raiz del repo no enlaza fuentes de terceros mientras la CSP esta cerrada (verificacion de conjunto)', () => {
+    const rootIndex = resolvePath(process.cwd(), '..', 'index.html');
+    if (!existsSyncS62(rootIndex)) return;
+    const src = readFileSyncS62(rootIndex, 'utf8');
+    assert.ok(!/fonts\.(googleapis|gstatic)\.com/.test(buildHtmlCsp(src)), 'CSP cerrada');
+    const externos = [...src.matchAll(/<link\b[^>]*>/gi)].map((m) => m[0]).filter((l) => /fonts\.(googleapis|gstatic)\.com/i.test(l));
+    assert.deepEqual(externos, [], 'index.html aun enlaza Google Fonts: con la CSP cerrada se bloquearian; quitar los <link> y alojar /fonts/');
+    assert.ok(!/\son[a-z]+\s*=/.test(src), 'index.html sin manejadores inline');
+  });
+});
+
+const { mkdirSync: mkdirSyncZ } = await import('node:fs');
+const { randomBytes } = await import('node:crypto');
+const { gunzipSync, brotliDecompressSync } = await import('node:zlib');
+
+describe('(S6.5) compresion y cache de estaticos, y rutas con doble barra', () => {
+  const realIndex = process.env['CLIENT_DIST_INDEX'];
+  const JS = `export const datos = ${JSON.stringify(Array.from({ length: 400 }, (_, i) => `valor-${i}`))};\n`;
+  const WOFF = randomBytes(4096);
+  let dir: string;
+  const get = (url: string, ae?: string, method: 'GET' | 'HEAD' = 'GET') =>
+    app.inject({ method, url, remoteAddress: nextIp(), ...(ae ? { headers: { 'accept-encoding': ae } } : {}) });
+
+  before(() => {
+    dir = mkdtempSync(join(tmpdir(), 'leonidapp-static-'));
+    mkdirSyncZ(join(dir, 'assets'));
+    mkdirSyncZ(join(dir, 'fonts'));
+    writeFileSync(join(dir, 'index.html'), '<!doctype html><html lang="es"><head><meta charset="utf-8"><title>x</title></head><body><div id="root"></div></body></html>');
+    writeFileSync(join(dir, 'assets', 'app-abc123.js'), JS);
+    writeFileSync(join(dir, 'assets', 'pic.png'), WOFF);
+    writeFileSync(join(dir, 'fonts', 'f.woff2'), WOFF);
+    process.env['CLIENT_DIST_INDEX'] = join(dir, 'index.html');
+    clearSsrCache();
+  });
+  after(() => {
+    clearSsrCache();
+    if (realIndex === undefined) delete process.env['CLIENT_DIST_INDEX'];
+    else process.env['CLIENT_DIST_INDEX'] = realIndex;
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('un JS estatico sale en gzip con Vary y el contenido se recupera integro', async () => {
+    const r = await get('/assets/app-abc123.js', 'gzip');
+    assert.equal(r.statusCode, 200);
+    assert.equal(r.headers['content-encoding'], 'gzip');
+    assert.match(String(r.headers['vary']), /Accept-Encoding/i);
+    assert.equal(gunzipSync(r.rawPayload).toString('utf8'), JS);
+    assert.ok(r.rawPayload.length < Buffer.byteLength(JS));
+    assert.equal(r.headers['cache-control'], 'public, max-age=31536000, immutable');
+  });
+
+  it('prefiere br cuando el cliente lo acepta y no comprime sin Accept-Encoding', async () => {
+    const br = await get('/assets/app-abc123.js', 'gzip, br');
+    assert.equal(br.headers['content-encoding'], 'br');
+    assert.equal(brotliDecompressSync(br.rawPayload).toString('utf8'), JS);
+    const plain = await get('/assets/app-abc123.js');
+    assert.equal(plain.headers['content-encoding'], undefined);
+    assert.match(String(plain.headers['vary']), /Accept-Encoding/i);
+    assert.equal(plain.rawPayload.length, Buffer.byteLength(JS));
+    assert.equal((await get('/assets/app-abc123.js', 'gzip;q=0, br;q=0')).headers['content-encoding'], undefined);
+  });
+
+  it('el HTML de la portada se comprime si supera 1 KiB (SSR-lite) y la CSP se conserva', async () => {
+    const plain = await get('/');
+    const gz = await get('/', 'gzip');
+    assert.equal(gz.statusCode, 200);
+    assert.ok(String(gz.headers['content-security-policy']).includes("default-src"));
+    assert.equal(gz.headers['content-security-policy'], plain.headers['content-security-policy']);
+    assert.equal(gz.headers['content-encoding'], 'gzip');
+    assert.equal(gunzipSync(gz.rawPayload).toString('utf8'), plain.body);
+  });
+
+  it('imagenes y woff2 no se recomprimen; HEAD no lleva cuerpo', async () => {
+    for (const u of ['/assets/pic.png', '/fonts/f.woff2']) {
+      const r = await get(u, 'gzip, br');
+      assert.equal(r.headers['content-encoding'], undefined, u);
+      assert.equal(r.rawPayload.length, WOFF.length, u);
+    }
+    const h = await get('/assets/app-abc123.js', 'gzip', 'HEAD');
+    assert.equal(h.statusCode, 200);
+    assert.equal(h.rawPayload.length, 0);
+  });
+
+  it('/fonts/*.woff2 es inmutable a un ano; index.html sigue en no-cache', async () => {
+    const r = await get('/fonts/f.woff2');
+    assert.equal(r.headers['cache-control'], 'public, max-age=31536000, immutable');
+    assert.equal(r.headers['content-type'], 'font/woff2');
+    assert.equal((await get('/index.html')).headers['cache-control'], 'no-cache');
+  });
+
+  it('rutas con doble barra responden 404 (nunca 500) y el area staff sigue con 404 uniforme', async () => {
+    for (const u of ['//', '//evil.example/x', '///', '//assets/app-abc123.js']) {
+      const r = await get(u, 'gzip');
+      assert.equal(r.statusCode, 404, u);
+    }
+    assert.equal((await get('/_staff/assets/x.js')).statusCode, 404);
   });
 });

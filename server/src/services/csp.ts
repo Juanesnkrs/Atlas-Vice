@@ -9,10 +9,12 @@ import { env } from '../config/env.js';
  *   Decisiones:
  *   * `script-src 'self'`: el bundle de Vite son modulos externos. Los bloques JSON-LD
  *     (`type="application/ld+json"`) son datos, no se ejecutan y no estan sujetos a script-src.
- *   * El `onload="this.media='all'"` de la hoja de fuentes de index.html es un manejador inline:
- *     en vez de `'unsafe-inline'` se autoriza SOLO su hash con `'unsafe-hashes'`. Los hashes se
- *     calculan del propio HTML servido (cualquier `on*="..."` o `<script>` inline ejecutable),
- *     por lo que si el cliente cambia esa linea la politica se adapta sin tocar el servidor.
+ *   * Manejadores inline (`on*="..."`) o `<script>` inline ejecutables: en vez de `'unsafe-inline'` se
+ *     autoriza SOLO su hash (con `'unsafe-hashes'` para atributos). Los hashes se calculan del propio HTML
+ *     servido, asi que la politica se adapta sola. Hoy index.html no tiene ninguno y el hero estatico de `/`
+ *     (ssrHero.ts) no incluye scripts ni manejadores.
+ *   * Fuentes (Poppins y Jost) alojadas en el propio origen (`/fonts/*.woff2`): `font-src 'self'` y `style-src`
+ *     sin fonts.googleapis.com ni fonts.gstatic.com (S6.2: sin terceros en la ruta critica ni fuga de IP a Google).
  *   * `style-src 'unsafe-inline'`: React/Tailwind emiten atributos `style=""` dinamicos
  *     (no se pueden hashear). Se acepta el riesgo, limitado a estilos.
  *   * `img-src ... https:`: decision del propietario (2026-11-21). Las diapositivas del Hero admiten imagenes
@@ -71,8 +73,8 @@ export function buildHtmlCsp(html: string): string {
   const policy = [
     "default-src 'self'",
     `script-src ${script.join(' ')}`,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
+    "style-src 'self' 'unsafe-inline'",
+    "font-src 'self'",
     "img-src 'self' data: blob: https:",
     `connect-src ${connect.join(' ')}`,
     "worker-src 'self'",
