@@ -7,7 +7,7 @@ import { FormModal, SafeDelete, useCrud } from './StaffForms';
 import { ObjectHistory } from './StaffHistory';
 import { CONTENT_INVALIDATE, SLUG_RE, useModules } from './StaffModules';
 import { useMarkers } from './StaffMap';
-import { useBlockFilters } from './StaffNav';
+import { goTo, useBlockFilters } from './StaffNav';
 import { DANGER_BTN, Field, formGet, INPUT, Pager, PRIMARY, PublicLink, QueryState, ROW, SELECT, SMALL_BTN, staffFetch, toast } from './StaffKit';
 
 const PER_PAGE = 20;
@@ -33,7 +33,7 @@ const parseJsonObject = (raw: string): Record<string, unknown> | null => {
   }
 };
 
-/** Botón «Reemplazar imagen»: envía el original (JPG/PNG/WebP) y el servidor lo optimiza a WebP ≤ 400 KB. */
+/** Botón «Reemplazar imagen»: envía el original (JPG/PNG/WebP) y el servidor lo recorta a 16:9 (`cover`) y genera 1600×900 (≤ 600 KB) y 800×450. */
 function ReplaceImageButton({ entity, onDone }: { entity: EntityWithSlug; onDone: () => void }) {
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -75,6 +75,12 @@ function ReplaceImageButton({ entity, onDone }: { entity: EntityWithSlug; onDone
       >
         {busy ? 'Subiendo…' : 'Reemplazar imagen'}
       </button>
+      <span className="basis-full text-[11px] text-vice-text/70 sm:basis-auto">
+        Usa 1600×900 px (16:9).{' '}
+        <button type="button" onClick={() => goTo('contenido', 'imagenes')} className="inline-flex min-h-11 items-center font-semibold text-vice-gold underline focus-visible:outline-2 focus-visible:outline-vice-gold">
+          Ir a Imágenes
+        </button>
+      </span>
     </>
   );
 }

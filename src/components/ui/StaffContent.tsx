@@ -2,14 +2,16 @@
 // Cascarón: cada gestor vive en su archivo (StaffCatalog, StaffMap, StaffModules, StaffHero).
 import { CatalogManager } from './StaffCatalog';
 import { HeroManager } from './StaffHero';
+import { ImagesManager } from './StaffImages';
 import { Block, SubTabs } from './StaffKit';
 import { MapManager } from './StaffMap';
 import { useBlockTab } from './StaffNav';
 import { ModulesManager } from './StaffModules';
 
-type Sub = 'catalogo' | 'mapa' | 'modulos' | 'hero';
+type Sub = 'catalogo' | 'imagenes' | 'mapa' | 'modulos' | 'hero';
 const SUBS: ReadonlyArray<{ id: Sub; label: string }> = [
   { id: 'catalogo', label: 'Catálogo' },
+  { id: 'imagenes', label: 'Imágenes' },
   { id: 'mapa', label: 'Mapa interactivo' },
   { id: 'modulos', label: 'Módulos' },
   { id: 'hero', label: 'Portada (Hero)' },
@@ -29,6 +31,17 @@ export default function StaffContent() {
           linkLabel="Abrir el catálogo"
         >
           <CatalogManager />
+        </Block>
+      )}
+      {sub === 'imagenes' && (
+        <Block
+          id="blk-imagenes"
+          title="Estudio de imágenes"
+          controls="las imágenes de las fichas del catálogo (tarjetas, listados, ficha y vista compartida). Las imágenes propias reemplazan a las provisionales."
+          href="/catalogo"
+          linkLabel="Ver el catálogo"
+        >
+          <ImagesManager />
         </Block>
       )}
       {sub === 'mapa' && (

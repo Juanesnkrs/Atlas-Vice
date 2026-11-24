@@ -87,6 +87,7 @@ const SECTIONS: Readonly<Record<string, string>> = {
 };
 const BLOCKS: Readonly<Record<string, string>> = {
   Catálogo: 'catalogo',
+  Imágenes: 'imagenes',
   'Mapa interactivo': 'mapa',
   Módulos: 'modulos',
   'Portada (Hero)': 'hero',
@@ -200,6 +201,9 @@ export default function StaffSiteMap() {
         <div className="mt-3">
           <button type="button" onClick={() => goTo('contenido', 'modulos')} className={SMALL_BTN}>
             Activar o desactivar módulos
+          </button>
+          <button type="button" onClick={() => goTo('contenido', 'imagenes')} className={`${SMALL_BTN} ml-2`}>
+            Imágenes de las fichas
           </button>
         </div>
       </Block>
