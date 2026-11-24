@@ -1,0 +1,19 @@
+.git
+.claude
+.env
+.env.*
+!.env.production.example
+**/node_modules
+dist
+server/dist
+server/data
+graphify-out
+.tmp-mongo
+android
+ios
+supabase
+docs
+capacitor.config.ts
+public/ref Leonida map
+**/.env
+**/*.log

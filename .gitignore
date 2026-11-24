@@ -8,6 +8,7 @@ graphify-out/
 # Datos crudos de terceros (extracción previa; no versionar)
 server/data/raw/
 server/data/gtabase-*.json
+server/data/gameta-*.json
 
 # Materiales de referencia locales del mapa (calca del Modo Editor): nunca se versionan
 public/ref Leonida map/

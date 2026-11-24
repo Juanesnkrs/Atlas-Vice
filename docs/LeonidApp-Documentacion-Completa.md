@@ -3611,6 +3611,15 @@ La hoja de ruta fija el **orden** y las **dependencias**. No contiene fechas ni 
 | Decisión sobre idiomas (solo español, o contenido traducido) | `hreflang` y alcance del contenido. |
 | Cuentas de tiendas (Apple y Google) y política de publicación | P0-2 y Fase 4. |
 
+### 32.9 Despliegue portable v1 (Docker + MongoDB Atlas + Cloudflare)
+
+- **Imagen única:** `Dockerfile` (raíz) compila el cliente (Vite, con `VITE_API_URL` incrustado) y el servidor (TypeScript) y los une en un runtime `node:24` sin privilegios: el servidor Fastify sirve `/app/dist` (cliente, SSR-lite, `sitemap.xml`) y la API en el puerto 3000, con `HEALTHCHECK` sobre `/api/health`. No hay un segundo servicio web.
+- **Orquestación:** `docker-compose.yml` (servicio `app`; `mongo` solo con el perfil `local-db` para pruebas). Variables en `.env.production` a partir de `.env.production.example` (marcadores, sin secretos). `NODE_ENV=production` exige `JWT_SECRET` y `COOKIE_SECRET` propios (≥ 32 caracteres) y activa cookies `Secure`, HSTS y `trustProxy` (necesario detrás de Cloudflare).
+- **Datos:** MongoDB Atlas (usuario con permisos solo sobre la base `leonidapp` y lista de IP permitidas). Las imágenes viven en `MediaAsset` (MongoDB) y se sirven por `GET /media/:id` con caché inmutable.
+- **Cloudflare (proxy naranja):** SSL/TLS en *Full (strict)*; *Always Use HTTPS*; reglas de caché: cachear `/assets/*`, `/map-tiles/*` y `/media/*`; **no cachear** `/api/*`, `/_staff*` ni el HTML (SSR-lite depende de la sesión y del consentimiento); desactivar Rocket Loader, Auto Minify y la ofuscación de correos (rompen la CSP con hashes). Regla WAF de rate-limit adicional para `/api/auth/*`.
+- **Carga inicial de contenido:** con el servidor desplegado, `ATLAS_API_URL` y `PIPELINE_INGEST_TOKEN` apuntan al dominio público y `npm run import:atlas` (FireCrawl) envía los lotes a la bandeja de `/_staff`; los lotes `gtabase-*.json` y `gameta-*.json` no se versionan.
+- **Estado:** configuración preparada y **sin probar con Docker** (no hay Docker en el equipo de desarrollo); el primer `docker compose build` debe validarse antes de publicar.
+
 ## 33. Matriz de comparación con un sitio de referencia (GTABase)
 
 Esta matriz sirve para que el propietario compare función a función y dato a dato. Los conteos de GTABase son **conteos de URLs medidos el 2026-11-18** en el repositorio de medición `C:\Users\JuaneSnkrs\Documents\FireCrawl` (README y reportes), para el universo de páginas de entidad de GTA VI en inglés. **No se verificaron contra el sitio al redactar este documento.** El sitio de referencia está activo desde 2014.
