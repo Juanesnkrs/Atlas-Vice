@@ -17,12 +17,14 @@
 //   /foro                   P07      Foro (?hilo= &entity= &marker=)
 //   /aportar                P06      Buzón de la comunidad (noindex)
 //   /aportes                         Redirige a /aportar
+//   /legal/privacidad, /legal/cookies, /legal/terminos, /legal/marcas, /legal/retirada   Páginas legales (S6.3)
 // La guarda de UI es cosmética: el servidor decide (RBAC en hooks Fastify).
 // =============================================================================
 import { lazy, Suspense, useEffect, useMemo, type ReactNode } from 'react';
 import { BottomDock, DOCK_ITEMS } from './components/layout/BottomDock';
 import { ViceShell } from './components/layout/ViceShell';
 import { PalmButton } from './components/ui/PalmButton';
+import type { LegalId } from './data/legalDocs';
 import { useModuleGate, useProgressSummary } from './data/seed';
 import HomePage from './pages/HomePage';
 import { isApiConfigured, useAuthStore } from './store/useAuthStore';
@@ -36,6 +38,7 @@ const CatalogPage = lazy(() => import('./pages/CatalogPage'));
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const ForumPage = lazy(() => import('./pages/ForumPage'));
 const GuidesPage = lazy(() => import('./pages/GuidesPage'));
+const LegalPage = lazy(() => import('./pages/LegalPage'));
 const LandingAuthPage = lazy(() => import('./pages/LandingAuthPage'));
 const MapPage = lazy(() => import('./pages/MapPage'));
 const NewsPage = lazy(() => import('./pages/NewsPage'));
@@ -61,6 +64,7 @@ type RouteId =
   | 'forum'
   | 'contribute'
   | 'legacyContribute'
+  | 'legal'
   | 'staff';
 
 const ROUTES: ReadonlyArray<readonly [string, RouteId]> = [
@@ -80,6 +84,11 @@ const ROUTES: ReadonlyArray<readonly [string, RouteId]> = [
   ['/foro', 'forum'],
   ['/aportar', 'contribute'],
   ['/aportes', 'legacyContribute'],
+  ['/legal/privacidad', 'legal'],
+  ['/legal/cookies', 'legal'],
+  ['/legal/terminos', 'legal'],
+  ['/legal/marcas', 'legal'],
+  ['/legal/retirada', 'legal'],
   ['/_staff', 'staff'],
 ];
 
@@ -162,8 +171,8 @@ function HeaderEnd() {
       </nav>
       <a
         href="/progreso"
-        className={`${HEADER_PILL} gap-2`}
-        aria-label={`Mi avance: ${summary.percent}%. Abrir mi avance`}
+        className={`${HEADER_PILL} gap-2 justify-center min-[400px]:min-w-[8.5rem]`}
+        aria-label={`Mi avance ${summary.percent}%. Abrir mi avance`}
       >
         <span className="hidden text-xs font-medium text-vice-text/85 min-[400px]:inline">Mi avance</span>
         <span className="font-display text-vice-orange">{summary.percent}%</span>
@@ -183,7 +192,7 @@ function HeaderEnd() {
           <span className="text-vice-orange">Salir</span>
         </button>
       ) : (
-        <a href="/entrar" className={HEADER_PILL}>
+        <a href="/entrar" className={`${HEADER_PILL} min-w-[5.5rem] justify-center`}>
           Entrar
         </a>
       )}
@@ -340,6 +349,9 @@ export default function App() {
           <AportarPage />
         </RequireAccount>
       );
+      break;
+    case 'legal':
+      page = <LegalPage docId={(path.split('/')[2] ?? 'privacidad') as LegalId} />;
       break;
     case 'staff':
       page = <StaffPage />;

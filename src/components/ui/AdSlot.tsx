@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { usePublicConfig } from '../../data/seed';
 
@@ -13,6 +13,7 @@ import { usePublicConfig } from '../../data/seed';
  * - Sin `monetization.ads_enabled === true` (o con provider 'none') devuelve null sin reservar espacio.
  * - El slot se resuelve por `route` (patrón de la ruta actual) + `position`/`slotId`.
  * - Máximo 2 slots visibles por página (registro por instancia).
+ * - v1 (decisión D-09): `ads_enabled=false` => este componente devuelve null: ni hueco, ni script, ni petición a terceros.
  * - Sin consentimiento Marketing en la cookie `leonidapp_consent` no se carga ningún script ni se reserva espacio.
  * - Con provider 'adsense' y publisher_id, el script de AdSense se inyecta una sola vez, de forma diferida
  *   (IntersectionObserver, rootMargin 200px), cuando el slot se acerca al viewport.
@@ -149,8 +150,8 @@ export function AdSlot({ position, slotId, className = '' }: AdSlotProps) {
     };
   }, []);
 
-  // Límite de 2 slots visibles por página.
-  useEffect(() => {
+  // Límite de 2 slots visibles por página. useLayoutEffect: el hueco se reserva antes del primer pintado (CLS = 0).
+  useLayoutEffect(() => {
     if (!valid || !consent) {
       setAllowed(false);
       return;

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Modal } from '../ui/Modal';
 import { ApiError, apiFetch } from '../../store/useAuthStore';
 import { usePublicConfig } from '../../data/seed';
@@ -9,8 +9,23 @@ import { usePublicConfig } from '../../data/seed';
 /* ------------------------------------------------------------------ */
 
 type Lang = 'es' | 'en';
-type DocId = 'about' | 'privacy' | 'cookiePolicy' | 'legal' | 'dns';
+type DocId = 'about';
 type ModalId = DocId | 'cookies' | 'contact' | 'subscribe';
+
+/** Asunto del formulario de Contacto. El contrato de /api/contact solo admite { email, message, website }:
+ *  el asunto viaja como prefijo estándar al inicio del mensaje, p. ej. «[Retirada de contenido] ». */
+export type ContactSubject = 'general' | 'takedown' | 'privacy';
+export const OPEN_CONTACT_EVENT = 'leonidapp:open-contact';
+const SUBJECT_PREFIX: Record<ContactSubject, string> = {
+  general: '',
+  takedown: '[Retirada de contenido] ',
+  privacy: '[Privacidad y datos] ',
+};
+
+/** Abre el formulario de Contacto del pie de página (lo usan las páginas legales). */
+export function openContactForm(subject: ContactSubject = 'general'): void {
+  window.dispatchEvent(new CustomEvent<ContactSubject>(OPEN_CONTACT_EVENT, { detail: subject }));
+}
 
 const LANG_COOKIE = 'leonidapp_lang';
 const CONSENT_COOKIE = 'leonidapp_consent';
@@ -89,8 +104,14 @@ interface Dict {
   privacy: string;
   cookiePolicy: string;
   cookieSettings: string;
-  legal: string;
+  terms: string;
+  trademarks: string;
+  takedown: string;
   dns: string;
+  subject: string;
+  subjectGeneral: string;
+  subjectTakedown: string;
+  subjectPrivacy: string;
   trademark: string;
   close: string;
   email: string;
@@ -139,8 +160,14 @@ const DICT: Record<Lang, Dict> = {
     privacy: 'Privacidad',
     cookiePolicy: 'Política de cookies',
     cookieSettings: 'Ajustes de cookies',
-    legal: 'Aviso legal',
+    terms: 'Términos de uso',
+    trademarks: 'Marcas y propiedad intelectual',
+    takedown: 'Retirada de contenido',
     dns: 'No vender mi información',
+    subject: 'Asunto',
+    subjectGeneral: 'Consulta general',
+    subjectTakedown: 'Retirada de contenido',
+    subjectPrivacy: 'Privacidad y datos',
     trademark:
       'LeonidApp es un proyecto de fans, independiente y sin ánimo de lucro. No está afiliado, respaldado ni patrocinado por Rockstar Games ni Take-Two Interactive. Grand Theft Auto, GTA, Vice City y Leonida son marcas registradas de sus respectivos propietarios.',
     close: 'Cerrar',
@@ -188,8 +215,14 @@ const DICT: Record<Lang, Dict> = {
     privacy: 'Privacy',
     cookiePolicy: 'Cookie Policy',
     cookieSettings: 'Cookie Settings',
-    legal: 'Legal',
+    terms: 'Terms of Use',
+    trademarks: 'Trademarks and IP',
+    takedown: 'Content takedown',
     dns: 'Do Not Sell My Information',
+    subject: 'Subject',
+    subjectGeneral: 'General inquiry',
+    subjectTakedown: 'Content takedown',
+    subjectPrivacy: 'Privacy and data',
     trademark:
       'LeonidApp is an independent, non-profit fan project. It is not affiliated with, endorsed or sponsored by Rockstar Games or Take-Two Interactive. Grand Theft Auto, GTA, Vice City and Leonida are trademarks of their respective owners.',
     close: 'Close',
@@ -228,37 +261,7 @@ const DOCS: Record<Lang, Record<DocId, { title: string; body: string[] }>> = {
       body: [
         'LeonidApp es un atlas interactivo creado por y para fans: mapa de Leonida, catálogo de fichas, foro de la comunidad y seguimiento de tu avance.',
         'Es un proyecto independiente y sin ánimo de lucro. NO está afiliado, respaldado ni patrocinado por Rockstar Games ni por Take-Two Interactive Software, Inc.',
-        'Todo el contenido proviene de la comunidad y de información pública. Si eres titular de derechos y deseas que retiremos algo, usa el formulario de contacto.',
-      ],
-    },
-    privacy: {
-      title: 'Política de privacidad',
-      body: [
-        'Datos que tratamos: los de tu cuenta si inicias sesión (identificador, nombre de usuario, correo del proveedor de acceso), tu avance, tus aportes y tus mensajes del foro. Como invitado, tu progreso se guarda solo en tu dispositivo.',
-        'Finalidad: ofrecer las funciones de la aplicación, mantener la seguridad y moderar la comunidad. No vendemos tus datos ni los usamos para publicidad personalizada.',
-        'Conservación y derechos: conservamos los datos mientras mantengas la cuenta. Puedes solicitar acceso, rectificación o eliminación a través del formulario de contacto.',
-        'Terceros: el inicio de sesión con Google, Discord o Apple está sujeto a las políticas de cada proveedor.',
-      ],
-    },
-    cookiePolicy: {
-      title: 'Política de cookies',
-      body: [
-        'Usamos cookies y almacenamiento local. Necesarias: mantienen la sesión y la seguridad. Preferencias: idioma, avance de invitado y ajustes. Analíticas y Marketing: desactivadas por defecto y solo se activarían con tu consentimiento.',
-        'Puedes cambiar tu elección en cualquier momento desde "Ajustes de cookies". También puedes borrar los datos desde la configuración de tu navegador.',
-      ],
-    },
-    legal: {
-      title: 'Aviso legal',
-      body: [
-        'LeonidApp es un proyecto de fans no oficial. No está afiliado, respaldado ni patrocinado por Rockstar Games ni por Take-Two Interactive. Grand Theft Auto, GTA, Vice City, Leonida y las marcas, logotipos e imágenes relacionados pertenecen a sus respectivos propietarios y se mencionan solo con fines informativos.',
-        'El servicio se ofrece "tal cual", sin garantías. Los aportes de los usuarios son responsabilidad de quien los publica; nos reservamos el derecho de moderarlos o retirarlos.',
-      ],
-    },
-    dns: {
-      title: 'No vender ni compartir mi información',
-      body: [
-        'LeonidApp no vende ni comparte tu información personal con terceros con fines de publicidad conductual.',
-        'Si en el futuro cambiara, respetaremos tu derecho a oponerte. Mientras tanto, mantén desactivada la categoría "Marketing" en Ajustes de cookies, y escríbenos desde el formulario de contacto si quieres ejercer tus derechos.',
+        'Todo el contenido proviene de la comunidad y de información pública. Si eres titular de derechos y deseas que retiremos algo, consulta la página «Retirada de contenido».',
       ],
     },
   },
@@ -268,37 +271,7 @@ const DOCS: Record<Lang, Record<DocId, { title: string; body: string[] }>> = {
       body: [
         'LeonidApp is an interactive atlas made by and for fans: a map of Leonida, a catalog of locations and items, a community forum and progress tracking.',
         'It is an independent, non-profit project. It is NOT affiliated with, endorsed or sponsored by Rockstar Games or Take-Two Interactive Software, Inc.',
-        'All content comes from the community and public information. If you are a rights holder and want something removed, please use the contact form.',
-      ],
-    },
-    privacy: {
-      title: 'Privacy Policy',
-      body: [
-        'Data we process: your account data if you sign in (identifier, username, email from the sign-in provider), your progress, contributions and forum posts. As a guest, your progress stays on your device only.',
-        'Purpose: to provide the app features, keep it secure and moderate the community. We do not sell your data nor use it for personalized advertising.',
-        'Retention and rights: we keep data while your account exists. You can request access, correction or deletion through the contact form.',
-        'Third parties: signing in with Google, Discord or Apple is subject to each provider\'s policies.',
-      ],
-    },
-    cookiePolicy: {
-      title: 'Cookie Policy',
-      body: [
-        'We use cookies and local storage. Necessary: keep your session and security. Preferences: language, guest progress and settings. Analytics and Marketing: off by default and only enabled with your consent.',
-        'You can change your choice at any time from "Cookie Settings". You can also clear data from your browser settings.',
-      ],
-    },
-    legal: {
-      title: 'Legal',
-      body: [
-        'LeonidApp is an unofficial fan project. It is not affiliated with, endorsed or sponsored by Rockstar Games or Take-Two Interactive. Grand Theft Auto, GTA, Vice City, Leonida and related trademarks, logos and images belong to their respective owners and are mentioned for informational purposes only.',
-        'The service is provided "as is", without warranties. User contributions are the responsibility of whoever posts them; we reserve the right to moderate or remove them.',
-      ],
-    },
-    dns: {
-      title: 'Do Not Sell or Share My Information',
-      body: [
-        'LeonidApp does not sell or share your personal information with third parties for behavioral advertising.',
-        'Should this ever change, we will honor your right to opt out. Meanwhile, keep the "Marketing" category off in Cookie Settings, and write to us through the contact form to exercise your rights.',
+        'All content comes from the community and public information. If you are a rights holder and want something removed, see the "Content takedown" page (in Spanish).',
       ],
     },
   },
@@ -429,7 +402,17 @@ const BTN =
 const BTN_PRIMARY = `${BTN} bg-white text-black hover:bg-white/85`;
 const BTN_GHOST = `${BTN} border border-white/50 text-white hover:bg-white/15`;
 
-function ApiForm({ kind, t, lang }: { kind: 'contact' | 'subscribe'; t: Dict; lang: Lang }) {
+function ApiForm({
+  kind,
+  t,
+  lang,
+  initialSubject = 'general',
+}: {
+  kind: 'contact' | 'subscribe';
+  t: Dict;
+  lang: Lang;
+  initialSubject?: ContactSubject;
+}) {
   const [state, setState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
   const [error, setError] = useState('');
   const submit = async (e: FormEvent<HTMLFormElement>) => {
@@ -442,9 +425,13 @@ function ApiForm({ kind, t, lang }: { kind: 'contact' | 'subscribe'; t: Dict; la
       setState('error');
       return;
     }
-    const message = String(fd.get('message') ?? '').trim();
+    const typed = String(fd.get('message') ?? '').trim();
+    const subjectRaw = String(fd.get('subject') ?? 'general');
+    const subject: ContactSubject = subjectRaw === 'takedown' || subjectRaw === 'privacy' ? subjectRaw : 'general';
+    // Contrato de la API intacto: el asunto se antepone al mensaje como prefijo estándar.
+    const message = `${SUBJECT_PREFIX[subject]}${typed}`;
     const website = String(fd.get('website') ?? '');
-    if (kind === 'contact' && (message.length < 10 || message.length > 2000)) {
+    if (kind === 'contact' && (typed.length < 10 || message.length > 2000)) {
       setError(t.messageLength);
       setState('error');
       return;
@@ -477,6 +464,16 @@ function ApiForm({ kind, t, lang }: { kind: 'contact' | 'subscribe'; t: Dict; la
         {t.email}
         <input name="email" type="email" required maxLength={254} autoComplete="email" className={FIELD} />
       </label>
+      {kind === 'contact' && (
+        <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide">
+          {t.subject}
+          <select name="subject" defaultValue={initialSubject} className={FIELD}>
+            <option value="general">{t.subjectGeneral}</option>
+            <option value="takedown">{t.subjectTakedown}</option>
+            <option value="privacy">{t.subjectPrivacy}</option>
+          </select>
+        </label>
+      )}
       {kind === 'contact' && (
         <label className="flex flex-col gap-1 text-xs font-semibold uppercase tracking-wide">
           {t.message}
@@ -595,6 +592,23 @@ function CookieSettings({ t, onDone }: { t: Dict; onDone: () => void }) {
   );
 }
 
+/** Panel de decisión de cookies para la página /legal/cookies (mismo `leonidapp_consent` que el modal del pie). */
+export function CookiePreferencesPanel() {
+  const [saved, setSaved] = useState(false);
+  return (
+    <div className="rounded-2xl bg-black p-5 text-white">
+      <div aria-live="polite">
+        {saved && (
+          <p role="status" className="mb-3 font-semibold">
+            Tu decisión se ha guardado.
+          </p>
+        )}
+      </div>
+      <CookieSettings t={DICT.es} onDone={() => setSaved(true)} />
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Contenido del footer                                                */
 /* ------------------------------------------------------------------ */
@@ -614,13 +628,14 @@ function FooterBody({
   open: (m: ModalId) => void;
 }) {
   const socials = useSocialLinks();
-  const legalLinks: Array<{ id: ModalId; label: string }> = [
-    { id: 'about', label: t.about },
-    { id: 'privacy', label: t.privacy },
-    { id: 'cookiePolicy', label: t.cookiePolicy },
-    { id: 'cookies', label: t.cookieSettings },
-    { id: 'legal', label: t.legal },
-    { id: 'dns', label: t.dns },
+  // Legales: cada enlace lleva a una pantalla real (/legal/*); «Acerca de» y «Ajustes de cookies» abren modal.
+  const legalPages: Array<{ href: string; label: string }> = [
+    { href: '/legal/privacidad', label: t.privacy },
+    { href: '/legal/cookies', label: t.cookiePolicy },
+    { href: '/legal/terminos', label: t.terms },
+    { href: '/legal/marcas', label: t.trademarks },
+    { href: '/legal/retirada', label: t.takedown },
+    { href: '/legal/privacidad', label: t.dns },
   ];
   const colTitle = 'mb-1 font-display text-sm font-bold uppercase tracking-widest text-white';
   return (
@@ -701,14 +716,24 @@ function FooterBody({
         </div>
       </div>
 
-      <ul className="m-0 mt-4 flex list-none flex-wrap gap-x-5 p-0">
-        {legalLinks.map((l) => (
-          <li key={l.id}>
-            <button type="button" className={LINK} onClick={() => open(l.id)}>
+      <ul aria-label="Legal" className="m-0 mt-4 flex list-none flex-wrap gap-x-5 p-0">
+        <li>
+          <button type="button" className={LINK} onClick={() => open('about')}>
+            {t.about}
+          </button>
+        </li>
+        {legalPages.map((l) => (
+          <li key={l.label}>
+            <a className={LINK} href={l.href}>
               {l.label}
-            </button>
+            </a>
           </li>
         ))}
+        <li>
+          <button type="button" className={LINK} onClick={() => open('cookies')}>
+            {t.cookieSettings}
+          </button>
+        </li>
       </ul>
 
       <p className="mt-4 text-xs leading-relaxed text-white/75">{t.trademark}</p>
@@ -726,7 +751,19 @@ export function RockstarFooter() {
     return typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en') ? 'en' : 'es';
   });
   const [modal, setModal] = useState<ModalId | null>(null);
+  const [subject, setSubject] = useState<ContactSubject>('general');
   const t = DICT[lang];
+
+  // Las páginas legales abren el formulario de Contacto con el asunto preseleccionado.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const d = (e as CustomEvent<ContactSubject>).detail;
+      setSubject(d === 'takedown' || d === 'privacy' ? d : 'general');
+      setModal('contact');
+    };
+    window.addEventListener(OPEN_CONTACT_EVENT, onOpen);
+    return () => window.removeEventListener(OPEN_CONTACT_EVENT, onOpen);
+  }, []);
 
   const setLang = useCallback((l: Lang) => {
     setLangState(l);
@@ -751,7 +788,7 @@ export function RockstarFooter() {
       {modal === 'cookies' ? (
         <CookieSettings t={t} onDone={() => setModal(null)} />
       ) : modal === 'contact' || modal === 'subscribe' ? (
-        <ApiForm kind={modal} t={t} lang={lang} />
+        <ApiForm kind={modal} t={t} lang={lang} initialSubject={modal === 'contact' ? subject : 'general'} />
       ) : (
         <div className="flex flex-col gap-3">
           {DOCS[lang][modal].body.map((p) => (
@@ -765,7 +802,11 @@ export function RockstarFooter() {
   return (
     <>
       <footer className="relative z-20 shrink-0 bg-black pl-safe pr-safe text-white" aria-label="LeonidApp">
-        <FooterBody lang={lang} setLang={setLang} t={t} open={setModal} />
+        <FooterBody lang={lang} setLang={setLang} t={t} open={(m) => {
+          if (m === 'contact') setSubject('general');
+          setModal(m);
+        }}
+        />
       </footer>
       {modalNode}
     </>
