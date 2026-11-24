@@ -46,7 +46,7 @@ export default function StaffContent() {
         <Block
           id="blk-modulos"
           title="Módulos del catálogo"
-          controls="qué categorías aparecen en la navegación y en qué orden, y su nombre, icono y URL."
+          controls="qué secciones (Mapa, Foro) y categorías del catálogo se muestran en la navegación, en qué orden, y su nombre, icono y URL."
           href="/catalogo"
           linkLabel="Ver la navegación"
         >

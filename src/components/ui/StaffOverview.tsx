@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { relativeTime } from '../../data/seed';
 import { Block, QueryState, ROW, SMALL_BTN, staffFetch } from './StaffKit';
 import { goTo } from './StaffNav';
+import StaffSiteMap from './StaffSiteMap';
 
 interface Overview {
   role: string;
@@ -50,7 +51,8 @@ function Card({ title, children, action }: { title: string; children: ReactNode;
   );
 }
 
-export default function StaffOverview({ canAudit }: { canAudit: boolean }) {
+/** `canContent` (ADMIN+) añade el «Mapa de la PWA»: su endpoint es ADMIN+, por eso no se monta para moderación. */
+export default function StaffOverview({ canAudit, canContent }: { canAudit: boolean; canContent: boolean }) {
   const q = useQuery({
     queryKey: ['staff', 'overview'],
     queryFn: () => staffFetch<Overview>('/api/admin/overview'),
@@ -171,6 +173,7 @@ export default function StaffOverview({ canAudit }: { canAudit: boolean }) {
           </div>
         </div>
       )}
+      {canContent && <StaffSiteMap />}
     </div>
   );
 }

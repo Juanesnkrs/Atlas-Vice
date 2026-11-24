@@ -1,6 +1,7 @@
 // Gestor de módulos del catálogo (ADMIN+): visibilidad, orden, nombre, icono y URL. Los campos reflejan
 // server/src/models/Module.ts; la UI es cosmética (el servidor aplica RBAC y valida con Zod).
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { ApiError } from '../../store/useAuthStore';
 import { Field, errMsg, formGet, INPUT, PRIMARY, QueryState, ROW, SMALL_BTN, DANGER_BTN, staffFetch, toast } from './StaffKit';
 import { FormModal, SafeDelete, useCrud } from './StaffForms';
 import { ObjectHistory } from './StaffHistory';
@@ -22,6 +23,35 @@ export function useModules() {
   return useQuery({ queryKey: ['staff', 'modules'], queryFn: () => staffFetch<ModuleRow[]>('/api/modules?all=1') });
 }
 
+/** Fila de GET /api/admin/modules/overview (ADMIN+): módulo + ruta pública + conteos reales. */
+export interface ModuleOverview {
+  id: string;
+  slug: string;
+  nombre: string;
+  activo: boolean;
+  orden: number;
+  tipo: 'seccion' | 'categoria' | 'sin_pantalla';
+  ruta_publica: string | null;
+  staff_seccion: string | null;
+  fichas: number;
+  pines: number;
+  visible_en_publico: boolean;
+}
+
+export function useModulesOverview() {
+  return useQuery({
+    queryKey: ['staff', 'modules-overview'],
+    queryFn: () => staffFetch<{ modules: ModuleOverview[] }>('/api/admin/modules/overview').then((r) => r.modules),
+  });
+}
+
+export const TIPO_LABEL: Record<ModuleOverview['tipo'], string> = {
+  seccion: 'Sección',
+  categoria: 'Categoría',
+  sin_pantalla: 'Sin pantalla pública',
+};
+const NO_SCREEN_REASON = 'No se puede activar: aún no tiene pantalla pública';
+
 const MESSAGES = { created: 'Módulo creado.', saved: 'Módulo guardado.', deleted: 'Módulo borrado.' };
 
 export function ModulesManager() {
@@ -33,11 +63,16 @@ export function ModulesManager() {
     invalidate: CONTENT_INVALIDATE,
     messages: MESSAGES,
   });
+  const overview = useModulesOverview();
+  const info = new Map((overview.data ?? []).map((o) => [o.id, o]));
   const rows = (modules.data ?? []).slice().sort((a, b) => a.orden - b.orden);
 
   const patch = useMutation({
     mutationFn: (v: { id: string; body: Record<string, unknown> }) => staffFetch(`/api/modules/${v.id}`, { method: 'PATCH', json: v.body }),
-    onError: (e) => toast.err(`No se pudo guardar el módulo: ${errMsg(e)}`),
+    onError: (e) =>
+      toast.err(
+        e instanceof ApiError && e.code === 'MODULE_WITHOUT_PUBLIC_ROUTE' ? e.message : `No se pudo guardar el módulo: ${errMsg(e)}`,
+      ),
   });
 
   const toggle = (m: ModuleRow, activo: boolean) =>
@@ -81,6 +116,18 @@ export function ModulesManager() {
   return (
     <div>
       <p className="text-sm text-vice-text/80">Un módulo inactivo se oculta de la navegación y sus rutas dejan de estar disponibles.</p>
+      <ul className="mt-2 flex list-disc flex-col gap-1 pl-5 text-sm text-vice-text/80">
+        <li>
+          <strong className="font-semibold text-vice-text">Sección</strong>: el interruptor enciende o apaga una pantalla propia de la app (Mapa, Foro).
+        </li>
+        <li>
+          <strong className="font-semibold text-vice-text">Categoría</strong>: el interruptor controla una pestaña del catálogo (o las Guías); solo se
+          muestra si está activa y tiene fichas.
+        </li>
+        <li>
+          <strong className="font-semibold text-vice-text">Sin pantalla pública</strong>: todavía no se ve en la app y no se puede activar.
+        </li>
+      </ul>
       <div className="mt-3">
         <button type="button" onClick={crud.openNew} className={PRIMARY}>
           Nuevo módulo
@@ -94,24 +141,60 @@ export function ModulesManager() {
         onRetry={() => void modules.refetch()}
       />
       <ul className="mt-3 flex flex-col gap-2">
-        {rows.map((it, i) => (
+        {rows.map((it, i) => {
+          const o = info.get(it.id);
+          const blocked = o?.tipo === 'sin_pantalla' && !it.activo;
+          const reasonId = `mod-reason-${it.id}`;
+          return (
           <li key={it.id} className={ROW}>
-            <label className="flex min-h-11 min-w-0 flex-1 items-center gap-3">
-              <input
-                type="checkbox"
-                role="switch"
-                checked={it.activo}
-                disabled={patch.isPending}
-                onChange={(ev) => toggle(it, ev.target.checked)}
-                className="h-5 w-5 accent-[#E1307E]"
-              />
-              <span className="min-w-0">
-                <span className="font-semibold">{it.nombre}</span>
-                <span className="ml-2 text-xs text-vice-text/70">
-                  /{it.slug} · orden {it.orden} · {it.activo ? 'activo' : 'inactivo'}
+            <div className="min-w-0 flex-1">
+              <label className="flex min-h-11 items-center gap-3">
+                <input
+                  type="checkbox"
+                  role="switch"
+                  checked={it.activo}
+                  disabled={patch.isPending || blocked}
+                  aria-describedby={blocked ? reasonId : undefined}
+                  onChange={(ev) => toggle(it, ev.target.checked)}
+                  className="h-5 w-5 accent-[#E1307E]"
+                />
+                <span className="min-w-0">
+                  <span className="font-semibold">{it.nombre}</span>
+                  <span className="ml-2 text-xs text-vice-text/70">
+                    /{it.slug} · orden {it.orden} · {it.activo ? 'Activo' : 'Inactivo'}
+                  </span>
                 </span>
-              </span>
-            </label>
+              </label>
+              {o && (
+                <dl className="ml-8 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-vice-text/80">
+                  <div className="flex gap-1">
+                    <dt className="text-vice-text/60">Tipo:</dt>
+                    <dd className="font-semibold">{TIPO_LABEL[o.tipo]}</dd>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <dt className="text-vice-text/60">Dónde se ve:</dt>
+                    <dd>
+                      {o.ruta_publica ? (
+                        <a href={o.ruta_publica} target="_blank" rel="noopener" className="inline-flex min-h-11 items-center font-semibold text-vice-gold underline-offset-2 hover:underline">
+                          {o.ruta_publica}
+                        </a>
+                      ) : (
+                        '—'
+                      )}
+                    </dd>
+                  </div>
+                  <div className="flex gap-1">
+                    <dt className="text-vice-text/60">Fichas:</dt>
+                    <dd className="font-semibold">{o.fichas}</dd>
+                  </div>
+                </dl>
+              )}
+              {blocked && (
+                <p id={reasonId} className="ml-8 text-xs font-semibold text-vice-gold">
+                  {NO_SCREEN_REASON}
+                </p>
+              )}
+            </div>
             <span className="flex flex-wrap gap-2">
               <button type="button" disabled={i === 0 || patch.isPending} onClick={() => void move(i, -1)} className={SMALL_BTN} aria-label={`Subir ${it.nombre}`}>
                 Subir
@@ -132,7 +215,8 @@ export function ModulesManager() {
               </button>
             </span>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <FormModal

@@ -1,11 +1,12 @@
-// Sección «Editorial y automatización» del panel de gestión (ADMIN+): worker de noticias oficiales y guías publicadas.
+// Sección «Editorial y automatización» del panel de gestión (ADMIN+): tres subpestañas (`?b=`): Noticias (worker de
+// noticias oficiales), Pipeline (ETL del catálogo) y Guías publicadas.
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { relativeTime } from '../../data/seed';
 import { useState } from 'react';
 import { ApiError, useAuthStore } from '../../store/useAuthStore';
 import { CatalogManager } from './StaffCatalog';
-import { Block, errMsg, PRIMARY, QueryState, rankOf, ROW, SMALL_BTN, staffFetch, toast } from './StaffKit';
-import { goTo } from './StaffNav';
+import { Block, errMsg, PRIMARY, QueryState, rankOf, ROW, SMALL_BTN, staffFetch, SubTabs, toast } from './StaffKit';
+import { goTo, useBlockTab } from './StaffNav';
 
 interface NewsStatus {
   worker: {
@@ -259,20 +260,32 @@ function PipelineCard() {
   );
 }
 
+// El id de «Guías publicadas» coincide con el bloque de filtros del gestor (`useBlockFilters('guias')`).
+type Sub = 'noticias' | 'pipeline' | 'guias';
+const SUBS: ReadonlyArray<{ id: Sub; label: string }> = [
+  { id: 'noticias', label: 'Noticias' },
+  { id: 'pipeline', label: 'Pipeline' },
+  { id: 'guias', label: 'Guías publicadas' },
+];
+
 export default function StaffEditorial() {
+  const [sub, setSub] = useBlockTab('editorial', SUBS);
   return (
     <div className="flex flex-col gap-4">
-      <NewsWorker />
-      <PipelineCard />
-      <Block
-        id="blk-guias"
-        title="Guías publicadas"
-        controls="las guías de /guias, con sus pasos (metadata.steps) para los datos estructurados HowTo."
-        href="/guias"
-        linkLabel="Abrir guías"
-      >
-        <CatalogManager fixedModule="guias" />
-      </Block>
+      <SubTabs label="Editorial y automatización" tabs={SUBS} value={sub} onChange={setSub} />
+      {sub === 'noticias' && <NewsWorker />}
+      {sub === 'pipeline' && <PipelineCard />}
+      {sub === 'guias' && (
+        <Block
+          id="blk-guias"
+          title="Guías publicadas"
+          controls="las guías de /guias, con sus pasos (metadata.steps) para los datos estructurados HowTo."
+          href="/guias"
+          linkLabel="Abrir guías"
+        >
+          <CatalogManager fixedModule="guias" />
+        </Block>
+      )}
     </div>
   );
 }

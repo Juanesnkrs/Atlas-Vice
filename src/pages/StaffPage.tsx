@@ -72,7 +72,7 @@ export default function StaffPage() {
         ))}
       </div>
       <div role="tabpanel" id={`panel-${current}`} aria-labelledby={`tab-${current}`} className="mt-4">
-        {current === 'resumen' && <StaffOverview canAudit={rank >= 3} />}
+        {current === 'resumen' && <StaffOverview canAudit={rank >= 3} canContent={rank >= 2} />}
         {current === 'contenido' && <StaffContent />}
         {current === 'comunidad' && <StaffCommunity />}
         {current === 'editorial' && <StaffEditorial />}
