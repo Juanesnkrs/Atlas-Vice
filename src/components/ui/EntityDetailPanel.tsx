@@ -210,11 +210,11 @@ export function EntityDetailPanel({
         </button>
 
         {pin ? (
-          <PalmButton as="a" href={`/mapa?marker=${pin.id}`} fullWidth className="min-h-12! whitespace-nowrap text-base!">
+          <PalmButton as="a" href={`/mapa?marker=${pin.id}`} fullWidth className="h-12! min-h-12! whitespace-nowrap text-base!">
             Ubicación en el mapa
           </PalmButton>
         ) : (
-          <p className="flex min-h-11 items-center gap-2 text-sm text-vice-text/70">
+          <p className="flex h-12 items-center gap-2 text-sm text-vice-text/70">
             <MapPinIcon off />
             Ubicación en el mapa: sin pin todavía
           </p>

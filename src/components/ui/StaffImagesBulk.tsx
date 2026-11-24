@@ -478,7 +478,7 @@ export function BulkUpload() {
           ) : (
             <div className="mt-3 flex flex-wrap gap-3">
               <button type="button" disabled={ready.length === 0} onClick={() => void apply()} className={PRIMARY}>
-                Aplicar {ready.length} imagen{ready.length === 1 ? '' : 'es'}
+                Aplicar {ready.length} {ready.length === 1 ? 'imagen' : 'imágenes'}
               </button>
             </div>
           )}

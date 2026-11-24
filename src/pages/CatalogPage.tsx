@@ -279,7 +279,7 @@ function Viewer({ entity, kind }: { entity: Entity; kind?: string }) {
   return (
     <section aria-label="Visor" className="hidden min-h-0 flex-col items-center gap-3 xl:flex">
       <div className="flex min-h-0 w-full flex-1 items-center justify-center">
-        <div className="relative aspect-square h-full max-h-[460px] max-w-full overflow-hidden rounded-[28px] border border-vice-orange/35 bg-[linear-gradient(160deg,#4B2262,#1E1030)] shadow-[0_30px_60px_rgba(0,0,0,0.45),0_0_0_6px_rgba(246,126,86,0.14)]">
+        <div className={`relative ${entity.imagen_url ? 'aspect-video w-full' : 'aspect-square h-full max-h-[460px]'} max-w-full overflow-hidden rounded-[28px] border border-vice-orange/35 bg-[linear-gradient(160deg,#4B2262,#1E1030)] shadow-[0_30px_60px_rgba(0,0,0,0.45),0_0_0_6px_rgba(246,126,86,0.14)]`}>
           <div
             className="absolute inset-0 flex items-center justify-center transition-transform duration-200 motion-reduce:transition-none"
             style={{ transform: `scale(${zoom})` }}
@@ -1306,7 +1306,7 @@ function EntityDetail({ entity, modulo, itemPath, compareHrefFor, onCompare }: E
       <DescriptionBlock paragraphs={description} className="mt-3 max-w-prose" />
 
       <div className="mt-4 grid gap-5 md:grid-cols-2">
-        <section aria-label="Imagen" className="glass relative flex h-56 items-center justify-center overflow-hidden rounded-2xl md:h-72">
+        <section aria-label="Imagen" className={`glass relative flex items-center justify-center overflow-hidden rounded-2xl ${entity.imagen_url ? 'aspect-video w-full' : 'h-56 md:h-72'}`}>
           <ItemVisual
             entity={entity}
             kind={modulo}
